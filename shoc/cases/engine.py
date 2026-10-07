@@ -647,13 +647,59 @@ def set_verdict(
 
 
 def publish(conn: Conn, tenant_id: str, type_: str, subject: str, payload: dict[str, Any]) -> None:
-    """Append to the event stream and wake any listener (API-2)."""
+    """Append to the event stream, wake any listener (API-2) and the agents it concerns."""
     execute(
         conn,
         "INSERT INTO shoc.stream_events (tenant_id, type, subject, payload) VALUES (%s,%s,%s,%s)",
         (tenant_id, type_, subject, json.dumps(payload, default=str)),
     )
     execute(conn, "SELECT pg_notify('shoc_stream', %s)", (f"{tenant_id}:{type_}",))
+    wake(conn, tenant_id, type_, payload)
+
+
+# The agents an event wakes: the job, and the window a burst of events is folded
+# into (RFC 0034). The job falls due at the end of its window, so every event is
+# followed by a run within that many seconds and a burst costs one run. What
+# depends on the clock stays on a schedule: deadlines, retries, a hunt pack's
+# cadence, feeds that must be polled, the reports.
+WAKES: dict[str, tuple[tuple[str, int], ...]] = {
+    # The crew goes back to a case that has something new to say. The sweep
+    # picks the cases, backs off one whose last run failed and leaves one the
+    # crew is already on.
+    "case.opened": (("case.sweep", 10),),
+    "case.updated": (("case.sweep", 10),),
+    "openspace.message": (("case.sweep", 10),),
+    "action.executed": (("case.sweep", 10),),
+    "action.rolled_back": (("case.sweep", 10),),
+    "action.rejected": (("case.sweep", 10),),
+    # A report CTI kept: the Hunter works the hunts it filed and runs what is
+    # due, and the Detection Engineer takes the techniques no rule maps to.
+    "intel.report": (("hunt.daily", 600), ("detection.backlog", 600)),
+    # What a vendor pushed is read for detections now, not at the next cycle.
+    "events.pushed": (("detect.run", 60),),
+}
+
+
+def wake(conn: Conn, tenant_id: str, type_: str, payload: dict[str, Any]) -> None:
+    """Queue the jobs `WAKES` names for this event, once per window."""
+    if type_ == "openspace.message" and not (
+        payload.get("principal") == "human" or payload.get("kind") == "inject"
+    ):
+        return  # the crew talking during a run, which sweeps when it ends
+    if type_ == "action.rejected" and not str(payload.get("by", "")).startswith("human:"):
+        return
+    from shoc.db import jobs
+
+    now = datetime.now(UTC).timestamp()
+    for kind, seconds in WAKES.get(type_, ()):
+        due = (int(now // seconds) + 1) * seconds
+        jobs.enqueue(
+            conn,
+            tenant_id,
+            kind,
+            run_at=datetime.fromtimestamp(due, UTC),
+            idempotency_key=f"wake:{tenant_id}:{kind}:{due}",
+        )
 
 
 def recent(conn: Conn, tenant_id: str, limit: int = 50, state: str = "") -> list[dict[str, Any]]:

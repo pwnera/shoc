@@ -14,6 +14,7 @@ import os
 import signal
 import threading
 import time
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import psycopg
@@ -211,9 +212,14 @@ def _handle(job: dict[str, Any], config: Config) -> str:
         result = call("case.investigate", ctx, {"case_uid": payload["case_uid"]})
         started = _start_playbooks(ctx, payload["case_uid"])
         # Whatever was said to the crew while it worked is answered now, not at
-        # the next scheduled sweep.
+        # the next scheduled sweep: a few seconds on, once this job is done, as
+        # the sweep leaves a case whose run is still going.
         jobs.enqueue(
-            ctx.db, ctx.tenant_id, "case.sweep", idempotency_key=f"sweep:after:{job['job_id']}"
+            ctx.db,
+            ctx.tenant_id,
+            "case.sweep",
+            run_at=datetime.now(UTC) + timedelta(seconds=5),
+            idempotency_key=f"sweep:after:{job['job_id']}",
         )
         return result.summary + (f" Started: {', '.join(started)}." if started else "")
     if kind == "playbook.run":
@@ -393,7 +399,9 @@ def _sweep_cases(ctx: Context) -> str:
     Three things bring a case back: the crew has never worked it, something has
     happened to it since the crew last did — a finding, an action completing, a
     fact somebody posted — or `shoc/cases/unattended.py` has told it that the
-    human it was waiting for is not coming.
+    human it was waiting for is not coming. Each of those events wakes the sweep
+    (`engine.WAKES`), so a case the crew is already queued or running on is left
+    alone: two runs on one case argue the same thing twice.
 
     A case whose last try did not come back waits before the next one, longer
     each time and never past its deadline, so an outage costs a handful of
@@ -419,6 +427,11 @@ def _sweep_cases(ctx: Context) -> str:
                  LATERAL (SELECT CASE WHEN c.worked_at > c.crew_attempted_at
                                   THEN 0 ELSE c.crew_attempts END AS attempts) t
             WHERE c.tenant_id = %s AND c.state <> 'closed' AND ({NEEDS_ATTENTION})
+              AND NOT EXISTS (
+                  SELECT 1 FROM shoc.jobs j
+                  WHERE j.tenant_id = c.tenant_id AND j.kind = 'case.investigate'
+                    AND j.state IN ('pending', 'running')
+                    AND j.payload->>'case_uid' = c.case_uid)
               AND (c.crew_attempted_at IS NULL OR t.attempts = 0
                    OR c.crew_attempted_at < now() - interval '1 hour' * least(
                         %s * power(2, t.attempts - 1),
@@ -705,10 +718,11 @@ def listen(config: Config) -> Any:
 def wait_for_jobs(listener: Any, seconds: float, stop: threading.Event) -> None:
     """Return when a job is queued, `seconds` have passed, or the worker must stop.
 
-    A job whose `run_at` is in the future (a retry, a deferred run) sends its
-    NOTIFY when it is queued, not when it falls due, and the cron leader ticks
-    on this same loop, so `seconds` stays as the fallback. The wait is taken a
-    second at a time, without a query, so SIGTERM is not kept waiting.
+    The caller passes the time until the next queued job falls due
+    (`jobs.seconds_to_next`), since a job queued for later sent its NOTIFY when
+    it was queued; the cron leader ticks on this same loop, so the poll stays as
+    the longest wait. The wait is taken a second at a time, without a query, so
+    SIGTERM is not kept waiting.
     """
     deadline = time.monotonic() + seconds
     while not stop.is_set() and (left := deadline - time.monotonic()) > 0:
@@ -791,6 +805,7 @@ def run(
                     jobs.fail(conn, job["job_id"], f"{type(exc).__name__}: {exc}")
                     log.warning("job %s %s failed: %s", job["job_id"], job["kind"], exc)
                 processed += 1
+            pause = 0.0 if claimed else jobs.seconds_to_next(conn, poll_seconds)
         except psycopg.OperationalError as exc:
             # A restarted or briefly unreachable database is an ordinary event
             # for a process meant to run for months: reconnect rather than die
@@ -807,8 +822,8 @@ def run(
             continue
         if once:
             break
-        if not claimed:
-            wait_for_jobs(listener, poll_seconds, stopping)
+        if pause:
+            wait_for_jobs(listener, pause, stopping)
     if listener is not None:
         listener.close()
     return processed

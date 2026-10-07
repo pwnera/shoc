@@ -66,6 +66,20 @@ def claim(conn: Conn, limit: int = 1) -> list[dict[str, Any]]:
     )
 
 
+def seconds_to_next(conn: Conn, most: float) -> float:
+    """How long until the next pending job falls due, `most` at the longest.
+
+    A job queued to run later sends its NOTIFY when it is queued, so without
+    this a worker woke for it only on its next poll.
+    """
+    row = fetch_one(
+        conn,
+        "SELECT extract(epoch FROM min(run_at) - now()) AS s FROM shoc.jobs WHERE state = 'pending'",
+    )
+    s = row["s"] if row else None
+    return most if s is None else min(most, max(0.5, float(s)))
+
+
 def finish(conn: Conn, job_id: int) -> None:
     execute(
         conn,

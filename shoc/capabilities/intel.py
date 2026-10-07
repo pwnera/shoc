@@ -1623,6 +1623,22 @@ def _read(
             json.dumps(techniques if keep else []),
         ),
     )
+    if keep and (source or ctx.caller.kind == "human"):
+        from shoc.cases import engine
+
+        # The Hunter and the Detection Engineer take it from here (RFC 0034).
+        engine.publish(
+            ctx.db,
+            ctx.tenant_id,
+            "intel.report",
+            report_uid,
+            {
+                "title": (answer.title or doc.title)[:200],
+                "techniques": kept_techniques,
+                "hunts": len(hunts),
+                "source": source or doc.host,
+            },
+        )
 
     caveat = (
         f" {unverified} of them are not in the report text and are marked unverified."

@@ -133,7 +133,7 @@ Example (CASE-1042, leaked AWS key):
 - One table, `openspace_messages`: case, round, agent, kind, body, addressee, cited event IDs.
 - Kinds: observation, hypothesis, evidence, challenge, proposal, decision, inject (+ concede), request, answer.
 - Agents talk to each other, not only to the case. Asking is a **tool call** (`ask_cti`, `ask_surveyor`) that runs with the peer's own principal and capability list, never the caller's, and the `request` and `answer` pair is written here as the record. Nothing routes by keyword, and no role interrupts, because nothing has to guess who might want to speak.
-- Workers wake on `LISTEN/NOTIFY` (`shoc_jobs`, sent with every queued job); a 30-second poll stays as the fallback for jobs that fall due later.
+- Workers wake on `LISTEN/NOTIFY` (`shoc_jobs`, sent with every queued job), and an idle worker sleeps until the next queued job falls due, 30 seconds at most. Every published event wakes the agents it concerns through `engine.WAKES` (RFC 0034): the crew within seconds of something new on a case, the Hunter and the Detection Engineer when CTI keeps a report.
 - Budgets per run: max tokens and max wall time, plus six peer calls per case. What the case turns out to contain raises the floor severity set, and the Investigator's own severity change recomputes it. A spent budget stops the run with a `needs_human` decision. **Every case hears the Challenger**, whatever its severity, and an objection is always answered.
 
 **Memory (all Postgres rows, full-text search; no graph DB, no vector DB)**

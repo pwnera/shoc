@@ -316,6 +316,7 @@ def build_app(config: Config | None = None) -> Starlette:
             verify_github,
         )
         from shoc.capabilities.registry import get
+        from shoc.cases import engine
         from shoc.ingest.connectors import github
         from shoc.ingest.connectors.base import connector_of, mark_push
 
@@ -351,6 +352,15 @@ def build_app(config: Config | None = None) -> Starlette:
                     forget_delivery(ctx.db, ctx.tenant_id, source, delivery)
                     raise
                 mark_push(ctx.db, ctx.tenant_id, source, result.data.loaded)
+                if result.data.loaded:
+                    # Read for detections now, not at the next cycle (RFC 0034).
+                    engine.publish(
+                        ctx.db,
+                        ctx.tenant_id,
+                        "events.pushed",
+                        source,
+                        {"loaded": result.data.loaded},
+                    )
                 return result
 
             result = await asyncio.to_thread(run)

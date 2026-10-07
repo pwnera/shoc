@@ -255,6 +255,7 @@ def post(
         case_uid,
         {
             "agent": message.agent,
+            "principal": message.principal,
             "kind": message.kind,
             "to": message.to.strip(),
             "round": message.round,

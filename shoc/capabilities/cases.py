@@ -9,7 +9,6 @@ from shoc.agents import memory as memory_store
 from shoc.agents.openspace import Message, post, transcript
 from shoc.capabilities.registry import Context, Result, capability
 from shoc.cases import engine
-from shoc.db import jobs
 from shoc.jsonschema import field as f
 from shoc.jsonschema import to_json
 
@@ -449,12 +448,6 @@ def openspace_post(ctx: Context, inp: OpenspacePost) -> Result:
             round=inp.round or max(1, int(case["rounds"] or 1)),
         ),
     )
-    if ctx.caller.kind == "human":
-        # The operator who writes to the crew is waiting for an answer; the
-        # sweep decides whether a run can start now or one is already going.
-        jobs.enqueue(
-            ctx.db, ctx.tenant_id, "case.sweep", idempotency_key=f"sweep:post:{row['msg_id']}"
-        )
     return Result(
         data=OpenspaceMessage(
             msg_id=row["msg_id"],

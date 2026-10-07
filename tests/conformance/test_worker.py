@@ -99,12 +99,96 @@ def test_the_sweep_is_not_silenced_by_the_jobs_it_queued_before(conn, ctx, store
             (config.tenant_id, row["case_uid"]),
         )
         assert "queued 1" in worker._sweep_cases(ctx)
+        # The run ended; a case the crew is still queued on is left alone.
+        execute(conn, "UPDATE shoc.jobs SET state = 'done' WHERE kind = 'case.investigate'")
     queued = fetch_all(
         conn,
         "SELECT 1 FROM shoc.jobs WHERE tenant_id = %s AND kind = 'case.investigate'",
         (config.tenant_id,),
     )
     assert len(queued) == 2, "the second sweep queued nothing"
+
+
+def test_the_sweep_leaves_a_case_the_crew_is_already_on(conn, ctx, store, config, clean):
+    """Every event on a case wakes the sweep now (RFC 0034); a run per event would
+    have the crew argue the same case in parallel."""
+    from evals.run import SCENARIOS, replay
+
+    replay(SCENARIOS / "leaked_aws_key", tenant_id=config.tenant_id, store=store)
+    row = fetch_one(
+        conn, "SELECT case_uid FROM shoc.cases WHERE tenant_id = %s LIMIT 1", (config.tenant_id,)
+    )
+    assert row
+    execute(conn, "DELETE FROM shoc.jobs")
+    config.llm_provider = "openai"
+    jobs.enqueue(conn, config.tenant_id, "case.investigate", {"case_uid": row["case_uid"]})
+    assert "queued 0" in worker._sweep_cases(ctx)
+
+
+def test_an_event_wakes_the_agents_it_concerns_once_per_window(conn, config):
+    from shoc.cases import engine
+
+    def woken() -> list[tuple[str, datetime]]:
+        return [
+            (r["kind"], r["run_at"])
+            for r in fetch_all(
+                conn,
+                "SELECT kind, run_at FROM shoc.jobs WHERE tenant_id = %s ORDER BY kind",
+                (config.tenant_id,),
+            )
+        ]
+
+    crew = {"agent": "Investigator", "principal": "agent", "kind": "hypothesis"}
+    engine.publish(conn, config.tenant_id, "openspace.message", "CASE-x", crew)
+    engine.publish(conn, config.tenant_id, "action.rejected", "ACT-x", {"by": "unattended"})
+    assert woken() == [], "the crew talking mid-run, and a rejection no person made"
+
+    engine.publish(conn, config.tenant_id, "openspace.message", "CASE-x", {"principal": "human"})
+    engine.publish(conn, config.tenant_id, "case.updated", "CASE-x", {})
+    [(kind, run_at)] = woken()
+    assert kind == "case.sweep", "a burst is one wake"
+    assert datetime.now(UTC) < run_at <= datetime.now(UTC) + timedelta(seconds=10)
+
+    execute(conn, "DELETE FROM shoc.jobs")
+    engine.publish(conn, config.tenant_id, "intel.report", "RPT-x", {"techniques": ["T1078"]})
+    assert [k for k, _ in woken()] == ["detection.backlog", "hunt.daily"]
+
+
+def test_a_job_queued_for_later_wakes_an_idle_worker_when_it_falls_due(
+    conn, config, clean, monkeypatch
+):
+    """Its NOTIFY went out when it was queued, and the worker slept to its poll."""
+    import threading
+
+    from shoc.db import pool
+
+    done = threading.Event()
+
+    def handled(job, cfg):
+        if job["kind"] == "detect.run":
+            done.set()
+        return "ok"
+
+    monkeypatch.setattr(worker, "handle", handled)
+    monkeypatch.setattr(worker, "ensure_default_schedules", lambda *_: None)
+    jobs.enqueue(
+        conn, config.tenant_id, "detect.run", {}, run_at=datetime.now(UTC) + timedelta(seconds=3)
+    )
+    stop = threading.Event()
+
+    def idle() -> None:
+        try:
+            worker.run(config, poll_seconds=120, stop=stop)
+        finally:
+            pool.close()
+
+    thread = threading.Thread(target=idle)
+    thread.start()
+    try:
+        assert done.wait(10), "a job due in 3 s must not wait for the 120 s poll"
+    finally:
+        stop.set()
+        thread.join(timeout=10)
 
 
 def _failed_tries(conn, config, store, tries: int, ago: str) -> str:

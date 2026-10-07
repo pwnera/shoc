@@ -16,7 +16,7 @@ box:
 | Per source interval | `source.sync` | Pull a connector, then run detections |
 | 5 minutes | `detect.run` | Rules, IOC matching, open cases |
 | 1 minute | `stream.deliver` | Push events to signed webhooks |
-| 15 minutes | `case.sweep` | Send the crew back to every open case with something new |
+| 15 minutes | `case.sweep` | Send the crew back to every open case with something new; the retry clock for a failed run |
 | 30 minutes | `unattended` | Resolve what nobody approved: page, or abandon with a reason |
 | 1 hour | `ops.check` | Raise stale sources, noisy rules, stuck approvals |
 | 6 hours | `intel.refresh` | Pull feeds and retro-hunt what is new |
@@ -34,6 +34,19 @@ box:
 `manager.deliver` has no schedule: a page notice queues it, and the Manager
 decides whether one page goes out.
 
+The schedules are for what depends on the clock. What happens wakes the agent it
+concerns through `engine.WAKES` (RFC 0034), folded into one run per window:
+
+| Event | Wakes | Within |
+| --- | --- | --- |
+| A case opened or gained a finding; a person's message or an Ops nudge on it; an action on it ran, was undone or was rejected by a person | `case.sweep`, which sends the crew | 10 seconds |
+| CTI kept a report from a configured source or one a person handed in | `hunt.daily` and `detection.backlog` | 10 minutes |
+| A vendor pushed events (GitHub's webhook) | `detect.run` | 1 minute |
+
+The sweep leaves a case the crew is already queued or running on, and the
+Hunter's and the Detection Engineer's extra runs stop at the same daily token
+ceilings as their scheduled ones.
+
 Scale by running more workers: jobs are claimed with `SELECT … FOR UPDATE SKIP
 LOCKED`, so they never collide. The cron leader holds a Postgres advisory lock
 for as long as its session lives; every other worker asks for the lock on each
@@ -46,7 +59,8 @@ exits so that its lock frees and its supervisor restarts it.
 
 Two of these exist because nobody is watching. `case.sweep` asks which open cases
 have something new since the crew last worked them (a detection, a completed
-action, a fact somebody posted) and sends the crew back. `unattended` gives a deadline to everything whose
+action, a fact somebody posted) and sends the crew back; the events above wake it
+at once, and its schedule catches a run that failed. `unattended` gives a deadline to everything whose
 resting state was an approval, and it is the reason a running install needs no
 clicks. Both are idempotent, and both stand down while the model provider is
 failing rather than spending a case's retries on an outage.
