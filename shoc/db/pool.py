@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import socket
 import threading
 from collections.abc import Mapping, Sequence
 from typing import Any, LiteralString, cast
@@ -16,6 +18,10 @@ type Params = Sequence[Any] | Mapping[str, Any] | None
 type Conn = psycopg.Connection[DictRow]
 
 _local = threading.local()
+
+# Every session this process opens is named after it, so a job whose worker has
+# no session left can be put back at once (`jobs.requeue_stale`).
+PROCESS = f"{socket.gethostname()}:{os.getpid()}"
 
 
 def q(text: str) -> LiteralString:
@@ -37,7 +43,9 @@ def connect(config: Config | None = None) -> Conn:
         return conn
     if not cfg.dsn:
         raise ConfigError("SHOC_DSN is not set")
-    conn = psycopg.Connection[DictRow].connect(cfg.dsn, row_factory=dict_row, autocommit=True)
+    conn = psycopg.Connection[DictRow].connect(
+        cfg.dsn, row_factory=dict_row, autocommit=True, application_name=PROCESS
+    )
     _local.conn = conn
     return conn
 
@@ -70,7 +78,7 @@ def connect_readonly(config: Config | None = None) -> Conn | None:
     conn = getattr(_local, "readonly", None)
     if conn is None or conn.closed:
         conn = psycopg.Connection[DictRow].connect(
-            cfg.readonly_dsn, row_factory=dict_row, autocommit=True
+            cfg.readonly_dsn, row_factory=dict_row, autocommit=True, application_name=PROCESS
         )
         _local.readonly = conn
     return conn

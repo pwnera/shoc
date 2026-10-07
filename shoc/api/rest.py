@@ -357,9 +357,9 @@ def build_app(config: Config | None = None) -> Starlette:
                     engine.publish(
                         ctx.db,
                         ctx.tenant_id,
-                        "events.pushed",
+                        "events.loaded",
                         source,
-                        {"loaded": result.data.loaded},
+                        {"loaded": result.data.loaded, "pushed": True},
                     )
                 return result
 

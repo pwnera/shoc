@@ -447,9 +447,13 @@ def run(
                 if shift:
                     for row in rows:
                         row["time"] = replay.shift_time(row["time"], shift)
-                stats.loaded += batchwriter.load(store, rows).rows
+                added = batchwriter.load(store, rows).rows
+                stats.loaded += added
                 if conn is not None:
-                    batchwriter.loaded(conn, tenant_id, rows)
+                    # A page read again adds nothing. Stamped as a load, it woke
+                    # every rule of an idle cycle (D71).
+                    if added:
+                        batchwriter.loaded(conn, tenant_id, rows)
                     if persist:
                         history(conn, tenant_id, source, rows, store)
             stats.cursor = page.cursor

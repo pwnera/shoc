@@ -427,6 +427,46 @@ def test_a_stale_running_job_is_requeued(conn, config, clean):
     assert row and row["state"] == "pending"
 
 
+def test_a_job_whose_worker_has_no_session_left_comes_back_at_once(conn, config, clean):
+    """A container restart killed a sync mid-job; its row waited half an hour."""
+    from shoc.db import pool
+
+    pool.connect(config)  # this process has a session, named after it
+    job_id = jobs.enqueue(conn, config.tenant_id, "detect.run", {})
+    jobs.claim(conn, 1)
+    jobs.requeue_stale(conn)
+    row = fetch_one(conn, "SELECT state FROM shoc.jobs WHERE job_id = %s", (job_id,))
+    assert row and row["state"] == "running", "a live worker keeps its job"
+    execute(conn, "UPDATE shoc.jobs SET locked_by = 'gone:1' WHERE job_id = %s", (job_id,))
+    assert jobs.requeue_stale(conn) == 1
+    row = fetch_one(conn, "SELECT state FROM shoc.jobs WHERE job_id = %s", (job_id,))
+    assert row and row["state"] == "pending", "a dead one's does not wait half an hour"
+
+
+def test_a_schedule_queues_nothing_while_its_last_job_waits(conn, config):
+    """A sync that outlasted its interval gained a copy on every tick, and the queue grew."""
+
+    def due_again() -> None:
+        # A second on, so each tick's job would have a key of its own.
+        time.sleep(1.1)
+        execute(conn, "UPDATE shoc.schedules SET next_run_at = now() - interval '1 second'")
+
+    def queued() -> int:
+        row = fetch_one(conn, "SELECT count(*) AS n FROM shoc.jobs WHERE kind = 'detect.run'")
+        return int(row["n"]) if row else 0
+
+    jobs.upsert_schedule(conn, f"{config.tenant_id}:detect", config.tenant_id, "detect.run", 1)
+    due_again()
+    jobs.tick(conn)
+    due_again()
+    jobs.tick(conn)
+    assert queued() == 1
+    execute(conn, "UPDATE shoc.jobs SET state = 'done' WHERE kind = 'detect.run'")
+    due_again()
+    jobs.tick(conn)
+    assert queued() == 2, "once it has run, the next one is queued"
+
+
 def test_only_one_worker_becomes_the_cron_leader(conn, config):
     import psycopg
     from psycopg.rows import DictRow, dict_row
@@ -1008,7 +1048,11 @@ def test_a_refusing_source_does_not_park_a_job_every_cycle(conn, ctx, store, con
     with mock.patch("shoc.ingest.connectors.base.run", return_value=refused):
         summary = worker.handle(job, config)
     assert "401" in summary, "the worker still says what happened"
-    assert "rule(s)" in summary, "and carries on with the detection cycle"
+    assert not fetch_one(
+        conn,
+        "SELECT 1 FROM shoc.jobs WHERE tenant_id = %s AND kind = 'detect.run'",
+        (config.tenant_id,),
+    ), "and a sync that loaded nothing wakes no detection run"
 
 
 def test_a_refusing_source_still_fails_the_call_itself(ctx, store, config, clean):
@@ -1078,6 +1122,8 @@ def test_a_scheduled_sync_loads_through_the_writer_role(conn, store, config, cle
     with mock.patch("shoc.ingest.connectors.get", return_value=okta):
         summary = worker.handle(job, config)
     assert "fetched 1, loaded 1" in summary
+    woken = fetch_all(conn, "SELECT kind FROM shoc.jobs WHERE tenant_id = %s", (config.tenant_id,))
+    assert "detect.run" in [w["kind"] for w in woken], "what it loaded wakes detection (RFC 0034)"
 
 
 def test_the_hourly_check_tells_the_stream_an_ongoing_alert_once(conn, config):

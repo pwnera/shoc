@@ -40,6 +40,12 @@ happened. Every other path waited for a timer:
 | CTI kept a report naming techniques no rule maps to | the Detection Engineer | up to a day (`detection.backlog`) |
 | GitHub pushed a webhook | detection | up to 15 minutes on a warehouse (`detect.run`) |
 
+Detection had the opposite problem. Every `source.sync` job ran the whole rule set
+when its pull ended, whether it loaded anything or not. On the Databricks instance
+that was 182 queries and about two minutes per sync against six seconds of
+pulling, three sources every five minutes: more work than the one worker could
+finish, so the crew's jobs waited up to 18 minutes behind syncs.
+
 ## Design
 
 `engine.publish` calls `engine.wake` after it writes the event. `wake` looks the
@@ -51,7 +57,7 @@ type up in `WAKES`:
 | `openspace.message` from a person, or an `inject` | `case.sweep` | 10 s |
 | `action.executed`, `action.rolled_back`, `action.rejected` by a person | `case.sweep` | 10 s |
 | `intel.report` | `hunt.daily`, `detection.backlog` | 600 s |
-| `events.pushed` | `detect.run` | 60 s |
+| `events.loaded` | `detect.run` | 60 s |
 
 The job's `run_at` is the end of the window and its idempotency key names the
 window, so every event is followed by a run within the window and a burst costs
@@ -59,9 +65,11 @@ one run. A window cannot swallow an event: the job it would join has not run yet
 
 Two new event types carry what had no event before. `intel.report` is published
 when CTI keeps a report from a configured source or one a person handed in (the
-reports D79 lets steer the agendas). `events.pushed` is published when a vendor
-push loads events. `openspace.message` now says who spoke (`principal`), so the
-crew's own messages during a run wake nothing; the run sweeps when it ends.
+reports D79 lets steer the agendas). `events.loaded` is published when a pull
+(`source.sync`) or a vendor push loads rows; a sync no longer runs detection
+itself, so the polls of one cycle, which the scheduler starts together (D71), are
+read by one detection run. `openspace.message` now says who spoke (`principal`),
+so the crew's own messages during a run wake nothing; the run sweeps when it ends.
 
 Waking more often must not double the work:
 
@@ -80,6 +88,16 @@ next pending job falls due (`jobs.seconds_to_next`), with the poll as the longes
 wait. Timed jobs that were already there (an action's expiry, a playbook's timer,
 a held page) are on time too.
 
+The queue stops growing when work outlasts its interval:
+
+- A schedule queues no job while its last one is pending or running. Every tick
+  used to add another sync of a source whose previous sync had not started.
+- Every session a process opens carries its name (`application_name`), and a
+  running job whose worker has no session left goes back to the queue on the
+  next pass. A job held by a container that was restarted waited 30 minutes.
+- A page a connector read again and that added no row is no longer recorded as
+  a load, so the rules over an idle source stay idle (D71).
+
 ## What does not change
 
 The schedules stay, for what depends on the clock: the sweep at 15 minutes is
@@ -95,5 +113,9 @@ dependency.
   agent, and with no webhook configured a run is one query.
 - A finding Sentinel attaches to another open case publishes no event; the
   receiving case's next event or sweep picks it up.
-- The worker runs the jobs it claims one after another, so a slow source sync
-  still holds up a crew run queued behind it. That is a separate change.
+- The worker runs the jobs it claims one after another, so a long job still
+  holds up a crew run queued behind it. Running more workers is the scaling knob
+  (D6); a priority between job kinds is a separate change.
+- Source schedules set before a deployment moved to a warehouse keep their
+  interval; `source.configure` applies the warehouse's 900-second floor only when
+  it runs.

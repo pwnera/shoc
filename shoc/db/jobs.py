@@ -8,15 +8,13 @@ run the scheduler loop and only one of them actually ticks.
 from __future__ import annotations
 
 import json
-import os
-import socket
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from shoc.db.pool import Conn, execute, fetch_all, fetch_one
+from shoc.db.pool import PROCESS, Conn, execute, fetch_all, fetch_one
 
 CRON_LOCK = 0x4853_4F43  # "SHOC"
-WORKER_ID = f"{socket.gethostname()}:{os.getpid()}"
+WORKER_ID = PROCESS
 
 
 def now() -> datetime:
@@ -149,13 +147,21 @@ def tick(conn: Conn) -> int:
     """
     due = fetch_all(
         conn,
-        """UPDATE shoc.schedules
+        """UPDATE shoc.schedules s
            SET next_run_at = to_timestamp(
                (floor(extract(epoch FROM now()) / interval_seconds) + 1) * interval_seconds)
            WHERE enabled AND next_run_at <= now()
-           RETURNING schedule_id, tenant_id, kind, payload, next_run_at""",
+           RETURNING schedule_id, tenant_id, kind, payload, next_run_at,
+                     EXISTS (SELECT 1 FROM shoc.jobs j
+                             WHERE j.tenant_id = s.tenant_id AND j.kind = s.kind
+                               AND j.payload = s.payload
+                               AND j.state IN ('pending', 'running')) AS queued""",
     )
     for s in due:
+        # The last one has not run yet. A second copy would only repeat it, and
+        # a queue a slow warehouse cannot drain grew by one per tick.
+        if s["queued"]:
+            continue
         enqueue(
             conn,
             s["tenant_id"],
@@ -204,9 +210,17 @@ def overdue_schedules(conn: Conn, tenant_id: str) -> list[str]:
 
 
 def requeue_stale(conn: Conn, older_than: timedelta = timedelta(minutes=30)) -> int:
+    """Put back running jobs held too long, or whose worker has no session left.
+
+    A worker killed mid-job (a container restart) takes its sessions with it,
+    and its jobs come back on the next pass instead of half an hour later.
+    """
     return execute(
         conn,
-        """UPDATE shoc.jobs SET state='pending', locked_by=NULL
-           WHERE state='running' AND locked_at < now() - %s""",
+        """UPDATE shoc.jobs j SET state='pending', locked_by=NULL
+           WHERE state='running'
+             AND (locked_at < now() - %s
+                  OR NOT EXISTS (SELECT 1 FROM pg_stat_activity a
+                                 WHERE a.application_name = j.locked_by))""",
         (older_than,),
     )

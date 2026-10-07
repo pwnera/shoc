@@ -13,7 +13,7 @@ box:
 
 | Every | Job | What it does |
 | --- | --- | --- |
-| Per source interval | `source.sync` | Pull a connector, then run detections |
+| Per source interval | `source.sync` | Pull a connector; what it loaded wakes detection |
 | 5 minutes | `detect.run` | Rules, IOC matching, open cases |
 | 1 minute | `stream.deliver` | Push events to signed webhooks |
 | 15 minutes | `case.sweep` | Send the crew back to every open case with something new; the retry clock for a failed run |
@@ -41,7 +41,7 @@ concerns through `engine.WAKES` (RFC 0034), folded into one run per window:
 | --- | --- | --- |
 | A case opened or gained a finding; a person's message or an Ops nudge on it; an action on it ran, was undone or was rejected by a person | `case.sweep`, which sends the crew | 10 seconds |
 | CTI kept a report from a configured source or one a person handed in | `hunt.daily` and `detection.backlog` | 10 minutes |
-| A vendor pushed events (GitHub's webhook) | `detect.run` | 1 minute |
+| A source loaded rows, pulled or pushed (GitHub's webhook) | `detect.run`, once for the cycle's polls | 1 minute |
 
 The sweep leaves a case the crew is already queued or running on, and the
 Hunter's and the Detection Engineer's extra runs stop at the same daily token
@@ -55,7 +55,10 @@ worker takes the lock on its next pass. When the leader's node is lost or cut
 off, nothing closes its session; the lock holder asks Postgres for TCP keepalive
 probes, so the server drops the session and the lock within about 90 seconds. A
 worker whose loop has not started a pass in 30 minutes is stuck in a job, and
-exits so that its lock frees and its supervisor restarts it.
+exits so that its lock frees and its supervisor restarts it. Every session a
+worker opens is named after it, so the jobs of a worker that died, or of a
+container that was restarted mid-job, go back to the queue on the leader's next
+pass. A schedule queues no new job while its last one has not run.
 
 Two of these exist because nobody is watching. `case.sweep` asks which open cases
 have something new since the crew last worked them (a detection, a completed

@@ -558,6 +558,11 @@ def sync_source(ctx: Context, inp: SyncInput) -> Result:
     finally:
         if store is not ctx.store:
             store.close()
+    if stats.loaded:
+        from shoc.cases import engine
+
+        # Detection reads it now, once for every source of the cycle (RFC 0034).
+        engine.publish(ctx.db, ctx.tenant_id, "events.loaded", inp.source, {"loaded": stats.loaded})
     if stats.error:
         # `run` has already written the failure to connector_state, so health
         # knows. Raising is what makes the shell exit non-zero and REST answer

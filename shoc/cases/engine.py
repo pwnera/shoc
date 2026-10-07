@@ -675,8 +675,9 @@ WAKES: dict[str, tuple[tuple[str, int], ...]] = {
     # A report CTI kept: the Hunter works the hunts it filed and runs what is
     # due, and the Detection Engineer takes the techniques no rule maps to.
     "intel.report": (("hunt.daily", 600), ("detection.backlog", 600)),
-    # What a vendor pushed is read for detections now, not at the next cycle.
-    "events.pushed": (("detect.run", 60),),
+    # What a source loaded, pulled or pushed, is read for detections now and
+    # once for the whole cycle's polls, not by each sync or at the next cycle.
+    "events.loaded": (("detect.run", 60),),
 }
 
 

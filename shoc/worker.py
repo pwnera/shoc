@@ -195,13 +195,12 @@ def _handle(job: dict[str, Any], config: Config) -> str:
         # which is what health reads. Letting the job fail too would park one
         # row per polling cycle for as long as the credential stays wrong, and
         # say the same thing twice.
+        # What it loaded wakes one detection run for every source of the
+        # cycle (`events.loaded`); on a warehouse each run is minutes (D71).
         try:
-            summary = call("source.sync", ctx, {"source": payload["source"]}).summary
+            return call("source.sync", ctx, {"source": payload["source"]}).summary
         except UpstreamError as exc:
-            summary = str(exc)
-        follow = call("detect.run", ctx, {})
-        _queue_investigations(ctx, follow.data.cases_opened)
-        return f"{summary} {follow.summary}"
+            return str(exc)
     if kind == "detect.run":
         result = call(
             "detect.run", ctx, {k: v for k, v in payload.items() if k in ("rule_id", "lookback")}
@@ -685,7 +684,7 @@ def ensure_default_schedules(conn: Any, config: Config, tenant: str = "") -> Non
 
 
 # A worker whose loop has not come round in this long is hung, stuck in a job or
-# a call that never returns. `requeue_stale` gave its jobs to other workers at 15
+# a call that never returns. `requeue_stale` gave its jobs to other workers at 30
 # minutes. Exiting ends its session, which frees the cron lock for a follower,
 # and the supervisor (`restart: unless-stopped`, a Deployment) starts a fresh one.
 HUNG_AFTER_SECONDS = 30 * 60
@@ -707,7 +706,7 @@ def listen(config: Config) -> Any:
     poll then does all the waking, as it did before.
     """
     try:
-        conn = psycopg.connect(config.dsn, autocommit=True)
+        conn = psycopg.connect(config.dsn, autocommit=True, application_name=jobs.WORKER_ID)
         conn.execute("LISTEN shoc_jobs")
         return conn
     except psycopg.Error as exc:
