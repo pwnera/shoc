@@ -1,0 +1,29 @@
+[
+  {
+    "id": "cf-delete-shoc",
+    "action": {
+      "time": "",
+      "type": "delete",
+      "description": "delete token",
+      "result": "success"
+    },
+    "actor": {
+      "email": "operator@example.com",
+      "ip_address": "203.0.113.20",
+      "type": "user"
+    },
+    "account": {
+      "id": "acc-0example"
+    },
+    "resource": {
+      "product": "api_tokens",
+      "response": {
+        "id": "cf-token-shoc"
+      }
+    },
+    "raw": {
+      "method": "DELETE",
+      "uri": "/accounts/acc-0example/tokens/cf-token-shoc"
+    }
+  }
+]

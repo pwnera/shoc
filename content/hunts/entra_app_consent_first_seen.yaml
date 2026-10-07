@@ -1,0 +1,42 @@
+id: entra_app_consent_first_seen
+title: An application is consented to that nobody in the tenant consented to before
+hypothesis: >
+  A consent phish shows up as an application nobody in the company has granted
+  before. Most consents go to the same handful of tools; a new one with mail or
+  file scopes keeps reading after every password reset. Once this has run for a
+  while, the apps it has seen are the evidence to narrow the consent rule to
+  unfamiliar ones.
+attack: [T1528]
+logsource:
+  product: entra
+  service: audit_logs
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation|contains: consent to application
+  condition: selection
+baseline:
+  first_seen: [resource.uid]
+  lookback: 60d
+pivot: [resource.uid, actor.user.name, src_endpoint.ip]
+triage: >
+  Which application is this, who consented, and to which permissions? A tool
+  the company adopted this week explains it; Mail.Read or Files.ReadWrite.All
+  for an app nobody can name does not.
+follow_up:
+  - How many users consented to the same app, and when?
+  - Who published the app, and is it verified?
+sensitive: true
+sources:
+  - name: Elastic
+    title: M365 Identity OAuth Illicit Consent Grant by Rare Client and User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/initial_access_identity_illicit_consent_grant_via_registered_application
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: End User Consent
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_app_end_user_consent.yml
+    author: Bailey Bercik '@baileybercik', Mark Morowczynski '@markmorow'
+    license: DRL-1.1
+    relation: inspired

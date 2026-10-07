@@ -1,0 +1,17 @@
+# A normal day for an admin on Okta and GitHub (AGT-6).
+id: benign_admin_day
+title: An ordinary admin day
+description: >
+  People sign in, approve their MFA prompts, get added to an app, join a
+  repository and open pull requests, and somebody adds branch protection. This
+  scenario exists to measure noise on the identity and code-hosting side, where
+  a false positive costs the most trust.
+source: okta
+entity: alice@acme.com
+expected_rules: []
+must_not_fire:
+  - okta_login_failure_burst
+  - okta_mfa_push_fatigue
+  - okta_admin_console_sign_in
+  - okta_security_policy_changed
+expected_verdict: benign_expected

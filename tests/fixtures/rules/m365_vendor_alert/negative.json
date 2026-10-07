@@ -1,0 +1,51 @@
+[
+  {
+    "Id": "m365-AlertTriggered-informational",
+    "Operation": "AlertTriggered",
+    "OrganizationId": "org-1",
+    "RecordType": 40,
+    "ResultStatus": "Succeeded",
+    "UserKey": "SecurityComplianceAlerts",
+    "UserType": 4,
+    "Workload": "SecurityComplianceCenter",
+    "ObjectId": "alert-1",
+    "UserId": "SecurityComplianceAlerts",
+    "AlertId": "alert-1",
+    "Category": "ThreatManagement",
+    "Name": "Phish delivered due to an ETR override",
+    "Severity": "Informational",
+    "Source": "Office 365 Security & Compliance",
+    "Status": "Active"
+  },
+  {
+    "Id": "m365-MCAS-medium",
+    "Operation": "MCAS_ALERT_ANUBIS_DETECTION_VELOCITY",
+    "OrganizationId": "org-1",
+    "RecordType": 98,
+    "UserKey": "bob@example.com",
+    "UserType": 0,
+    "Workload": "MCAS",
+    "UserId": "bob@example.com",
+    "AlertDisplayName": "Impossible travel activity",
+    "AlertSeverity": "Medium",
+    "ClientIPs": ["198.51.100.193"],
+    "ObjectId": "643fdd70e8ff3e15bba6dfd8",
+    "ResultStatus": "New"
+  },
+  {
+    "Id": "m365-AlertUpdated-high",
+    "Operation": "AlertUpdated",
+    "OrganizationId": "org-1",
+    "RecordType": 40,
+    "ResultStatus": "Succeeded",
+    "UserKey": "SecurityComplianceAlerts",
+    "UserType": 4,
+    "Workload": "SecurityComplianceCenter",
+    "ObjectId": "alert-2",
+    "UserId": "SecurityComplianceAlerts",
+    "AlertId": "alert-2",
+    "Name": "Email messages containing malicious URL removed after delivery",
+    "Severity": "High",
+    "Status": "Resolved"
+  }
+]

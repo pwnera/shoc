@@ -1,0 +1,42 @@
+[
+  {
+    "_document_id": "gh-pat.request_denied",
+    "action": "personal_access_token.request_denied",
+    "actor": "dana",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "user": "eve",
+    "user_programmatic_access_name": "repo-sync",
+    "user_programmatic_access_request_id": 77,
+    "repository_selection": "all",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-pat.request_created",
+    "action": "personal_access_token.request_created",
+    "actor": "eve",
+    "actor_id": 5151,
+    "actor_ip": "192.0.2.11",
+    "org": "acme",
+    "user": "eve",
+    "user_programmatic_access_id": 3301,
+    "user_programmatic_access_name": "repo-sync",
+    "user_programmatic_access_request_id": 77,
+    "repository_selection": "all",
+    "operation_type": "create"
+  },
+  {
+    "_document_id": "gh-pat.access_revoked",
+    "action": "personal_access_token.access_revoked",
+    "actor": "dana",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "user": "eve",
+    "user_programmatic_access_id": 3301,
+    "user_programmatic_access_name": "repo-sync",
+    "repository_selection": "all",
+    "operation_type": "remove"
+  }
+]

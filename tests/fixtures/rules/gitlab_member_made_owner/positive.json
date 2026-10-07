@@ -1,0 +1,69 @@
+[
+  {
+    "id": 9101,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "member_updated",
+    "details": {
+      "event_name": "member_updated",
+      "custom_message": "Membership updated",
+      "author_name": "Mallory",
+      "author_class": "User",
+      "author_email": "mallory@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform",
+      "change": "access_level",
+      "from": "Default role: Developer",
+      "to": "Default role: Owner",
+      "as": "Default role: Owner",
+      "member_id": 311,
+      "target_id": 99,
+      "target_type": "User",
+      "target_details": "Marc Example"
+    }
+  },
+  {
+    "id": 9102,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "member_created",
+    "details": {
+      "event_name": "member_created",
+      "custom_message": "Membership created",
+      "author_name": "Mallory",
+      "author_class": "User",
+      "author_email": "mallory@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform",
+      "add": "user_access",
+      "as": "Default role: Owner",
+      "member_id": 312,
+      "target_id": 100,
+      "target_type": "User",
+      "target_details": "Backup Admin"
+    }
+  },
+  {
+    "id": 9105,
+    "author_id": 42,
+    "entity_id": 18,
+    "entity_type": "Project",
+    "event_name": "member_updated",
+    "details": {
+      "event_name": "member_updated",
+      "author_name": "Mallory",
+      "author_class": "User",
+      "author_email": "mallory@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform/api",
+      "change": "access_level",
+      "from": "Maintainer",
+      "to": "Owner",
+      "target_id": 101,
+      "target_type": "User",
+      "target_details": "Marc Example"
+    }
+  }
+]

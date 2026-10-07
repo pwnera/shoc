@@ -1,0 +1,62 @@
+[
+  {
+    "eventVersion": "1.08",
+    "eventID": "ct-ConsoleLogin-iam-user",
+    "eventName": "ConsoleLogin",
+    "eventSource": "signin.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice"
+    },
+    "requestParameters": null,
+    "responseElements": {
+      "ConsoleLogin": "Success"
+    },
+    "additionalEventData": {
+      "LoginTo": "https://console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true",
+      "MobileVersion": "No",
+      "MFAUsed": "No"
+    },
+    "readOnly": false,
+    "eventType": "AwsConsoleSignIn",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.08",
+    "eventID": "ct-ConsoleLogin-root",
+    "eventName": "ConsoleLogin",
+    "eventSource": "signin.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "Root",
+      "principalId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:root",
+      "accountId": "123456789012",
+      "accessKeyId": ""
+    },
+    "requestParameters": null,
+    "responseElements": {
+      "ConsoleLogin": "Success"
+    },
+    "additionalEventData": {
+      "LoginTo": "https://console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true",
+      "MobileVersion": "No",
+      "MFAUsed": "No"
+    },
+    "readOnly": false,
+    "eventType": "AwsConsoleSignIn",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  }
+]

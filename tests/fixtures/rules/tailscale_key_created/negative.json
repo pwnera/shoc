@@ -1,0 +1,72 @@
+[
+  {
+    "action": "CREATE",
+    "actor": {
+      "displayName": "OAuth client",
+      "id": "kq7Rk2mNb11CNTRL",
+      "loginName": "",
+      "type": "OAUTH_CLIENT"
+    },
+    "eventGroupID": "b1c2d3e4f5061728394a5b6c7d8e9f01",
+    "origin": "CONFIG_API",
+    "target": {
+      "id": "kbX5cLm3j11CNTRL",
+      "name": "Auth key",
+      "type": "API_KEY"
+    },
+    "type": "CONFIG",
+    "new": {
+      "expires": "2026-12-29 22:28:44.261806069 +0000 UTC",
+      "authTags": [
+        "tag:ci"
+      ],
+      "description": "build-edge",
+      "domainLevel": true,
+      "capabilities": [
+        "NODE_AUTH",
+        "NO_MACHINE_AUTH"
+      ]
+    },
+    "event": "API_KEY.CREATE",
+    "tailnet": "example.com"
+  },
+  {
+    "action": "CREATE",
+    "actor": {
+      "displayName": "OAuth client",
+      "id": "kq7Rk2mNb11CNTRL",
+      "loginName": "",
+      "type": "OAUTH_CLIENT"
+    },
+    "eventGroupID": "c1d2e3f405162738495a6b7c8d9e0f02",
+    "origin": "CONFIG_API",
+    "target": {
+      "id": "tskey-token-kq7Rk2mNb11-redacted",
+      "name": "OAuth access token",
+      "type": "OAUTH_ACCESS_TOKEN"
+    },
+    "type": "CONFIG",
+    "actionDetails": "scopes - logs:configuration:read",
+    "event": "OAUTH_ACCESS_TOKEN.CREATE",
+    "tailnet": "example.com"
+  },
+  {
+    "action": "REVOKE",
+    "actor": {
+      "displayName": "Mallory",
+      "id": "u999CNTRL",
+      "loginName": "mallory@example.com",
+      "type": "USER"
+    },
+    "eventGroupID": "9f880e02981e341447958344b7b40b03",
+    "origin": "ADMIN_CONSOLE",
+    "target": {
+      "id": "k6r3fm3CNTRL",
+      "name": "Control API key",
+      "type": "API_KEY"
+    },
+    "type": "CONFIG",
+    "event": "API_KEY.REVOKE",
+    "tailnet": "example.com"
+  }
+]

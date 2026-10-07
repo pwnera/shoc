@@ -1,0 +1,37 @@
+id: entra_temporary_access_pass_created
+title: Temporary Access Pass issued for a user
+description: >
+  An admin issued a Temporary Access Pass, a passcode that signs in as the user
+  without their password or MFA, and can register new MFA methods. Any admin
+  with the right role can mint one for any account, Global Admins included.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.65
+attack: [T1098.005, T1078.004]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection:
+    api.operation|contains: registered security info
+    message|contains: temporary access pass
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip, message]
+sources:
+  - name: Sigma
+    title: Temporary Access Pass Added To An Account
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_tap_added.yml
+    author: Mark Morowczynski '@markmorow', Yochana Henderson, '@Yochana-H'
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: Entra ID Temporary Access Pass Created for User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_temporary_access_pass_created
+    license: Elastic-2.0
+    relation: adapted

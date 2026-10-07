@@ -1,0 +1,28 @@
+# The Integrator when a vendor renames a field (D74): the column a rule reads
+# goes empty, and the repair has to point it at the field the vendor now sends.
+# Records carry no time: the replay stamps them as just received.
+role: integrator
+probes:
+  - id: tailscale_target_renamed
+    source: tailscale
+    records:
+      - {event: NODE.KEY_EXPIRY.DISABLE, action: UPDATE, actor: {loginName: ana@example.com, id: u1}, target: {type: node, nodeId: n1}, tailnet: example.com}
+      - {event: NODE.KEY_EXPIRY.DISABLE, action: UPDATE, actor: {loginName: ana@example.com, id: u1}, target: {type: node, nodeId: n2}, tailnet: example.com}
+      - {event: NODE.CREATE, action: CREATE, actor: {loginName: ben@example.com, id: u2}, target: {type: node, nodeId: n3}, tailnet: example.com}
+      - {event: NODE.DELETE, action: DELETE, actor: {loginName: ben@example.com, id: u2}, target: {type: node, nodeId: n4}, tailnet: example.com}
+      - {event: NODE.KEY_EXPIRY.DISABLE, action: UPDATE, actor: {loginName: ana@example.com, id: u1}, target: {type: node, nodeId: n5}, tailnet: example.com}
+    expect:
+      maps:
+        resource_uid: n1
+
+  - id: github_actor_renamed
+    source: github
+    records:
+      - {action: repo.access, actor_login: mallory, actor_ip: 203.0.113.9, repo: acme/payments, org: acme, _document_id: gh-ip-1}
+      - {action: repo.download_zip, actor_login: mallory, actor_ip: 203.0.113.9, repo: acme/payments, org: acme, _document_id: gh-ip-2}
+      - {action: org.add_member, actor_login: alice, actor_ip: 198.51.100.4, user: bob, org: acme, _document_id: gh-ip-3}
+      - {action: repo.access, actor_login: alice, actor_ip: 198.51.100.4, repo: acme/site, org: acme, _document_id: gh-ip-4}
+      - {action: protected_branch.destroy, actor_login: mallory, actor_ip: 203.0.113.9, repo: acme/payments, org: acme, _document_id: gh-ip-5}
+    expect:
+      maps:
+        actor_user_name: mallory

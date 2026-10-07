@@ -1,0 +1,50 @@
+id: aws_ses_identity_verified_then_deleted
+title: SES sender verified and then deleted
+description: >
+  The same identity verified an email address or domain for SES sending and
+  deleted it again within three hours. Spammers with a stolen key add their
+  own sender, send, and remove it to leave less behind; in a case Unit 42
+  investigated the delete came 2 hours 22 minutes after the verify. The
+  company's own senders are verified once and kept.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1583.001, T1070]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  verify:
+    api.service.name: ses.amazonaws.com
+    api.operation: [VerifyEmailIdentity, VerifyEmailAddress, VerifyDomainIdentity, VerifyDomainDkim, CreateEmailIdentity]
+    status: Success
+  delete:
+    api.service.name: ses.amazonaws.com
+    api.operation: [DeleteIdentity, DeleteEmailIdentity, DeleteVerifiedEmailAddress]
+    status: Success
+  sequence:
+    by: [actor.user.uid]
+    first: verify
+    then: delete
+    within: 3h
+  timeframe: 15m
+entity: [actor.session.uid, actor.user.name]
+fields: [actor.user.name, actor.user.uid, actor.session.uid, src_endpoint.ip, api.operation, raw.requestParameters.identity, raw.requestParameters.emailIdentity, cloud.region]
+sources:
+  - name: Elastic
+    title: AWS SES Email Identity Verified Then Deleted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/resource_development_ses_identity_verified_then_deleted
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: SES Identity Has Been Deleted
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_delete_identity.yml
+    author: Janantha Marasinghe
+    license: DRL-1.1
+    relation: inspired
+  - name: Unit 42
+    title: "Compromised Cloud Compute Credentials: Case Studies From the Wild"
+    url: https://unit42.paloaltonetworks.com/compromised-cloud-compute-credentials/
+    relation: inspired

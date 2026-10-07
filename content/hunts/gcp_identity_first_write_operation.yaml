@@ -1,0 +1,39 @@
+id: gcp_identity_first_write_operation
+title: A GCP identity makes a change it never made before
+hypothesis: >
+  A stolen session or a leaked service account key is used to do what its
+  owner never does: grant a role, open a firewall, make a key. Each person and
+  service account here makes a narrow set of changes, so the first of a new
+  kind is worth a look even when no rule fires. Google's own agents are left
+  out; a service account a team runs is not, because a leaked key is the main case.
+attack: [T1078.004, T1098]
+logsource:
+  product: gcp
+  service: audit
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    activity_name: [Create, Update, Delete]
+    status: Success
+  filter_google_agent:
+    actor.user.name|endswith: [cloudservices.gserviceaccount.com, compute-system.iam.gserviceaccount.com, container-engine-robot.iam.gserviceaccount.com]
+  condition: selection and not filter_google_agent
+baseline:
+  first_seen: [actor.user.name, api.operation]
+  lookback: 30d
+pivot: [actor.user.name, actor.session.uid, src_endpoint.ip, cloud.account.uid]
+triage: >
+  Is there a deploy, a new tool or a new person that explains this identity
+  making this change for the first time? A service account doing something
+  outside its pipeline, from an address that is not the CI's, is the one to escalate.
+follow_up:
+  - Was the call signed with a key file, and was that key used from this address before?
+  - Did the same identity change IAM or logging in the same hour?
+sensitive: true
+sources:
+  - name: Elastic
+    title: Unusual GCP Event for a User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/ml_gcp_rare_method_by_user
+    license: Elastic-2.0
+    relation: inspired

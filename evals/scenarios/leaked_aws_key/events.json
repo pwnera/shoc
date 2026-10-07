@@ -1,0 +1,326 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-GetObject-198.51.100.20",
+    "eventName": "GetObject",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.20",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Object",
+        "ARN": "arn:aws:s3:::acme-artifacts/build.tar"
+      }
+    ],
+    "_repeat": 6
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-PutObject-198.51.100.20",
+    "eventName": "PutObject",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.20",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Object",
+        "ARN": "arn:aws:s3:::acme-artifacts/build.tar"
+      }
+    ],
+    "_repeat": 4
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-ListBuckets-203.0.113.55",
+    "eventName": "ListBuckets",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "_repeat": 18
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-DescribeInstances-203.0.113.55",
+    "eventName": "DescribeInstances",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "_repeat": 12
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-GetCallerIdentity-203.0.113.55",
+    "eventName": "GetCallerIdentity",
+    "eventSource": "sts.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "_repeat": 6
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-ListUsers-203.0.113.55",
+    "eventName": "ListUsers",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "_repeat": 4
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-ListRoles-203.0.113.55",
+    "eventName": "ListRoles",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "_repeat": 3
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-ListAttachedUserPolicies-203.0.113.55",
+    "eventName": "ListAttachedUserPolicies",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "_repeat": 2
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-ListAccessKeys-203.0.113.55",
+    "eventName": "ListAccessKeys",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "_repeat": 2
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-GetAccountAuthorizationDetails-203.0.113.55",
+    "eventName": "GetAccountAuthorizationDetails",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "_repeat": 1
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-DescribeRegions-203.0.113.55",
+    "eventName": "DescribeRegions",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "_repeat": 2
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-CreateUser-203.0.113.55",
+    "eventName": "CreateUser",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "errorCode": "AccessDenied",
+    "errorMessage": "AccessDenied: User is not authorized to perform this operation",
+    "_repeat": 7
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-AssumeRole-203.0.113.55",
+    "eventName": "AssumeRole",
+    "eventSource": "sts.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "errorCode": "AccessDenied",
+    "errorMessage": "AccessDenied: User is not authorized to perform this operation",
+    "_repeat": 6
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-GetObject-203.0.113.55",
+    "eventName": "GetObject",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Object",
+        "ARN": "arn:aws:s3:::acme-customer-data/export.csv"
+      }
+    ],
+    "_repeat": 64
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-CreateAccessKey-203.0.113.55",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "leak-StopLogging-203.0.113.55",
+    "eventName": "StopLogging",
+    "eventSource": "cloudtrail.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Linux/6.8",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEPLOYCI",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  }
+]

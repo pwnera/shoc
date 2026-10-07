@@ -1,0 +1,55 @@
+id: entra_attack_tool_user_agent
+title: Entra ID reached by a known attack tool
+description: >
+  A sign-in or directory change came from the default user agent of
+  AzureHound, BloodHound, SharpHound, TeamFiltration, the Kali365 phishing kit,
+  or the Go fasthttp client behind the 2025 brute-force campaign against
+  Microsoft 365. These tools map the tenant or spray passwords at it, and
+  nobody in a small company runs them except a hired penetration tester.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.8
+attack: [T1087.004, T1069.003, T1110.003]
+logsource:
+  product: entra
+detection:
+  selection_hound:
+    http_request.user_agent|contains: [azurehound/, sharphound/, bloodhound/]
+  selection_teamfiltration:
+    http_request.user_agent|contains: Teams/1.3.00.30866 Chrome/80.0.3987.165 Electron/8.5.1
+  selection_kali365:
+    http_request.user_agent|startswith: kali365-live/
+  selection_fasthttp:
+    http_request.user_agent: fasthttp
+  condition: selection_hound or selection_teamfiltration or selection_kali365 or selection_fasthttp
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip, src_endpoint.asn, http_request.user_agent, status]
+sources:
+  - name: Elastic
+    title: Entra ID Sign-in BloodHound Suite User-Agent Detected
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/discovery_bloodhound_user_agents_detected
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Entra ID Kali365 Default User-Agent Detected
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_kali365_user_agent
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Entra ID Sign-in TeamFiltration User-Agent Detected
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/discovery_entra_id_teamfiltration_user_agents_detected
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Discovery Using AzureHound
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_ad_azurehound_discovery.yml
+    author: Janantha Marasinghe
+    license: DRL-1.1
+    relation: adapted
+  - name: SpearTip
+    title: fasthttp Used in New Bruteforce Campaign
+    url: https://us.zurichresilience.com/cybersecurity/articles-and-insights/insights/security-event-bulletins/fasthttp-used-in-new-bruteforce-campaign
+    relation: inspired

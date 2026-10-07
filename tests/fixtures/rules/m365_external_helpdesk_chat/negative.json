@@ -1,0 +1,36 @@
+[
+  {
+    "Id": "m365-ChatCreated-partner",
+    "Operation": "ChatCreated",
+    "OrganizationId": "org-1",
+    "RecordType": 25,
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "MicrosoftTeams",
+    "ClientIP": "198.51.100.20",
+    "CommunicationType": "OneOnOne",
+    "Members": [
+      { "OrganizationId": "00000000-005d-405d-805d-00000000005d", "DisplayName": "John Doe", "UPN": "john.doe@example.org" },
+      { "OrganizationId": "00000000-005e-405e-805e-00000000005e", "DisplayName": "Jane Doe", "UPN": "jane@example.com" }
+    ],
+    "ParticipantInfo": { "HasForeignTenantUsers": true, "HasGuestUsers": false }
+  },
+  {
+    "Id": "m365-ChatCreated-internal-helpdesk",
+    "Operation": "ChatCreated",
+    "OrganizationId": "org-1",
+    "RecordType": 25,
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "MicrosoftTeams",
+    "ClientIP": "198.51.100.20",
+    "CommunicationType": "OneOnOne",
+    "Members": [
+      { "OrganizationId": "00000000-005e-405e-805e-00000000005e", "DisplayName": "Helpdesk", "UPN": "helpdesk@example.com" },
+      { "OrganizationId": "00000000-005e-405e-805e-00000000005e", "DisplayName": "Jane Doe", "UPN": "jane@example.com" }
+    ],
+    "ParticipantInfo": { "HasForeignTenantUsers": false, "HasGuestUsers": false }
+  }
+]

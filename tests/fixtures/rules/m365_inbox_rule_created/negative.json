@@ -1,0 +1,182 @@
+[
+  {
+    "Id": "m365-New-InboxRule-newsletters",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:63070",
+    "ObjectId": "EXAMPLE01.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/example.onmicrosoft.com/jane/Newsletters",
+    "Parameters": [
+      {
+        "Name": "Name",
+        "Value": "Newsletters"
+      },
+      {
+        "Name": "From",
+        "Value": "news@example.org"
+      },
+      {
+        "Name": "MoveToFolder",
+        "Value": "Newsletters"
+      },
+      {
+        "Name": "StopProcessingRules",
+        "Value": "True"
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-UpdateInboxRules-removed",
+    "Operation": "UpdateInboxRules",
+    "OrganizationId": "org-1",
+    "RecordType": 2,
+    "ResultStatus": "Succeeded",
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11",
+    "OperationProperties": [
+      {
+        "Name": "RuleOperation",
+        "Value": "RemoveMailboxRule"
+      },
+      {
+        "Name": "RuleActions",
+        "Value": "[{\"ActionType\":\"Forward\",\"Recipients\":[\"assistant@example.com\"],\"ForwardFlags\":\"None\"}]"
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-inbox-clear",
+    "Operation": "Set-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "203.0.113.45:63070",
+    "ObjectId": "EXAMPLE01.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/example.onmicrosoft.com/jane/RULE_NAME",
+    "Parameters": [
+      {
+        "Name": "Identity",
+        "Value": "Jane\\Forward all"
+      },
+      {
+        "Name": "ForwardTo",
+        "Value": ""
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-UpdateInboxRules-ews-removed",
+    "Operation": "UpdateInboxRules",
+    "OrganizationId": "org-1",
+    "RecordType": 2,
+    "ResultStatus": "Succeeded",
+    "UserKey": "10032001A2B3C4D5",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11",
+    "ClientIPAddress": "198.51.100.11",
+    "ClientInfoString": "Client=WebServices;",
+    "MailboxOwnerUPN": "jane@example.com",
+    "OperationProperties": [
+      {
+        "Name": "Actions",
+        "Value": "ForwardToRecipientsAction"
+      },
+      {
+        "Name": "Provider",
+        "Value": "RuleOrganizer"
+      },
+      {
+        "Name": "Name",
+        "Value": "Forward to assistant"
+      },
+      {
+        "Name": "RuleOperation",
+        "Value": "Delete"
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-UpdateInboxRules-ews-move",
+    "Operation": "UpdateInboxRules",
+    "OrganizationId": "org-1",
+    "RecordType": 2,
+    "ResultStatus": "Succeeded",
+    "UserKey": "10032001A2B3C4D5",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11",
+    "ClientIPAddress": "198.51.100.11",
+    "ClientInfoString": "Client=WebServices;",
+    "MailboxOwnerUPN": "jane@example.com",
+    "OperationProperties": [
+      {
+        "Name": "Actions",
+        "Value": "MoveToFolderAction"
+      },
+      {
+        "Name": "Conditions",
+        "Value": "FromRecipientsCondition"
+      },
+      {
+        "Name": "Provider",
+        "Value": "RuleOrganizer"
+      },
+      {
+        "Name": "Name",
+        "Value": "Receipts"
+      },
+      {
+        "Name": "RuleOperation",
+        "Value": "Create"
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-New-InboxRule-archive",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:63072",
+    "AppPoolName": "MSExchangeOWAAppPool",
+    "ObjectId": "EXAMPLE01.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/example.onmicrosoft.com/jane\\Receipts",
+    "Parameters": [
+      {
+        "Name": "Name",
+        "Value": "Receipts"
+      },
+      {
+        "Name": "From",
+        "Value": "billing@example.org"
+      },
+      {
+        "Name": "MoveToFolder",
+        "Value": "Archive"
+      }
+    ],
+    "SessionId": "s-1"
+  }
+]

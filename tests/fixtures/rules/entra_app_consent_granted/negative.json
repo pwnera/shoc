@@ -1,0 +1,71 @@
+[
+  {
+    "id": "en-Update user",
+    "activityDisplayName": "Update user",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@acme.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "displayName": "jane@acme.com",
+        "id": "u-1"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Add app role assignment grant to user",
+    "activityDisplayName": "Add app role assignment grant to user",
+    "category": "UserManagement",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@acme.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "ServicePrincipal",
+        "displayName": "Payroll SSO",
+        "id": "sp-1"
+      },
+      {
+        "type": "User",
+        "userPrincipalName": "jane@acme.com",
+        "id": "u-1"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Add service principal by Microsoft",
+    "activityDisplayName": "Add service principal",
+    "category": "ApplicationManagement",
+    "result": "success",
+    "initiatedBy": {
+      "app": {
+        "displayName": "Microsoft Azure AD Internal - Jit Provisioning",
+        "servicePrincipalId": "sp-ms-1"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "ServicePrincipal",
+        "displayName": "Microsoft Teams Services",
+        "id": "sp-2"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

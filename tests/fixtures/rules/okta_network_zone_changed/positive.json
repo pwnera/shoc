@@ -1,0 +1,128 @@
+[
+  {
+    "uuid": "okta-zone.update",
+    "eventType": "zone.update",
+    "displayMessage": "Network zone update",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "nzo1",
+        "type": "NetworkZoneEntity",
+        "alternateId": "unknown",
+        "displayName": "Office egress"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-zone.remove_blacklist",
+    "eventType": "zone.remove_blacklist",
+    "displayMessage": "Network zone unmark as blacklist",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "nzo2",
+        "type": "NetworkZoneEntity",
+        "alternateId": "unknown",
+        "displayName": "BlockedIpZone"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-security.zone.remove_blacklist",
+    "eventType": "security.zone.remove_blacklist",
+    "displayMessage": "Removed IPs from blacklist zone",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "nzo2",
+        "type": "NetworkZoneEntity",
+        "alternateId": "unknown",
+        "displayName": "BlockedIpZone"
+      }
+    ]
+  }
+]

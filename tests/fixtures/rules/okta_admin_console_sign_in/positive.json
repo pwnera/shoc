@@ -1,0 +1,179 @@
+[
+  {
+    "uuid": "okta-admin-console-log-only",
+    "eventType": "policy.evaluate_sign_on",
+    "displayMessage": "Evaluation of sign-on policy",
+    "severity": "INFO",
+    "version": "0",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe",
+      "detailEntry": null
+    },
+    "client": {
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "zone": "null",
+      "device": "Computer",
+      "id": null,
+      "ipAddress": "203.0.113.40",
+      "geographicalContext": {
+        "city": "Amsterdam",
+        "state": "North Holland",
+        "country": "Netherlands",
+        "postalCode": null,
+        "geolocation": {
+          "lat": 52.3676,
+          "lon": 4.9041
+        }
+      }
+    },
+    "authenticationContext": {
+      "authenticationProvider": null,
+      "credentialProvider": null,
+      "credentialType": null,
+      "issuer": null,
+      "interface": null,
+      "authenticationStep": 0,
+      "externalSessionId": "idxJaneNewDevice01"
+    },
+    "outcome": {
+      "result": "ALLOW",
+      "reason": "Sign-on policy evaluation resulted in ALLOW"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "asOrg": "example hosting",
+      "isp": "example hosting",
+      "domain": "example.net",
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "requestId": "reqAdminConsole0001",
+        "requestUri": "/oauth2/v1/authorize",
+        "url": "/oauth2/v1/authorize?response_type=code&response_mode=query&scope=openid",
+        "threatSuspected": "false",
+        "logOnlySecurityData": "{\"risk\":{\"reasons\":\"Anomalous Location, Anomalous Device\",\"level\":\"HIGH\"},\"behaviors\":{\"New Geo-Location\":\"POSITIVE\",\"New Device\":\"POSITIVE\",\"New IP\":\"POSITIVE\",\"New State\":\"POSITIVE\",\"New Country\":\"POSITIVE\",\"Velocity\":\"NEGATIVE\",\"New City\":\"POSITIVE\"}}"
+      }
+    },
+    "target": [
+      {
+        "id": "0oa1admin",
+        "type": "AppInstance",
+        "alternateId": "Okta Admin Console",
+        "displayName": "Okta Admin Console",
+        "detailEntry": {
+          "signOnModeType": "OPENID_CONNECT",
+          "signOnModeEvaluationResult": "ALLOW"
+        }
+      },
+      {
+        "id": "rul1admin",
+        "type": "Rule",
+        "alternateId": "unknown",
+        "displayName": "Admin App Policy",
+        "detailEntry": null
+      }
+    ],
+    "transaction": {
+      "type": "WEB",
+      "id": "reqAdminConsole0001",
+      "detail": {}
+    }
+  },
+  {
+    "uuid": "okta-admin-console-behaviors",
+    "eventType": "policy.evaluate_sign_on",
+    "displayMessage": "Evaluation of sign-on policy",
+    "severity": "INFO",
+    "version": "0",
+    "actor": {
+      "id": "00u2efgh",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob Martin",
+      "detailEntry": null
+    },
+    "client": {
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "zone": "null",
+      "device": "Computer",
+      "id": null,
+      "ipAddress": "203.0.113.41",
+      "geographicalContext": {
+        "city": "Paris",
+        "state": "Ile-de-France",
+        "country": "France",
+        "postalCode": "75000",
+        "geolocation": {
+          "lat": 48.856944,
+          "lon": 2.351389
+        }
+      }
+    },
+    "authenticationContext": {
+      "authenticationProvider": null,
+      "credentialProvider": null,
+      "credentialType": null,
+      "issuer": null,
+      "interface": null,
+      "authenticationStep": 0,
+      "externalSessionId": "idxBobNewDevice01"
+    },
+    "outcome": {
+      "result": "CHALLENGE",
+      "reason": "Sign-on policy evaluation resulted in CHALLENGE"
+    },
+    "securityContext": {
+      "asNumber": 64501,
+      "asOrg": "example broadband",
+      "isp": "example broadband",
+      "domain": "example.org",
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "requestId": "reqAdminConsole0002",
+        "requestUri": "/oauth2/v1/authorize",
+        "url": "/oauth2/v1/authorize?response_type=code&response_mode=query&scope=openid",
+        "threatSuspected": "false",
+        "behaviors": "{New Geo-Location=NEGATIVE, New Device=POSITIVE, New IP=POSITIVE, New State=NEGATIVE, New Country=NEGATIVE, Velocity=NEGATIVE, New City=NEGATIVE}",
+        "risk": "{reasons=Anomalous Device, level=MEDIUM}"
+      }
+    },
+    "target": [
+      {
+        "id": "0oa1admin",
+        "type": "AppInstance",
+        "alternateId": "Okta Admin Console",
+        "displayName": "Okta Admin Console",
+        "detailEntry": {
+          "signOnModeType": "OPENID_CONNECT",
+          "signOnModeEvaluationResult": "CHALLENGE"
+        }
+      },
+      {
+        "id": "rul1admin",
+        "type": "Rule",
+        "alternateId": "unknown",
+        "displayName": "Admin App Policy",
+        "detailEntry": null
+      }
+    ],
+    "transaction": {
+      "type": "WEB",
+      "id": "reqAdminConsole0002",
+      "detail": {}
+    }
+  }
+]

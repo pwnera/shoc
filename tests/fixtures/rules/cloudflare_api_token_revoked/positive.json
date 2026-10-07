@@ -1,0 +1,26 @@
+[
+  {
+    "id": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4b01",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5"},
+    "action": {"description": "Delete Token", "result": "success", "type": "delete"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8c1f0e2d3a4b5c6d", "method": "DELETE", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/tokens/ed17574386854bf78a67040be0a770b0", "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"},
+    "resource": {"id": "ed17574386854bf78a67040be0a770b0", "scope": "accounts", "product": "tokens", "request": {}, "response": {"id": "ed17574386854bf78a67040be0a770b0"}}
+  },
+  {
+    "id": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4b02",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5"},
+    "action": {"description": "Roll Token", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8c1f0e2d3a4b5c6e", "method": "PUT", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/tokens/ed17574386854bf78a67040be0a770b1/value", "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"},
+    "resource": {"id": "ed17574386854bf78a67040be0a770b1", "scope": "accounts", "product": "tokens", "request": {}, "response": {}}
+  },
+  {
+    "id": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4b03",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5"},
+    "action": {"description": "Update Token", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "api", "email": "mallory@example.com", "ip_address": "2001:db8::7", "type": "user"},
+    "raw": {"cf_ray_id": "8c1f0e2d3a4b5c6f", "method": "PUT", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/tokens/ed17574386854bf78a67040be0a770b2", "user_agent": "curl/8.7.1"},
+    "resource": {"id": "ed17574386854bf78a67040be0a770b2", "scope": "accounts", "product": "tokens", "request": {"name": "shoc audit read", "status": "disabled"}, "response": {"id": "ed17574386854bf78a67040be0a770b2", "name": "shoc audit read", "status": "disabled"}}
+  }
+]

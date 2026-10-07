@@ -1,0 +1,37 @@
+# Ops above its queries (D47): why a source is dark, the one fix, and whether
+# re-running the pull is the whole answer. Retrying a revoked credential only
+# fails again; retrying a vendor's 502 is the fix.
+role: ops
+probes:
+  - id: okta_token_revoked
+    sources:
+      - source: okta
+        dark_hours: 30
+        error: "okta rejected the credential (401 Unauthorized): Invalid token provided"
+    expect:
+      retry: []
+      names:
+        okta: "token|credential|api key"
+
+  - id: github_gateway_blip
+    sources:
+      - source: github
+        dark_hours: 2
+        error: "GET https://api.github.com/orgs/acme/audit-log returned 502 Bad Gateway"
+    expect:
+      retry: [github]
+      names:
+        github: "502|gateway|transient|temporar|github"
+
+  - id: cloudtrail_bucket_denied
+    sources:
+      - source: aws_cloudtrail
+        dark_hours: 26
+        error: >-
+          AccessDenied: User arn:aws:iam::123456789012:user/shoc-reader is not
+          authorized to perform s3:GetObject on
+          arn:aws:s3:::acme-cloudtrail-logs/AWSLogs/123456789012/CloudTrail/
+    expect:
+      retry: []
+      names:
+        aws_cloudtrail: "s3:GetObject|permission|policy|bucket"

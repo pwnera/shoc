@@ -1,0 +1,44 @@
+id: contain_azure_vm_command
+title: Contain commands run on an Azure VM through the control plane
+description: >
+  Someone ran a script on a VM with Run Command, which executes as SYSTEM or
+  root without a network path to the VM. Revoking the caller's Entra sessions
+  stops further commands from that sign-in and is reversible. Powering off the
+  VM keeps its disks and is undone by starting it, but takes down whatever it
+  serves, so a human approves it after the page.
+rules:
+  - azure_vm_run_command
+questions:
+  - id: caller
+    ask: Is the caller a person or an app, and did it sign in from an address, country or device it has used in the last 30 days?
+  - id: script
+    ask: What did the script run, and did the VM then reach out to an address it never talked to before?
+  - id: vm_role
+    ask: What does the VM serve, and what credentials or data does it hold?
+benign_when:
+  - A named engineer ran a documented maintenance command from the office egress, through the pipeline's usual service principal.
+example: |
+  claim (caller): "Run Command was executed on vm-01 by dana@example.com from 203.0.113.24, an address never seen for this user", citing the runCommand event.
+  checked and absent: "a change ticket or maintenance note for vm-01 in memory (30d)", which rules out planned maintenance.
+  disposition: malicious, because a script ran as SYSTEM on a production VM from a new address with nothing to explain it.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: revoke the caller's sessions
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: commands run on {{ entity.resource }} by {{ entity.user }}: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: power off the VM
+    action: azure.stop_vm
+    optional: true
+    params:
+      vm_id: "{{ entity.resource }}"

@@ -1,0 +1,24 @@
+[
+  {
+    "id": "audit_log-login-base-country",
+    "type": "login.succeeded",
+    "project": {
+      "id": "proj_abc"
+    },
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-9",
+          "email": "mallory@example.com"
+        },
+        "ip_address": "203.0.113.44",
+        "user_agent": "Mozilla/5.0",
+        "ip_address_details": {
+          "country": "RO",
+          "asn": "64500"
+        }
+      }
+    }
+  }
+]

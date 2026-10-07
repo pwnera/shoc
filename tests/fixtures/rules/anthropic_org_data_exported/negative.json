@@ -1,0 +1,38 @@
+[
+  {
+    "id": "activity_01Chat",
+    "organization_id": "org_01",
+    "type": "claude_chat_created",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    }
+  },
+  {
+    "id": "activity_01ExportStart",
+    "organization_id": "org_01",
+    "type": "org_data_export_started",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    }
+  },
+  {
+    "id": "activity_01AuditStart",
+    "organization_id": "org_01",
+    "type": "audit_log_export_started",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    }
+  }
+]

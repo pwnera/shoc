@@ -1,0 +1,23 @@
+[
+  {
+    "id": "en-Add member to role",
+    "activityDisplayName": "Add member to role",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@acme.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "displayName": "jane@acme.com",
+        "id": "u-1"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

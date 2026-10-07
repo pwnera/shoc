@@ -1,0 +1,42 @@
+id: m365_inbox_rule_from_new_address
+title: An inbox rule is made from an address the user has never used
+hypothesis: >
+  In an adversary-in-the-middle attack the inbox rule comes minutes after the
+  stolen session is replayed, from the attacker's address, and often only
+  moves mail to an odd folder so the rule that forwards or deletes never
+  fires. A rule made from an address the user has not used in two weeks
+  catches those move-only rules too.
+attack: [T1564.008, T1114.003]
+logsource:
+  product: m365
+  service: management
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: [New-InboxRule, Set-InboxRule, UpdateInboxRules]
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, src_endpoint.ip]
+  lookback: 14d
+pivot: [actor.user.name, src_endpoint.ip, api.operation, resource.uid]
+triage: >
+  Did the user make this rule from a new phone, a hotel or a new office? Their
+  own new address keeps signing in afterwards; an attacker's address signs in
+  around the rule and is gone.
+follow_up:
+  - What does the rule do with which mail (folder, words it matches, forward target)?
+  - Did the same address sign in to the mailbox in the hour before?
+sensitive: true
+sources:
+  - name: Elastic
+    title: M365 Exchange Inbox Phishing Evasion Rule Created
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_new_inbox_rule_delete_or_move
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Inbox Rules Creation Or Update Activity in O365
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/cloud/m365/audit/microsoft365_susp_inbox_rule_creation_or_update_activity.yml
+    author: Marco Pedrinazzi (@pedrinazziM) (InTheCyber)
+    license: DRL-1.1
+    relation: inspired

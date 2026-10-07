@@ -1,0 +1,32 @@
+[
+  {
+    "id": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f5a01",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5"},
+    "action": {"description": "Update DNS Record", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8c1f0e2d3a4b5d01", "method": "PATCH", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records/372e67954025e0ba6aaa6d586b9e0b59", "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"},
+    "resource": {
+      "id": "372e67954025e0ba6aaa6d586b9e0b59",
+      "scope": "zones",
+      "product": "dns_records",
+      "request": {"name": "example.com", "tags": [], "type": "MX", "content": "mx.attacker.example.net", "priority": 10, "proxied": false},
+      "response": {"id": "372e67954025e0ba6aaa6d586b9e0b59", "name": "example.com", "tags": [], "type": "MX", "content": "mx.attacker.example.net", "priority": 10, "proxied": false}
+    },
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f5a02",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5"},
+    "action": {"description": "Batch DNS Records", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "api", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8c1f0e2d3a4b5d02", "method": "POST", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records/batch", "user_agent": "curl/8.7.1"},
+    "resource": {
+      "type": "batch",
+      "scope": "zones",
+      "product": "dns_records",
+      "request": {"deletes": [{"id": "aa11bb22cc33dd44ee55ff6600770001"}], "posts": [{"name": "example.com", "type": "MX", "content": "mx.attacker.example.net", "priority": 5}]},
+      "response": {"deletes": [{"id": "aa11bb22cc33dd44ee55ff6600770001", "name": "example.com", "tags": [], "type": "MX", "content": "mx1.example.com", "priority": 10, "proxied": false}], "posts": [{"id": "aa11bb22cc33dd44ee55ff6600770002", "name": "example.com", "tags": [], "type": "MX", "content": "mx.attacker.example.net", "priority": 5, "proxied": false}]}
+    },
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  }
+]

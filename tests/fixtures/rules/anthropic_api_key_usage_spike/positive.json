@@ -1,0 +1,18 @@
+[
+  {
+    "id": "activity_history",
+    "created_at": "2026-08-01T00:00:00Z",
+    "organization_id": "org_01",
+    "type": "workspace_created",
+    "actor": {"type": "user_actor", "email_address": "owner@example.com", "user_id": "user_01O", "ip_address": "198.51.100.20"}
+  },
+  {
+    "api_key_id": "apikey_01Leaked",
+    "project_id": "proj_abc",
+    "workspace_id": null,
+    "output_tokens": 7200000,
+    "id": "anthropic-usage-apikey_01Leaked-7200000",
+    "event": "usage",
+    "key_id": "apikey_01Leaked"
+  }
+]

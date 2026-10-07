@@ -1,0 +1,90 @@
+[
+  {
+    "eventVersion": "1.08",
+    "eventID": "ct-ConsoleLogin-mfa",
+    "eventName": "ConsoleLogin",
+    "eventSource": "signin.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice"
+    },
+    "requestParameters": null,
+    "responseElements": {
+      "ConsoleLogin": "Success"
+    },
+    "additionalEventData": {
+      "LoginTo": "https://console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true",
+      "MobileVersion": "No",
+      "MFAUsed": "Yes",
+      "MFAIdentifier": "arn:aws:iam::123456789012:mfa/alice-phone"
+    },
+    "readOnly": false,
+    "eventType": "AwsConsoleSignIn",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ConsoleLogin-sso",
+    "eventName": "ConsoleLogin",
+    "eventSource": "signin.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLESSO:alice@example.com",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_Admin_0123456789abcdef/alice@example.com",
+      "accountId": "123456789012"
+    },
+    "eventType": "AwsConsoleSignIn",
+    "responseElements": {
+      "ConsoleLogin": "Success"
+    },
+    "additionalEventData": {
+      "LoginTo": "https://console.aws.amazon.com/console/home",
+      "MobileVersion": "No",
+      "MFAUsed": "No",
+      "SamlProviderArn": "arn:aws:iam::123456789012:saml-provider/example-idp"
+    }
+  },
+  {
+    "eventVersion": "1.08",
+    "eventID": "ct-ConsoleLogin-failed",
+    "eventName": "ConsoleLogin",
+    "eventSource": "signin.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "accountId": "123456789012",
+      "accessKeyId": "",
+      "userName": "alice"
+    },
+    "requestParameters": null,
+    "responseElements": {
+      "ConsoleLogin": "Failure"
+    },
+    "additionalEventData": {
+      "LoginTo": "https://console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true",
+      "MobileVersion": "No",
+      "MFAUsed": "No"
+    },
+    "readOnly": false,
+    "eventType": "AwsConsoleSignIn",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "errorMessage": "Failed authentication"
+  }
+]

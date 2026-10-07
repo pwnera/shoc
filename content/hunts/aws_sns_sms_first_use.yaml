@@ -1,0 +1,60 @@
+id: aws_sns_sms_first_use
+title: An identity sends SMS through SNS, or sets up topics, for the first time
+hypothesis: >
+  SMS pumping and smishing through a stolen key use SNS direct-to-phone
+  publishing, which costs per message. First use by an identity is the start.
+  Publish is a data event, so the SMS half needs the bucket mode on a trail
+  that records SNS data events; topic set-up is seen either way.
+attack: [T1496.003, T1567]
+logsource:
+  product: aws
+  service: cloudtrail
+window: 1d
+cadence_days: 1
+detection:
+  selection_sms:
+    api.operation: Publish
+    raw.requestParameters.phoneNumber|exists: true
+  selection_setup:
+    api.service.name: sns.amazonaws.com
+    api.operation: [CreateTopic, Subscribe, SetSMSAttributes, CreateSMSSandboxPhoneNumber]
+  condition: selection_sms or selection_setup
+baseline:
+  first_seen: [actor.user.name, api.operation]
+  lookback: 30d
+pivot: [actor.user.name, api.operation, src_endpoint.ip, cloud.region]
+triage: >
+  Does the product send SMS (sign-in codes, alerts)? An identity that never
+  sent one, sending to numbers in countries the company has no customers in,
+  is pumping.
+sources:
+  - name: Elastic hunting
+    title: SNS Direct-to-Phone Messaging Spike
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/sns_direct_to_phone_messaging_spike.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS SNS Topic Message Publish by Rare User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/lateral_movement_sns_topic_message_publish_by_rare_user
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS SNS Topic Created by Rare User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/resource_development_sns_topic_created_by_rare_user
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: SNS Topic Created by Rare User
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/sns_topic_created_by_rare_user.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: SNS Topic Subscription with Email by Rare User
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/sns_email_subscription_by_rare_user.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: SNS Topic Message Published by Rare User
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/sns_topic_message_published_by_rare_user.toml
+    license: Elastic-2.0
+    relation: inspired

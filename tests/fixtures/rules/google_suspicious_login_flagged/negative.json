@@ -1,0 +1,104 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-login_success",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "login",
+    "events": [
+      {
+        "type": "login",
+        "name": "login_success",
+        "parameters": [
+          {
+            "name": "login_type",
+            "value": "google_password"
+          },
+          {
+            "name": "is_suspicious",
+            "boolValue": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-saml",
+      "applicationName": "saml",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "saml",
+    "events": [
+      {
+        "type": "login",
+        "name": "login_success",
+        "parameters": [
+          {
+            "name": "application_name",
+            "value": "Salesforce"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-passkey-enrolled",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "login",
+    "events": [
+      {
+        "type": "account_warning",
+        "name": "passkey_enrolled",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-passkey-removed",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "login",
+    "events": [
+      {
+        "type": "account_warning",
+        "name": "passkey_removed",
+        "parameters": []
+      }
+    ]
+  }
+]

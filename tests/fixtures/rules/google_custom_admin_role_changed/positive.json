@@ -1,0 +1,64 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-ASSIGN_ROLE",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "DELEGATED_ADMIN_SETTINGS",
+        "name": "ASSIGN_ROLE",
+        "parameters": [
+          {
+            "name": "ROLE_NAME",
+            "value": "Security Helpers"
+          },
+          {
+            "name": "USER_EMAIL",
+            "value": "bob@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-addpriv",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "DELEGATED_ADMIN_SETTINGS",
+        "name": "ADD_PRIVILEGE",
+        "parameters": [
+          {
+            "name": "ROLE_NAME",
+            "value": "Security Helpers"
+          },
+          {
+            "name": "PRIVILEGE_NAME",
+            "value": "USERS_RETRIEVE"
+          }
+        ]
+      }
+    ]
+  }
+]

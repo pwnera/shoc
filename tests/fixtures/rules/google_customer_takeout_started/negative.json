@@ -1,0 +1,60 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-CREATE_DATA_TRANSFER_REQUEST",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "USER_SETTINGS",
+        "name": "CREATE_DATA_TRANSFER_REQUEST",
+        "parameters": [
+          {
+            "name": "USER_EMAIL",
+            "value": "leaver@example.com"
+          },
+          {
+            "name": "APPLICATION_NAME",
+            "value": "Drive and Docs"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-CUSTOMER_TAKEOUT_SUCCEEDED",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "CUSTOMER_TAKEOUT",
+        "name": "CUSTOMER_TAKEOUT_SUCCEEDED",
+        "parameters": [
+          {
+            "name": "OBFUSCATED_CUSTOMER_TAKEOUT_REQUEST_ID",
+            "value": "00aaaaaaaaaaaaa"
+          }
+        ]
+      }
+    ]
+  }
+]

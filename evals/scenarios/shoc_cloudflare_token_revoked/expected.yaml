@@ -1,0 +1,12 @@
+# Attack twin: shoc's Cloudflare token deleted after shoc was configured. Taking
+# shoc's credential away is how an intruder blinds it; it always reaches a person.
+id: shoc_cloudflare_token_revoked
+title: shoc's Cloudflare token deleted
+source: cloudflare
+entity: operator@example.com
+expected_rules: [cloudflare_api_token_revoked]
+configured_hours_ago: 24
+own:
+  - {kind: credential, value: cf-token-shoc, source: cloudflare}
+min_cases: 1
+forbidden_verdicts: [benign_expected, false_positive]

@@ -1,0 +1,17 @@
+[
+  {
+    "_source": "cloudflare_logs",
+    "_dataset": "gateway_dns",
+    "QueryName": "rat-home.duckdns.org",
+    "QueryCategoryNames": [
+      "Dynamic DNS"
+    ],
+    "ResolverDecision": "allowedOnNoPolicyMatch",
+    "DeviceName": "LAPTOP-0042",
+    "DeviceID": "b72ac397-e5c3-913e-11ed-03face9f2b6b",
+    "Email": "john.doe@example.com",
+    "SrcIP": "203.0.113.81",
+    "QueryTypeName": "A",
+    "RCode": 0
+  }
+]

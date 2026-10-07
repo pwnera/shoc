@@ -1,0 +1,110 @@
+# AWS CloudTrail -> OCSF. ING-1, ING-3.
+# API calls are API Activity (6003). Console sign-ins are Authentication (3002),
+# and so are the STS calls that hand out temporary credentials. CloudTrail
+# Insights events, CloudTrail's own anomaly detection, are Detection Finding (2004).
+source: aws_cloudtrail
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [aws, aws/cloudtrail]
+
+constants:
+  category_uid: 6
+  class_uid: 6003
+  class_name: API Activity
+  type_uid: 600399
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  status: Success
+  cloud_provider: AWS
+  metadata_product: AWS CloudTrail
+
+fields:
+  event_uid: { path: eventID }
+  time: { path: eventTime, transform: iso8601 }
+  api_operation: { paths: [eventName, insightDetails.eventName] }
+  api_service_name: { paths: [eventSource, insightDetails.eventSource] }
+  api_response_error: { paths: [errorCode, insightDetails.errorCode] }
+  status_code: { path: errorCode }
+  message: { path: errorMessage }
+  cloud_region: { path: awsRegion }
+  cloud_account_uid: { paths: [recipientAccountId, userIdentity.accountId] }
+  # A service event (EFS mount, for one) names the client in its details.
+  src_endpoint_ip: { paths: [serviceEventDetails.sourceIpAddress, sourceIPAddress] }
+  http_user_agent: { path: userAgent }
+  # Where a console sign-in was headed.
+  http_request_url: { path: additionalEventData.LoginTo }
+  actor_user_type: { path: userIdentity.type }
+  actor_user_uid: { paths: [userIdentity.arn, userIdentity.principalId] }
+  actor_user_name:
+    paths:
+      - userIdentity.userName
+      - userIdentity.sessionContext.sessionIssuer.userName
+      - userIdentity.arn
+      - userIdentity.principalId
+    transform: arn_name
+  actor_session_uid: { path: userIdentity.accessKeyId }
+  actor_invoked_by: { path: userIdentity.invokedBy }
+  # Instance-role credentials name the instance they were issued to.
+  device_uid: { path: userIdentity.inScopeOf.credentialsIssuedTo, transform: arn_name }
+  resource_type: { path: "resources[0].type" }
+  # EC2 names no resources: a shared snapshot or AMI is in its request.
+  resource_uid:
+    paths: ["resources[0].ARN", requestParameters.snapshotId, requestParameters.imageId]
+
+derive:
+  # A call made by an AWS service from inside AWS has a service name, not an
+  # address, in sourceIPAddress; actor_invoked_by keeps the name.
+  - when: { src_endpoint_ip: { contains: "amazonaws.com" } }
+    set: { src_endpoint_ip: null }
+  - when: { src_endpoint_ip: { in: ["AWS Internal", "aws.internal"] } }
+    set: { src_endpoint_ip: null }
+  - when: { errorCode: { exists: true } }
+    set: { status: Failure, severity_id: 2 }
+  - when: { eventName: { contains: create } }
+    set: { activity_id: 1, activity_name: Create, type_uid: 600301 }
+  - when: { eventName: { contains: list } }
+    set: { activity_id: 2, activity_name: Read, type_uid: 600302 }
+  - when: { eventName: { contains: get } }
+    set: { activity_id: 2, activity_name: Read, type_uid: 600302 }
+  - when: { eventName: { contains: describe } }
+    set: { activity_id: 2, activity_name: Read, type_uid: 600302 }
+  - when: { eventName: { contains: lookup } }
+    set: { activity_id: 2, activity_name: Read, type_uid: 600302 }
+  - when: { eventName: { contains: update } }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303 }
+  - when: { eventName: { contains: put } }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303 }
+  - when: { eventName: { contains: modify } }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303 }
+  - when: { eventName: { contains: delete } }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 600304 }
+  - when: { userIdentity.type: Root }
+    set: { severity_id: 3 }
+
+  # Temporary credentials issued by STS.
+  - when: { eventSource: sts.amazonaws.com, eventName: { in: [AssumeRole, AssumeRoleWithSAML, AssumeRoleWithWebIdentity, GetFederationToken, GetSessionToken, AssumeRoot] } }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, activity_id: 3, activity_name: "Authentication Ticket", type_uid: 300203 }
+
+  # Console sign-in. CloudTrail reports a failed one in responseElements, and
+  # MFA use in additionalEventData; status_code says whether a successful
+  # sign-in used MFA.
+  - when: { eventType: AwsConsoleSignIn }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, activity_id: 1, activity_name: Logon, type_uid: 300201 }
+  - when: { eventName: ConsoleLogin, responseElements.ConsoleLogin: Failure }
+    set: { status: Failure, severity_id: 2 }
+  - when: { eventName: ConsoleLogin, status: Success, additionalEventData.MFAUsed: "No" }
+    set: { status_code: no_mfa, severity_id: 3 }
+  - when: { eventName: ConsoleLogin, status: Success, additionalEventData.MFAUsed: "Yes" }
+    set: { status_code: mfa }
+
+  - when: { eventType: AwsCloudTrailInsight }
+    set: { category_uid: 2, class_uid: 2004, class_name: "Detection Finding", activity_id: 1, activity_name: Create, type_uid: 200401, severity_id: 2 }
+  - when: { eventType: AwsCloudTrailInsight, insightDetails.state: End }
+    set: { activity_id: 3, activity_name: Close, type_uid: 200403 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: actor_session_uid, name: actor.session.uid, type: "Access Key" }
+  - { column: cloud_account_uid, name: cloud.account.uid, type: "Account UID" }

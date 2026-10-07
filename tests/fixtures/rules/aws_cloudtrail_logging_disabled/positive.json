@@ -1,0 +1,208 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-StopLogging",
+    "eventName": "StopLogging",
+    "eventSource": "cloudtrail.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "name": "main"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-DeleteTrail",
+    "eventName": "DeleteTrail",
+    "eventSource": "cloudtrail.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "name": "main"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-StopEventDataStoreIngestion",
+    "eventName": "StopEventDataStoreIngestion",
+    "eventSource": "cloudtrail.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "eventDataStore": "lake"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-PutEventSelectors",
+    "eventName": "PutEventSelectors",
+    "eventSource": "cloudtrail.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "trailName": "main",
+      "eventSelectors": [
+        {
+          "readWriteType": "All",
+          "includeManagementEvents": false,
+          "dataResources": []
+        }
+      ]
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-PutEventSelectors-exclude",
+    "eventName": "PutEventSelectors",
+    "eventSource": "cloudtrail.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "trailName": "main",
+      "eventSelectors": [
+        {
+          "readWriteType": "All",
+          "includeManagementEvents": true,
+          "excludeManagementEventSources": [
+            "kms.amazonaws.com"
+          ],
+          "dataResources": []
+        }
+      ]
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-UpdateTrail",
+    "eventName": "UpdateTrail",
+    "eventSource": "cloudtrail.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "name": "main",
+      "s3BucketName": "attacker-logs"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-UpdateTrail-single",
+    "eventName": "UpdateTrail",
+    "eventSource": "cloudtrail.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "name": "main",
+      "isMultiRegionTrail": false
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-PutEventSelectors-advanced",
+    "eventName": "PutEventSelectors",
+    "eventSource": "cloudtrail.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "trailName": "arn:aws:cloudtrail:us-east-1:123456789012:trail/main",
+      "advancedEventSelectors": [
+        {
+          "name": "S3 data events",
+          "fieldSelectors": [
+            {
+              "field": "eventCategory",
+              "equals": [
+                "Data"
+              ]
+            },
+            {
+              "field": "resources.type",
+              "equals": [
+                "AWS::S3::Object"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

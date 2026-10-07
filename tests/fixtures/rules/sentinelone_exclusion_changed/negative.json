@@ -1,0 +1,60 @@
+[
+  {
+    "_source": "sentinelone",
+    "accountId": "000000000000000000",
+    "activityType": 3002,
+    "agentId": null,
+    "data": {
+      "accountName": "example.com",
+      "groupName": "Default Group",
+      "osFamily": "windows",
+      "username": "it.admin@example.com",
+      "value": "0000000000000000000000000000000000000000"
+    },
+    "id": "act-3002-1",
+    "osFamily": "windows",
+    "primaryDescription": "The Management user it.admin@example.com added a blocklist hash.",
+    "threatId": null,
+    "userId": "000000000000000001"
+  },
+  {
+    "_source": "sentinelone",
+    "accountId": "000000000000000000",
+    "activityType": 3016,
+    "agentId": null,
+    "data": {
+      "accountName": "example.com",
+      "exclusionType": "path",
+      "fullScopeDetails": "Group Default Group in Site Default site of Account example.com",
+      "groupName": "Default Group",
+      "osFamily": "Windows",
+      "scopeLevel": "Group",
+      "scopeName": "Default Group",
+      "siteName": "Default site",
+      "username": "it.admin@example.com",
+      "value": "C:\\Temp"
+    },
+    "groupId": "900000000000000003",
+    "id": "act-3016-1",
+    "osFamily": "windows",
+    "primaryDescription": "The Management user it.admin@example.com deleted the Path Exclusion C:\\Temp for Windows from the Group Default Group",
+    "secondaryDescription": null,
+    "siteId": "900000000000000002",
+    "threatId": null,
+    "userId": "000000000000000001"
+  },
+  {
+    "_source": "sentinelone",
+    "accountId": "000000000000000000",
+    "activityType": 3100,
+    "agentId": null,
+    "data": {
+      "accountName": "example.com",
+      "username": "it.admin@example.com"
+    },
+    "id": "act-3100-1",
+    "primaryDescription": "The Management user it.admin@example.com added a new agent package.",
+    "threatId": null,
+    "userId": "000000000000000001"
+  }
+]

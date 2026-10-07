@@ -1,0 +1,36 @@
+/* Space. A 4px step; controls and rows sit on a 32px rhythm. */
+:root {
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --row-h: 32px; /* table rows, controls, panel header */
+  --row-h-dense: 28px; /* menu items, dense lists */
+  --topbar-h: 48px;
+  --rail-w: 224px; /* sidebar */
+  --rail-w-collapsed: 56px; /* icon rail */
+  --bar-h: 56px; /* mobile bottom bar */
+  --strip-h: 40px; /* state strip in a page header */
+  --aside-w: 320px; /* right rail of a detail page */
+  --palette-w: 640px;
+  --chat-w: 400px;
+  --chat-h: 600px;
+  --chat-w-wide: 720px;
+  --tl-time-w: 64px; /* timeline time column */
+  --gutter: var(--space-4);
+  --gutter-wide: var(--space-6);
+  --panel-pad: var(--space-3);
+  --cell-pad-y: var(--space-1-5);
+  --cell-pad-x: var(--space-3);
+
+  /* Fixed layers outside the top layer. Dialogs, the palette, menus and tooltips use the top layer. */
+  --z-sticky: 20; /* sticky heads, decision bar */
+  --z-float: 30; /* chat launcher and window, bottom bar */
+  --z-toast: 40;
+}

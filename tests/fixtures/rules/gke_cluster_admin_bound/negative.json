@@ -1,0 +1,153 @@
+[
+  {
+    "insertId": "gke-crb-view",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "k8s_cluster",
+      "labels": {
+        "project_id": "example-prod",
+        "cluster_name": "prod",
+        "location": "europe-west1"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "k8s.io",
+      "methodName": "io.k8s.authorization.rbac.v1.clusterrolebindings.create",
+      "resourceName": "rbac.authorization.k8s.io/v1/clusterrolebindings/dana-view",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.84",
+        "callerSuppliedUserAgent": "kubectl/v1.31.0 (linux/amd64) kubernetes/abc1234"
+      },
+      "request": {
+        "@type": "rbac.authorization.k8s.io/v1.ClusterRoleBinding",
+        "apiVersion": "rbac.authorization.k8s.io/v1",
+        "kind": "ClusterRoleBinding",
+        "metadata": {
+          "name": "dana-view"
+        },
+        "roleRef": {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "ClusterRole",
+          "name": "view"
+        },
+        "subjects": [
+          {
+            "kind": "User",
+            "name": "backup@example.net"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "insertId": "gke-crb-system",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "k8s_cluster",
+      "labels": {
+        "project_id": "example-prod",
+        "cluster_name": "prod",
+        "location": "europe-west1"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "k8s.io",
+      "methodName": "io.k8s.authorization.rbac.v1.clusterrolebindings.create",
+      "resourceName": "rbac.authorization.k8s.io/v1/clusterrolebindings/addon-admin",
+      "authenticationInfo": {
+        "principalEmail": "system:addon-manager"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.84",
+        "callerSuppliedUserAgent": "kubectl/v1.31.0 (linux/amd64) kubernetes/abc1234"
+      },
+      "request": {
+        "@type": "rbac.authorization.k8s.io/v1.ClusterRoleBinding",
+        "apiVersion": "rbac.authorization.k8s.io/v1",
+        "kind": "ClusterRoleBinding",
+        "metadata": {
+          "name": "addon-admin"
+        },
+        "roleRef": {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "ClusterRole",
+          "name": "cluster-admin"
+        },
+        "subjects": [
+          {
+            "kind": "User",
+            "name": "backup@example.net"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "insertId": "gke-crb-patch-view",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "k8s_cluster",
+      "labels": {
+        "project_id": "example-prod",
+        "cluster_name": "prod",
+        "location": "europe-west1"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "k8s.io",
+      "methodName": "io.k8s.authorization.rbac.v1.clusterrolebindings.patch",
+      "resourceName": "rbac.authorization.k8s.io/v1/clusterrolebindings/support-view",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.84",
+        "callerSuppliedUserAgent": "kubectl/v1.31.0 (linux/amd64) kubernetes/abc1234"
+      },
+      "request": {
+        "@type": "k8s.io/Patch",
+        "subjects": [
+          {
+            "kind": "User",
+            "name": "support@example.com"
+          }
+        ]
+      },
+      "response": {
+        "@type": "rbac.authorization.k8s.io/v1.ClusterRoleBinding",
+        "apiVersion": "rbac.authorization.k8s.io/v1",
+        "kind": "ClusterRoleBinding",
+        "metadata": {
+          "name": "support-view"
+        },
+        "roleRef": {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "ClusterRole",
+          "name": "view"
+        },
+        "subjects": [
+          {
+            "kind": "User",
+            "name": "support@example.com"
+          }
+        ]
+      },
+      "status": {}
+    },
+    "operation": {
+      "id": "gke-crb-patch-view",
+      "producer": "k8s.io",
+      "first": true,
+      "last": true
+    }
+  }
+]

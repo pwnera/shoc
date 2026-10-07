@@ -1,0 +1,49 @@
+id: anthropic_admin_role_granted
+title: Claude organisation admin added
+description: >
+  A member was made an admin or owner, an invitation went out for one, or the
+  primary owner changed. An admin creates Admin keys and changes SSO, so it is
+  the role to take after getting into the Console.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1098.003]
+logsource:
+  product: anthropic
+  service: activity_feed
+detection:
+  selection_role:
+    api.operation: claude_user_role_updated
+    raw.current_role: [admin, owner]
+  selection_invite:
+    api.operation: org_user_invite_sent
+    raw.invited_role: [admin, owner]
+  selection_owner:
+    api.operation: primary_owner_transferred
+  condition: selection_*
+  timeframe: 15m
+# An Admin key that acts has no email, so its id keys the finding.
+entity: [actor.user.name, actor.session.uid]
+fields: [actor.user.name, src_endpoint.ip, api.operation, raw.user_email, raw.invited_email, raw.new_owner_id]
+sources:
+  - name: Elastic
+    title: Anthropic Admin Role Assigned to User
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/persistence_anthropic_admin_role_assigned_to_user.toml
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Anthropic Primary Owner Transferred
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/privilege_escalation_anthropic_primary_owner_transferred.toml
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Anthropic Organization User Invite Sent
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/persistence_anthropic_organization_user_invite_sent.toml
+    license: Elastic-2.0
+    relation: adapted
+  - name: Anthropic
+    title: Query compliance activities
+    url: https://platform.claude.com/docs/en/api/compliance/activities/list
+    relation: inspired

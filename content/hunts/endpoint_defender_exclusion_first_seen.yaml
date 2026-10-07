@@ -1,0 +1,57 @@
+id: endpoint_defender_exclusion_first_seen
+title: A Defender exclusion is added on a machine for the first time
+hypothesis: >
+  Before running their tools, intruders tell Defender to skip a folder, a
+  process or an extension. Developers add build folders too, which is why
+  this is a first-seen hunt per machine and not a rule.
+attack: [T1562.001]
+sources:
+  - name: Sigma
+    title: "Powershell Defender Exclusion"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_defender_exclusion.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Windows Defender Exclusions Added - Registry"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_set/registry_set_defender_exclusions.yml
+    author: "Christian Burkard (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: "Windows Defender Exclusions Added via PowerShell"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/defense_evasion_defender_exclusion_via_powershell.toml
+    license: Elastic-2.0
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+window: 1d
+cadence_days: 1
+detection:
+  sel_cmd:
+    class_uid: 1007
+    process.cmd_line|contains: [Add-MpPreference, Set-MpPreference]
+  sel_excl:
+    process.cmd_line|contains: [-ExclusionPath, -ExclusionProcess, -ExclusionExtension,
+                                -ExclusionIpAddress]
+  # One block per condition on RegistryKey: a map holds a key once.
+  sel_registry:
+    raw.category: AdvancedHunting-DeviceRegistryEvents
+    raw.properties.RegistryKey|contains: Windows Defender
+  sel_registry_excl:
+    raw.properties.RegistryKey|contains: Exclusions
+  condition: (sel_cmd and sel_excl) or (sel_registry and sel_registry_excl)
+baseline:
+  first_seen: [device.uid, process.cmd_line]
+  lookback: 30d
+pivot: [device.hostname, device.uid, process.cmd_line, actor.user.name,
+        process.parent_process.name, raw.properties.RegistryKey]
+triage: >
+  Is the excluded path a build or cache folder on a developer's machine, set by
+  the developer or by Intune? A user profile, Temp, Public or a whole drive,
+  on any machine, is the case.
+follow_up:
+  - What ran from the excluded path afterwards?
+  - Who added it, and through which parent process?
+sensitive: true

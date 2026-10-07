@@ -1,0 +1,31 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-AssumeRole",
+    "eventName": "AssumeRole",
+    "eventSource": "sts.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::IAM::Role",
+        "ARN": "arn:aws:iam::123456789012:role/admin",
+        "accountId": "123456789012"
+      }
+    ],
+    "requestParameters": {
+      "roleArn": "arn:aws:iam::123456789012:role/admin",
+      "roleSessionName": "x"
+    }
+  }
+]

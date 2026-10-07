@@ -1,0 +1,122 @@
+# CrowdStrike Falcon Data Replicator sensor events -> OCSF, by event_simpleName.
+# ING-1, ING-3. Telemetry, never a finding: every row is severity 1, and an event
+# name the mapping does not know is Process Activity "Other" with the name in
+# api_operation, since the sensor reports each event in the context of a process.
+#
+# For network events src_endpoint is the host the sensor runs on and dst_endpoint
+# the remote peer, whichever side opened the connection; ConnectionDirection in
+# raw says which. For logons RemoteAddressIP4 is where the logon came from.
+source: crowdstrike_fdr
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [edr, edr/telemetry, dns]
+
+constants:
+  category_uid: 1
+  class_uid: 1007
+  class_name: Process Activity
+  activity_id: 99
+  activity_name: Other
+  type_uid: 100799
+  severity_id: 1
+  status: Success
+  cloud_provider: CrowdStrike
+  metadata_product: CrowdStrike Falcon Data Replicator
+  api_service_name: falcon
+  resource_type: host
+
+fields:
+  # The Falcon customer (CID): which tenant's console isolates the host (RFC 0025).
+  cloud_account_uid: { path: cid }
+  event_uid: { path: id }
+  time: { paths: [timestamp, ContextTimeStamp], transform: iso8601 }
+  api_operation: { path: event_simpleName }
+  message: { paths: [TaskName, ServiceDisplayName, RegObjectName] }
+  actor_user_name: { path: UserName }
+  actor_user_uid: { path: UserSid }
+  src_endpoint_ip:
+    paths: [LocalAddressIP4, LocalAddressIP6, RemoteAddressIP4, RemoteAddressIP6]
+  src_endpoint_port: { path: LocalPort }
+  dst_endpoint_ip: { paths: [RemoteAddressIP4, RemoteAddressIP6] }
+  dst_endpoint_port: { path: RemotePort }
+  dns_query_hostname: { path: DomainName }
+  device_hostname: { path: ComputerName }
+  device_uid: { path: aid }
+  resource_uid: { path: aid }
+  # A module load names the loading process in TargetImageFileName and the
+  # module in ImageFileName; everywhere else ImageFileName is the process.
+  process_name: { paths: [TargetImageFileName, ImageFileName], transform: basename }
+  # The same image as the sensor's device path (\Device\HarddiskVolume3\...).
+  process_file_path: { paths: [TargetImageFileName, ImageFileName] }
+  process_pid: { path: RawProcessId }
+  process_cmd_line: { path: CommandLine }
+  process_hash_sha256: { path: SHA256HashData }
+  process_parent_name: { paths: [ParentBaseFileName, ParentImageFileName], transform: basename }
+  file_path: { paths: [TargetFileName, ScriptContentName] }
+  file_hash_sha256: { path: ContentSHA256HashData }
+
+derive:
+  - when: { event_simpleName: { in: [ProcessRollup2, SyntheticProcessRollup2, ServiceStarted] } }
+    set: { activity_id: 1, activity_name: Launch, type_uid: 100701 }
+  - when: { event_simpleName: EndOfProcess }
+    set: { activity_id: 2, activity_name: Terminate, type_uid: 100702 }
+  - when: { event_simpleName: { in: [ClassifiedModuleLoad, ImageHash] } }
+    set: { class_uid: 1005, class_name: Module Activity, activity_id: 1, activity_name: Load,
+           type_uid: 100501, process_hash_sha256: null }
+  - when: { event_simpleName: DnsRequest }
+    set: { category_uid: 4, class_uid: 4003, class_name: DNS Activity, activity_id: 1,
+           activity_name: Query, type_uid: 400301 }
+  - when: { event_simpleName: { in: [NetworkConnectIP4, NetworkConnectIP6,
+                                     NetworkReceiveAcceptIP4, NetworkReceiveAcceptIP6] } }
+    set: { category_uid: 4, class_uid: 4001, class_name: Network Activity, activity_id: 1,
+           activity_name: Open, type_uid: 400101 }
+  - when: { event_simpleName: { in: [NetworkListenIP4, NetworkListenIP6] } }
+    set: { category_uid: 4, class_uid: 4001, class_name: Network Activity, activity_id: 7,
+           activity_name: Listen, type_uid: 400107 }
+  - when: { event_simpleName: { in: [UserLogon, UserLogonFailed2] } }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, activity_id: 1,
+           activity_name: Logon, type_uid: 300201, dst_endpoint_ip: null }
+  - when: { event_simpleName: UserLogonFailed2 }
+    set: { status: Failure }
+  - when: { event_simpleName: UserLogoff }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, activity_id: 2,
+           activity_name: Logoff, type_uid: 300202, dst_endpoint_ip: null }
+  - when: { event_simpleName: UserAccountCreated }
+    set: { category_uid: 3, class_uid: 3001, class_name: Account Change, activity_id: 1,
+           activity_name: Create, type_uid: 300101 }
+  - when: { event_simpleName: UserAccountAddedToGroup }
+    set: { category_uid: 3, class_uid: 3006, class_name: Group Management, activity_id: 3,
+           activity_name: Add User, type_uid: 300603 }
+  # NewExecutableWritten, PeFileWritten, GzipFileWritten, ZipFileWritten and the rest.
+  - when: { event_simpleName: { contains: Written } }
+    set: { class_uid: 1001, class_name: File System Activity, activity_id: 1,
+           activity_name: Create, type_uid: 100101 }
+  - when: { event_simpleName: DirectoryCreate }
+    set: { class_uid: 1001, class_name: File System Activity, activity_id: 1,
+           activity_name: Create, type_uid: 100101 }
+  - when: { event_simpleName: { in: [ExecutableDeleted, FileDeleteInfo] } }
+    set: { class_uid: 1001, class_name: File System Activity, activity_id: 4,
+           activity_name: Delete, type_uid: 100104 }
+  - when: { event_simpleName: ScheduledTaskRegistered }
+    set: { class_uid: 1006, class_name: Scheduled Job Activity, activity_id: 1,
+           activity_name: Create, type_uid: 100601 }
+  - when: { event_simpleName: ScheduledTaskModified }
+    set: { class_uid: 1006, class_name: Scheduled Job Activity, activity_id: 2,
+           activity_name: Update, type_uid: 100602 }
+  - when: { event_simpleName: ScheduledTaskDeleted }
+    set: { class_uid: 1006, class_name: Scheduled Job Activity, activity_id: 3,
+           activity_name: Delete, type_uid: 100603 }
+  - when: { event_simpleName: { in: [AsepValueUpdate, RegGenericValueUpdate] } }
+    set: { class_uid: 201002, class_name: Registry Value Activity, activity_id: 2,
+           activity_name: Set, type_uid: 20100202 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: dst_endpoint_ip, name: dst_endpoint.ip, type: "IP Address" }
+  - { column: dns_query_hostname, name: query.hostname, type: Hostname }
+  - { column: device_uid, name: device.uid, type: Device }
+  - { column: device_hostname, name: device.hostname, type: Hostname }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: process_name, name: process.name, type: "Process Name" }
+  - { column: process_hash_sha256, name: process.file.hashes.sha256, type: "File Hash" }
+  - { column: file_hash_sha256, name: file.hashes.sha256, type: "File Hash" }

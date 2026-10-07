@@ -1,0 +1,140 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateFunctionUrlConfig",
+    "eventName": "CreateFunctionUrlConfig",
+    "eventSource": "lambda.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::Lambda::Function",
+        "ARN": "arn:aws:lambda:us-east-1:123456789012:function:billing"
+      }
+    ],
+    "requestParameters": {
+      "functionName": "billing",
+      "authType": "NONE"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-AddPermission20150331v2",
+    "eventName": "AddPermission20150331v2",
+    "eventSource": "lambda.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::Lambda::Function",
+        "ARN": "arn:aws:lambda:us-east-1:123456789012:function:billing"
+      }
+    ],
+    "requestParameters": {
+      "functionName": "billing",
+      "statementId": "any",
+      "action": "lambda:InvokeFunction",
+      "principal": "*"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-AddPermission20150331v2-account",
+    "eventName": "AddPermission20150331v2",
+    "eventSource": "lambda.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::Lambda::Function",
+        "ARN": "arn:aws:lambda:us-east-1:123456789012:function:billing"
+      }
+    ],
+    "requestParameters": {
+      "functionName": "billing",
+      "statementId": "partner",
+      "action": "lambda:InvokeFunction",
+      "principal": "999988887777"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-AddLayerVersionPermission20181031",
+    "eventName": "AddLayerVersionPermission20181031",
+    "eventSource": "lambda.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "layerName": "shared",
+      "versionNumber": 3,
+      "statementId": "any",
+      "action": "lambda:GetLayerVersion",
+      "principal": "*"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-AddLayerVersionPermission-account",
+    "eventName": "AddLayerVersionPermission20181031",
+    "eventSource": "lambda.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "layerName": "shared",
+      "versionNumber": 3,
+      "statementId": "partner",
+      "action": "lambda:GetLayerVersion",
+      "principal": "999988887777"
+    }
+  }
+]

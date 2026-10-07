@@ -1,0 +1,36 @@
+id: entra_security_info_registered_from_new_address
+title: MFA methods changed from an address the user has never used
+hypothesis: >
+  After a password or session is stolen, the attacker registers their own
+  authenticator or phone so the account stays theirs after a reset. They do it
+  from their own address, which the user has not signed in from before. A user
+  replacing a phone does it from home or the office.
+attack: [T1098.005, T1556.006]
+logsource:
+  product: entra
+  service: audit_logs
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation|contains: [user registered security info, user deleted security info, user changed default security info]
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, src_endpoint.ip]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.ip, api.operation, message]
+triage: >
+  Did the user get a new phone, and were they at a new place when they set it
+  up? A risky or new-country sign-in just before the change is the sign of an
+  attacker; the user confirming the new phone is the sign of a person.
+follow_up:
+  - Was there a sign-in from a new country or a hosting network in the hour before?
+  - Was an older method deleted at the same time?
+sensitive: true
+sources:
+  - name: Sigma
+    title: Change to Authentication Method
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_change_to_authentication_method.yml
+    author: AlertIQ
+    license: DRL-1.1
+    relation: inspired

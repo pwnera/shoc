@@ -1,0 +1,38 @@
+id: entra_sign_in_from_hosting_network
+title: A user signs in from a hosting provider's network for the first time
+hypothesis: >
+  People sign in from homes, offices and phone networks. Adversary-in-the-middle
+  relays, token replays and password sprayers run on rented servers at
+  DigitalOcean, Linode, Vultr, Hetzner, OVH, Contabo, Scaleway, M247, Leaseweb
+  and Hostinger. A user's first successful sign-in from one of those networks
+  is usually not the user.
+attack: [T1078.004]
+logsource:
+  product: entra
+  service: sign_ins
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    status: Success
+    src_endpoint.asn: ["14061", "63949", "20473", "24940", "16276", "51167", "12876", "9009", "60781", "47583"]
+  filter_workload:
+    actor.user.type: [ServicePrincipal, ManagedIdentity]
+  condition: selection and not filter_workload
+baseline:
+  first_seen: [actor.user.name, src_endpoint.asn]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.asn, src_endpoint.ip, http_request.user_agent]
+triage: >
+  Does this user run a VPN or a cloud desktop on that provider? A known VPN
+  explains it; an OfficeHome sign-in with a script's user agent from a server
+  does not.
+follow_up:
+  - Did the same address sign in as other users, or fail first?
+  - Did the session register an MFA method or create an inbox rule afterwards?
+sources:
+  - name: Elastic hunting
+    title: Azure Entra Authentication Attempts from Abused Hosting Service Providers
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/azure/queries/entra_authentication_attempts_from_abused_hosting_service_providers.toml
+    license: Elastic-2.0
+    relation: inspired

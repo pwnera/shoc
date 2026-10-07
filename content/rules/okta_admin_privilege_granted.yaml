@@ -1,0 +1,48 @@
+id: okta_admin_privilege_granted
+title: Okta administrator privilege granted
+description: >
+  An administrator role was granted in the identity provider: to a user, to a
+  group (every member, present and future, becomes an admin), or as a custom
+  role binding.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1098.003]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation:
+      - user.account.privilege.grant
+      - group.privilege.grant
+      - iam.resourceset.bindings.add
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Administrator Privileges Assigned to an Okta Group
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/persistence_administrator_privileges_assigned_to_okta_group
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Okta User Assigned Administrator Role
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/persistence_administrator_role_assigned_to_okta_user
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Okta Admin Role Assigned to an User or Group
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_admin_role_assigned_to_user_or_group.yml
+    author: Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: Okta Admin Role Assignment Created
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_admin_role_assignment_created.yml
+    author: Nikita Khalimonenkov
+    license: DRL-1.1
+    relation: adapted

@@ -1,0 +1,56 @@
+id: entra_device_registered_by_attack_tool
+title: Device registered with an attack tool's default identity
+description: >
+  A device joined Entra ID with the Windows build and DESKTOP- name that
+  ROADtools and phishing kits use by default. Registering a fake device turns a
+  stolen token into a Primary Refresh Token, which keeps signing in after the
+  password changes and satisfies device-based conditional access.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.8
+attack: [T1098.005]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection:
+    api.operation|contains: add device
+  # Graph writes each value as a JSON list: ["10.0.19041.928"]. A device the
+  # Device Registration Service adds names its properties Cloud*.
+  selection_build:
+    - unmapped.modified.CloudDeviceOSVersion.newValue: ['["10.0.19045.2006"]', '["10.0.19041.928"]']
+    - unmapped.modified.DeviceOSVersion.newValue: ['["10.0.19045.2006"]', '["10.0.19041.928"]']
+  selection_name:
+    - unmapped.modified.CloudDisplayName.newValue|startswith: '["DESKTOP-'
+    - unmapped.modified.DisplayName.newValue|startswith: '["DESKTOP-'
+  condition: selection and selection_build and selection_name
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Entra ID Device Registration with Phishing Kit Default OS Build
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_phishing_kit_default_os_build_device_registration
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Entra ID Device Registration with ROADtools Default OS Build
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_roadtools_default_device_registration
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Entra ID Unusual Cloud Device Registration
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/azure/persistence_entra_id_suspicious_cloud_device_registration.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Nathan McNulty
+    title: Device Registration Notifications
+    url: https://github.com/nathanmcnulty/nathanmcnulty/blob/main/Entra/device-registration/notifications/README.md
+    relation: inspired
+  - name: ROADtools
+    title: roadlib deviceauth.py (default device name and OS build)
+    url: https://github.com/dirkjanm/ROADtools/blob/master/roadlib/roadtools/roadlib/deviceauth.py
+    license: MIT
+    relation: inspired

@@ -1,0 +1,22 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "hunt-rare-listusers-alice",
+    "eventName": "ListUsers",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.24",
+    "recipientAccountId": "123456789012",
+    "userIdentity": { "type": "IAMUser", "userName": "alice", "accessKeyId": "AKIAALICE" }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "hunt-rare-listusers-bob",
+    "eventName": "ListUsers",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.25",
+    "recipientAccountId": "123456789012",
+    "userIdentity": { "type": "IAMUser", "userName": "bob", "accessKeyId": "AKIABOB" }
+  }
+]

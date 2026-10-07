@@ -1,0 +1,84 @@
+[
+  {
+    "uuid": "okta-policy.lifecycle.update",
+    "eventType": "policy.lifecycle.update",
+    "displayMessage": "policy lifecycle update",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00p1",
+        "type": "PolicyEntity",
+        "alternateId": "Default Policy"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-application.policy.sign_on.update",
+    "eventType": "application.policy.sign_on.update",
+    "displayMessage": "application policy sign_on update",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "0oa9",
+        "type": "AppInstance",
+        "alternateId": "Salesforce"
+      }
+    ]
+  }
+]

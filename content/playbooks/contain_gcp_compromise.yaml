@@ -1,0 +1,51 @@
+id: contain_gcp_compromise
+title: Contain a compromised GCP identity or an exposed GCP resource
+description: >
+  A service account key was made, an owner role granted, audit logging cut, a
+  bucket opened to the internet, a burst of VMs started, or cluster-admin
+  bound. When the calls were signed with a service account key, that key is
+  disabled, which is reversible. Removing a role binding or closing a bucket
+  needs actions shoc does not have, so a human is paged. A firewall opened to
+  the internet is answered in contain_gcp_open_firewall.
+rules:
+  - gcp_service_account_key_created
+  - gcp_privileged_role_granted
+  - gcp_audit_log_export_tampered
+  - gcp_bucket_made_public
+  - gcp_instance_creation_burst
+  - gke_cluster_admin_bound
+  - hunt:gcp_identity_first_write_operation
+  - hunt:gcp_service_account_key_new_address
+  - hunt:gcp_impersonation_role_first_grant
+  - hunt:gke_user_first_exec_into_pod
+questions:
+  - id: actor
+    ask: Who made the call, from which address, and with what, a person's session or a service account key?
+  - id: change
+    ask: What exactly changed, the role and member granted, the sink or exclusion, the bucket's members?
+  - id: after
+    ask: What did the same principal or key do next in the project, and from which addresses?
+benign_when:
+  - The change came from the Terraform service account, from the CI's usual addresses, and matches a merged change to the infrastructure code.
+  - A named engineer made it for a stated reason, such as a bucket that serves a public website or a load test.
+example: |
+  claim (actor): "roles/owner was granted to backup@example.net on example-prod by ci-deployer@example-prod.iam.gserviceaccount.com, signed with a key file, from 203.0.113.80, an address that key never used", citing the SetIamPolicy event.
+  checked and absent: "a Terraform run or merged infrastructure change touching IAM (24h)", which rules out the usual pipeline.
+  disposition: malicious, because an outside account became owner through a key used from a new address.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: disable the service account key the calls were signed with
+    action: gcp.disable_service_account_key
+    optional: true
+    params:
+      key_id: "{{ entity.key }}"
+      service_account: "{{ entity.user }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: GCP changed by {{ entity.user }}, check it: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"

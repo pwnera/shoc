@@ -1,0 +1,39 @@
+id: openai_owner_role_granted
+title: OpenAI organization owner added
+description: >
+  An owner creates Admin keys, manages billing and can switch the audit log's
+  retention off through support. It is the role to take after a login.
+status: stable
+date: 2026-09-30
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1098]
+logsource:
+  product: openai
+  service: audit_log
+detection:
+  selection_invite:
+    api.operation: [invite.sent, user.added]
+    raw.details.data.role: owner
+  selection_update:
+    api.operation: user.updated
+    raw.details.changes_requested.role: owner
+  # A role assignment names the role it grants only in its id.
+  selection_assignment:
+    api.operation: role.assignment.created
+    raw.details.id|contains: role-api-organization-owner
+  condition: selection_invite or selection_update or selection_assignment
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, api.operation, raw.details.principal_id]
+sources:
+  - name: Panther
+    title: OpenAI Admin Role Assignment
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/openai_rules/openai_admin_role_assignment.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: OpenAI
+    title: OpenAI API OpenAPI specification (AuditLog)
+    url: https://github.com/openai/openai-openapi/blob/main/openapi.yaml
+    relation: inspired

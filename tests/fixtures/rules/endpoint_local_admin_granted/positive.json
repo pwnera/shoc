@@ -1,0 +1,105 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "UserAccountAddedToGroup",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "GroupRid": "00000220",
+    "UserRid": "000003EA",
+    "DomainSid": "S-1-5-21-4444444444-5555555555-6666666666",
+    "RpcOpNum": "31",
+    "InterfaceGuid": "00000000-0000-0000-0000-000000000001"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "net.exe",
+      "FolderPath": "C:/Windows/System32/net.exe",
+      "ProcessCommandLine": "net.exe localgroup administrators eve /add",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "jdoe"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "UserAccountAddedToLocalGroup",
+      "AccountName": "eve",
+      "AccountSid": "S-1-5-21-1111111111-2222222222-3333333333-1105",
+      "AdditionalFields": {
+        "GroupName": "Administrators",
+        "GroupDomainName": "BUILTIN",
+        "GroupSid": "S-1-5-32-544"
+      }
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "windows_event_logs",
+      "type": "Windows Event Log Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "host05.example.com",
+      "os": "windows"
+    },
+    "winEventLog": {
+      "data": {
+        "event": {
+          "system": {
+            "eventID": "4732",
+            "channel": "Security"
+          },
+          "eventData": {
+            "targetUserName": "Administrators",
+            "targetSid": "S-1-5-32-544",
+            "memberSid": "S-1-5-21-1-2-3-1105",
+            "subjectUserName": "jdoe"
+          }
+        }
+      }
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "host05.example.com",
+      "os": "osx"
+    },
+    "tgt": {
+      "process": {
+        "name": "sysadminctl",
+        "cmdline": "sysadminctl -addUser eve -password - -admin",
+        "image": {
+          "path": "/usr/sbin/sysadminctl"
+        },
+        "user": "jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "zsh"
+      }
+    }
+  }
+]

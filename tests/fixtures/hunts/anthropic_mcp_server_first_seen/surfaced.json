@@ -1,0 +1,16 @@
+[
+  {
+    "id": "activity_01McpNew",
+    "organization_id": "org_01",
+    "type": "mcp_server_created",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "mcp_server_name": "repo-tools",
+    "mcp_server_url": "https://mcp.example.net/sse"
+  }
+]

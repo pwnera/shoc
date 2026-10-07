@@ -1,0 +1,24 @@
+[
+  {
+    "_document_id": "gh-repo.remove_self_hosted_runner",
+    "action": "repo.remove_self_hosted_runner",
+    "actor": "dana",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "public_repo": false,
+    "operation_type": "remove"
+  },
+  {
+    "_document_id": "gh-repo.self_hosted_runner_online",
+    "action": "repo.self_hosted_runner_online",
+    "actor": "dana",
+    "actor_id": 4242,
+    "org": "acme",
+    "repo": "acme/payments",
+    "runner_id": 12,
+    "runner_name": "build-01",
+    "operation_type": "modify"
+  }
+]

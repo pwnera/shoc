@@ -1,0 +1,124 @@
+[
+  {
+    "Id": "m365-Set-AntiPhishPolicy",
+    "Operation": "Set-AntiPhishPolicy",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:50200",
+    "ObjectId": "Office365 AntiPhish Default",
+    "Parameters": [
+      {
+        "Name": "EnableMailboxIntelligence",
+        "Value": "True"
+      }
+    ]
+  },
+  {
+    "Id": "m365-Set-AdminAuditLogConfig-other",
+    "Operation": "Set-AdminAuditLogConfig",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:50201",
+    "ObjectId": "Admin Audit Log Settings",
+    "Parameters": [
+      {
+        "Name": "AdminAuditLogAgeLimit",
+        "Value": "180.00:00:00"
+      }
+    ]
+  },
+  {
+    "Id": "m365-dkim-on",
+    "Operation": "Set-DkimSigningConfig",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "203.0.113.61:50200",
+    "ObjectId": "Built-in protection",
+    "Parameters": [
+      {
+        "Name": "Identity",
+        "Value": "example.com"
+      },
+      {
+        "Name": "Enabled",
+        "Value": "True"
+      }
+    ]
+  },
+  {
+    "Id": "m365-audit-on",
+    "Operation": "Set-AdminAuditLogConfig",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "203.0.113.61:50200",
+    "ObjectId": "Built-in protection",
+    "Parameters": [
+      {
+        "Name": "UnifiedAuditLogIngestionEnabled",
+        "Value": "True"
+      }
+    ]
+  },
+  {
+    "Id": "m365-Set-MailboxAuditBypassAssociation-removed",
+    "Operation": "Set-MailboxAuditBypassAssociation",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:50202",
+    "ObjectId": "svc-archive",
+    "Parameters": [
+      {
+        "Name": "Identity",
+        "Value": "svc-archive@example.com"
+      },
+      {
+        "Name": "AuditBypassEnabled",
+        "Value": "False"
+      }
+    ]
+  },
+  {
+    "Id": "m365-Set-OrganizationConfig-other",
+    "Operation": "Set-OrganizationConfig",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:50203",
+    "ObjectId": "example.onmicrosoft.com",
+    "Parameters": [
+      {
+        "Name": "AuditDisabled",
+        "Value": "False"
+      }
+    ]
+  }
+]

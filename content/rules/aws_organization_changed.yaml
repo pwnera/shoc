@@ -1,0 +1,42 @@
+id: aws_organization_changed
+title: AWS Organizations membership changed or an account closed
+description: >
+  An account was created, invited, removed, closed or given delegated
+  administration of an organisation-wide service, or tried to leave the
+  organisation. These changes move whole accounts outside the controls you
+  think you have. A denied attempt to leave counts too: it shows intent.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1666, T1098, T1531]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_change:
+    api.operation: [CreateAccount, InviteAccountToOrganization, RemoveAccountFromOrganization, DeleteOrganization, RegisterDelegatedAdministrator, CloseAccount]
+    status: Success
+  selection_leave:
+    api.operation: LeaveOrganization
+  condition: selection_change or selection_leave
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, status, cloud.account.uid]
+sources:
+  - name: Elastic
+    title: AWS Attempt to Leave Organization
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_organizations_leave_organization
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS Account Closed
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_aws_account_closed
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS Organizations Delegated Administrator Registered
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_organizations_delegated_admin_registered
+    license: Elastic-2.0
+    relation: adapted

@@ -1,0 +1,15 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "36a2337df811411eb6abeac136945a6c",
+    "cid": "7da61e27e34f4b8394081896af72e2c7",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "CommandLine": "powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAKQA=",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "4242",
+    "UserSid": "S-1-5-21-1111111111-2222222222-3333333333-1104",
+    "id": "hunt-surfaced"
+  }
+]

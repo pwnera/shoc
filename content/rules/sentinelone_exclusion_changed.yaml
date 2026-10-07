@@ -1,0 +1,32 @@
+id: sentinelone_exclusion_changed
+title: A SentinelOne exclusion was added or changed
+description: >
+  Someone in the SentinelOne console added or changed an exclusion, so the agent
+  no longer looks at a path, a file or a process. It is what an intruder with a
+  console account does before running their tools, and what an admin does to
+  quiet a noisy application.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: medium
+confidence: 0.6
+attack: [T1562.001]
+sources:
+  - name: Microsoft
+    title: "Microsoft Sentinel ASIM audit event parser for SentinelOne (activity types)"
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Parsers/ASimAuditEvent/Parsers/ASimAuditEventSentinelOne.yaml
+    relation: inspired
+logsource:
+  product: edr
+  service: alerts
+detection:
+  # Activity types: 3001 a hash exclusion added by a user; 3008 to 3011 a new
+  # path, signer, file type or browser exclusion; 3012 to 3015 one changed.
+  selection:
+    metadata.product.name: SentinelOne
+    raw.activityType: ['3001', '3008', '3009', '3010', '3011', '3012', '3013', '3014', '3015']
+  condition: selection
+  timeframe: 1h
+entity: actor.user.name
+fields: [actor.user.name, message, raw.data.exclusionType, raw.data.value, raw.data.osFamily,
+         raw.data.groupName]

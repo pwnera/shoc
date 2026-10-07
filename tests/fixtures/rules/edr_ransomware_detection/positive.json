@@ -1,0 +1,52 @@
+[
+  {
+    "_source": "crowdstrike",
+    "detection_id": "cs-Impact-Critical",
+    "max_severity_displayname": "Critical",
+    "tactic": "Impact",
+    "description": "Ransomware behaviour blocked",
+    "name": "Impact",
+    "user_name": "jdoe",
+    "local_ip": "10.1.2.3",
+    "hostname": "laptop-17",
+    "device_id": "dev-1",
+    "status": "new"
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "ldt:5d40e8a1c7b6:9001",
+    "type": "ldt",
+    "product": "epp",
+    "severity": 90,
+    "tactic": "Impact",
+    "description": "A process encrypted many files in a short time",
+    "device": {
+      "device_id": "5d40e8a1c7b6",
+      "hostname": "laptop-33"
+    },
+    "user_name": "jdoe",
+    "technique_id": "T1486",
+    "technique": "Data Encrypted for Impact",
+    "filename": "svch0st.exe"
+  },
+  {
+    "_source": "defender",
+    "id": "da638100",
+    "severity": "high",
+    "title": "File backups were deleted",
+    "category": "Impact",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-21.example.org",
+        "mdeDeviceId": "2222222222222222222222222222222222222222"
+      }
+    ],
+    "mitreTechniques": [
+      "T1490",
+      "T1486"
+    ]
+  }
+]

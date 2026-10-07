@@ -1,0 +1,42 @@
+id: okta_push_approved_after_denial
+title: Okta push approved minutes after the user rejected one
+description: >
+  A user rejected an Okta Verify push and, within ten minutes, a sign-in on
+  the same account succeeded. The rejection says the user did not start the
+  first sign-in; the success says somebody got through anyway, usually by
+  sending pushes until one was accepted.
+status: experimental
+date: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1621, T1078.004]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  denied_push:
+    api.operation: user.mfa.okta_verify.deny_push
+  rejected_push:
+    api.operation: user.authentication.auth_via_mfa
+    raw.debugContext.debugData.factor: OKTA_VERIFY_PUSH
+    status_code: INVALID_CREDENTIALS
+  signed_in:
+    api.operation: [user.authentication.sso, user.authentication.auth_via_mfa,
+                    user.authentication.verify, user.session.start]
+    status: Success
+  # Okta's user id: the same in the push and the sign-in, whatever login name
+  # the user typed.
+  sequence:
+    by: [actor.user.uid]
+    first: denied_push or rejected_push
+    then: signed_in
+    within: 10m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.location.country, http_request.user_agent,
+         api.operation]
+sources:
+  - name: Elastic
+    title: Potentially Successful Okta MFA Bombing via Push Notifications
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_potentially_successful_okta_bombing_via_push_notifications
+    license: Elastic-2.0
+    relation: adapted

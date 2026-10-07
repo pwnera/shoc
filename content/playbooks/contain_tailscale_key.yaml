@@ -1,0 +1,46 @@
+id: contain_tailscale_key
+title: Contain an unexpected Tailscale auth key
+description: >
+  An auth key was created. A reusable or pre-approved key lets any device join
+  the tailnet without a person approving it, so it is how an attacker keeps a
+  way in. Revoking the key cannot be undone and suspending its creator locks a
+  colleague out, so both wait for a human, who is paged first.
+rules:
+  - tailscale_key_created
+questions:
+  - id: key
+    ask: Is the key reusable, pre-approved or tagged, and which devices joined with it since?
+  - id: actor
+    ask: Who created the key, through the admin console, the API or an OAuth client, and do they usually provision devices?
+  - id: joined
+    ask: What did the devices that joined with the key reach in the tailnet?
+benign_when:
+  - The key came from the infrastructure OAuth client and matches the policy repository.
+  - A tagged server joined with a key whose expiry is disabled. That is how servers are set up; a person's laptop is not.
+  - The actor is an OAuth client id that `own.list` records as shoc's own, and it only read.
+example: |
+  claim (key): "mallory@example.com created a reusable, pre-approved auth key and two devices joined with it within ten minutes", citing the key and both device events.
+  checked and absent: "an earlier key created by this user (90d)", which rules out someone who routinely provisions servers.
+  disposition: malicious, because devices nobody approved joined through a key nobody expected.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.75
+steps:
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: Tailscale auth key {{ entity.resource }} created by {{ entity.user }}: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  # The key is the event's target, which the mapping puts in `resource`.
+  - name: revoke the key
+    action: tailscale.revoke_key
+    optional: true
+    params:
+      key_id: "{{ entity.resource }}"
+  - name: suspend the user who created it
+    action: tailscale.suspend_user
+    optional: true
+    params:
+      user: "{{ entity.user }}"

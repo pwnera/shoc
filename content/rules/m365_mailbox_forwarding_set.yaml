@@ -1,0 +1,44 @@
+id: m365_mailbox_forwarding_set
+title: Mailbox set to forward every message
+description: >
+  A mailbox was set to forward all its mail to another address. Unlike an inbox
+  rule, mailbox forwarding is set by an admin or through PowerShell, copies every
+  message, and survives a password reset. It is the second way business email
+  compromise keeps reading a mailbox.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.75
+attack: [T1114.003]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation: Set-Mailbox
+  # Clearing forwarding sets the parameter to nothing, which reads as absent.
+  forwarding:
+    - unmapped.params.ForwardingSmtpAddress|exists: true
+    - unmapped.params.ForwardingAddress|exists: true
+  filter_system:
+    actor.user.name|startswith: NT AUTHORITY
+  filter_failed:
+    status: Failure
+  condition: selection and forwarding and not filter_system and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip, unmapped.params.ForwardingSmtpAddress,
+         unmapped.params.ForwardingAddress]
+sources:
+  - name: Sigma
+    title: Mail Forwarding/Redirecting Activity In O365
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/cloud/m365/audit/microsoft365_susp_email_forwarding_activity.yml
+    author: RedCanary Team (idea), Harjot Singh @cyb3rjy0t
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: M365 Exchange Inbox Forwarding Rule Created
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/collection_exchange_new_inbox_rule
+    license: Elastic-2.0
+    relation: inspired

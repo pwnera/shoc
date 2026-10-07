@@ -1,0 +1,81 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-DeleteAccountPasswordPolicy",
+    "eventName": "DeleteAccountPasswordPolicy",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": null,
+    "responseElements": null,
+    "readOnly": false,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-UpdateAccountPasswordPolicy-short",
+    "eventName": "UpdateAccountPasswordPolicy",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "minimumPasswordLength": 8,
+      "requireSymbols": false,
+      "requireNumbers": false,
+      "requireUppercaseCharacters": false,
+      "requireLowercaseCharacters": false,
+      "allowUsersToChangePassword": true
+    },
+    "responseElements": null,
+    "readOnly": false,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-UpdateAccountPasswordPolicy-defaults",
+    "eventName": "UpdateAccountPasswordPolicy",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": null,
+    "responseElements": null,
+    "readOnly": false,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  }
+]

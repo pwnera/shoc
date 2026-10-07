@@ -1,0 +1,58 @@
+id: entra_device_code_sign_in
+title: Sign-in through the device code flow
+description: >
+  Someone signed in by typing a code on microsoft.com/devicelogin. Device code
+  phishing sends that code to the victim, who signs in for the attacker and
+  hands over a token without the attacker ever seeing a password or an MFA
+  prompt. A company of this size rarely uses the flow on purpose. Storm-2372
+  asked for the code with the Microsoft Authentication Broker's client ID, so
+  the token could register a device; Windows never joins a device this way.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1566.002, T1528, T1550.001]
+logsource:
+  product: entra
+  service: sign_ins
+detection:
+  selection:
+    - raw.authenticationProtocol: deviceCode
+    - raw.properties.authenticationProtocol: deviceCode
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip, src_endpoint.asn, http_request.user_agent]
+sources:
+  - name: Sigma
+    title: Application Using Device Code Authentication Flow
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_app_device_code_authentication.yml
+    author: Mark Morowczynski '@markmorow', Bailey Bercik '@baileybercik'
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: Entra ID OAuth Device Code Grant by Unusual User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_first_time_seen_device_code_auth
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Entra ID OAuth Device Code Phishing via AiTM
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_oauth_device_code_phishing_tycoon_aitm
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Entra ID Device Code Auth with Broker Client
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/azure/initial_access_entra_id_device_code_auth_with_broker_client.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft
+    title: Storm-2372 conducts device code phishing campaign
+    url: https://www.microsoft.com/en-us/security/blog/2025/02/13/storm-2372-conducts-device-code-phishing-campaign/
+    relation: inspired
+  - name: Dirk-jan Mollema
+    title: Phishing for Primary Refresh Tokens and Windows Hello keys
+    url: https://dirkjanm.io/phishing-for-microsoft-entra-primary-refresh-tokens/
+    relation: inspired

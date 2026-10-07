@@ -1,0 +1,26 @@
+[
+  {
+    "_document_id": "github-webhook-repo-deleted",
+    "action": "repo.destroy",
+    "actor": "mallory",
+    "org": "acme",
+    "webhook": {
+      "event": "repository",
+      "action": "deleted"
+    },
+    "repo": "acme/payments"
+  },
+  {
+    "_document_id": "gh-repo.transfer_outgoing",
+    "action": "repo.transfer_outgoing",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/api",
+    "new_nwo": "mallory-example/api",
+    "public_repo": false,
+    "visibility": "private",
+    "operation_type": "transfer"
+  }
+]

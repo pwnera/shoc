@@ -1,0 +1,140 @@
+[
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-invite-member",
+    "type": "invite.sent",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-9",
+          "email": "mallory@example.com"
+        },
+        "ip_address": "203.0.113.44",
+        "user_agent": "Mozilla/5.0",
+        "ip_address_details": {
+          "country": "US",
+          "asn": "64500"
+        }
+      }
+    },
+    "invite.sent": {
+      "id": "invite-2",
+      "data": {
+        "email": "new.hire@example.com",
+        "role": "member"
+      }
+    },
+    "details": {
+      "id": "invite-2",
+      "data": {
+        "email": "new.hire@example.com",
+        "role": "member"
+      }
+    },
+    "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-assign-reader",
+    "type": "role.assignment.created",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-9",
+          "email": "mallory@example.com"
+        },
+        "ip_address": "203.0.113.44",
+        "user_agent": "Mozilla/5.0",
+        "ip_address_details": {
+          "country": "US",
+          "asn": "64500"
+        }
+      }
+    },
+    "role.assignment.created": {
+      "id": "role_assignment_role-api-organization-reader__api-organization__org-abc123_user-employee456",
+      "principal_id": "user-employee456",
+      "principal_type": "user",
+      "resource_id": "org-abc123",
+      "resource_type": "api.organization"
+    },
+    "details": {
+      "id": "role_assignment_role-api-organization-reader__api-organization__org-abc123_user-employee456",
+      "principal_id": "user-employee456",
+      "principal_type": "user",
+      "resource_id": "org-abc123",
+      "resource_type": "api.organization"
+    },
+    "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-unassign-owner",
+    "type": "role.assignment.deleted",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-9",
+          "email": "mallory@example.com"
+        },
+        "ip_address": "203.0.113.44",
+        "user_agent": "Mozilla/5.0",
+        "ip_address_details": {
+          "country": "US",
+          "asn": "64500"
+        }
+      }
+    },
+    "role.assignment.deleted": {
+      "id": "role_assignment_role-api-organization-owner__api-organization__org-abc123_user-oldadmin999",
+      "principal_id": "user-oldadmin999",
+      "principal_type": "user",
+      "resource_id": "org-abc123",
+      "resource_type": "api.organization"
+    },
+    "details": {
+      "id": "role_assignment_role-api-organization-owner__api-organization__org-abc123_user-oldadmin999",
+      "principal_id": "user-oldadmin999",
+      "principal_type": "user",
+      "resource_id": "org-abc123",
+      "resource_type": "api.organization"
+    },
+    "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-user-member",
+    "type": "user.updated",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-9",
+          "email": "mallory@example.com"
+        },
+        "ip_address": "203.0.113.44",
+        "user_agent": "Mozilla/5.0",
+        "ip_address_details": {
+          "country": "US",
+          "asn": "64500"
+        }
+      }
+    },
+    "user.updated": {
+      "id": "user-employee456",
+      "changes_requested": {
+        "role": "member"
+      }
+    },
+    "details": {
+      "id": "user-employee456",
+      "changes_requested": {
+        "role": "member"
+      }
+    },
+    "key_id": null
+  }
+]

@@ -1,0 +1,35 @@
+id: okta_fastpass_phishing_blocked
+title: Okta FastPass refused a phishing site for a user
+description: >
+  FastPass declined to sign the user in because the page asking was not the
+  real Okta. A phishing kit is aimed at this person now, and it may already
+  hold their password.
+status: experimental
+date: 2026-10-02
+severity: medium
+confidence: 0.75
+attack: [T1566.002]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation: user.authentication.auth_via_mfa
+    status: Failure
+    status_code: FastPass declined phishing attempt
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, http_request.user_agent]
+sources:
+  - name: Elastic
+    title: Okta FastPass Phishing Detection
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/initial_access_okta_fastpass_phishing
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Okta FastPass Phishing Detection
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_fastpass_phishing_detection.yml
+    author: Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: adapted

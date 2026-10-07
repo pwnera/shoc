@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-ENFORCE_STRONG_AUTHENTICATION",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "ENFORCE_STRONG_AUTHENTICATION",
+        "parameters": [
+          {
+            "name": "OLD_VALUE",
+            "value": "true"
+          },
+          {
+            "name": "NEW_VALUE",
+            "value": "false"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "Sales"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-2sv_disable",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "login",
+    "events": [
+      {
+        "type": "2sv_change",
+        "name": "2sv_disable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-TURN_OFF_2_STEP_VERIFICATION",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "USER_SETTINGS",
+        "name": "TURN_OFF_2_STEP_VERIFICATION",
+        "parameters": [
+          {
+            "name": "USER_EMAIL",
+            "value": "bob@example.com"
+          }
+        ]
+      }
+    ]
+  }
+]

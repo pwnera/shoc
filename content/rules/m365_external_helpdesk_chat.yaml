@@ -1,0 +1,42 @@
+id: m365_external_helpdesk_chat
+title: One-to-one Teams chat with an outside "help desk"
+description: >
+  A one-to-one Teams chat was opened with someone from another tenant whose
+  name poses as IT support or Microsoft. Several ransomware crews open this
+  way: flood the user's inbox with spam, then message them as the help desk
+  and ask for a remote session.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1566.003]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation: ChatCreated
+    raw.CommunicationType: OneOnOne
+    raw.ParticipantInfo.HasForeignTenantUsers: "true"
+    # Storm-1811 also wrote "Microsoft  Security" with two spaces.
+    raw.Members|contains: [help desk, helpdesk, help-desk, it support, itsupport, technical support,
+                           microsoft support, microsoft security, "microsoft  security"]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, resource.uid]
+sources:
+  - name: Elastic
+    title: M365 Teams Rogue Help Desk Chat Created
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/initial_access_teams_rogue_helpdesk_chat
+    license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft
+    title: Threat actors misusing Quick Assist in social engineering attacks leading to ransomware
+    url: https://www.microsoft.com/en-us/security/blog/2024/05/15/threat-actors-misusing-quick-assist-in-social-engineering-attacks-leading-to-ransomware/
+    relation: inspired
+  - name: Rapid7
+    title: Black Basta Ransomware Campaign Drops Zbot, DarkGate, and Custom Malware
+    url: https://www.rapid7.com/blog/post/2024/12/04/black-basta-ransomware-campaign-drops-zbot-darkgate-and-custom-malware/
+    relation: inspired

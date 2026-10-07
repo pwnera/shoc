@@ -1,0 +1,39 @@
+id: entra_guest_promoted_to_member
+title: Guest account turned into a member of the Entra tenant
+description: >
+  An external guest was changed to a member. A member reads the whole
+  directory, every group and every Team, and is no longer flagged as external
+  in Teams or SharePoint. A small company almost never needs it, so an
+  attacker's invited account turned member is the case to rule out.
+status: experimental
+date: 2026-10-02
+severity: medium
+confidence: 0.6
+attack: [T1098, T1078.004]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  # Graph writes each value as a JSON list: ["Guest"] to ["Member"].
+  selection:
+    api.operation: Update user
+    unmapped.modified.UserType.oldValue|contains: '"Guest"'
+    unmapped.modified.UserType.newValue|contains: '"Member"'
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 15m
+entity: [actor.user.name, resource.uid]
+fields: [actor.user.name, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Entra ID Guest Account Promoted to Member
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_guest_account_promoted_to_member
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: User State Changed From Guest To Member
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_guest_to_member.yml
+    author: MikeDuddington, '@dudders1'
+    license: DRL-1.1
+    relation: adapted

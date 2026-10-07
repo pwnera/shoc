@@ -1,0 +1,83 @@
+[
+  {
+    "eventDataId": "az-runcommand",
+    "correlationId": "11111111-aaaa-4aaa-8aaa-111111111111",
+    "operationName": {
+      "value": "Microsoft.Compute/virtualMachines/runCommand/action",
+      "localizedValue": "Run Command on Virtual Machine"
+    },
+    "category": {
+      "value": "Administrative",
+      "localizedValue": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded",
+      "localizedValue": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "203.0.113.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceGroupName": "rg-prod",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/virtualMachines/vm-01"
+  },
+  {
+    "resourceId": "/SUBSCRIPTIONS/00000000-1111-2222-3333-444444444444/RESOURCEGROUPS/RG-PROD/PROVIDERS/MICROSOFT.COMPUTE/VIRTUALMACHINES/VM-02/EXTENSIONS/CUSTOMSCRIPT",
+    "operationName": "MICROSOFT.COMPUTE/VIRTUALMACHINES/EXTENSIONS/WRITE",
+    "category": "Administrative",
+    "resultType": "Success",
+    "resultSignature": "Succeeded.Created",
+    "callerIpAddress": "203.0.113.24",
+    "correlationId": "22222222-aaaa-4aaa-8aaa-222222222222",
+    "identity": {
+      "authorization": {
+        "action": "Microsoft.Compute/virtualMachines/extensions/write",
+        "evidence": {
+          "role": "Virtual Machine Contributor",
+          "principalType": "User"
+        }
+      },
+      "claims": {
+        "upn": "dana@example.com",
+        "ipaddr": "203.0.113.24"
+      }
+    },
+    "level": "Information",
+    "properties": {
+      "statusCode": "Created",
+      "eventCategory": "Administrative"
+    }
+  },
+  {
+    "eventDataId": "az-ext-vmaccess",
+    "correlationId": "33333333-bbbb-4bbb-8bbb-333333333333",
+    "operationName": {
+      "value": "Microsoft.Compute/virtualMachines/extensions/write",
+      "localizedValue": "Create or Update Virtual Machine Extension"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "203.0.113.25"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.25"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceGroupName": "rg-prod",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/virtualMachines/vm-03/extensions/enablevmaccess"
+  }
+]

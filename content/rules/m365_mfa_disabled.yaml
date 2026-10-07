@@ -1,0 +1,32 @@
+id: m365_mfa_disabled
+title: MFA turned off or a method removed by an admin (Microsoft 365 audit)
+description: >
+  The unified audit log recorded an admin turning off per-user MFA or deleting
+  a user's sign-in method. This copy of the Entra rule covers tenants that
+  connect only Microsoft 365, which are the ones most likely to run per-user
+  MFA.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1556.006]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation|contains: [disable strong authentication, admin deleted security info]
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Sigma
+    title: Disabling Multi Factor Authentication
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/m365/audit/microsoft365_disabling_mfa.yml
+    author: Splunk Threat Research Team (original rule), Harjot Singh @cyb3rjy0t (sigma rule)
+    license: DRL-1.1
+    relation: adapted

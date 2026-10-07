@@ -1,0 +1,53 @@
+id: contain_identity_policy_tampering
+title: Contain tampering with sign-in policy
+description: >
+  A sign-on, password or conditional access policy changed, or an external
+  identity provider was added. Either can let an attacker back in without a
+  password. Revoking the actor's sessions stops further changes. Reverting the
+  policy or disabling the identity provider needs actions shoc does not have
+  yet, so a human is paged.
+rules:
+  - okta_security_policy_changed
+  - entra_conditional_access_changed
+  - okta_identity_provider_added
+  - okta_network_zone_changed
+  - hunt:okta_sign_in_via_new_identity_provider
+  - entra_domain_federation_changed
+  - m365_domain_federation_changed
+  - entra_auth_policy_changed
+questions:
+  - id: what_changed
+    ask: What did the policy allow before and after the change, and which users does it apply to?
+  - id: new_idp_use
+    ask: Who can sign in through the new identity provider, and has anyone done so?
+  - id: actor_origin
+    ask: Did the actor sign in from a new address, country or device before the change?
+  - id: zone_change
+    ask: If a network zone changed, which addresses did it add or unblock, and which policies trust that zone?
+benign_when:
+  - The change was made by a named identity admin from the office egress and matches a planned rollout.
+example: |
+  claim (new_idp_use): "A new identity provider was added and two users signed in through it within the hour", citing the change and both sign-ins.
+  checked and absent: "a planned rollout or change record for the provider in memory (90d)", which rules out a planned rollout.
+  disposition: malicious, because a sign-in path nobody wrote down is already in use.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: revoke the actor's sessions in Okta
+    action: okta.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: revoke the actor's sessions in Entra ID
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: sign-in policy changed by {{ entity.user }}, revert it: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"

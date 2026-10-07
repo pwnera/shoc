@@ -1,0 +1,69 @@
+id: edr_high_severity_detection
+title: High-severity endpoint detection
+description: >
+  The endpoint agent raised something it considers serious. shoc does not
+  second guess the EDR; it puts the detection next to everything else that
+  happened. Wazuh's SSH brute force, web scan and vulnerability alerts are left
+  out: they say a server is exposed, not that something ran on it.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1204]
+sources:
+  - name: Elastic
+    title: "CrowdStrike External Alerts"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/promotions/crowdstrike_external_alerts.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: "SentinelOne Threat External Alerts"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/promotions/sentinelone_threat_external_alerts.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: "Microsoft Defender XDR Alert External Alerts"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/promotions/m365_defender_alert_external_alerts.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft
+    title: "Microsoft Graph security enum values (serviceSource)"
+    url: https://learn.microsoft.com/en-us/graph/api/resources/enums-security?view=graph-rest-1.0
+    relation: inspired
+  - name: Microsoft
+    title: "Handling future members in evolvable enumerations"
+    url: https://learn.microsoft.com/en-us/graph/best-practices-concept#handling-future-members-in-evolvable-enumerations
+    relation: inspired
+logsource:
+  product: edr
+  service: alerts
+detection:
+  selection:
+    class_uid: 2004
+    severity_id|gte: 4
+  filter_wazuh_noise:
+    metadata.product.name: Wazuh
+    raw.rule.groups|contains:
+      - authentication_failed
+      - authentication_failures
+      - vulnerability-detector
+      - web_scan
+      - recon
+  # Office 365, Identity, Cloud Apps, Entra ID Protection, App Governance and
+  # Purview alerts from Defender, and Falcon Identity Protection: about an
+  # account, not a host. Defender for Cloud alerts are azure_vendor_alert's;
+  # Graph sends them and Sentinel's as unknownFutureValue unless asked not to.
+  filter_not_endpoint:
+    - api.service.name: [microsoftDefenderForOffice365, microsoftDefenderForIdentity,
+                         microsoftDefenderForCloudApps, azureAdIdentityProtection,
+                         microsoftAppGovernance, dataLossPrevention, microsoftDefenderForCloud,
+                         unknownFutureValue]
+    - api.service.name|startswith: idp
+  condition: selection and not filter_wazuh_noise and not filter_not_endpoint
+  timeframe: 15m
+# An alert with no device id keys on the host name, then the user.
+entity: [resource.uid, device.hostname, actor.user.name]
+fields: [device.hostname, actor.user.name, resource.uid, api.operation, message, process.name,
+         process.cmd_line, process.parent_process.name, process.file.hashes.sha256, file.path,
+         file.hashes.sha256]

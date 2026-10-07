@@ -1,0 +1,49 @@
+id: aws_ec2_user_data_modified
+title: EC2 instance start-up script replaced
+description: >
+  An instance's user data was changed. It runs as root on the next boot, with
+  the instance role's credentials, so replacing it is code execution on that
+  server. Terraform also edits it in place, with a stop and a start, when
+  `user_data` changes and `user_data_replace_on_change` is off, so a deploy
+  can match.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1059.009, T1578]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.operation: ModifyInstanceAttribute
+  selection_userdata:
+    raw.requestParameters.userData|exists: true
+  selection_userdata_attribute:
+    raw.requestParameters.attribute: userData
+  condition: selection and (selection_userdata or selection_userdata_attribute)
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, raw.requestParameters.instanceId]
+sources:
+  - name: Sigma
+    title: AWS EC2 Startup Shell Script Change
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_ec2_startup_script_change.yml
+    author: faloker
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: AWS EC2 Stop, Start, and User Data Modification Correlation
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/execution_ec2_stop_start_with_user_data_modification
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: EC2 Modify Instance Attribute User Data
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/ec2_modify_instance_attribute_user_data.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Terraform
+    title: AWS provider, aws_instance resource (user_data)
+    url: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance
+    relation: inspired

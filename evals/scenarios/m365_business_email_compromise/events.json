@@ -1,0 +1,83 @@
+[
+  {
+    "Id": "m365-UserLoggedIn-login-ok",
+    "Operation": "UserLoggedIn",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@acme.com",
+    "ClientIP": "198.51.100.60",
+    "Workload": "Exchange",
+    "ResultStatus": "Succeeded",
+    "ObjectId": "login-ok",
+    "SessionId": "s-evil",
+    "UserAgent": "Mozilla/5.0",
+    "_repeat": 3
+  },
+  {
+    "Id": "m365-Consent to application-app-mailreader",
+    "Operation": "Consent to application",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@acme.com",
+    "ClientIP": "203.0.113.80",
+    "Workload": "Exchange",
+    "ResultStatus": "Succeeded",
+    "ObjectId": "app-mailreader",
+    "SessionId": "s-evil",
+    "UserAgent": "Mozilla/5.0"
+  },
+  {
+    "Id": "m365-New-InboxRule-rule-hide-replies",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@acme.com",
+    "ClientIP": "203.0.113.80",
+    "Workload": "Exchange",
+    "ResultStatus": "Succeeded",
+    "ObjectId": "rule-hide-replies",
+    "Parameters": [
+      { "Name": "SubjectOrBodyContainsWords", "Value": "invoice;payment" },
+      { "Name": "MoveToFolder", "Value": "RSS Feeds" },
+      { "Name": "MarkAsRead", "Value": "True" }
+    ],
+    "SessionId": "s-evil",
+    "UserAgent": "Mozilla/5.0"
+  },
+  {
+    "Id": "m365-Add-MailboxPermission-finance@acme.com",
+    "Operation": "Add-MailboxPermission",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@acme.com",
+    "ClientIP": "203.0.113.80",
+    "Workload": "Exchange",
+    "ResultStatus": "Succeeded",
+    "ObjectId": "finance@acme.com",
+    "SessionId": "s-evil",
+    "UserAgent": "Mozilla/5.0"
+  },
+  {
+    "Id": "m365-AnonymousLinkCreated-/sites/finance/payroll.xlsx",
+    "Operation": "AnonymousLinkCreated",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@acme.com",
+    "ClientIP": "203.0.113.80",
+    "Workload": "Exchange",
+    "ResultStatus": "Succeeded",
+    "ObjectId": "/sites/finance/payroll.xlsx",
+    "SessionId": "s-evil",
+    "UserAgent": "Mozilla/5.0"
+  }
+]

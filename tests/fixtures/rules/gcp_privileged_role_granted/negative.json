@@ -1,0 +1,79 @@
+[
+  {
+    "insertId": "gcp-owner-demoted",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudresourcemanager.googleapis.com",
+      "methodName": "SetIamPolicy",
+      "resourceName": "projects/example-prod",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.12",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "serviceData": {
+        "@type": "type.googleapis.com/google.iam.v1.logging.AuditData",
+        "policyDelta": {
+          "bindingDeltas": [
+            {
+              "action": "REMOVE",
+              "role": "roles/owner",
+              "member": "user:marc@example.com"
+            },
+            {
+              "action": "ADD",
+              "role": "roles/viewer",
+              "member": "user:marc@example.com"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "insertId": "gcp-viewer-grant",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudresourcemanager.googleapis.com",
+      "methodName": "SetIamPolicy",
+      "resourceName": "projects/example-prod",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.12",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "serviceData": {
+        "@type": "type.googleapis.com/google.iam.v1.logging.AuditData",
+        "policyDelta": {
+          "bindingDeltas": [
+            {
+              "action": "ADD",
+              "role": "roles/viewer",
+              "member": "user:new-hire@example.com"
+            }
+          ]
+        }
+      }
+    }
+  }
+]

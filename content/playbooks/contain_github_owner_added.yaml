@@ -1,0 +1,41 @@
+id: contain_github_owner_added
+title: Contain a new GitHub organisation owner
+description: >
+  A member was made an owner, which gives them every repository and every
+  secret in the organisation. The new owner is the account to act on, not the
+  owner who promoted them: making them a member again is undone by promoting
+  them back, but may cut off someone who needs the role, so it waits for a
+  human, who is paged first.
+rules:
+  - github_member_role_elevated
+questions:
+  - id: granter
+    ask: Who made them an owner, from which address, and does that owner usually manage membership?
+  - id: new_owner_after
+    ask: What did the new owner do after the promotion (secrets read, repositories cloned or made public, members invited)?
+  - id: requested
+    ask: Was the promotion asked for, in a ticket or by another owner?
+benign_when:
+  - Another owner announced the change, and the new owner leads the engineering team.
+example: |
+  claim (new_owner_after): "Ten minutes after becoming an owner, dev-bot-7 invited an outside account and read three organisation secrets, from 198.51.100.81", citing the promotion and the invitation.
+  checked and absent: "a note or ticket asking for the promotion (30d)", which rules out a planned change.
+  disposition: malicious, because the new owner used the role at once to bring in an outside account.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: {{ entity.resource }} made a GitHub owner by {{ entity.user }}: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  # The promoted member is the event's `user`, which the mapping puts in `resource`.
+  - name: make the new owner a member again
+    action: github.demote_org_owner
+    optional: true
+    params:
+      user: "{{ entity.resource }}"
+      org: "{{ entity.account }}"

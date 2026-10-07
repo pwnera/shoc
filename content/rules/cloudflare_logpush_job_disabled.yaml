@@ -1,0 +1,33 @@
+id: cloudflare_logpush_job_disabled
+title: Cloudflare Logpush job deleted or switched off
+description: >
+  A Logpush job was deleted or set to disabled. The cloudflare_logs connector
+  reads what Logpush writes, so the zone's traffic and firewall events stop
+  reaching shoc without an error anywhere.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.6
+attack: [T1562.008]
+logsource:
+  product: cloudflare
+  service: audit_log
+detection:
+  selection_delete:
+    raw.raw.method: DELETE
+    raw.raw.uri|contains: /logpush/jobs/
+  selection_disable:
+    raw.raw.method: PUT
+    raw.raw.uri|contains: /logpush/jobs/
+    raw.resource.request.enabled: "false"
+  condition: selection_*
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, resource.uid]
+sources:
+  - name: Elastic
+    title: GCP Logging Sink Deletion
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/defense_evasion_gcp_logging_sink_deletion
+    license: Elastic-2.0
+    relation: inspired

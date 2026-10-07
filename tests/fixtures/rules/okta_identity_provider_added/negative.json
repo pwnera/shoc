@@ -1,0 +1,125 @@
+[
+  {
+    "uuid": "okta-system.api_token.create",
+    "eventType": "system.api_token.create",
+    "displayMessage": "system api_token create",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u2efgh",
+        "type": "User",
+        "alternateId": "bob@example.com"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-system.idp.lifecycle.deactivate",
+    "eventType": "system.idp.lifecycle.deactivate",
+    "displayMessage": "system idp lifecycle deactivate",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "0oi1",
+        "type": "IdentityProvider",
+        "alternateId": "Partner SAML"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-system.idp.lifecycle.delete",
+    "eventType": "system.idp.lifecycle.delete",
+    "displayMessage": "system idp lifecycle delete",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "0oi1",
+        "type": "IdentityProvider",
+        "alternateId": "Partner SAML"
+      }
+    ]
+  }
+]

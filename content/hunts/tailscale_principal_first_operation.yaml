@@ -1,0 +1,28 @@
+id: tailscale_principal_first_operation
+title: A person or OAuth client changes something in the tailnet it never changed before
+hypothesis: >
+  Taking over a tailnet means approving a device, minting a key or editing the
+  access policy. Each principal here does a narrow set of those; the first time
+  one does something new is the moment an attacker's change looks ordinary.
+attack: [T1098, T1133]
+logsource:
+  product: tailscale
+  service: configuration_log
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    status: Success
+  condition: selection
+baseline:
+  first_seen: [actor.user.uid, api.operation]
+  lookback: 30d
+pivot: [actor.user.uid, actor.user.name, api.operation, cloud.account.uid]
+triage: >
+  Is this the infrastructure OAuth client doing what the policy repository says,
+  or an admin setting up a server? A person editing the ACL or minting a
+  reusable key for the first time needs a reason.
+follow_up:
+  - Which devices joined or were approved after this change?
+  - Did the access policy change in the same hour?
+sensitive: true

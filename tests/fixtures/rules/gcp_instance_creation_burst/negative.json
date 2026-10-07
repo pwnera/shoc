@@ -1,0 +1,779 @@
+[
+  {
+    "insertId": "web-0",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/web-0",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "web-0",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-web-0",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "web-1",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/web-1",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "web-1",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-web-1",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "web-2",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/web-2",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "web-2",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-web-2",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "web-3",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/web-3",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "web-3",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-web-3",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "web-4",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/web-4",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "web-4",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-web-4",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "web-5",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/web-5",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "web-5",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-web-5",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "web-6",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/web-6",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "web-6",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-web-6",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "web-7",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/web-7",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "web-7",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-web-7",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "web-8",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/web-8",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "web-8",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-web-8",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "web-9",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/web-9",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      }
+    },
+    "operation": {
+      "id": "operation-web-9",
+      "producer": "compute.googleapis.com",
+      "last": true
+    }
+  },
+  {
+    "insertId": "web-10",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/web-10",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      }
+    },
+    "operation": {
+      "id": "operation-web-10",
+      "producer": "compute.googleapis.com",
+      "last": true
+    }
+  },
+  {
+    "insertId": "web-11",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/web-11",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      }
+    },
+    "operation": {
+      "id": "operation-web-11",
+      "producer": "compute.googleapis.com",
+      "last": true
+    }
+  },
+  {
+    "insertId": "mig-0",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/mig-0",
+      "authenticationInfo": {
+        "principalEmail": "123456789012@cloudservices.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "mig-0",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-mig-0",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "mig-1",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/mig-1",
+      "authenticationInfo": {
+        "principalEmail": "123456789012@cloudservices.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "mig-1",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-mig-1",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "mig-2",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/mig-2",
+      "authenticationInfo": {
+        "principalEmail": "123456789012@cloudservices.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "mig-2",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-mig-2",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "mig-3",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/mig-3",
+      "authenticationInfo": {
+        "principalEmail": "123456789012@cloudservices.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "mig-3",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-mig-3",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "mig-4",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/mig-4",
+      "authenticationInfo": {
+        "principalEmail": "123456789012@cloudservices.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "mig-4",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-mig-4",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "mig-5",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/mig-5",
+      "authenticationInfo": {
+        "principalEmail": "123456789012@cloudservices.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "mig-5",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-mig-5",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "mig-6",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/mig-6",
+      "authenticationInfo": {
+        "principalEmail": "123456789012@cloudservices.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "mig-6",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-mig-6",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "mig-7",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/mig-7",
+      "authenticationInfo": {
+        "principalEmail": "123456789012@cloudservices.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "mig-7",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-mig-7",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "mig-8",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/mig-8",
+      "authenticationInfo": {
+        "principalEmail": "123456789012@cloudservices.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "mig-8",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-mig-8",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "mig-9",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "4471128800"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/mig-9",
+      "authenticationInfo": {
+        "principalEmail": "123456789012@cloudservices.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.83",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "mig-9",
+        "machineType": "zones/us-central1-a/machineTypes/n2-highcpu-32"
+      }
+    },
+    "operation": {
+      "id": "operation-mig-9",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  }
+]

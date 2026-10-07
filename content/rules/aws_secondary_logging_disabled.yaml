@@ -1,0 +1,58 @@
+id: aws_secondary_logging_disabled
+title: VPC flow logs, DNS query logs, S3 access logs or Bedrock invocation logs removed
+description: >
+  Flow logs, Route 53 resolver query logging, a bucket's server access logging
+  or Bedrock model invocation logging was deleted or switched off. With
+  CloudTrail still on, these are the logs that show where data went.
+status: experimental
+date: 2026-10-02
+severity: high
+confidence: 0.6
+attack: [T1562.008]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_ops:
+    api.operation: [DeleteFlowLogs, DeleteResolverQueryLogConfig, DisassociateResolverQueryLogConfig, DeleteModelInvocationLoggingConfiguration]
+  selection_s3_access_logs:
+    api.operation: PutBucketLogging
+    raw.requestParameters.BucketLoggingStatus.LoggingEnabled|exists: false
+  success:
+    status: Success
+  condition: success and selection_*
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, resource.uid]
+sources:
+  - name: Elastic
+    title: AWS VPC Flow Logs Deletion
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_ec2_flow_log_deletion
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS Route 53 Resolver Query Log Configuration Deleted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_route53_dns_query_resolver_config_deletion
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS S3 Bucket Server Access Logging Disabled
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_s3_bucket_server_access_logging_disabled
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS Bedrock Model Invocation Logging Disabled or Modified
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_bedrock_model_invocation_logging_disabled_or_modified
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: Multiple Service Logging Deleted or Stopped
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/multiple_service_logging_deleted_or_stopped.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: AWS VPC Flow Logs Deleted
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_cloudtrail_vpc_flow_logs_deleted.yml
+    author: Ivan Saakov
+    license: DRL-1.1
+    relation: adapted

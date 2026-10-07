@@ -1,0 +1,32 @@
+id: okta_api_token_revoked
+title: Okta API token revoked
+description: >
+  An API token was revoked. If it was shoc's, shoc stops seeing Okta until
+  someone notices; an attacker who wants to work unseen revokes it first.
+status: experimental
+date: 2026-10-02
+severity: medium
+confidence: 0.5
+attack: [T1531]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation: system.api_token.revoke
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Attempt to Revoke Okta API Token
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/impact_attempt_to_revoke_okta_api_token
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Okta API Token Revoked
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_api_token_revoked.yml
+    author: Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: adapted

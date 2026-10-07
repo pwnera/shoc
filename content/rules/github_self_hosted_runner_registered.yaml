@@ -1,0 +1,36 @@
+id: github_self_hosted_runner_registered
+title: Self-hosted Actions runner registered
+description: >
+  A machine was registered to run a repository's or the organisation's
+  workflows. The Shai-Hulud worm registered its own runner in victims'
+  repositories to keep running code with their secrets; a company this size adds
+  one a few times a year. Audit-log API only; webhook organisations get the
+  github_self_hosted_runner_first_seen hunt.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.55
+attack: [T1195.002, T1543]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  selection:
+    api.operation: [repo.register_self_hosted_runner, org.register_self_hosted_runner, org.runner_group_runners_added]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, resource.uid, api.operation]
+sources:
+  - name: Elastic
+    title: New GitHub Self Hosted Action Runner
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/initial_access_github_register_self_hosted_runner
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: Github Self Hosted Runner Changes Detected
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/application/github/audit/github_self_hosted_runner_changes_detected.yml
+    author: Muhammad Faisal (@faisalusuf)
+    license: DRL-1.1
+    relation: inspired

@@ -1,0 +1,34 @@
+[
+  {
+    "eventDataId": "az-reader-start",
+    "correlationId": "66666666-aaaa-4aaa-8aaa-666666666666",
+    "operationName": {
+      "value": "Microsoft.Authorization/roleAssignments/write",
+      "localizedValue": "Create role assignment"
+    },
+    "category": { "value": "Administrative" },
+    "status": { "value": "Started" },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": { "upn": "dana@example.com" },
+    "httpRequest": { "clientIpAddress": "198.51.100.24" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/providers/Microsoft.Authorization/roleAssignments/def",
+    "properties": {
+      "requestbody": "{\"Id\":\"def\",\"Properties\":{\"PrincipalId\":\"55555555-5555-5555-5555-555555555555\",\"PrincipalType\":\"User\",\"RoleDefinitionId\":\"/subscriptions/00000000-1111-2222-3333-444444444444/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7\",\"Scope\":\"/subscriptions/00000000-1111-2222-3333-444444444444\"}}"
+    }
+  },
+  {
+    "eventDataId": "az-vault-policy-failed",
+    "correlationId": "77777777-aaaa-4aaa-8aaa-777777777777",
+    "operationName": { "value": "Microsoft.KeyVault/vaults/accessPolicies/write" },
+    "category": { "value": "Administrative" },
+    "status": { "value": "Failed" },
+    "level": "Error",
+    "caller": "dana@example.com",
+    "claims": { "upn": "dana@example.com" },
+    "httpRequest": { "clientIpAddress": "198.51.100.24" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.KeyVault/vaults/kv-prod/accessPolicies/add"
+  }
+]

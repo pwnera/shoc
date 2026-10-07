@@ -1,0 +1,40 @@
+[
+  {
+    "id": "en-Update policy",
+    "activityDisplayName": "Update policy",
+    "category": "Policy",
+    "loggedByService": "Core Directory",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      { "type": "Policy", "displayName": "Default token lifetime", "id": "p-1" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-PIM setting failed",
+    "activityDisplayName": "Update role setting in PIM",
+    "category": "RoleManagement",
+    "loggedByService": "PIM",
+    "result": "failure",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      { "type": "Role", "displayName": "Global Administrator", "id": "62e90394-69f5-4237-9190-012177145e10" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

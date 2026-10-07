@@ -1,0 +1,71 @@
+id: contain_privilege_grant
+title: Contain an identity admin role given to someone
+description: >
+  Someone was made an Okta, Entra ID or Microsoft 365 administrator, or a guest
+  became a member. The account that received the role is what an attacker
+  gains, so its sessions are revoked, and the admin who granted it is signed
+  out too: both are reversible. Suspending the grantee waits for a human. The
+  Commander can take the role back with `okta.remove_admin_role` or
+  `entra.remove_admin_role`, using the assignment id `okta.get_user` or
+  `entra.get_user` returns.
+rules:
+  - okta_admin_privilege_granted
+  - entra_admin_role_assigned
+  - entra_global_admin_assigned
+  - m365_global_admin_assigned
+  - entra_guest_promoted_to_member
+questions:
+  - id: requested
+    ask: Was the role asked for (a ticket, an access review), and does the grantee's job need it?
+  - id: grantee_after
+    ask: Did the grantee sign in from a new address or device, or make admin changes, after receiving the role?
+  - id: granter_origin
+    ask: Did the granting admin act from an address and device they have used in the last 30 days?
+benign_when:
+  - A named IT admin granted the role from the office egress against a ticket, and the grantee used it for that task.
+example: |
+  claim (grantee_after): "Within an hour of becoming Global Administrator, m.lee added a federated domain from 198.51.100.40", citing the role assignment and the domain change.
+  checked and absent: "a ticket or access review naming m.lee (30d)", which rules out a requested grant.
+  disposition: malicious, because the new admin used the role at once to add a way in.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  # The grantee is the event's target, which the mappings put in `resource`.
+  - name: revoke the grantee's sessions in Okta
+    action: okta.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.resource }}"
+  - name: revoke the grantee's sessions in Entra ID
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.resource }}"
+  - name: revoke the granting admin's sessions in Okta
+    action: okta.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: revoke the granting admin's sessions in Entra ID
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: admin role given to {{ entity.resource }} by {{ entity.user }}: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: suspend the grantee in Okta
+    action: okta.suspend_user
+    optional: true
+    params:
+      user: "{{ entity.resource }}"
+  - name: suspend the grantee in Entra ID
+    action: entra.suspend_user
+    optional: true
+    params:
+      user: "{{ entity.resource }}"

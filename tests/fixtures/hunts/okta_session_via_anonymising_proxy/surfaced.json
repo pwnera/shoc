@@ -1,0 +1,37 @@
+[
+  {
+    "uuid": "hunt-okta-proxy",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "203.0.113.66",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": true
+    },
+    "target": []
+  }
+]

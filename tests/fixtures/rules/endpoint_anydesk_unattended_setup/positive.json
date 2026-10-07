@@ -1,0 +1,29 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "AnyDesk.exe",
+      "FolderPath": "C:/Users/jdoe/Downloads/AnyDesk.exe",
+      "ProcessCommandLine": "\"AnyDesk.exe\" --install \"C:\\ProgramData\\AnyDesk\" --start-with-win --silent",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "jdoe"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Program Files (x86)\\AnyDesk\\AnyDesk.exe",
+    "CommandLine": "\"C:\\Program Files (x86)\\AnyDesk\\AnyDesk.exe\" --set-password",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "4242",
+    "UserSid": "S-1-5-21-1111111111-2222222222-3333333333-1104"
+  }
+]

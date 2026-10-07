@@ -1,0 +1,70 @@
+# The IR Commander reviewing a containment action before it runs unattended
+# (RSP-6): who else the target touches, and whether this is the smallest action
+# that would do. A review can only make an action harder to take, so a wrong
+# approval is the failure that matters. `scenario` replays the case the action
+# was proposed in, whose events a counted blast radius cites.
+role: review
+probes:
+  - id: disable_leaked_key
+    scenario: leaked_aws_key
+    action: aws.disable_access_key
+    plan: >-
+      Disable access key AKIAIOSFODNN7EXAMPLE of IAM user deploy-ci. It can be
+      re-enabled in one call; the pipeline gets a new key from the rotation job.
+    rationale: >-
+      The deploy-ci key was published in a public gist at 06:02. From 06:10 it
+      was used from 203.0.113.55, which nothing of ours has ever used, for
+      account discovery, 214 S3 object reads in two minutes and a CloudTrail
+      StopLogging call. The CI pipeline itself runs from 198.51.100.20.
+    target:
+      kind: access_key
+      value: AKIAIOSFODNN7EXAMPLE
+      principals: [deploy-ci]
+      facts: []
+    expect:
+      approve: true
+
+  - id: block_ip_against_api_abuse
+    scenario: leaked_aws_key
+    action: cloudflare.block_ip
+    plan: Block 203.0.113.55 at the edge for 24 hours.
+    rationale: >-
+      The leaked deploy-ci key was used from 203.0.113.55 for discovery, a bulk
+      S3 read and a CloudTrail StopLogging call.
+    target:
+      kind: ip
+      value: 203.0.113.55
+      principals: [deploy-ci]
+      facts: []
+    # Cloudflare sits in front of the website, not the AWS API, and the key stays
+    # valid from any other address: the smaller action that works is the key.
+    expect:
+      approve: false
+
+  - id: block_office_egress
+    action: cloudflare.block_ip
+    plan: Block 198.51.100.7 at the edge for 24 hours.
+    rationale: Three failed sign-ins for jane@acme.com came from 198.51.100.7.
+    target:
+      kind: ip
+      value: 198.51.100.7
+      principals: [jane@acme.com, tom@acme.com]
+      facts:
+        - "198.51.100.7 is the office's internet address; everybody in the Paris office signs in from it (written by the operator)"
+    expect:
+      approve: false
+
+  - id: disable_founder_account
+    action: okta.suspend_user
+    plan: Suspend ceo@acme.com in Okta until the investigation ends.
+    rationale: >-
+      An OAuth app was granted Mail.Read on ceo@acme.com's account from an
+      address the account has used before. The grant may be the founder's own.
+    target:
+      kind: user
+      value: ceo@acme.com
+      principals: [ceo@acme.com]
+      facts:
+        - "ceo@acme.com is the founder; payroll and the bank approvals run on this account (written by the operator)"
+    expect:
+      approve: false

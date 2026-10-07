@@ -1,0 +1,67 @@
+id: contain_m365_account_abuse
+title: Contain a compromised Microsoft 365 mailbox
+description: >
+  A mailbox gained a rule that forwards, hides or deletes mail, gave another
+  account access, or published a file to anyone with the link. These are the
+  steps of business email compromise. Revoking the user's sessions is reversible
+  and stops the attacker; after the page Microsoft 365 signs them out too, which
+  needs no Entra credential when the company signs in with Okta. The Commander deletes the rule with
+  `m365.delete_inbox_rule`, using the rule id `m365.list_inbox_rules` returns;
+  the rule is kept and recreated on undo. Removing a mailbox permission or a
+  sharing link needs actions shoc does not have yet.
+rules:
+  - m365_inbox_rule_created
+  - m365_mailbox_permission_granted
+  - m365_anonymous_sharing_link_created
+  - m365_mailbox_forwarding_set
+  - m365_bulk_file_download
+  - m365_file_download_by_script
+  - m365_external_helpdesk_chat
+  - m365_vendor_alert
+  - hunt:m365_inbox_rule_from_new_address
+  - m365_transport_rule_changed
+  - m365_mail_protection_weakened
+questions:
+  - id: rule_effect
+    ask: Does the rule forward mail outside the company, or move or delete mail about invoices, payments or security?
+  - id: sign_in_before
+    ask: Did the mailbox sign in from a new address, country or device before the change?
+  - id: grantee
+    ask: Which account received the mailbox permission or the sharing link, and is it inside the company?
+  - id: shared_content
+    ask: What does the shared file contain?
+  - id: downloads
+    ask: Which sites and files were downloaded, by which client, and from which address?
+  - id: outside_contact
+    ask: After a Teams chat from outside the company, did the user install remote-access software or approve a sign-in?
+  - id: internal_phish
+    ask: Did the mailbox send mail to colleagues or customers after the change?
+benign_when:
+  - An admin gave an assistant delegate access, from the office egress.
+  - The user shares a public document the same way every week.
+example: |
+  claim (rule_effect): "A new inbox rule moves any mail containing 'invoice' or 'payment' to RSS Feeds", citing the New-InboxRule event.
+  checked and absent: "a sign-in from the user's usual address in the hour before the rule (7d)", which rules out the user making it at their desk.
+  disposition: malicious, because hiding payment mail is how invoice fraud begins.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: revoke the user's sessions
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: mailbox {{ entity.user }} compromised, remove the mail rule or share: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  # Microsoft 365's own sign-out, for a company whose idp credential is Okta's.
+  - name: sign the user out of Microsoft 365
+    action: m365.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"

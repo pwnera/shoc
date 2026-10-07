@@ -1,0 +1,274 @@
+# Microsoft Entra ID sign-ins and directory audits -> OCSF. ING-1, ING-3.
+# Two shapes: the Graph record the connector pulls, and the diagnostic-setting
+# envelope an Event Hub export pushes, which wraps that same record in
+# `properties`. Every field reads both.
+#
+# Identity Protection risk detections and risky users, pulled from Graph or
+# pushed through the Event Hub, are Detection Finding (2004).
+#
+# Sign-ins of every kind (interactive, non-interactive, service principal,
+# managed identity) are Authentication (3002). Directory audits start as
+# Entity Management (3004) and move to Account Change (3001), User Access
+# Management (3005) or Group Management (3006) by their Graph category and
+# activity name.
+source: entra
+ocsf_version: "1.3.0"
+
+# A directory change's old and new values, by name, on the first target that
+# has any: `unmapped.modified.Role_TemplateId.newValue` (RFC 0023). Graph
+# writes each value as JSON text, so a role name reads `"Global Administrator"`
+# with its quotes.
+keyed:
+  modified:
+    path: ["targetResources[*].modifiedProperties", "properties.targetResources[*].modifiedProperties"]
+    key: displayName
+
+constants:
+  category_uid: 3
+  class_uid: 3002
+  class_name: Authentication
+  type_uid: 300201
+  activity_id: 1
+  activity_name: Logon
+  severity_id: 1
+  status: Success
+  cloud_provider: Microsoft
+  metadata_product: Microsoft Entra ID
+  api_service_name: entra
+
+fields:
+  event_uid: { paths: [id, "properties.id"] }
+  # A risk detection or risky user is re-read whenever its state changes, so
+  # its last update is its time: each change is its own row.
+  time:
+    paths:
+      - lastUpdatedDateTime
+      - riskLastUpdatedDateTime
+      - createdDateTime
+      - activityDateTime
+      - "properties.createdDateTime"
+      - "properties.activityDateTime"
+      - time
+    transform: iso8601
+  api_operation:
+    paths:
+      - activityDisplayName
+      - appDisplayName
+      - "properties.activityDisplayName"
+      - "properties.appDisplayName"
+      - servicePrincipalName
+      - "properties.servicePrincipalName"
+      - operationName
+      - riskEventType
+      - riskDetail
+  message:
+    paths:
+      - "status.failureReason"
+      - "properties.status.failureReason"
+      - resultReason
+      - "properties.resultReason"
+  status_code:
+    paths: ["status.errorCode", "properties.status.errorCode", resultType]
+    transform: str
+  actor_user_name:
+    paths:
+      - userPrincipalName
+      - servicePrincipalName
+      - initiatedBy.user.userPrincipalName
+      - initiatedBy.app.displayName
+      - initiatedBy.user.displayName
+      - "properties.userPrincipalName"
+      - "properties.servicePrincipalName"
+      - "properties.initiatedBy.user.userPrincipalName"
+      - "properties.initiatedBy.app.displayName"
+      - "properties.initiatedBy.user.displayName"
+  actor_user_uid:
+    paths:
+      - userId
+      - servicePrincipalId
+      - initiatedBy.user.id
+      - initiatedBy.app.servicePrincipalId
+      - "properties.userId"
+      - "properties.servicePrincipalId"
+      - "properties.initiatedBy.user.id"
+      - "properties.initiatedBy.app.servicePrincipalId"
+  actor_user_type: { paths: [userType, "properties.userType"] }
+  actor_session_uid:
+    paths: [sessionId, "properties.sessionId", correlationId, "properties.correlationId"]
+  src_endpoint_ip:
+    paths:
+      - ipAddress
+      - initiatedBy.user.ipAddress
+      - "properties.ipAddress"
+      - "properties.initiatedBy.user.ipAddress"
+      - callerIpAddress
+  src_endpoint_location_country:
+    paths: ["location.countryOrRegion", "properties.location.countryOrRegion"]
+  src_endpoint_asn:
+    paths: [autonomousSystemNumber, "properties.autonomousSystemNumber"]
+    transform: str
+  http_user_agent:
+    paths:
+      - userAgent
+      - "properties.userAgent"
+      - "additionalDetails[key=User-Agent].value"
+      - "properties.additionalDetails[key=User-Agent].value"
+  http_request_url: { path: "properties.requestUri" }
+  api_response_code: { path: "properties.responseStatusCode" }
+  device_uid: { paths: ["deviceDetail.deviceId", "properties.deviceDetail.deviceId"] }
+  device_hostname:
+    paths: ["deviceDetail.displayName", "properties.deviceDetail.displayName"]
+  resource_type: { paths: ["targetResources[*].type", "properties.targetResources[*].type"] }
+  # A user target is named by its UPN, everything else by its display name;
+  # a sign-in's resource is the API the token was issued for.
+  resource_uid:
+    paths:
+      - "targetResources[*].userPrincipalName"
+      - "targetResources[*].displayName"
+      - "targetResources[*].id"
+      - "properties.targetResources[*].userPrincipalName"
+      - "properties.targetResources[*].displayName"
+      - "properties.targetResources[*].id"
+      - resourceDisplayName
+      - "properties.resourceDisplayName"
+  cloud_account_uid: { paths: [tenantId, "properties.tenantId"] }
+
+derive:
+  # Sign-in outcome and risk.
+  - when: { "status.errorCode": { gte: 1 } }
+    set: { status: Failure, severity_id: 2 }
+  - when: { "properties.status.errorCode": { gte: 1 } }
+    set: { status: Failure, severity_id: 2 }
+  - when: { resultType: { gte: 1 } }
+    set: { status: Failure, severity_id: 2 }
+  - when: { conditionalAccessStatus: failure }
+    set: { severity_id: 2 }
+  - when: { riskLevelDuringSignIn: high }
+    set: { severity_id: 3 }
+  - when: { "properties.riskLevelDuringSignIn": high }
+    set: { severity_id: 3 }
+  # Who signed in: Graph beta tags the kind in `signInEventTypes`, the Event
+  # Hub export in its category.
+  - when: { signInEventTypes: { contains: servicePrincipal } }
+    set: { actor_user_type: ServicePrincipal }
+  - when: { signInEventTypes: { contains: managedIdentity } }
+    set: { actor_user_type: ManagedIdentity }
+  - when: { category: { contains: ServicePrincipalSignIn } }
+    set: { actor_user_type: ServicePrincipal }
+  - when: { category: { contains: ManagedIdentitySignIn } }
+    set: { actor_user_type: ManagedIdentity }
+  - when: { initiatedBy.app.displayName: { exists: true } }
+    set: { actor_user_type: ServicePrincipal }
+  # Event Hub categories the Graph connector does not pull: Identity
+  # Protection risk detections and Graph API activity.
+  - when: { category: { in: [UserRiskEvents, ServicePrincipalRiskEvents, RiskyUsers, RiskyServicePrincipals] } }
+    set: { category_uid: 2, class_uid: 2004, class_name: Detection Finding, type_uid: 200401, activity_id: 1, activity_name: Create, severity_id: 3 }
+  - when: { class_uid: 2004, "properties.riskLevel": low }
+    set: { severity_id: 2 }
+  - when: { class_uid: 2004, "properties.riskLevel": high }
+    set: { severity_id: 4 }
+  - when: { _stream: { in: [riskDetections, riskyUsers] } }
+    set: { category_uid: 2, class_uid: 2004, class_name: Detection Finding, type_uid: 200401, activity_id: 1, activity_name: Create, severity_id: 3 }
+  - when: { class_uid: 2004, riskLevel: low }
+    set: { severity_id: 2 }
+  - when: { class_uid: 2004, riskLevel: high }
+    set: { severity_id: 4 }
+  - when: { class_uid: 2004, riskState: confirmedCompromised }
+    set: { severity_id: 4 }
+  - when: { class_uid: 2004, riskState: { in: [remediated, dismissed, confirmedSafe] } }
+    set: { type_uid: 200403, activity_id: 3, activity_name: Close, severity_id: 1 }
+  - when: { category: MicrosoftGraphActivityLogs }
+    set: { category_uid: 6, class_uid: 6003, class_name: API Activity, type_uid: 600399, activity_id: 99, activity_name: Other }
+
+  # Directory audits: Entity Management unless the category says otherwise.
+  - when: { activityDisplayName: { exists: true } }
+    set: { class_uid: 3004, class_name: Entity Management, type_uid: 300499, activity_id: 99, activity_name: Other }
+  - when: { "properties.activityDisplayName": { exists: true } }
+    set: { class_uid: 3004, class_name: Entity Management, type_uid: 300499, activity_id: 99, activity_name: Other }
+  - when: { _stream: directoryAudits }
+    set: { class_uid: 3004, class_name: Entity Management, type_uid: 300499, activity_id: 99, activity_name: Other }
+  - when: { class_uid: 3004, operationType: Add }
+    set: { type_uid: 300401, activity_id: 1, activity_name: Create }
+  - when: { class_uid: 3004, operationType: Get }
+    set: { type_uid: 300402, activity_id: 2, activity_name: Read }
+  - when: { class_uid: 3004, operationType: Update }
+    set: { type_uid: 300403, activity_id: 3, activity_name: Update }
+  - when: { class_uid: 3004, operationType: Delete }
+    set: { type_uid: 300404, activity_id: 4, activity_name: Delete }
+  - when: { category: UserManagement }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300199, activity_id: 99, activity_name: Other }
+  - when: { "properties.category": UserManagement }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300199, activity_id: 99, activity_name: Other }
+  - when: { category: GroupManagement }
+    set: { class_uid: 3006, class_name: Group Management, type_uid: 300699, activity_id: 99, activity_name: Other }
+  - when: { "properties.category": GroupManagement }
+    set: { class_uid: 3006, class_name: Group Management, type_uid: 300699, activity_id: 99, activity_name: Other }
+  - when: { category: RoleManagement }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300599, activity_id: 99, activity_name: Other }
+  - when: { "properties.category": RoleManagement }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300599, activity_id: 99, activity_name: Other }
+  # The activity name decides the rest, in either shape, so these read the
+  # mapped `api_operation`; the class guard keeps sign-ins out.
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "add user" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300101, activity_id: 1, activity_name: Create }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "enable account" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300102, activity_id: 2, activity_name: Enable }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "change user password" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300103, activity_id: 3, activity_name: Password Change }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "change password" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300103, activity_id: 3, activity_name: Password Change }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "reset user password" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300104, activity_id: 4, activity_name: Password Reset }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "reset password" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300104, activity_id: 4, activity_name: Password Reset }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "disable account" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300105, activity_id: 5, activity_name: Disable }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "delete user" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300106, activity_id: 6, activity_name: Delete }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "registered security info" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300110, activity_id: 10, activity_name: MFA Factor Enable }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "deleted security info" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300111, activity_id: 11, activity_name: MFA Factor Disable }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "add group" } }
+    set: { class_uid: 3006, class_name: Group Management, type_uid: 300606, activity_id: 6, activity_name: Create }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "delete group" } }
+    set: { class_uid: 3006, class_name: Group Management, type_uid: 300605, activity_id: 5, activity_name: Delete }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "add member to group" } }
+    set: { class_uid: 3006, class_name: Group Management, type_uid: 300603, activity_id: 3, activity_name: Add User }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "remove member from group" } }
+    set: { class_uid: 3006, class_name: Group Management, type_uid: 300604, activity_id: 4, activity_name: Remove User }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "member to role" } }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300501, activity_id: 1, activity_name: Assign Privileges, severity_id: 3 }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "member from role" } }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300502, activity_id: 2, activity_name: Revoke Privileges }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "add app role assignment" } }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300501, activity_id: 1, activity_name: Assign Privileges, severity_id: 3 }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "remove app role assignment" } }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300502, activity_id: 2, activity_name: Revoke Privileges }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "consent to application" } }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300501, activity_id: 1, activity_name: Assign Privileges, severity_id: 3 }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "add delegated permission grant" } }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300501, activity_id: 1, activity_name: Assign Privileges, severity_id: 3 }
+  - when: { class_uid: { in: [3001, 3004, 3005, 3006] }, api_operation: { contains: "remove delegated permission grant" } }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300502, activity_id: 2, activity_name: Revoke Privileges }
+  # Changes worth a second look even when they succeed.
+  - when: { api_operation: { contains: "conditional access policy" } }
+    set: { severity_id: 3 }
+  - when: { api_operation: { contains: "certificates and secrets" } }
+    set: { severity_id: 3 }
+  - when: { api_operation: { contains: "service principal credentials" } }
+    set: { severity_id: 3 }
+  - when: { api_operation: { contains: "federation settings" } }
+    set: { severity_id: 3 }
+  - when: { api_operation: { contains: "local administrator password" } }
+    set: { severity_id: 3 }
+  # Audit outcome last, so a failed change reads as a failure whatever it was.
+  - when: { result: failure }
+    set: { status: Failure, severity_id: 2 }
+  - when: { "properties.result": failure }
+    set: { status: Failure, severity_id: 2 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: device_hostname, name: device.hostname, type: Hostname }

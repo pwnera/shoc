@@ -1,0 +1,44 @@
+id: aws_rare_api_operation
+title: An API almost nobody here uses
+hypothesis: >
+  Most of what an attacker does in a cloud account is ordinary API traffic. What
+  is unusual is not the call but the population: an operation that exactly one
+  identity in the company has ever made is either a specialist doing their job
+  or somebody learning the account from the inside.
+attack: [T1580]
+logsource:
+  product: aws
+  service: cloudtrail
+window: 1d
+cadence_days: 7
+detection:
+  selection:
+    status: Success
+  filter_noise:
+    api.operation|in: [GetObject, PutObject, HeadObject, AssumeRole, Decrypt]
+  # Calls AWS makes for a principal (Config, Backup, CloudFormation) are rare
+  # by construction.
+  filter_aws:
+    actor.invoked_by|exists: true
+  filter_service_roles:
+    actor.user.name|startswith: AWSServiceRole
+  condition: selection and not filter_noise and not filter_aws and not filter_service_roles
+baseline:
+  rare:
+    by: [api.operation]
+    among: actor.user.name
+    seen_by_fewer_than: 2
+  lookback: 30d
+pivot: [api.operation, actor.user.name, cloud.account.uid]
+triage: >
+  Does one person owning this operation make sense: a database admin, a billing
+  script, the one engineer who manages DNS? An operation nobody can account for,
+  made once, is what enumeration looks like from the inside.
+references:
+  - https://attack.mitre.org/techniques/T1580/
+sources:
+  - name: Elastic
+    title: AWS Discovery API Calls via CLI from a Single Resource
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_multiple_discovery_api_calls_via_cli
+    license: Elastic-2.0
+    relation: inspired

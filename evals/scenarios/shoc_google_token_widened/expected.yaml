@@ -1,0 +1,15 @@
+# Attack twin: shoc's client id granted a wider scope. Only the recorded scope
+# is shoc's; mail access on the same client is somebody else's grant.
+id: shoc_google_token_widened
+title: shoc's Google client authorised with mail access
+source: google_workspace
+entity: operator@example.com
+expected_rules: [google_oauth_token_authorized]
+own:
+  - {kind: credential, value: "100000000000000000001", source: google_workspace, scope: "https://www.googleapis.com/auth/admin.reports.audit.readonly"}
+  - {kind: address, value: 203.0.113.10}
+  - {kind: operator, value: operator@example.com}
+token_requests:
+  - {credential: "100000000000000000001", source: google_workspace, seconds_ago: 6}
+min_cases: 1
+forbidden_verdicts: [benign_expected, false_positive]

@@ -1,0 +1,123 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceLogonEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "3333333333333333333333333333333333333333",
+      "DeviceName": "acct-01.example.org",
+      "ActionType": "LogonSuccess",
+      "LogonType": "RemoteInteractive",
+      "RemoteIP": "10.0.0.5",
+      "RemoteIPType": "Private",
+      "AccountName": "administrator",
+      "AccountDomain": "acct-01"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceLogonEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "3333333333333333333333333333333333333333",
+      "DeviceName": "acct-01.example.org",
+      "ActionType": "LogonSuccess",
+      "LogonType": "Network",
+      "RemoteIP": "203.0.113.50",
+      "RemoteIPType": "Public",
+      "AccountName": "administrator",
+      "AccountDomain": "acct-01"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "UserLogon",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "UserName": "administrator",
+    "LogonType": "10",
+    "RemoteAddressIP4": "10.0.0.6",
+    "UserSid": "S-1-5-21-1111111111-2222222222-3333333333-500",
+    "LogonDomain": "ACCT-01"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "UserLogon",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "UserName": "administrator",
+    "LogonType": "3",
+    "RemoteAddressIP4": "203.0.113.52",
+    "UserSid": "S-1-5-21-1111111111-2222222222-3333333333-500",
+    "LogonDomain": "ACCT-01"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "logins",
+      "type": "Login",
+      "login": {
+        "type": "REMOTE_INTERACTIVE",
+        "loginIsSuccessful": true,
+        "userName": "administrator"
+      }
+    },
+    "agent": {
+      "uuid": "7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d"
+    },
+    "endpoint": {
+      "name": "acct-02.example.org",
+      "os": "windows"
+    },
+    "src": {
+      "endpoint": {
+        "ip": {
+          "address": "100.101.1.2"
+        }
+      }
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "logins",
+      "type": "Login",
+      "login": {
+        "type": "REMOTE_INTERACTIVE",
+        "loginIsSuccessful": true,
+        "userName": "administrator"
+      }
+    },
+    "agent": {
+      "uuid": "7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d"
+    },
+    "endpoint": {
+      "name": "acct-02.example.org",
+      "os": "linux"
+    },
+    "src": {
+      "endpoint": {
+        "ip": {
+          "address": "203.0.113.53"
+        }
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceLogonEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "3333333333333333333333333333333333333333",
+      "DeviceName": "acct-01.example.org",
+      "ActionType": "LogonSuccess",
+      "LogonType": "RemoteInteractive",
+      "RemoteIP": "100.101.7.8",
+      "RemoteIPType": "Public",
+      "AccountName": "administrator",
+      "AccountDomain": "acct-01"
+    }
+  }
+]

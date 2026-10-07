@@ -1,0 +1,27 @@
+[
+  {
+    "_source": "cloudflare_logs",
+    "_dataset": "gateway_dns",
+    "QueryName": "instance-a1b2c3-relay.screenconnect.com",
+    "QueryCategoryNames": [
+      "Remote Access"
+    ],
+    "ResolverDecision": "allowedOnNoPolicyMatch",
+    "DeviceName": "LAPTOP-0042",
+    "DeviceID": "b72ac397-e5c3-913e-11ed-03face9f2b6b",
+    "Email": "john.doe@example.com",
+    "SrcIP": "203.0.113.81",
+    "QueryTypeName": "A",
+    "RCode": 0
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "DnsRequest",
+    "aid": "36a2337df811411eb6abeac136945a6c",
+    "cid": "7da61e27e34f4b8394081896af72e2c7",
+    "event_platform": "Win",
+    "DomainName": "instance-a1b2c3-relay.screenconnect.com",
+    "ContextProcessId": "1195201348121",
+    "RequestType": "1"
+  }
+]

@@ -1,0 +1,9 @@
+# The same activity closed once as expected: the rule was right to fire, and
+# nothing reaches the Detection Engineer (D77).
+id: benign_once
+title: One benign closure changes no rule
+source: aws_cloudtrail
+entity: arn:aws:iam::123456789012:role/backup
+expected_rules: [aws_access_key_created]
+close: {disposition: benign_expected, reason: the backup tool rotates its key every night}
+de: {items: 0}

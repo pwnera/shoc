@@ -1,0 +1,61 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "readOnly": false,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "eventID": "ct-CreateLoginProfile",
+    "eventName": "CreateLoginProfile",
+    "requestParameters": {
+      "userName": "support",
+      "passwordResetRequired": false
+    },
+    "responseElements": {
+      "loginProfile": {
+        "userName": "support",
+        "createDate": "Oct 3, 2026, 9:12:00 AM",
+        "passwordResetRequired": false
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "readOnly": false,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "eventID": "ct-UpdateLoginProfile",
+    "eventName": "UpdateLoginProfile",
+    "requestParameters": {
+      "userName": "alice"
+    },
+    "responseElements": null
+  }
+]

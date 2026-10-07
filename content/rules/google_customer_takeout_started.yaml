@@ -1,0 +1,26 @@
+id: google_customer_takeout_started
+title: Export of the whole organisation's Google data started
+description: >
+  A super admin started a data export of the whole organisation: every mailbox
+  and every Drive. It is rare enough that each one needs someone to say why.
+status: experimental
+date: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1537, T1530]
+logsource:
+  product: google
+  service: reports
+detection:
+  selection:
+    api.operation: CUSTOMER_TAKEOUT_CREATED
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Google Workspace Drive Data Transfer or Takeout Export Initiated
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/collection_google_drive_ownership_transferred_via_google_workspace
+    license: Elastic-2.0
+    relation: adapted

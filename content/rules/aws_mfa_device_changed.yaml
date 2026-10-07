@@ -1,0 +1,39 @@
+id: aws_mfa_device_changed
+title: IAM MFA device removed, or added outside the console
+description: >
+  An MFA device was deactivated or deleted, or one was registered from the API
+  rather than the console. An attacker enrols their own device so they can
+  call MFA-gated APIs and lock the owner out.
+status: experimental
+date: 2026-10-02
+severity: medium
+confidence: 0.6
+attack: [T1556.006, T1098.005]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_removed:
+    api.operation: [DeactivateMFADevice, DeleteVirtualMFADevice]
+  selection_added:
+    api.operation: [CreateVirtualMFADevice, EnableMFADevice]
+  filter_console:
+    raw.sessionCredentialFromConsole: true
+  success:
+    api.service.name: iam.amazonaws.com
+    status: Success
+  condition: success and (selection_removed or (selection_added and not filter_console))
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, raw.requestParameters.userName]
+sources:
+  - name: Elastic
+    title: AWS IAM Deactivation of MFA Device
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_iam_deactivate_mfa_device
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS IAM Virtual MFA Device Registration Attempt with Session Token
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_aws_attempt_to_register_virtual_mfa_device
+    license: Elastic-2.0
+    relation: inspired

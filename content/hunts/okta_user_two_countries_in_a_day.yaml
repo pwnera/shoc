@@ -1,0 +1,51 @@
+id: okta_user_two_countries_in_a_day
+title: Somebody signs in to Okta from two countries on the same day
+hypothesis: >
+  A stolen password or session is used from the attacker's country while the
+  owner keeps working from home, so one account signs in from two countries the
+  same day. A rule over an hour would still page on every trip: a phone on
+  roaming data exits in the home country while the laptop on hotel Wi-Fi is
+  abroad, and a flight crosses a border. Okta's proxy flag is left out, as a
+  VPN moves the country on purpose.
+attack: [T1078.004]
+logsource:
+  product: okta
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: [user.session.start, user.authentication.sso, user.authentication.auth_via_mfa,
+                    user.authentication.verify]
+    status: Success
+    actor.user.type: User
+    src_endpoint.location.country|exists: true
+  proxy:
+    raw.securityContext.isProxy: true
+  condition: selection and not proxy
+baseline:
+  rare:
+    by: [actor.user.name]
+    among: src_endpoint.location.country
+    seen_by_at_least: 2
+  lookback: 1d
+pivot: [actor.user.name, src_endpoint.location.country, src_endpoint.ip, src_endpoint.asn,
+        http_request.user_agent]
+triage: >
+  Is the person travelling, and do the two countries alternate with the same
+  browser and phone, or does one country appear for a single session with a
+  different browser while the usual one carries on?
+follow_up:
+  - Which sessions came from the second country, and what did they do?
+  - Did the second country's sign-ins follow a push the user rejected or a password reset?
+sensitive: true
+sources:
+  - name: Elastic
+    title: Okta User Sessions Started from Different Geolocations
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/initial_access_okta_user_sessions_started_from_different_geolocations
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic hunting
+    title: Successful Impossible Travel Sign-On Events
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/okta/queries/initial_access_impossible_travel_sign_on.toml
+    license: Elastic-2.0
+    relation: inspired

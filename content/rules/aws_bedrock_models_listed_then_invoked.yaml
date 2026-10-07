@@ -1,0 +1,47 @@
+id: aws_bedrock_models_listed_then_invoked
+title: Bedrock models listed and then invoked by a long-term key
+description: >
+  A long-term access key listed the Bedrock models it could use and then
+  invoked one within 15 minutes, or sent the malformed request key checkers
+  use to test access. Keys stolen for resale are checked this way
+  before they are sold for model use, at the company's expense; an
+  application calls the model it was built for without listing first.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1526, T1078.004, T1496.004]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  recon:
+    api.operation: [ListFoundationModels, GetFoundationModelAvailability]
+    actor.session.uid|startswith: AKIA
+    status: Success
+  invoke:
+    api.operation: [InvokeModel, InvokeModelWithResponseStream, Converse, ConverseStream]
+    status: Success
+  # Key checkers send an invalid request on purpose; a validation error proves model access.
+  invoke_probe:
+    api.operation: [InvokeModel, InvokeModelWithResponseStream, Converse, ConverseStream]
+    api.response.error: ValidationException
+  sequence:
+    by: [actor.session.uid]
+    first: recon
+    then: invoke or invoke_probe
+    within: 15m
+  timeframe: 15m
+entity: actor.session.uid
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, cloud.region, raw.requestParameters.modelId]
+sources:
+  - name: Elastic
+    title: AWS Bedrock Foundation Model Enumeration Followed by Invocation via Long-Term Key
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_bedrock_model_recon_and_invocation_via_long_term_key
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sysdig
+    title: "LLMjacking: Stolen Cloud Credentials Used in New AI Attack"
+    url: https://www.sysdig.com/blog/llmjacking-stolen-cloud-credentials-used-in-new-ai-attack
+    relation: inspired

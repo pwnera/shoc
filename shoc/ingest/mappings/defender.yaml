@@ -1,0 +1,90 @@
+# Microsoft Defender alerts -> OCSF Detection Finding (2004). ING-1, ING-2, ING-3.
+# Two shapes arrive here: Graph `security/alerts_v2` (what the connector pulls,
+# lower-case severities, evidence as a typed list) and the older push payload.
+# The host, user, process and file come out of the evidence list; `[*]` takes
+# the first evidence item that has the field, so a device, a process and a
+# file each fill their own columns from the same alert.
+source: defender
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [edr, edr/alerts]
+
+constants:
+  category_uid: 2
+  class_uid: 2004
+  class_name: Detection Finding
+  type_uid: 200401
+  activity_id: 1
+  activity_name: Create
+  severity_id: 3
+  status: Success
+  cloud_provider: Microsoft
+  metadata_product: Microsoft Defender
+
+fields:
+  event_uid: { paths: [id, alertId] }
+  time: { paths: [createdDateTime, alertCreationTime, firstActivityDateTime], transform: iso8601 }
+  api_operation: { paths: [category, title] }
+  # alerts_v2 also returns Office 365, Identity, Cloud Apps, Entra ID Protection
+  # and Purview alerts; serviceSource says which, and the endpoint rules skip
+  # the ones that are not about a device.
+  api_service_name: { paths: [serviceSource], default: defender }
+  message: { paths: [title, description] }
+  actor_user_name:
+    paths:
+      - "evidence[*].userAccount.userPrincipalName"
+      - "evidence[*].userAccount.accountName"
+      - "evidence[*].userPrincipalName"
+      - relatedUser.userName
+  actor_user_uid:
+    paths: ["evidence[*].userAccount.azureAdUserId", "evidence[*].userAccount.userSid"]
+  src_endpoint_ip: { paths: ["evidence[*].ipAddress", "evidence[*].ipInterfaces[*]", lastEventTimeIp] }
+  http_request_url: { path: "evidence[*].url" }
+  device_hostname: { paths: [computerDnsName, "evidence[*].deviceDnsName", "evidence[*].hostName"] }
+  device_uid: { paths: [machineId, "evidence[*].mdeDeviceId", "evidence[*].deviceId"] }
+  process_name: { path: "evidence[*].imageFile.fileName" }
+  process_pid: { path: "evidence[*].processId", transform: int }
+  process_cmd_line: { path: "evidence[*].processCommandLine" }
+  process_hash_sha256: { path: "evidence[*].imageFile.sha256" }
+  process_parent_name: { path: "evidence[*].parentProcessImageFile.fileName" }
+  # Graph gives the folder and the name apart; the name is what analysts
+  # search on, and the folder stays in `unmapped`.
+  file_path: { path: "evidence[*].fileDetails.fileName" }
+  file_hash_sha256: { path: "evidence[*].fileDetails.sha256" }
+  resource_type: { const: host }
+  resource_uid: { paths: [machineId, "evidence[*].deviceId", "evidence[*].mdeDeviceId"] }
+  status_code: { path: status }
+  cloud_account_uid: { path: tenantId }
+
+derive:
+  # `contains` is case-insensitive, which covers both spellings of the severity.
+  - when: { severity: { contains: informational } }
+    set: { severity_id: 1 }
+  - when: { severity: { contains: low } }
+    set: { severity_id: 2 }
+  - when: { severity: { contains: medium } }
+    set: { severity_id: 3 }
+  - when: { severity: { contains: high } }
+    set: { severity_id: 4 }
+  - when: { determination: { contains: multistagedattack } }
+    set: { severity_id: 5 }
+  # Defender's automated investigation or an analyst already ruled it out, as
+  # SentinelOne's false_positive verdict does.
+  - when: { classification: { in: [falsePositive, informationalExpectedActivity] } }
+    set: { severity_id: 1 }
+  - when: { determination: { in: [securityTesting, notMalicious, confirmedUserActivity,
+                                  lineOfBusinessApplication] } }
+    set: { severity_id: 1 }
+  # Graph updates an alert in place; a resolved one is a closed finding.
+  - when: { status: resolved }
+    set: { type_uid: 200403, activity_id: 3, activity_name: Close }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: device_hostname, name: device.hostname, type: Hostname }
+  - { column: resource_uid, name: device.uid, type: Device }
+  - { column: process_name, name: process.name, type: "Process Name" }
+  - { column: process_hash_sha256, name: process.file.hashes.sha256, type: "File Hash" }
+  - { column: file_hash_sha256, name: file.hashes.sha256, type: "File Hash" }
+  - { column: http_request_url, name: http_request.url.url_string, type: "URL String" }

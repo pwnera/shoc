@@ -1,0 +1,44 @@
+id: aws_s3_sse_c_encryption
+title: S3 objects written with a customer-supplied encryption key
+description: >
+  Objects were written or copied with SSE-C, encryption under a key AWS does
+  not keep. Re-encrypting a bucket in place this way leaves the owner unable to
+  read it without the attacker's key. Refused attempts count, because since
+  April 2026 S3 rejects SSE-C writes with AccessDenied on new buckets and in
+  accounts that never used it, so a refusal is what an attacker meets first.
+  Object writes are S3 data events: the rule needs the bucket mode on a trail
+  that records them.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: critical
+confidence: 0.8
+attack: [T1486]
+logsource:
+  product: aws
+  service: cloudtrail
+  definition: S3 data events, read from the trail's bucket
+detection:
+  selection:
+    api.service.name: s3.amazonaws.com
+    api.operation: [PutObject, CopyObject, CreateMultipartUpload]
+    raw.requestParameters.x-amz-server-side-encryption-customer-algorithm|exists: true
+  condition: selection
+  timeframe: 15m
+entity: actor.session.uid
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, resource.uid, api.operation]
+sources:
+  - name: Elastic
+    title: Excessive AWS S3 Object Encryption with SSE-C
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_s3_excessive_object_encryption_with_sse_c
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Unusual AWS S3 Object Encryption with SSE-C
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_s3_unusual_object_encryption_with_sse_c
+    license: Elastic-2.0
+    relation: inspired
+  - name: AWS
+    title: Blocking or unblocking SSE-C for a general purpose bucket
+    url: https://docs.aws.amazon.com/AmazonS3/latest/userguide/blocking-unblocking-s3-c-encryption-gpb.html
+    relation: inspired

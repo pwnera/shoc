@@ -1,0 +1,46 @@
+[
+  {
+    "id": "audit_log-xxx_20260920",
+    "type": "api_key.created",
+    "effective_at": 1790000000,
+    "project": {"id": "proj_abc", "name": "Default project"},
+    "actor": {"type": "session", "session": {"user": {"id": "user-xxx", "email": "mallory@example.com"}, "ip_address": "203.0.113.44", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "api_key.created": {"id": "key_xxxx", "data": {"scopes": ["all"]}},
+    "details": {"id": "key_xxxx", "data": {"scopes": ["all"]}},
+    "key_id": "key_xxxx"
+  },
+  {
+    "object": "organization.usage.completions.result",
+    "input_tokens": 1200000,
+    "output_tokens": 6400000,
+    "num_model_requests": 9100,
+    "project_id": "proj_abc",
+    "api_key_id": "key_xxxx",
+    "id": "openai-usage-key_xxxx-proj_abc-2026-09-20T02:00:00+00:00",
+    "event": "usage",
+    "key_id": "key_xxxx",
+    "bucket_start": "2026-09-20T02:00:00+00:00",
+    "bucket_end": "2026-09-20T03:00:00+00:00"
+  },
+  {
+    "id": "audit_log-login_failed_20260920",
+    "type": "login.failed",
+    "effective_at": 1790000300,
+    "actor": {"type": "session", "session": {"user": {"id": "user-yyy", "email": "bob@example.com"}, "ip_address": "198.51.100.7", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "FR", "asn": "64501"}}},
+    "login.failed": {"error_code": "invalid_credentials"},
+    "details": {"error_code": "invalid_credentials"}
+  },
+  {
+    "object": "organization.usage.completions.result",
+    "input_tokens": 40000,
+    "output_tokens": 25000000,
+    "num_model_requests": 31000,
+    "project_id": "proj_abc",
+    "api_key_id": "key_batch",
+    "id": "openai-usage-key_batch-proj_abc-2026-09-20T03:00:00+00:00",
+    "event": "usage",
+    "key_id": "key_batch",
+    "bucket_start": "2026-09-20T03:00:00+00:00",
+    "bucket_end": "2026-09-20T04:00:00+00:00"
+  }
+]

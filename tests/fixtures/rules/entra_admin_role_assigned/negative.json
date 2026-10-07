@@ -1,0 +1,80 @@
+[
+  {
+    "id": "en-Update user",
+    "activityDisplayName": "Update user",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@acme.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "displayName": "jane@acme.com",
+        "id": "u-1"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-PIM activation",
+    "activityDisplayName": "Add member to role completed (PIM activation)",
+    "category": "RoleManagement",
+    "loggedByService": "PIM",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "it.admin@acme.com",
+        "id": "u-3",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Role",
+        "displayName": "Exchange Administrator",
+        "id": "29232cdf-9323-42fd-ade2-1d097af3e4de"
+      },
+      {
+        "type": "User",
+        "userPrincipalName": "it.admin@acme.com",
+        "id": "u-3"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-PIM activation core copy",
+    "activityDisplayName": "Add member to role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Assign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "app": {
+        "displayName": "MS-PIM",
+        "servicePrincipalId": "sp-pim-1"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "userPrincipalName": "it.admin@acme.com",
+        "id": "u-3",
+        "modifiedProperties": [
+          { "displayName": "Role.ObjectID", "oldValue": null, "newValue": "\"b1f2c3d4-0000-4000-8000-000000000001\"" },
+          { "displayName": "Role.DisplayName", "oldValue": null, "newValue": "\"Exchange Administrator\"" },
+          { "displayName": "Role.TemplateId", "oldValue": null, "newValue": "\"29232cdf-9323-42fd-ade2-1d097af3e4de\"" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

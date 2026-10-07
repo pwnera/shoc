@@ -1,0 +1,87 @@
+[
+  {
+    "_source": "wazuh",
+    "id": "wz-550",
+    "rule": {
+      "id": "550",
+      "level": 7,
+      "description": "Integrity checksum changed.",
+      "groups": [
+        "ossec",
+        "syscheck"
+      ]
+    },
+    "agent": {
+      "id": "001",
+      "name": "web-01",
+      "ip": "10.1.2.5"
+    },
+    "decoder": {
+      "name": "sshd"
+    },
+    "data": {
+      "srcip": "203.0.113.77"
+    }
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "ldt:5d40e8a1c7b6:9003",
+    "type": "ldt",
+    "product": "epp",
+    "severity": 70,
+    "tactic": "Execution",
+    "description": "Suspicious script ran",
+    "device": {
+      "device_id": "5d40e8a1c7b6",
+      "hostname": "laptop-33"
+    },
+    "user_name": "jdoe",
+    "pattern_disposition_description": "Detection, standard detection."
+  },
+  {
+    "_source": "crowdstrike",
+    "metadata": {
+      "eventType": "IncidentSummaryEvent",
+      "customerIDString": "cid-1"
+    },
+    "event": {
+      "IncidentID": "inc:5d40e8a1c7b6:1",
+      "HostID": "5d40e8a1c7b6",
+      "IncidentDescription": "Incident with 3 detections"
+    }
+  },
+  {
+    "_source": "defender",
+    "id": "da-identity-1",
+    "severity": "medium",
+    "title": "Suspected brute-force attack (Kerberos, NTLM)",
+    "category": "CredentialAccess",
+    "serviceSource": "microsoftDefenderForIdentity",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "jdoe@example.com"
+        }
+      }
+    ]
+  },
+  {
+    "_source": "defender",
+    "id": "da-appgov-1",
+    "severity": "medium",
+    "title": "App with suspicious OAuth scope made numerous email-related activities",
+    "category": "Collection",
+    "serviceSource": "microsoftAppGovernance",
+    "detectionSource": "appGovernanceDetection",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.oauthApplicationEvidence",
+        "displayName": "Mail Sync Helper",
+        "appId": "33333333-3333-3333-3333-333333333333"
+      }
+    ]
+  }
+]

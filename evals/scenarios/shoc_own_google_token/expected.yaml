@@ -1,0 +1,19 @@
+# shoc's own Google token requests, once an hour (RFC 0021, triage replay case A).
+# The service account's client id asks Google for a reports token under the
+# operator's account, from shoc's own address. Every request lines up with one
+# shoc recorded, so no case opens and nobody is paged.
+id: shoc_own_google_token
+title: shoc reading Google Workspace with its own credential
+source: google_workspace
+entity: operator@example.com
+expected_rules: [google_oauth_token_authorized]
+own:
+  - {kind: credential, value: "100000000000000000001", source: google_workspace, scope: "https://www.googleapis.com/auth/admin.reports.audit.readonly"}
+  - {kind: address, value: 203.0.113.10}
+  - {kind: operator, value: operator@example.com}
+token_requests:
+  - {credential: "100000000000000000001", source: google_workspace, seconds_ago: 6}
+max_cases: 0
+no_page: true
+forbidden_verdicts: [malicious, suspicious]
+forbidden_targets: ["100000000000000000001", operator@example.com, 203.0.113.10]

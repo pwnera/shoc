@@ -1,0 +1,21 @@
+[
+  {
+    "_document_id": "gh-org.update_member",
+    "action": "org.update_member",
+    "actor": "mallory",
+    "actor_id": 42,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "user": "backup-admin",
+    "permission": "admin",
+    "user_agent": "Mozilla/5.0"
+  },
+  {
+    "_document_id": "github-webhook-member-invited-owner",
+    "action": "org.invite_member",
+    "actor": "mallory",
+    "org": "acme",
+    "invitation": {"login": "backup-admin", "role": "admin"},
+    "webhook": {"event": "organization", "action": "member_invited"}
+  }
+]

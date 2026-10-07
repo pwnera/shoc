@@ -1,0 +1,29 @@
+[
+  {
+    "api_key_id": "apikey_01Prod",
+    "output_tokens": 1200,
+    "id": "anthropic-usage-apikey_01Prod",
+    "event": "usage",
+    "key_id": "apikey_01Prod"
+  },
+  {
+    "id": "activity_01KeyRenamed",
+    "organization_id": "org_01",
+    "type": "platform_api_key_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "dev@example.com",
+      "user_id": "user_01Dev",
+      "ip_address": "198.51.100.10",
+      "user_agent": "Mozilla/5.0"
+    },
+    "api_key_id": "apikey_01Prod",
+    "updates": [
+      {
+        "type": "name",
+        "previous_value": "prod",
+        "current_value": "prod-eu"
+      }
+    ]
+  }
+]

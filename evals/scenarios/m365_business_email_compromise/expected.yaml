@@ -1,0 +1,20 @@
+# Business email compromise on Microsoft 365 (AGT-6).
+id: m365_business_email_compromise
+title: Business email compromise
+description: >
+  An attacker in Jane's mailbox consents an application to it, adds a rule that
+  hides the replies from her, grants themselves access to the finance mailbox
+  and shares the payroll file with an anonymous link. Every step is an ordinary
+  administrative action; together they are an incident.
+source: m365
+entity: jane@acme.com
+expected_rules:
+  - m365_app_consent_granted
+  - m365_inbox_rule_created
+  - m365_mailbox_permission_granted
+  - m365_anonymous_sharing_link_created
+must_not_fire:
+  - aws_s3_mass_object_read
+  - github_repo_made_public
+expected_verdict: malicious
+minimum_confidence: 0.6

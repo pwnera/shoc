@@ -1,0 +1,203 @@
+# CrowdStrike Falcon alerts -> OCSF Detection Finding (2004). ING-1, ING-2, ING-3.
+# Reads three shapes. The Alerts API v2 entity the connector pulls (composite_id,
+# snake_case, a nested device and parent_details) comes first; the flatter
+# legacy detection payload second; an Event Streams record ({metadata, event},
+# as a customer may load an export with events.ingest) last. Stream audit
+# records are Authentication (3002) or API Activity (6003), FirewallMatchEvent
+# is Network Activity (4001), and the Vertex records of the old detection graph
+# are process, module, device or user context; none of those is a finding.
+source: crowdstrike
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [edr, edr/alerts]
+
+constants:
+  category_uid: 2
+  class_uid: 2004
+  class_name: Detection Finding
+  type_uid: 200401
+  activity_id: 1
+  activity_name: Create
+  severity_id: 3
+  status: Success
+  cloud_provider: CrowdStrike
+  metadata_product: CrowdStrike Falcon
+
+fields:
+  # The Falcon customer (CID): which tenant's console isolates the host (RFC 0025).
+  cloud_account_uid: { paths: [cid, metadata.customerIDString, event.CustomerId] }
+  event_uid:
+    paths: [detection_id, composite_id, id, event.CompositeId, event.DetectId, event.IncidentID,
+            event.LeadId, event.IdentityProtectionIncidentId, event.id]
+  time:
+    paths: [created_timestamp, timestamp, metadata.eventCreationTime, event.timestamp]
+    transform: iso8601
+  api_operation:
+    paths: [tactic, "behaviors[*].tactic", behaviors_name, technique, event.Tactic, event.Tactics,
+            event.OperationName, event.EventType, metadata.eventType]
+  # The Alerts API's product (epp, idp, xdr, ...): an Identity Protection alert
+  # is about an account, not a host, and the endpoint rules skip it.
+  api_service_name: { paths: [event.ServiceName, product], default: falcon }
+  message:
+    paths: [description, display_name, name, "behaviors[*].display_name", event.Description,
+            event.DetectDescription, event.IncidentDescription, event.DetectName, event.Name,
+            event.RuleName, event.ReportName]
+  actor_user_name:
+    paths: [user_name, "behaviors[*].user_name", source_account_name, event.UserName,
+            event.SourceAccountName, event.UserId, event.UserID, event.properties.UserName]
+  actor_user_uid:
+    paths: [user_id, event.UserSid, event.SourceAccountObjectSid, event.UserUUID,
+            event.properties.UserSid]
+  src_endpoint_ip:
+    paths: [local_ip, external_ip, "device.local_ip", "device.external_ip",
+            source_endpoint_ip_address, event.LocalIP, event.UserIp, event.SourceEndpointIpAddress,
+            event.EndpointIp, event.LocalAddress]
+  src_endpoint_port: { path: event.LocalPort }
+  # Rules read the sensor's host here, as they did before device_* existed.
+  src_endpoint_domain:
+    paths: [hostname, "device.hostname", source_endpoint_host_name, event.ComputerName,
+            event.Hostname, event.HostName, event.SourceEndpointHostName, event.EndpointName]
+  dst_endpoint_ip: { path: event.RemoteAddress }
+  dst_endpoint_port: { path: event.RemotePort }
+  dst_endpoint_domain: { path: event.Destination.Web.Hostname }
+  http_request_url: { path: event.Destination.Web.URL }
+  device_hostname:
+    paths: [hostname, "device.hostname", event.ComputerName, event.Hostname, event.HostName,
+            "event.ThreatgraphIndicators[*].Hostname"]
+  device_uid:
+    paths: [device_id, "device.device_id", agent_id, event.AgentId, event.SensorId,
+            event.DeviceId, event.HostID, "event.ThreatgraphIndicators[*].HostId",
+            event.SensorIds, event.device_id]
+  resource_type: { const: host }
+  resource_uid:
+    paths: [device_id, "device.device_id", agent_id, event.AgentId, event.SensorId,
+            event.DeviceId, event.HostID, "event.ThreatgraphIndicators[*].HostId",
+            event.SensorIds, event.device_id]
+  # The process the detection fired on; the stream's FilePath is its folder or image.
+  process_name:
+    paths: [filename, event.FileName, event.ImageFileName, event.properties.ImageFileName]
+    transform: basename
+  process_cmd_line: { paths: [cmdline, event.CommandLine, event.properties.CommandLine] }
+  process_hash_sha256: { paths: [sha256, event.SHA256String] }
+  process_pid: { path: local_process_id }
+  process_parent_name:
+    paths: ["parent_details.filename", event.ParentImageFileName]
+    transform: basename
+  file_path:
+    paths: [event.AssociatedFile, "event.QuarantineFiles[*].ImageFileName",
+            "quarantined_files[*].filename", filepath, event.FilePath, event.Filename]
+  file_hash_sha256:
+    paths: ["event.QuarantineFiles[*].SHA256HashData", "quarantined_files[*].sha256", sha256,
+            event.SHA256String, event.SHA256Hashes]
+  status_code: { paths: [status, event.State] }
+
+derive:
+  # Falcon's 1-100 scale: 10 informational, 30 low, 50 medium, 70 high, 90 critical.
+  - when: { severity: { lt: 30 } }
+    set: { severity_id: 1 }
+  - when: { severity: { gte: 30 } }
+    set: { severity_id: 2 }
+  - when: { severity: { gte: 50 } }
+    set: { severity_id: 3 }
+  - when: { severity: { gte: 70 } }
+    set: { severity_id: 4 }
+  - when: { severity: { gte: 90 } }
+    set: { severity_id: 5 }
+  - when: { event.Severity: { lt: 30 } }
+    set: { severity_id: 1 }
+  - when: { event.Severity: { gte: 30 } }
+    set: { severity_id: 2 }
+  - when: { event.Severity: { gte: 50 } }
+    set: { severity_id: 3 }
+  - when: { event.Severity: { gte: 70 } }
+    set: { severity_id: 4 }
+  - when: { event.Severity: { gte: 90 } }
+    set: { severity_id: 5 }
+  # A name wins over the number: DetectionSummaryEvent counts 1-5.
+  - when: { severity_name: { contains: info } }
+    set: { severity_id: 1 }
+  - when: { severity_name: { contains: low } }
+    set: { severity_id: 2 }
+  - when: { severity_name: { contains: medium } }
+    set: { severity_id: 3 }
+  - when: { severity_name: { contains: high } }
+    set: { severity_id: 4 }
+  - when: { severity_name: { contains: critical } }
+    set: { severity_id: 5 }
+  - when: { event.SeverityName: { contains: info } }
+    set: { severity_id: 1 }
+  - when: { event.SeverityName: { contains: low } }
+    set: { severity_id: 2 }
+  - when: { event.SeverityName: { contains: medium } }
+    set: { severity_id: 3 }
+  - when: { event.SeverityName: { contains: high } }
+    set: { severity_id: 4 }
+  - when: { event.SeverityName: { contains: critical } }
+    set: { severity_id: 5 }
+  - when: { max_severity_displayname: Critical }
+    set: { severity_id: 5 }
+  - when: { max_severity_displayname: High }
+    set: { severity_id: 4 }
+  - when: { max_severity_displayname: Medium }
+    set: { severity_id: 3 }
+  - when: { max_severity_displayname: Low }
+    set: { severity_id: 2 }
+  # The sensor killed or blocked it: one band down, as SentinelOne's mitigated.
+  # A critical one keeps its band.
+  - when: { pattern_disposition_description: { contains: prevention }, severity: { lt: 90 } }
+    set: { severity_id: 3 }
+  # An on-demand scan names a file on disk, not a running process.
+  - when: { type: ods }
+    set: { process_name: null, process_hash_sha256: null }
+  - when: { event.Type: ods }
+    set: { process_name: null, process_hash_sha256: null }
+  # DetectionSummaryEvent's FilePath is the process image's folder, not a file.
+  - when: { metadata.eventType: DetectionSummaryEvent, event.AssociatedFile: { exists: false },
+            event.QuarantineFiles: { exists: false } }
+    set: { file_path: null }
+
+  # Event Streams records that are not findings.
+  - when: { metadata.eventType: AuthActivityAuditEvent }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, activity_id: 1,
+           activity_name: Logon, type_uid: 300201, severity_id: 1, resource_type: null }
+  - when: { metadata.eventType: { in: [UserActivityAuditEvent, APIActivityAuditEvent,
+                                       ScheduledReportNotificationEvent] } }
+    set: { category_uid: 6, class_uid: 6003, class_name: API Activity, activity_id: 99,
+           activity_name: Other, type_uid: 600399, severity_id: 1, resource_type: null }
+  # Opening and closing an Event Streams session is an API client's call, not a logon.
+  - when: { event.OperationName: { in: [streamStarted, streamStopped] } }
+    set: { category_uid: 6, class_uid: 6003, class_name: API Activity, activity_id: 99,
+           activity_name: Other, type_uid: 600399 }
+  - when: { metadata.eventType: { in: [AuthActivityAuditEvent, UserActivityAuditEvent,
+                                       APIActivityAuditEvent] }, event.Success: false }
+    set: { status: Failure }
+  - when: { metadata.eventType: FirewallMatchEvent }
+    set: { category_uid: 4, class_uid: 4001, class_name: Network Activity, activity_id: 6,
+           activity_name: Traffic, type_uid: 400106, severity_id: 1 }
+  - when: { metadata.eventType: FirewallMatchEvent, event.RuleAction: "2" }
+    set: { activity_id: 5, activity_name: Refuse, type_uid: 400105, status: Failure }
+  - when: { metadata.eventType: Vertex }
+    set: { severity_id: 1 }
+  - when: { metadata.eventType: Vertex, event.vertex_type: process }
+    set: { category_uid: 1, class_uid: 1007, class_name: Process Activity, activity_id: 99,
+           activity_name: Other, type_uid: 100799 }
+  - when: { metadata.eventType: Vertex, event.vertex_type: module }
+    set: { category_uid: 1, class_uid: 1005, class_name: Module Activity, activity_id: 99,
+           activity_name: Other, type_uid: 100599 }
+  - when: { metadata.eventType: Vertex, event.vertex_type: device }
+    set: { category_uid: 5, class_uid: 5001, class_name: Device Inventory Info, activity_id: 99,
+           activity_name: Other, type_uid: 500199 }
+  - when: { metadata.eventType: Vertex, event.vertex_type: { in: [user, user-session] } }
+    set: { category_uid: 5, class_uid: 5003, class_name: User Inventory Info, activity_id: 99,
+           activity_name: Other, type_uid: 500399 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: dst_endpoint_ip, name: dst_endpoint.ip, type: "IP Address" }
+  - { column: resource_uid, name: device.uid, type: Device }
+  - { column: device_hostname, name: device.hostname, type: Hostname }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: process_hash_sha256, name: process.file.hashes.sha256, type: "File Hash" }
+  - { column: file_hash_sha256, name: file.hashes.sha256, type: "File Hash" }
+  - { column: process_name, name: process.name, type: "Process Name" }
+  - { column: http_request_url, name: http_request.url, type: "URL String" }

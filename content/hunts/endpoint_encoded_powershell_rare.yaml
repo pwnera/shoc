@@ -1,0 +1,40 @@
+id: endpoint_encoded_powershell_rare
+title: An encoded PowerShell command that ran on one machine only
+hypothesis: >
+  Loaders hide their PowerShell in base64. Intune and the RMM run the same
+  encoded command on every machine, so an encoded command seen on a single
+  machine is the one worth decoding.
+attack: [T1059.001, T1027]
+sources:
+  - name: Elastic hunting
+    title: "Suspicious Base64 Encoded Powershell Command"
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/windows/queries/suspicious_base64_encoded_powershell_commands.toml
+    license: Elastic-2.0
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    class_uid: 1007
+    activity_id: 1
+    process.name: [powershell.exe, pwsh.exe, pwsh]
+  selection_encoded:
+    process.cmd_line|contains: [' -enc', ' -e ', ' -ec ', -EncodedCommand, FromBase64String]
+  condition: selection and selection_encoded
+baseline:
+  rare:
+    by: [process.cmd_line]
+    among: device.uid
+    seen_by_fewer_than: 2
+  lookback: 30d
+pivot: [device.hostname, device.uid, process.cmd_line, process.parent_process.name, actor.user.name]
+triage: >
+  Decode it. A management agent's script names its vendor and runs on a
+  schedule; a download cradle, an AMSI bypass or a reverse shell does not.
+follow_up:
+  - What does the decoded command do?
+  - Which process started PowerShell?
+sensitive: false

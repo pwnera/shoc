@@ -1,0 +1,25 @@
+# Run the console next to a shoc that is already up.
+#
+#   docker compose up -d
+#
+# It joins shoc's network, so nginx can reach the API as http://shoc:8080 and
+# the browser only ever talks to one origin.
+name: shoc-console
+
+services:
+  console:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: ghcr.io/pwnera/shoc-console:${CONSOLE_VERSION:-edge}
+    ports:
+      # One address, not 0.0.0.0: Docker's port publishing bypasses most host
+      # firewalls. Put TLS in front before this leaves a private network.
+      - "${CONSOLE_BIND:-127.0.0.1}:${CONSOLE_PORT:-8089}:8080"
+    networks: [shoc]
+    restart: unless-stopped
+
+networks:
+  shoc:
+    external: true
+    name: ${SHOC_NETWORK:-shoc_default}

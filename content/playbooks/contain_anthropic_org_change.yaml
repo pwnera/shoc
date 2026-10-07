@@ -1,0 +1,44 @@
+id: contain_anthropic_org_change
+title: Contain a change to the Claude organisation
+description: >
+  Audit logging, SSO, the IP restriction or the spend limit was switched off,
+  an admin was added, or the organisation's data was exported. When the change
+  came through an API key, that key is disabled, which is reversible. A Console
+  session cannot be ended through the API and a role cannot be taken back, so a
+  human is paged to undo the change in the Console.
+rules:
+  - anthropic_defence_disabled
+  - anthropic_admin_role_granted
+  - anthropic_admin_added_then_admin_key
+  - anthropic_org_data_exported
+  - hunt:anthropic_mcp_server_first_seen
+questions:
+  - id: actor
+    ask: Who made the change, from which address and user agent, and through the Console or an Admin key?
+  - id: change
+    ask: What exactly changed, and what was the setting or the role before?
+  - id: after
+    ask: What did the same actor do next, keys created, members invited, exports downloaded?
+benign_when:
+  - An admin replaced the SSO connection or rotated an Admin key and said so.
+  - A founder added a co-founder or a team lead as admin.
+example: |
+  claim (actor): "Compliance API logging was switched off by mallory@example.com from 203.0.113.44 through the Console", citing the settings event.
+  checked and absent: "an earlier Console sign-in by this account from that address (30d)", which rules out a known device.
+  disposition: malicious, because the change blinds the activity feed and came from an address this admin never used.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: disable the API key the change was made with
+    action: anthropic.disable_api_key
+    optional: true
+    params:
+      key_id: "{{ entity.key }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: Claude organisation changed by {{ entity.user }}, check it: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"

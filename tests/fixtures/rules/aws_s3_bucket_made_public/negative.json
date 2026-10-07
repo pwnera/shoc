@@ -1,0 +1,217 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-GetBucketPolicy",
+    "eventName": "GetBucketPolicy",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-data"
+      }
+    ],
+    "requestParameters": {
+      "bucketName": "acme-data",
+      "policy": [
+        ""
+      ]
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-PutBucketPublicAccessBlock",
+    "eventName": "PutBucketPublicAccessBlock",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-data"
+      }
+    ],
+    "requestParameters": {
+      "bucketName": "acme-data",
+      "publicAccessBlock": [
+        ""
+      ],
+      "PublicAccessBlockConfiguration": {
+        "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+        "BlockPublicAcls": true,
+        "IgnorePublicAcls": true,
+        "BlockPublicPolicy": true,
+        "RestrictPublicBuckets": true
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-PutBucketPolicy",
+    "eventName": "PutBucketPolicy",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-data"
+      }
+    ],
+    "requestParameters": {
+      "bucketName": "acme-data",
+      "policy": [
+        ""
+      ],
+      "bucketPolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "AllowCloudFrontServicePrincipal",
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "cloudfront.amazonaws.com"
+            },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::acme-data/*",
+            "Condition": {
+              "StringEquals": {
+                "AWS:SourceArn": "arn:aws:cloudfront::123456789012:distribution/EDFDVBD6EXAMPLE"
+              }
+            }
+          },
+          {
+            "Sid": "AllowSSLRequestsOnly",
+            "Action": "s3:*",
+            "Effect": "Deny",
+            "Resource": [
+              "arn:aws:s3:::acme-data",
+              "arn:aws:s3:::acme-data/*"
+            ],
+            "Condition": {
+              "Bool": {
+                "aws:SecureTransport": "false"
+              }
+            },
+            "Principal": "*"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-PutBucketAcl",
+    "eventName": "PutBucketAcl",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-data"
+      }
+    ],
+    "requestParameters": {
+      "bucketName": "acme-data",
+      "acl": [
+        ""
+      ],
+      "x-amz-acl": [
+        "private"
+      ]
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-PutBucketPolicy-tls-only",
+    "eventName": "PutBucketPolicy",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-data"
+      }
+    ],
+    "requestParameters": {
+      "bucketName": "acme-data",
+      "policy": [
+        ""
+      ],
+      "bucketPolicy": {
+        "Version": "2012-10-17",
+        "Id": "ExamplePolicy",
+        "Statement": [
+          {
+            "Sid": "AllowSSLRequestsOnly",
+            "Action": "s3:*",
+            "Effect": "Deny",
+            "Resource": [
+              "arn:aws:s3:::acme-data",
+              "arn:aws:s3:::acme-data/*"
+            ],
+            "Condition": {
+              "Bool": {
+                "aws:SecureTransport": "false"
+              }
+            },
+            "Principal": "*"
+          }
+        ]
+      }
+    }
+  }
+]

@@ -1,0 +1,58 @@
+id: endpoint_rdp_logon_from_internet
+title: Someone signed in over Remote Desktop from an internet address
+description: >
+  A Remote Desktop sign-in succeeded from a public address. RDP open to the
+  internet is a common way into a small company's lone Windows server, and the
+  EDR sees a valid logon, so it raises nothing.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1133, T1021.001, T1078]
+sources:
+  - name: Sigma
+    title: "External Remote RDP Logon from Public IP"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/security/account_management/win_security_successful_external_remote_rdp_login.yml
+    author: "Micah Babinski (@micahbabinski), Zach Mathis (@yamatosecurity)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: "RDP (Remote Desktop Protocol) from the Internet"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/network/command_and_control_rdp_remote_desktop_protocol_from_the_internet.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft
+    title: "DeviceLogonEvents table in the advanced hunting schema"
+    url: https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-devicelogonevents-table
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_defender:
+    class_uid: 3002
+    status: Success
+    raw.properties.LogonType: RemoteInteractive
+    raw.properties.RemoteIPType: Public
+  selection_falcon:
+    class_uid: 3002
+    api.operation: UserLogon
+    raw.LogonType: '10'
+    src_endpoint.ip|exists: true
+  # Linux SSH is REMOTE_INTERACTIVE too, hence the OS.
+  selection_s1:
+    class_uid: 3002
+    status: Success
+    raw.event.login.type: REMOTE_INTERACTIVE
+    raw.endpoint.os: windows
+    src_endpoint.ip|exists: true
+  # Private, loopback, link-local and CGNAT (Tailscale) addresses. Defender's
+  # RemoteIPType has no CGNAT type, so its branch goes through this too.
+  filter_private:
+    src_endpoint.ip|cidr: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 169.254.0.0/16,
+                           100.64.0.0/10, fc00::/7, fe80::/10, '::1/128']
+  condition: (selection_defender or selection_falcon or selection_s1) and not filter_private
+  timeframe: 1h
+entity: resource.uid
+fields: [device.hostname, actor.user.name, src_endpoint.ip, src_endpoint.location.country]

@@ -1,0 +1,36 @@
+[
+  {
+    "_document_id": "gh-oauth_application.create",
+    "action": "oauth_application.create",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "oauth_application": "Repo Backup Pro",
+    "user_agent": "Mozilla/5.0",
+    "operation_type": "create"
+  },
+  {
+    "_document_id": "gh-org.oauth_app_access_approved",
+    "action": "org.oauth_app_access_approved",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "oauth_application_name": "Repo Backup Pro",
+    "url": "https://backup.example.com",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-integration_installation.create",
+    "action": "integration_installation.create",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "integration": "repo-sync-helper",
+    "name": "repo-sync-helper",
+    "repository_selection": "all",
+    "operation_type": "create"
+  }
+]

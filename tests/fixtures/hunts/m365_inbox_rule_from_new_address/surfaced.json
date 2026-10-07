@@ -1,0 +1,20 @@
+[
+  {
+    "Id": "hunt-m365-rule-new-ip",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "203.0.113.45:63070",
+    "ObjectId": "jane/..",
+    "Parameters": [
+      { "Name": "Name", "Value": ".." },
+      { "Name": "SubjectOrBodyContainsWords", "Value": "invoice" },
+      { "Name": "MoveToFolder", "Value": "Conversation History" }
+    ]
+  }
+]

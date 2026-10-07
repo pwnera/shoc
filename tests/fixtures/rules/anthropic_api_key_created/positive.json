@@ -1,0 +1,38 @@
+[
+  {
+    "type": "api_key",
+    "id": "apikey_01NewKey",
+    "name": "backup",
+    "created_by": {
+      "id": "user_01Mallory",
+      "type": "user"
+    },
+    "expires_at": null,
+    "partial_key_hint": "sk-ant-api03-R2D...igAA",
+    "principal": null,
+    "scope": {
+      "type": "workspace",
+      "workspace_id": "wrkspc_01Prod"
+    },
+    "status": "active",
+    "workspace_id": "wrkspc_01Prod",
+    "event": "api_key.created",
+    "key_id": "apikey_01NewKey"
+  },
+  {
+    "id": "activity_01AdminKey",
+    "organization_id": "org_01",
+    "type": "admin_api_key_created",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "admin_api_key_id": "apikey_01Admin",
+    "scopes": [
+      "read:compliance_activities"
+    ]
+  }
+]

@@ -1,0 +1,62 @@
+# OpenAI audit log and hourly key usage -> OCSF API Activity (6003). ING-1, ING-3.
+source: openai
+ocsf_version: "1.3.0"
+
+constants:
+  category_uid: 6
+  class_uid: 6003
+  class_name: API Activity
+  type_uid: 600399
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  status: Success
+  cloud_provider: OpenAI
+  metadata_product: OpenAI
+  api_service_name: openai
+
+fields:
+  event_uid: { path: id }
+  time: { paths: [effective_at, bucket_start], transform: iso8601 }
+  api_operation: { paths: [event, type] }
+  actor_user_name:
+    paths: [actor.session.user.email, actor.api_key.user.email, actor.api_key.service_account.id]
+  actor_user_uid: { paths: [actor.session.user.id, actor.api_key.user.id] }
+  actor_user_type: { path: actor.type }
+  # The key the event is about, or the key that used the API.
+  actor_session_uid: { path: key_id }
+  src_endpoint_ip: { path: actor.session.ip_address }
+  src_endpoint_location_country: { path: actor.session.ip_address_details.country }
+  src_endpoint_asn: { path: actor.session.ip_address_details.asn, transform: str }
+  http_user_agent: { path: actor.session.user_agent }
+  resource_type: { const: project }
+  resource_uid: { paths: [project.id, project_id] }
+  status_code: { path: details.error_code }
+
+derive:
+  # The verb at the end of the event name.
+  - when: { type: { contains: created } }
+    set: { activity_id: 1, activity_name: Create }
+  - when: { type: { contains: updated } }
+    set: { activity_id: 3, activity_name: Update }
+  - when: { type: { contains: deleted } }
+    set: { activity_id: 4, activity_name: Delete }
+  - when: { type: { contains: ".failed" } }
+    set: { status: Failure, severity_id: 2 }
+  - when: { type: { contains: api_key } }
+    set: { severity_id: 2 }
+  - when: { event: usage }
+    set: { activity_id: 2, activity_name: Read }
+  # An hour's output by order of magnitude, so a rule can ask whether a key
+  # has worked at this level before (RFC 0023 `first_seen`).
+  - when: { event: usage, output_tokens: { gte: 1000000 } }
+    set: { severity_id: 2 }
+  - when: { event: usage, output_tokens: { gte: 10000000 } }
+    set: { severity_id: 3 }
+  - when: { event: usage, output_tokens: { gte: 100000000 } }
+    set: { severity_id: 4 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: actor_session_uid, name: actor.session.uid, type: Other }

@@ -1,0 +1,37 @@
+id: aws_console_login_without_mfa
+title: AWS console login without MFA
+description: >
+  An IAM user or the root user signed in to the console and CloudTrail reports
+  that no MFA was used. Either the account is missing MFA, or the session was
+  established with a stolen password. SSO sign-ins are left out: their MFA
+  happens at the identity provider, and CloudTrail always reports it as unused.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: high
+confidence: 0.65
+attack: [T1078.004, T1556.006]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.operation: ConsoleLogin
+    status_code: no_mfa
+    actor.user.type: [IAMUser, Root]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.user.type, src_endpoint.ip, http_request.user_agent, cloud.account.uid]
+sources:
+  - name: Elastic
+    title: AWS IAM User Console Login Without MFA
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/initial_access_iam_user_console_login_without_mfa
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: AWS Successful Console Login Without MFA
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_cloudtrail_console_login_success_without_mfa.yml
+    author: Thuya@Hacktilizer, Ivan Saakov
+    license: DRL-1.1
+    relation: adapted

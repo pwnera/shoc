@@ -1,0 +1,51 @@
+id: okta_flagged_sign_in
+title: Successful Okta sign-in that Okta itself flagged
+description: >
+  A sign-in succeeded although Okta suspected a threat, saw impossible travel,
+  or rated the risk high. A stolen password or a replayed session cookie looks
+  normal in every other field; Okta's own score is the one signal that it is not.
+  When no policy uses the score Okta logs it in a second field, so both fields
+  are read.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1078.004, T1539]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection_signin:
+    api.operation: [user.session.start, policy.evaluate_sign_on, user.authentication.sso]
+    status: Success
+  selection_threat:
+    raw.debugContext.debugData.threatSuspected: "true"
+  selection_velocity:
+    raw.debugContext.debugData.behaviors|contains: Velocity=POSITIVE
+  selection_risk:
+    raw.debugContext.debugData.risk|contains: level=HIGH
+  selection_log_only:
+    raw.debugContext.debugData.logOnlySecurityData|contains:
+      - '"Velocity":"POSITIVE"'
+      - '"level":"HIGH"'
+  condition: selection_signin and (selection_threat or selection_velocity or selection_risk or selection_log_only)
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.location.country, src_endpoint.asn, http_request.user_agent, actor.session.uid, raw.debugContext.debugData.behaviors, raw.debugContext.debugData.risk, raw.debugContext.debugData.logOnlySecurityData]
+sources:
+  - name: Elastic
+    title: Okta ThreatInsight Threat Suspected Promotion
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/okta_threatinsight_threat_suspected_promotion
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: Okta New Admin Console Behaviours
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_new_behaviours_admin_console.yml
+    author: kelnage
+    license: DRL-1.1
+    relation: inspired
+  - name: Okta
+    title: Risk scoring
+    url: https://help.okta.com/en-us/content/topics/security/security_risk_scoring.htm
+    relation: inspired

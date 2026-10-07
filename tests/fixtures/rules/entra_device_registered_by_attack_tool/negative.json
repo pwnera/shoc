@@ -1,0 +1,97 @@
+[
+  {
+    "id": "en-Add device laptop",
+    "activityDisplayName": "Add device",
+    "category": "Device",
+    "loggedByService": "Core Directory",
+    "operationType": "Add",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "jane@example.com",
+        "id": "u-1",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Device",
+        "displayName": "DESKTOP-JANE01",
+        "id": "dev-2",
+        "modifiedProperties": [
+          { "displayName": "DeviceOSType", "newValue": "[\"Windows\"]", "oldValue": "[]" },
+          { "displayName": "DeviceOSVersion", "newValue": "[\"10.0.26100.4652\"]", "oldValue": "[]" },
+          { "displayName": "DisplayName", "newValue": "[\"DESKTOP-JANE01\"]", "oldValue": "[]" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Add device laptop cloud",
+    "activityDisplayName": "Add device",
+    "category": "Device",
+    "loggedByService": "Core Directory",
+    "operationType": "Add",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "carol@example.com",
+        "id": "u-3",
+        "ipAddress": "198.51.100.8"
+      },
+      "app": {
+        "displayName": "Device Registration Service",
+        "servicePrincipalId": "sp-drs-1"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Device",
+        "displayName": "DESKTOP-CAROL7",
+        "id": "dev-5",
+        "modifiedProperties": [
+          { "displayName": "CloudAccountEnabled", "newValue": "[true]", "oldValue": "[]" },
+          { "displayName": "CloudDeviceOSType", "newValue": "[\"Windows\"]", "oldValue": "[]" },
+          { "displayName": "CloudDeviceOSVersion", "newValue": "[\"10.0.26100.4652\"]", "oldValue": "[]" },
+          { "displayName": "CloudDisplayName", "newValue": "[\"DESKTOP-CAROL7\"]", "oldValue": "[]" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Add device synced",
+    "activityDisplayName": "Add device",
+    "category": "Device",
+    "loggedByService": "Core Directory",
+    "operationType": "Add",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "app": {
+        "displayName": "Microsoft Entra Connect Sync",
+        "servicePrincipalId": "sp-sync-1"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Device",
+        "displayName": "DESKTOP-OFFICE3",
+        "id": "dev-6",
+        "modifiedProperties": [
+          { "displayName": "AccountEnabled", "newValue": "[true]", "oldValue": "[]" },
+          { "displayName": "DeviceOSType", "newValue": "[\"Windows\"]", "oldValue": "[]" },
+          { "displayName": "DeviceTrustType", "newValue": "[\"ServerAd\"]", "oldValue": "[]" },
+          { "displayName": "DisplayName", "newValue": "[\"DESKTOP-OFFICE3\"]", "oldValue": "[]" },
+          { "displayName": "Included Updated Properties", "newValue": "\"AccountEnabled, CloudCreated, DeviceId, DeviceOSType, DeviceTrustType, DirSyncEnabled, DisplayName, LastDirSyncTime\"" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

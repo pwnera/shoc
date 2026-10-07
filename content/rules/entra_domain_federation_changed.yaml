@@ -1,0 +1,37 @@
+id: entra_domain_federation_changed
+title: Domain authentication or federation settings changed
+description: >
+  A domain was switched to federated sign-in, or its federation settings were
+  changed. Whoever controls the federation's signing key can sign in as any
+  user of that domain without a password or MFA. A company that does not
+  federate should never see this.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: critical
+confidence: 0.8
+attack: [T1484.002, T1556.007]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection:
+    api.operation|contains: [set domain authentication, set federation settings on domain]
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Entra ID Domain Federation Configuration Change
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/privilege_escalation_entra_id_tenant_domain_federation_via_audit_logs
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Azure Domain Federation Settings Modified
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_federation_modified.yml
+    author: Austin Songer
+    license: DRL-1.1
+    relation: adapted

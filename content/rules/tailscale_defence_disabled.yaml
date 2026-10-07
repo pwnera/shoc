@@ -1,0 +1,49 @@
+id: tailscale_defence_disabled
+title: Tailnet protection switched off
+description: >
+  Device approval, user approval, Tailnet Lock, network flow logs or log
+  streaming was turned off, or the log stream was pointed somewhere else. Each one lets a device or a person onto the
+  network, or out of sight, without anyone being asked.
+status: stable
+date: 2026-09-30
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1562.001]
+logsource:
+  product: tailscale
+  service: configuration_log
+detection:
+  # Device approval is MACHINE_APPROVAL_NEEDED and Tailnet Lock TAILNET_LOCK.
+  # No published record names the user approval or flow log property, so a
+  # word of each is matched.
+  selection:
+    api.operation|startswith: TAILNET.DISABLE.
+    api.operation|contains: [APPROVAL, TAILNET_LOCK, FLOW]
+  # The stream was deleted or its destination changed. No record shows the
+  # property's exact name yet, so any delete or update of the log stream counts.
+  selection_logstream:
+    api.operation|startswith: [TAILNET.DELETE.LOGSTREAM, TAILNET.UPDATE.LOGSTREAM]
+  condition: selection or selection_logstream
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, cloud.account.uid]
+sources:
+  - name: Elastic
+    title: GCP Logging Sink Modification
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/exfiltration_gcp_logging_sink_modification
+    license: Elastic-2.0
+    relation: inspired
+  - name: Datadog
+    title: Tailscale tailnet lock disabled
+    url: https://docs.datadoghq.com/security/default_rules/def-000-tsy/
+    relation: inspired
+  - name: Panther
+    title: Tailscale Machine Approval Requirements Disabled
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/tailscale_rules/tailscale_machine_approval_requirements_disabled.yml
+    license: Apache-2.0
+    relation: inspired
+  - name: Tailscale
+    title: Configuration audit logging
+    url: https://tailscale.com/docs/features/logging/audit-logging
+    relation: inspired

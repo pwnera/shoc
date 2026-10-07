@@ -1,0 +1,22 @@
+id: aws_console_login_failure_burst
+title: Burst of failed AWS console logins
+description: Repeated failed console sign-ins from one source address, from password spraying or brute force.
+status: stable
+date: 2026-09-24
+modified: 2026-09-25
+severity: medium
+confidence: 0.6
+attack: [T1110, T1110.003]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.operation: ConsoleLogin
+    status: Failure
+  condition: selection
+  timeframe: 15m
+  group_by: [src_endpoint.ip]
+  count: ">= 5"
+entity: src_endpoint.ip
+fields: [actor.user.name, src_endpoint.ip]

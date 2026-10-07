@@ -1,0 +1,23 @@
+# A normal day for the CI pipeline. Nothing here is an incident (AGT-6).
+id: benign_ci_day
+title: An ordinary CI day
+description: >
+  The deploy pipeline does what it does every day: reads and writes build
+  artifacts, checks a few instances, reads the three secrets it needs and
+  assumes its role. This scenario measures noise — every rule that fires here is
+  a false positive a small team would have to read.
+source: aws_cloudtrail
+entity: deploy-ci
+expected_rules: []
+must_not_fire:
+  - aws_s3_mass_object_read
+  - aws_discovery_burst
+  - aws_secrets_enumeration
+  - aws_access_denied_burst
+  - aws_cloudtrail_logging_disabled
+expected_verdict: benign_expected
+# Nothing connected sends CloudTrail in a replay, so no AWS pack may run and
+# none may call itself "clear" (RFC 0022).
+expected_hunts:
+  aws_identity_first_api_call: not_applicable
+  aws_rare_api_operation: not_applicable

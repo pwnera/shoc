@@ -1,0 +1,21 @@
+# Entra ID administrator takeover (AGT-6).
+id: entra_admin_takeover
+title: Entra ID administrator takeover
+description: >
+  A password spray over ten accounts, then a sign-in that works. The attacker
+  resets another user's password, adds themselves to a directory role, weakens
+  conditional access so MFA stops applying, and consents an application that
+  will outlive the password change.
+source: entra
+entity: attacker@acme.com
+expected_rules:
+  - entra_sign_in_failure_burst
+  - entra_password_reset_by_admin
+  - entra_admin_role_assigned
+  - entra_conditional_access_changed
+  - entra_app_consent_granted
+must_not_fire:
+  - okta_mfa_push_fatigue
+  - aws_root_account_activity
+expected_verdict: malicious
+minimum_confidence: 0.7

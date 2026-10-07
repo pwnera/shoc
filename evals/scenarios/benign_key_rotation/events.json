@@ -1,0 +1,96 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "rotate-ListAccessKeys",
+    "eventName": "ListAccessKeys",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Darwin/23.4",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "accountId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEALICE0001"
+    },
+    "requestParameters": {
+      "userName": "deploy-ci"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "rotate-CreateAccessKey",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Darwin/23.4",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "accountId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEALICE0001"
+    },
+    "requestParameters": {
+      "userName": "deploy-ci"
+    },
+    "responseElements": {
+      "accessKey": {
+        "userName": "deploy-ci",
+        "accessKeyId": "AKIAEXAMPLENEWCIKEY1",
+        "status": "Active"
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "rotate-UpdateAccessKey",
+    "eventName": "UpdateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Darwin/23.4",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "accountId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEALICE0001"
+    },
+    "requestParameters": {
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+      "status": "Inactive"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "rotate-DeleteAccessKey",
+    "eventName": "DeleteAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Darwin/23.4",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "accountId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEALICE0001"
+    },
+    "requestParameters": {
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  }
+]

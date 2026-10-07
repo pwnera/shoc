@@ -1,0 +1,17 @@
+[
+  {
+    "_document_id": "hunt-gh-wf-base",
+    "action": "workflow_run.requested",
+    "actor": "ci-bot",
+    "org": "acme",
+    "repo": "acme/payments",
+    "webhook": {
+      "event": "workflow_run",
+      "action": "requested"
+    },
+    "workflow_run": {
+      "name": "CI",
+      "path": ".github/workflows/build2.yml"
+    }
+  }
+]

@@ -1,0 +1,138 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-download",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@acme.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "download",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "billable",
+            "boolValue": true
+          },
+          {
+            "name": "owner_is_shared_drive",
+            "boolValue": false
+          },
+          {
+            "name": "owner",
+            "value": "sales@acme.com"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abcdEF"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "is_encrypted",
+            "boolValue": false
+          },
+          {
+            "name": "doc_title",
+            "value": "Customer list"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_internally"
+          },
+          {
+            "name": "actor_is_collaborator_account",
+            "boolValue": false
+          },
+          {
+            "name": "owner_is_team_drive",
+            "boolValue": false
+          }
+        ]
+      }
+    ],
+    "_repeat": 8
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-view",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@acme.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "view",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "billable",
+            "boolValue": true
+          },
+          {
+            "name": "owner_is_shared_drive",
+            "boolValue": false
+          },
+          {
+            "name": "owner",
+            "value": "sales@acme.com"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abcdEF"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "is_encrypted",
+            "boolValue": false
+          },
+          {
+            "name": "doc_title",
+            "value": "Customer list"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_internally"
+          },
+          {
+            "name": "actor_is_collaborator_account",
+            "boolValue": false
+          },
+          {
+            "name": "owner_is_team_drive",
+            "boolValue": false
+          }
+        ]
+      }
+    ],
+    "_repeat": 60
+  }
+]

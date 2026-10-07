@@ -1,0 +1,68 @@
+[
+  {
+    "Id": "m365-ChatCreated-helpdesk",
+    "Operation": "ChatCreated",
+    "OrganizationId": "org-1",
+    "RecordType": 25,
+    "UserKey": "helpdesk@examplesupport.onmicrosoft.com",
+    "UserType": 0,
+    "UserId": "helpdesk@examplesupport.onmicrosoft.com",
+    "Workload": "MicrosoftTeams",
+    "ClientIP": "203.0.113.20",
+    "ChatThreadId": "19:abc@unq.gbl.spaces",
+    "CommunicationType": "OneOnOne",
+    "Members": [
+      {
+        "OrganizationId": "00000000-005d-405d-805d-00000000005d",
+        "DisplayName": "IT Help Desk",
+        "UPN": "helpdesk@examplesupport.onmicrosoft.com"
+      },
+      {
+        "OrganizationId": "00000000-005e-405e-805e-00000000005e",
+        "DisplayName": "Jane Doe",
+        "UPN": "jane@example.com"
+      }
+    ],
+    "ParticipantInfo": {
+      "HasForeignTenantUsers": true,
+      "HasGuestUsers": false,
+      "HasOtherGuestUsers": false,
+      "HasUnauthenticatedUsers": false,
+      "ParticipatingDomains": ["examplesupport.onmicrosoft.com", "example.com"]
+    },
+    "ItemName": "19:abc@unq.gbl.spaces"
+  },
+  {
+    "Id": "m365-ChatCreated-microsoft-security",
+    "Operation": "ChatCreated",
+    "OrganizationId": "org-1",
+    "RecordType": 25,
+    "UserKey": "j.smith@examplesecurity.onmicrosoft.com",
+    "UserType": 0,
+    "UserId": "j.smith@examplesecurity.onmicrosoft.com",
+    "Workload": "MicrosoftTeams",
+    "ClientIP": "203.0.113.21",
+    "ChatThreadId": "19:def@unq.gbl.spaces",
+    "CommunicationType": "OneOnOne",
+    "Members": [
+      {
+        "OrganizationId": "00000000-005f-405f-805f-00000000005f",
+        "DisplayName": "Microsoft  Security",
+        "UPN": "j.smith@examplesecurity.onmicrosoft.com"
+      },
+      {
+        "OrganizationId": "00000000-005e-405e-805e-00000000005e",
+        "DisplayName": "Bob Martin",
+        "UPN": "bob@example.com"
+      }
+    ],
+    "ParticipantInfo": {
+      "HasForeignTenantUsers": true,
+      "HasGuestUsers": false,
+      "HasOtherGuestUsers": false,
+      "HasUnauthenticatedUsers": false,
+      "ParticipatingDomains": ["examplesecurity.onmicrosoft.com", "example.com"]
+    },
+    "ItemName": "19:def@unq.gbl.spaces"
+  }
+]

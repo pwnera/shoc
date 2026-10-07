@@ -1,0 +1,94 @@
+id: contain_endpoint_compromise
+title: Contain a compromised endpoint
+description: >
+  The EDR raised a high-severity or ransomware detection. Isolating the host is
+  reversible but takes someone's laptop off the network, so the policy holds it
+  for a human while the page goes out. Blocking the file the alert named stops
+  it on every other laptop too.
+rules:
+  - edr_high_severity_detection
+  - edr_ransomware_detection
+  - edr_medium_severity_detection
+  - sentinelone_exclusion_changed
+  - cloudflare_gateway_threat_domain_lookup
+  - endpoint_security_tool_disabled
+  - endpoint_rdp_logon_from_internet
+  - endpoint_rclone_upload_to_file_sharing
+  - endpoint_tunnel_exposes_remote_admin
+  - endpoint_local_admin_granted
+  - endpoint_ci_runner_or_secret_scanner_on_workstation
+  - endpoint_anydesk_unattended_setup
+  - hunt:endpoint_remote_access_tool_first_seen
+  - hunt:endpoint_tunnel_client_first_seen_on_host
+  - hunt:endpoint_cloud_storage_client_first_seen_on_host
+  - hunt:dns_remote_access_relay_first_seen
+  - hunt:dns_dynamic_dns_tunnel_or_low_reputation_rare
+  - hunt:endpoint_office_child_process_rare
+  - hunt:endpoint_encoded_powershell_rare
+  - hunt:endpoint_remote_logon_new_source
+  - hunt:endpoint_defender_exclusion_first_seen
+  - hunt:linux_rare_process_external_connection
+questions:
+  - id: blocked
+    ask: Did the EDR block the process, or did it run?
+  - id: user
+    ask: Which user was signed in, and did that account sign in anywhere else since?
+  - id: spread
+    ask: Are other hosts showing the same hash, command line or parent process?
+  - id: device
+    ask: Which EDR device id belongs to the host a Gateway or console finding names, so it can be isolated?
+  - id: after
+    ask: What did the same host and account do in the hour after, new local admins, tunnels, uploads or a silent agent?
+benign_when:
+  - The detection is a known admin tool, run by an admin, and the EDR already quarantined it.
+example: |
+  claim (blocked): "The EDR detected the process and did not block it; it ran for 40 seconds", citing the detection and the process-end events.
+  checked and absent: "the same hash or command line on any other host (7d)", which scopes the case to one host.
+  disposition: malicious on that host, with spread checked and found nowhere else.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  # The EDR's own device id: a Gateway finding on the same case names the WARP
+  # device, and a registry or task event names a key or a task as its resource.
+  - name: isolate the host in CrowdStrike
+    action: crowdstrike.isolate_host
+    optional: true
+    params:
+      device_id: "{{ platform.edr.device }}"
+  - name: isolate the host in SentinelOne
+    action: sentinelone.isolate_host
+    optional: true
+    params:
+      device_id: "{{ platform.edr.device }}"
+  - name: isolate the host in Defender
+    action: defender.isolate_host
+    optional: true
+    params:
+      device_id: "{{ platform.edr.device }}"
+  # The file the EDR alert named, not a hash from telemetry, where the process
+  # is as often powershell.exe as it is the malware. An alert on a script names
+  # its interpreter too, so the block runs alone only when intel calls the hash
+  # malicious (RSP-5); anything else waits for a person.
+  - name: block the file the EDR convicted in CrowdStrike
+    action: crowdstrike.block_hash
+    optional: true
+    params:
+      hash: "{{ rule.edr_high_severity_detection.file_hash }}"
+  - name: block the file the EDR convicted in SentinelOne
+    action: sentinelone.block_hash
+    optional: true
+    params:
+      hash: "{{ rule.edr_high_severity_detection.file_hash }}"
+  - name: block the file the EDR convicted in Defender
+    action: defender.block_hash
+    optional: true
+    params:
+      hash: "{{ rule.edr_high_severity_detection.file_hash }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: endpoint {{ platform.edr.device }} compromised: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"

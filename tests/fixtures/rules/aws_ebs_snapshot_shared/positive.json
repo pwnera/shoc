@@ -1,0 +1,120 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ModifySnapshotAttribute",
+    "eventName": "ModifySnapshotAttribute",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "snapshotId": "snap-0123456789abcdef0",
+      "attributeType": "CREATE_VOLUME_PERMISSION",
+      "createVolumePermission": {
+        "add": {
+          "items": [
+            {
+              "userId": "999988887777"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ModifyImageAttribute",
+    "eventName": "ModifyImageAttribute",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "imageId": "ami-0123456789abcdef0",
+      "attributeType": "launchPermission",
+      "launchPermission": {
+        "add": {
+          "items": [
+            {
+              "userId": "999988887777"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ModifyDBSnapshotAttribute",
+    "eventName": "ModifyDBSnapshotAttribute",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "dBSnapshotIdentifier": "prod-db-2026-10-01",
+      "attributeName": "restore",
+      "valuesToAdd": [
+        "999988887777"
+      ]
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ModifySnapshotAttribute-public",
+    "eventName": "ModifySnapshotAttribute",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "snapshotId": "snap-0123456789abcdef0",
+      "createVolumePermission": {
+        "add": {
+          "items": [
+            {
+              "group": "all"
+            }
+          ]
+        }
+      },
+      "attributeType": "CREATE_VOLUME_PERMISSION"
+    }
+  }
+]

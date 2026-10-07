@@ -1,0 +1,76 @@
+id: contain_aws_data_exposure
+title: Contain data exposed or destroyed in AWS
+description: >
+  A bucket was opened to the world, a snapshot shared or exported, a bucket
+  read in bulk or re-encrypted with an outside key, backups or versioning
+  switched off, a Lambda function opened to outsiders, or a KMS key disabled
+  or scheduled for deletion.
+  Disabling the actor's key stops further reads, and a human is paged. After
+  the page the bucket's public access is blocked, the key's deletion
+  cancelled or the snapshot unshared, whichever the case's resource is, each
+  recorded so undo puts it back. Revoking the sessions the actor's key minted
+  waits for a human. Turning backups or versioning back on, and closing a
+  Lambda function, are left to the person paged.
+rules:
+  - aws_s3_bucket_made_public
+  - aws_ebs_snapshot_shared
+  - aws_s3_mass_object_read
+  - aws_kms_key_disabled_or_deleted
+  - aws_s3_sse_c_encryption
+  - aws_recovery_disabled
+  - aws_lambda_opened_to_outside
+  - aws_bulk_data_export
+questions:
+  - id: granted_to
+    ask: Which account or principal was given access, and is it one of ours?
+  - id: read_after
+    ask: Were objects read, or the snapshot copied, by a principal outside the account after the change?
+  - id: what_it_holds
+    ask: What does the bucket, snapshot or key protect, and which workloads depend on it?
+  - id: deletion_pending
+    ask: If a KMS key was scheduled for deletion, is the deletion still pending and when does it take effect?
+  - id: recovery_left
+    ask: Which versions, backups or recovery points of the affected data still exist, and can the actor delete them?
+benign_when:
+  - The bucket serves a public website and has been public before.
+  - The snapshot was shared with one of our own accounts in the organisation.
+example: |
+  claim (granted_to): "The snapshot was shared with account 999988887777, which is not one of ours", citing the ModifySnapshotAttribute event.
+  checked and absent: "that account ID in the organisation's account list or in any earlier share (90d)", which rules out an internal share.
+  disposition: malicious, because the grantee is outside the organisation and nothing a person wrote down names it.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: disable the actor's access key
+    action: aws.disable_access_key
+    optional: true
+    params:
+      access_key_id: "{{ entity.key }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: AWS data exposed or at risk, close it: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: block public access to the bucket
+    action: aws.block_s3_public_access
+    optional: true
+    params:
+      bucket: "{{ entity.resource }}"
+  - name: cancel the key's deletion
+    action: aws.cancel_key_deletion
+    optional: true
+    params:
+      key_id: "{{ entity.resource }}"
+  - name: unshare the snapshot
+    action: aws.unshare_snapshot
+    optional: true
+    params:
+      snapshot_id: "{{ entity.resource }}"
+  - name: revoke the sessions minted from the actor's key
+    action: aws.revoke_sessions
+    optional: true
+    params:
+      access_key_id: "{{ entity.key }}"

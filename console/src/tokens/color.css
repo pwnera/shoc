@@ -1,0 +1,173 @@
+/* Color. Two modes. Indigo-tinted grounds, blue crew accent. Every other hue means something.
+   Light is the default: index.html sets <html data-theme="light"> and lib/theme.ts agrees.
+   Dark applies on bare :root and on data-theme="dark", so both modes sit behind a selector.
+   Edition three keeps every edition-two name; a retired role is an alias of its successor. */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Grounds: 0 page · 1 panel · 2 raised control · 3 selected · float (palette, chat, menus, dialogs) */
+  --bg-0: oklch(0.19 0.03 275);
+  --bg-1: oklch(0.215 0.032 275);
+  --bg-2: oklch(0.27 0.034 275);
+  --bg-3: oklch(0.31 0.036 275);
+  --bg-float: oklch(0.25 0.034 275);
+
+  /* Lines: 1 hairline (every border) · 2 strong (focused control, dialog edge) · 3 edges, axes, input borders (3:1) */
+  --line-1: oklch(0.33 0.038 275);
+  --line-2: oklch(0.42 0.04 275);
+  --line-3: oklch(0.55 0.04 275);
+
+  /* Inks: 1 titles and values · 2 body · 3 secondary · 4 metadata · disabled controls only */
+  --fg-1: oklch(0.967 0.001 286.375);
+  --fg-2: oklch(0.92 0.004 286.3);
+  --fg-3: oklch(0.78 0.012 286.1);
+  --fg-4: oklch(0.66 0.016 285.9);
+  --fg-disabled: oklch(0.442 0.017 285.786);
+
+  /* The one light fill: primary button, selected tab bar */
+  --fill-light: oklch(0.93 0.01 275);
+  --on-light: oklch(0.141 0.005 285.823);
+
+  /* Crew: anything an agent said or does (blue) */
+  --crew: oklch(0.82 0.11 250);
+  --crew-strong: oklch(0.72 0.16 252);
+  --crew-bar: oklch(0.64 0.18 254);
+  --crew-line: oklch(0.42 0.1 255);
+  --crew-fill: oklch(0.29 0.06 258);
+  --crew-dot: var(--crew-strong);
+
+  /* A person: the L2 "you" badge, human avatars and markers */
+  --human: var(--fg-1);
+  --human-line: var(--line-2);
+
+  /* Severity: text inks, edges, grounds, and the dots that mark severity in squares, rings and ticks */
+  --critical: oklch(0.808 0.114 19.571);
+  --critical-line: oklch(0.396 0.141 25.723);
+  --critical-fill: oklch(0.258 0.092 26.042);
+  --critical-dot: oklch(0.7 0.19 22);
+  --high: oklch(0.837 0.128 66.29);
+  --high-line: oklch(0.408 0.123 38.172);
+  --high-fill: oklch(0.266 0.079 36.259);
+  --high-dot: oklch(0.72 0.17 55);
+  --medium: oklch(0.82 0.14 85);
+  --medium-line: oklch(0.414 0.112 45.904);
+  --medium-fill: oklch(0.279 0.077 45.635);
+  --medium-dot: oklch(0.769 0.188 70);
+  --low: var(--fg-3);
+  --low-dot: var(--fg-4);
+  --informational: var(--fg-4);
+
+  /* Status, apart from severity: good (delivering, done) · warn (late, degraded) · bad (failing, refused) · idle */
+  --good: oklch(0.845 0.143 165);
+  --good-dot: oklch(0.696 0.17 162);
+  --good-line: oklch(0.378 0.077 169);
+  --good-fill: oklch(0.262 0.051 173);
+  --warn: oklch(0.8 0.13 72);
+  /* Yellower and lighter than --medium-dot, so a warn bar never reads as a MEDIUM severity bar. */
+  --warn-dot: oklch(0.82 0.15 85);
+  --warn-line: oklch(0.52 0.12 70);
+  --warn-fill: oklch(0.27 0.06 60);
+  --bad: oklch(0.885 0.062 18);
+  --bad-dot: oklch(0.704 0.191 22);
+  --bad-line: oklch(0.5 0.15 25);
+  --bad-fill: oklch(0.258 0.092 26);
+  --idle-dot: oklch(0.55 0.015 285);
+
+  /* Edition-two names, now aliases of the status scale */
+  --ok: var(--good);
+  --ok-dot: var(--good-dot);
+  --ok-line: var(--good-line);
+  --ok-fill: var(--good-fill);
+  --degraded-dot: var(--warn-dot);
+  --unknown-dot: var(--idle-dot);
+  --danger-text: var(--bad);
+  --danger-value: var(--bad-dot);
+  --warn-value: var(--warn);
+  --good-value: var(--good);
+  --no-evidence: var(--warn);
+
+  /* Charts: series in order (never crew blue), muted marks, and a neutral ramp for counts in cells */
+  --series-1: var(--fg-2);
+  --series-2: oklch(0.702 0.183 293.541);
+  --series-3: oklch(0.78 0.14 175);
+  --chart-muted: oklch(0.55 0.03 275);
+  /* The first lit step stands clear of an unlit cell (about 2:1 on --bg-1), not one shade off it. */
+  --seq-1: oklch(0.36 0.04 275);
+  --seq-2: oklch(0.44 0.04 275);
+  --seq-3: oklch(0.53 0.04 275);
+  --seq-4: oklch(0.66 0.04 275);
+
+  /* Focus, selection, brushing: neutral, because a focus ring is not the crew */
+  --focus: var(--fg-1);
+  --selection: color-mix(in oklch, var(--fg-1) 18%, transparent);
+  --brush: color-mix(in oklch, var(--fg-1) 10%, transparent);
+  --black: #000000;
+  --scrim: color-mix(in oklch, var(--black) 60%, transparent);
+}
+
+/* Light mode. Tinted page, white panels, dark inks; tints flip to text-dark / line-mid / fill-pale.
+   Aliases declared above follow their successors here without being repeated. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-0: oklch(0.965 0.018 275);
+  --bg-1: oklch(0.995 0.019 275);
+  --bg-2: oklch(0.95 0.02 275);
+  --bg-3: oklch(0.91 0.022 275);
+  --bg-float: #ffffff;
+  --line-1: oklch(0.89 0.023 275);
+  --line-2: oklch(0.81 0.024 275);
+  --line-3: oklch(0.62 0.03 275);
+
+  --fg-1: oklch(0.12 0.005 286);
+  --fg-2: oklch(0.22 0.008 286);
+  --fg-3: oklch(0.38 0.014 286);
+  --fg-4: oklch(0.48 0.016 286);
+  --fg-disabled: oklch(0.68 0.012 286);
+
+  --fill-light: oklch(0.17 0.006 286);
+  --on-light: #ffffff;
+
+  --crew: oklch(0.45 0.17 258);
+  --crew-strong: oklch(0.52 0.2 258);
+  --crew-bar: oklch(0.6 0.19 256);
+  --crew-line: oklch(0.82 0.08 255);
+  --crew-fill: oklch(0.955 0.025 255);
+
+  --critical: oklch(0.5 0.2 25);
+  --critical-line: oklch(0.82 0.1 20);
+  --critical-fill: oklch(0.96 0.03 20);
+  --critical-dot: oklch(0.55 0.2 25);
+  --high: oklch(0.52 0.16 45);
+  --high-line: oklch(0.84 0.1 55);
+  --high-fill: oklch(0.965 0.035 60);
+  --high-dot: oklch(0.62 0.17 50);
+  --medium: oklch(0.55 0.14 75);
+  --medium-line: oklch(0.86 0.1 85);
+  --medium-fill: oklch(0.97 0.04 90);
+  --medium-dot: oklch(0.62 0.16 65);
+
+  --good: oklch(0.5 0.13 160);
+  --good-dot: oklch(0.6 0.16 160);
+  --good-line: oklch(0.84 0.09 160);
+  --good-fill: oklch(0.965 0.035 160);
+  --warn: oklch(0.52 0.13 70);
+  --warn-dot: oklch(0.66 0.15 85);
+  --warn-line: oklch(0.78 0.12 80);
+  --warn-fill: oklch(0.97 0.035 85);
+  --bad: oklch(0.42 0.18 25);
+  --bad-dot: oklch(0.55 0.2 25);
+  --bad-line: oklch(0.75 0.13 22);
+  --bad-fill: oklch(0.96 0.03 20);
+  --idle-dot: oklch(0.62 0.012 286);
+
+  --series-2: oklch(0.55 0.2 293);
+  --series-3: oklch(0.5 0.12 175);
+  --chart-muted: oklch(0.64 0.02 275);
+  --seq-1: oklch(0.88 0.03 275);
+  --seq-2: oklch(0.8 0.035 275);
+  --seq-3: oklch(0.72 0.035 275);
+  --seq-4: oklch(0.55 0.04 275);
+
+  --scrim: color-mix(in oklch, var(--black) 30%, transparent);
+}

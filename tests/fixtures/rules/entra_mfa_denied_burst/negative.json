@@ -1,0 +1,31 @@
+[
+  {
+    "id": "en-mfa-denied",
+    "userPrincipalName": "jane@example.com",
+    "userId": "u-1",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "198.51.100.7",
+    "location": { "countryOrRegion": "FR" },
+    "status": {
+      "errorCode": 500121,
+      "failureReason": "Authentication failed during strong authentication request."
+    },
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["interactiveUser"],
+    "_stream": "signIns",
+    "_repeat": 2
+  },
+  {
+    "id": "en-bad-password",
+    "userPrincipalName": "jane@example.com",
+    "userId": "u-1",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "198.51.100.7",
+    "status": { "errorCode": 50126, "failureReason": "Invalid username or password." },
+    "correlationId": "c-2",
+    "tenantId": "tid-1",
+    "_stream": "signIns",
+    "_repeat": 6
+  }
+]

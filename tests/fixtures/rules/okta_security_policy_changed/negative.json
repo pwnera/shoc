@@ -1,0 +1,149 @@
+[
+  {
+    "uuid": "okta-user.session.start",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": []
+  },
+  {
+    "uuid": "okta-policy.evaluate_sign_on",
+    "eventType": "policy.evaluate_sign_on",
+    "displayMessage": "policy evaluate_sign_on",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "0oa0",
+        "type": "AppInstance",
+        "alternateId": "Okta Admin Console",
+        "displayName": "Okta Admin Console"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-policy.rule.action.execute",
+    "eventType": "policy.rule.action.execute",
+    "displayMessage": "Scheduled execution of policy rule action",
+    "actor": {
+      "id": "0oa1system",
+      "type": "SystemPrincipal",
+      "alternateId": "system@okta.com",
+      "displayName": "Okta System"
+    },
+    "client": {
+      "ipAddress": null,
+      "userAgent": null
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "target": [
+      {
+        "id": "00p1auto",
+        "type": "PolicyEntity",
+        "alternateId": "unknown",
+        "displayName": "Deactivate inactive users"
+      },
+      {
+        "id": "0pr1auto",
+        "type": "PolicyRule",
+        "alternateId": "unknown",
+        "displayName": "After 90 days"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-application.policy.sign_on.deny_access",
+    "eventType": "application.policy.sign_on.deny_access",
+    "displayMessage": "Deny user access due to app sign on policy",
+    "actor": {
+      "id": "00u2efgh",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob Martin"
+    },
+    "client": {
+      "ipAddress": "198.51.100.6",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      }
+    },
+    "outcome": {
+      "result": "DENY",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102BobSess01"
+    },
+    "target": [
+      {
+        "id": "0oa9",
+        "type": "AppInstance",
+        "alternateId": "Salesforce",
+        "displayName": "Salesforce"
+      }
+    ]
+  }
+]

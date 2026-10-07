@@ -1,0 +1,87 @@
+[
+  {
+    "id": {
+      "uniqueQualifier": "gw-download-q3-customers.xlsx",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@acme.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.30",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "drive",
+        "name": "download",
+        "parameters": [
+          {
+            "name": "doc_title",
+            "value": "q3-customers.xlsx"
+          }
+        ]
+      }
+    ],
+    "_repeat": 70
+  },
+  {
+    "id": {
+      "uniqueQualifier": "gw-authorize-export-tool",
+      "applicationName": "token",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@acme.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.30",
+    "_application": "token",
+    "events": [
+      {
+        "type": "token",
+        "name": "authorize",
+        "parameters": [
+          {
+            "name": "doc_title",
+            "value": "export-tool"
+          },
+          {
+            "name": "scope",
+            "multiValue": [
+              "https://www.googleapis.com/auth/drive.readonly"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": {
+      "uniqueQualifier": "gw-UNENROLL_USER_FROM_STRONG_AUTH-q3-customers.xlsx",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "admin@acme.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.30",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "admin",
+        "name": "UNENROLL_USER_FROM_STRONG_AUTH",
+        "parameters": [
+          {
+            "name": "doc_title",
+            "value": "q3-customers.xlsx"
+          }
+        ]
+      }
+    ]
+  }
+]

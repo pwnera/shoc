@@ -1,0 +1,79 @@
+[
+  {
+    "insertId": "gcp-owner-grant",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudresourcemanager.googleapis.com",
+      "methodName": "SetIamPolicy",
+      "resourceName": "projects/example-prod",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.81",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/google.iam.v1.SetIamPolicyRequest",
+        "resource": "example-prod"
+      },
+      "serviceData": {
+        "@type": "type.googleapis.com/google.iam.v1.logging.AuditData",
+        "policyDelta": {
+          "bindingDeltas": [
+            {
+              "action": "ADD",
+              "role": "roles/owner",
+              "member": "user:backup@example.net"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "insertId": "gcp-iam-admin-grant-v3",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudresourcemanager.googleapis.com",
+      "methodName": "google.cloudresourcemanager.v3.Projects.SetIamPolicy",
+      "resourceName": "projects/example-prod",
+      "authenticationInfo": {
+        "principalEmail": "ci-deployer@example-prod.iam.gserviceaccount.com",
+        "serviceAccountKeyName": "//iam.googleapis.com/projects/example-prod/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com/keys/3f1c0a9b8e7d6c5b4a39281706f5e4d3c2b1a090"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.82",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "serviceData": {
+        "@type": "type.googleapis.com/google.iam.v1.logging.AuditData",
+        "policyDelta": {
+          "bindingDeltas": [
+            {
+              "action": "ADD",
+              "role": "roles/resourcemanager.projectIamAdmin",
+              "member": "serviceAccount:ci-deployer@example-prod.iam.gserviceaccount.com"
+            }
+          ]
+        }
+      }
+    }
+  }
+]

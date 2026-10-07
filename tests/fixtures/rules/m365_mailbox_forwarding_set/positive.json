@@ -1,0 +1,26 @@
+[
+  {
+    "AppAccessContext": {
+      "AADSessionId": "44444444-4444-4444-4444-444444444444"
+    },
+    "Id": "m365-Set-Mailbox-forward",
+    "Operation": "Set-Mailbox",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "john.doe@example.com",
+    "UserType": 2,
+    "Workload": "Exchange",
+    "ClientIP": "203.0.113.45:26061",
+    "ObjectId": "Jane DOE",
+    "UserId": "john.doe@example.com",
+    "AppPoolName": "MSExchangeOWAAppPool",
+    "Parameters": [
+      { "Name": "Identity", "Value": "Jane DOE" },
+      { "Name": "ForwardingSmtpAddress", "Value": "smtp:jane.doe@example.org" },
+      { "Name": "DeliverToMailboxAndForward", "Value": "True" }
+    ],
+    "SessionId": "44444444-4444-4444-4444-444444444444",
+    "_content_type": "Audit.Exchange"
+  }
+]

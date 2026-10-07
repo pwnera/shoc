@@ -1,0 +1,58 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Program Files\\rclone\\rclone.exe",
+    "CommandLine": "rclone.exe sync D:\\Data b2:company-backup --config C:\\rclone\\rclone.conf",
+    "ParentBaseFileName": "svchost.exe",
+    "RawProcessId": "4242",
+    "UserSid": "S-1-5-21-1111111111-2222222222-3333333333-1104"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "host05.example.com",
+      "os": "linux"
+    },
+    "tgt": {
+      "process": {
+        "name": "rclone",
+        "cmdline": "rclone sync /srv/data sftp:nas/backup",
+        "image": {
+          "path": "/usr/bin/rclone"
+        },
+        "user": "jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cron"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "4444444444444444444444444444444444444444",
+      "DeviceName": "fs-01.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "rclone.exe",
+      "FolderPath": "C:\\Program Files\\rclone\\rclone.exe",
+      "ProcessCommandLine": "\"C:\\Program Files\\rclone\\rclone.exe\" sync D:\\Shares s3:example-backup/shares --multi-thread-streams 8 --config C:\\rclone\\rclone.conf",
+      "InitiatingProcessFileName": "svchost.exe",
+      "AccountName": "svc-backup"
+    }
+  }
+]

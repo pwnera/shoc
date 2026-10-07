@@ -1,0 +1,46 @@
+[
+  {
+    "Id": "m365-Add-MailboxPermission",
+    "Operation": "Add-MailboxPermission",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "Version": 1,
+    "Workload": "Exchange",
+    "ClientIP": "203.0.113.45:50112",
+    "ObjectId": "finance",
+    "UserId": "jane@example.com",
+    "AppId": "",
+    "ExternalAccess": false,
+    "OrganizationName": "example.onmicrosoft.com",
+    "Parameters": [
+      { "Name": "Identity", "Value": "finance@example.com" },
+      { "Name": "User", "Value": "jane@example.com" },
+      { "Name": "AccessRights", "Value": "FullAccess" },
+      { "Name": "InheritanceType", "Value": "All" },
+      { "Name": "AutoMapping", "Value": "False" }
+    ],
+    "SessionId": "44444444-4444-4444-4444-444444444444",
+    "_content_type": "Audit.Exchange"
+  },
+  {
+    "Id": "m365-Set-Mailbox-send-on-behalf",
+    "Operation": "Set-Mailbox",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "ClientIP": "203.0.113.45:51022",
+    "Workload": "Exchange",
+    "ResultStatus": "True",
+    "ObjectId": "CEO",
+    "Parameters": [
+      { "Name": "Identity", "Value": "CEO" },
+      { "Name": "GrantSendOnBehalfTo", "Value": "contractor@example.com" }
+    ],
+    "_content_type": "Audit.Exchange"
+  }
+]

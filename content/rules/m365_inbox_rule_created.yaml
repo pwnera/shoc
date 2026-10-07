@@ -1,0 +1,88 @@
+id: m365_inbox_rule_created
+title: Mailbox rule that forwards, deletes or hides mail
+description: >
+  An inbox rule now forwards, redirects or deletes mail, or moves it to a folder
+  nobody reads (RSS Feeds, Conversation History), whether it was made in Outlook
+  on the web, PowerShell, EWS or the Outlook desktop app. In business email
+  compromise this is how the attacker reads the replies and hides them from the
+  real owner. Rules that only file mail into an ordinary folder, Archive
+  included, are left to the hunt.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1114.003, T1564.008]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_owa:
+    api.operation: [New-InboxRule, Set-InboxRule]
+  # A parameter set to nothing clears that action, and reads as absent.
+  owa_action:
+    - unmapped.params.ForwardTo|exists: true
+    - unmapped.params.ForwardAsAttachmentTo|exists: true
+    - unmapped.params.RedirectTo|exists: true
+    - unmapped.params.DeleteMessage: true
+    - unmapped.params.SoftDeleteMessage: true
+    # Conversation History is named in the mailbox's language.
+    - unmapped.params.MoveToFolder|contains: [RSS, Conversation History, Deleted Items, Historique des conversations,
+                                              Verlauf der Unterhaltung, Historial de conversaciones,
+                                              Cronologia delle conversazioni, Gesprekgeschiedenis,
+                                              Histórico de Conversações]
+  selection_outlook:
+    api.operation: UpdateInboxRules
+  # Outlook writes RuleActions ("ActionType":"Forward"); EWS writes Actions
+  # (ForwardToRecipientsAction, RedirectToRecipientsAction, DeleteAction).
+  outlook_action:
+    - unmapped.opprops.RuleActions|contains: [Forward, Redirect, Delete]
+    - unmapped.opprops.Actions|contains: [Forward, Redirect, Delete]
+  filter_rule_removed:
+    unmapped.opprops.RuleOperation: [RemoveMailboxRule, Delete]
+  filter_failed:
+    status: Failure
+  condition: >-
+    ((selection_owa and owa_action) or (selection_outlook and outlook_action and not filter_rule_removed))
+    and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip, resource.uid]
+sources:
+  - name: Sigma
+    title: Mail Forwarding/Redirecting Activity In O365
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/cloud/m365/audit/microsoft365_susp_email_forwarding_activity.yml
+    author: RedCanary Team (idea), Harjot Singh @cyb3rjy0t
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: Inbox Rules Creation Or Update Activity in O365
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/cloud/m365/audit/microsoft365_susp_inbox_rule_creation_or_update_activity.yml
+    author: Marco Pedrinazzi (@pedrinazziM) (InTheCyber)
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: M365 Exchange Inbox Forwarding Rule Created
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/collection_exchange_new_inbox_rule
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: M365 Exchange Inbox Phishing Evasion Rule Created
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_new_inbox_rule_delete_or_move
+    license: Elastic-2.0
+    relation: inspired
+  - name: Splunk
+    title: O365 New Email Forwarding Rule Enabled
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/o365_new_email_forwarding_rule_enabled.yml
+    author: Mauricio Velazco, Splunk
+    license: Apache-2.0
+    relation: adapted
+  - name: Red Canary
+    title: Email Hiding Rules (Threat Detection Report)
+    url: https://redcanary.com/threat-detection-report/techniques/email-hiding-rules/
+    relation: inspired
+  - name: LETHAL-FORENSICS
+    title: Microsoft-Analyzer-Suite MoveToFolder blacklist
+    url: https://github.com/LETHAL-FORENSICS/Microsoft-Analyzer-Suite/blob/main/Blacklists/MoveToFolder-Blacklist.csv
+    license: GPL-3.0
+    relation: inspired

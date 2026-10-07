@@ -1,0 +1,28 @@
+id: gitlab_access_token_created
+title: GitLab deploy key, deploy token or group/project access token created
+description: >
+  A credential that belongs to a group or project rather than a person was
+  created. It pushes or pulls without a login, is not ended by blocking the
+  person who made it, and is how stolen access outlives a password reset. A
+  person's own access tokens are left out; developers make those every week.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: medium
+confidence: 0.5
+attack: [T1098.001]
+logsource:
+  product: gitlab
+  service: audit_events
+detection:
+  selection:
+    api.operation:
+      - deploy_key_added
+      - deploy_token_created
+      - group_deploy_token_created
+      - project_access_token_created
+      - group_access_token_created
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, message, actor.invoked_by]

@@ -1,0 +1,9 @@
+[
+  {
+    "id": "evt_radar.early_fraud_warning.updated",
+    "object": "event",
+    "type": "radar.early_fraud_warning.updated",
+    "livemode": true,
+    "data": {"object": {"id": "issfr_1", "object": "radar.early_fraud_warning", "charge": "ch_3PstolenCard0001", "fraud_type": "made_with_stolen_card", "actionable": true}}
+  }
+]

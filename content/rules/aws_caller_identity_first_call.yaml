@@ -1,0 +1,37 @@
+id: aws_caller_identity_first_call
+title: Identity asked AWS who it is for the first time
+description: >
+  An IAM user, root or federated user called GetCallerIdentity, which it had
+  not done in the last 30 days. It is the first call most tools make with a
+  key they have just found, to learn whose key it is; the owner's own scripts
+  rarely need to ask. Role sessions and infrastructure-as-code runs, which
+  call it every time, are left out. Quiet for the first 30 days of history.
+status: experimental
+date: 2026-10-02
+severity: medium
+confidence: 0.5
+attack: [T1087.004, T1033]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.operation: GetCallerIdentity
+    status: Success
+  filter_role:
+    actor.user.type: AssumedRole
+  filter_iac:
+    http_request.user_agent|contains: [terraform, pulumi, eksctl]
+  condition: selection and not filter_role and not filter_iac
+  timeframe: 15m
+baseline:
+  first_seen: [actor.user.name, api.operation]
+  lookback: 30d
+entity: [actor.session.uid, actor.user.name]
+fields: [actor.user.name, actor.user.type, src_endpoint.ip, http_request.user_agent]
+sources:
+  - name: Elastic
+    title: AWS STS GetCallerIdentity API Called for the First Time
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_new_terms_sts_getcalleridentity
+    license: Elastic-2.0
+    relation: adapted

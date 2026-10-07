@@ -1,0 +1,19 @@
+[
+  {
+    "Id": "m365-Disable Strong Authentication",
+    "Operation": "Disable Strong Authentication.",
+    "OrganizationId": "org-1",
+    "RecordType": 8,
+    "ResultStatus": "Success",
+    "UserKey": "u-2",
+    "UserType": 0,
+    "UserId": "admin@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "203.0.113.61",
+    "ObjectId": "ceo@example.com",
+    "Target": [
+      { "ID": "User_u-1", "Type": 2 },
+      { "ID": "ceo@example.com", "Type": 5 }
+    ]
+  }
+]

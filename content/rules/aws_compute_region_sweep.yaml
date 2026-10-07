@@ -1,0 +1,46 @@
+id: aws_compute_region_sweep
+title: Compute capacity checked or launched across many regions
+description: >
+  A long-term access key listed instances, read compute quotas, or launched
+  instances or container services in six or more regions within 15 minutes.
+  Miners sweep every region for capacity, then launch where nobody looks; the
+  company's own scripts stay in the regions it runs in. Role sessions are left
+  out, because inventory and monitoring integrations sweep regions through
+  roles all day.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1580, T1526, T1535]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.operation: [DescribeInstances, DescribeInstanceTypeOfferings, DescribeSpotPriceHistory, GetServiceQuota, ListServiceQuotas, RunInstances, RequestSpotInstances, CreateFleet, CreateCluster, RegisterTaskDefinition, CreateService]
+    actor.session.uid|startswith: AKIA
+  filter_aws:
+    actor.invoked_by|exists: true
+  condition: selection and not filter_aws
+  timeframe: 15m
+  group_by: [actor.session.uid]
+  count_distinct: cloud.region
+  count: ">= 6"
+entity: actor.session.uid
+fields: [actor.user.name, api.operation, cloud.region, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: AWS Service Quotas Multi-Region GetServiceQuota Requests
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_servicequotas_multi_region_service_quota_requests
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic hunting
+    title: High Frequency of EC2 Multi-Region `DescribeInstances` API Calls
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/ec2_discovery_multi_region_describe_instance_calls.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Datadog Security Labs
+    title: "Tales from the cloud trenches: Amazon ECS is the new EC2 for crypto mining"
+    url: https://securitylabs.datadoghq.com/articles/tales-from-the-cloud-trenches-ecs-crypto-mining/
+    relation: inspired

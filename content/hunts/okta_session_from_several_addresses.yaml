@@ -1,0 +1,48 @@
+id: okta_session_from_several_addresses
+title: One Okta session used from three or more addresses in a day
+hypothesis: >
+  A session cookie stolen by a phishing proxy or an infostealer is replayed
+  from the attacker's own address, so the victim's session shows up from an
+  address it never started on. A laptop that moves from the office to a phone
+  hotspot does the same thing every week, and a dual-stack network gives every
+  session an IPv4 and an IPv6 address, which is why this is a hunt at three
+  addresses and not a rule at two.
+attack: [T1539, T1550.004]
+logsource:
+  product: okta
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: [user.session.start, user.authentication.sso, policy.evaluate_sign_on]
+    actor.session.uid|exists: true
+    actor.user.type: User
+  condition: selection
+baseline:
+  rare:
+    by: [actor.session.uid, actor.user.name]
+    among: src_endpoint.ip
+    seen_by_at_least: 3
+  lookback: 1d
+pivot: [actor.user.name, actor.session.uid, src_endpoint.ip, src_endpoint.asn,
+        src_endpoint.location.country, http_request.user_agent]
+triage: >
+  Do the addresses belong to the same person moving around (home, office,
+  phone carrier, one country), or does one of them sit at a hosting provider
+  or in another country with a different browser? The odd address out is the
+  replay.
+follow_up:
+  - Did the session change factors, mail rules or admin settings from the odd address?
+  - Did the user report a phishing email or an Okta push they did not expect that day?
+sensitive: true
+sources:
+  - name: Elastic
+    title: Multiple Device Token Hashes for Single Okta Session
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_multiple_device_token_hashes_for_single_okta_session
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Okta AiTM Session Cookie Replay
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_aitm_session_cookie_replay
+    license: Elastic-2.0
+    relation: inspired

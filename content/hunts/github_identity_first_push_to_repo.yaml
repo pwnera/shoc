@@ -1,0 +1,35 @@
+id: github_identity_first_push_to_repo
+title: An account pushes to a repository it never pushed to before
+hypothesis: >
+  A stolen token or a compromised maintainer account is used to push into a
+  repository its owner never works on, often the one that deploys. Each
+  repository here has a few regular pushers, so a new one is worth a sentence.
+  A webhook delivers a push as `push`; the audit-log API as `git.push`.
+attack: [T1195.002, T1078]
+logsource:
+  product: github
+  service: audit_log
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: [push, git.push]
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, resource.uid]
+  lookback: 30d
+pivot: [actor.user.name, resource.uid, cloud.account.uid]
+triage: >
+  Is this a new team member, a bot the team added, or a person who joined the
+  project this week? A push to the default branch of a deploying repository by
+  an account nobody can name is the one to escalate.
+follow_up:
+  - Was it a force push, or to the default branch?
+  - Did branch protection change on that repository the same day?
+sensitive: false
+sources:
+  - name: Elastic
+    title: GitHub Actions Unusual Bot Push to Repository
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/initial_access_github_actions_bot_first_push_to_repo
+    license: Elastic-2.0
+    relation: inspired

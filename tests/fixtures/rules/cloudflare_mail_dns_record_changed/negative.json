@@ -1,0 +1,39 @@
+[
+  {
+    "id": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f5b01",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5"},
+    "action": {"description": "Create DNS Record", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8c1f0e2d3a4b5e01", "method": "POST", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records", "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"},
+    "resource": {
+      "scope": "zones",
+      "product": "dns_records",
+      "request": {"name": "staging.example.com", "tags": [], "type": "A", "comment": "", "content": "192.0.2.10", "proxied": true},
+      "response": {"id": "aa11bb22cc33dd44ee55ff6600770005", "name": "staging.example.com", "tags": [], "type": "A", "content": "192.0.2.10", "proxied": true}
+    },
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f5b02",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5"},
+    "action": {"description": "Batch DNS Records", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8c1f0e2d3a4b5e02", "method": "POST", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records/batch", "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"},
+    "resource": {
+      "type": "batch",
+      "scope": "zones",
+      "product": "dns_records",
+      "request": {"deletes": [{"id": "aa11bb22cc33dd44ee55ff6600770003"}, {"id": "aa11bb22cc33dd44ee55ff6600770004"}]},
+      "response": {"deletes": [{"id": "aa11bb22cc33dd44ee55ff6600770003", "name": "shop.example.com", "tags": [], "type": "CNAME", "content": "shops.example.net", "proxied": false, "settings": {"flatten_cname": false}}, {"id": "aa11bb22cc33dd44ee55ff6600770004", "name": "_verify.shop.example.com", "tags": [], "type": "TXT", "content": "\"verify-0123456789abcdef\"", "proxied": false}]}
+    },
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f5b03",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5"},
+    "action": {"result": "success", "type": "create"},
+    "actor": {"type": "system"},
+    "resource": {"id": "aa11bb22cc33dd44ee55ff6600770006", "type": "record", "product": "dns", "value": {"id": "aa11bb22cc33dd44ee55ff6600770006", "ttl": 1, "data": {}, "name": "_acme-challenge.example.com", "type": "TXT", "content": "\"acme-challenge-example-value\"", "proxied": false, "zone_id": "023e105f4ecef8ad9ca31a8372d0c353", "settings": {}, "zone_name": "example.com"}},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  }
+]

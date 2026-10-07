@@ -1,0 +1,253 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call: # the release gate in release.yml runs this whole workflow
+
+permissions:
+  contents: read
+
+concurrency:
+  # In a called run github.workflow names the caller, so a release never cancels CI.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SHOC_MASTER_KEY: ci-master-key-not-a-secret
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - name: ruff
+        run: ruff check .
+      - name: ruff format
+        run: ruff format --check .
+      - name: pyright
+        run: pyright
+      - name: dependency budget, transitive packages included
+        run: python -m scripts.check_dependency_budget
+      - name: licence compatibility of every runtime package
+        run: python -m scripts.check_licenses
+      - name: rules compile
+        run: shoc rules check
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      # An ordinary role, as in deploy/: a superuser bypasses row-level
+      # security, and a suite run as one would test none of it (SEC-1).
+      SHOC_DSN: postgresql://shoc:shoc@127.0.0.1:5432/shoc
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0 # the upgrade test starts from the previous release's tag
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - name: create the shoc and shoc_agent roles the way deploy/ does
+        env:
+          PGHOST: 127.0.0.1
+          PGPASSWORD: postgres
+          POSTGRES_USER: postgres
+          SHOC_DB_PASSWORD: shoc
+          SHOC_APP_DB_PASSWORD: ci-app
+          SHOC_AGENT_DB_PASSWORD: ci-readonly
+        run: |
+          sh deploy/postgres-init/10-shoc-role.sh
+          # The migration test builds a scratch database; nothing else needs this.
+          psql -U postgres -d postgres -c "ALTER ROLE shoc CREATEDB"
+      - name: upgrade test, from the previous release's schema to this one
+        run: sh scripts/check_upgrade.sh
+      - name: unit tests
+        run: pytest tests/unit -q
+      - name: grant the read-only agent role
+        run: |
+          shoc migrate
+          shoc grant-readonly --role shoc_agent
+      - name: conformance suite (Postgres), with agents on the read-only role
+        env:
+          SHOC_READONLY_DSN: postgresql://shoc_agent:ci-readonly@127.0.0.1:5432/shoc
+          # The role serve and worker run as, which cannot change the audit log (RFC 0024).
+          SHOC_RUNTIME_TEST_DSN: postgresql://shoc_app:ci-app@127.0.0.1:5432/shoc
+        run: pytest tests/conformance -q
+      - name: replay scenarios and score detection
+        run: |
+          shoc migrate
+          pytest tests/test_scenarios.py -q
+          python -m evals.run --json evals-report.json --markdown evals-report.md
+      - name: publish the eval summary
+        if: always()
+        run: cat evals-report.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        if: always()
+        with:
+          name: eval-report
+          path: evals-report.*
+
+  warehouses:
+    # The conformance suite, every compiled rule's fixtures included, on a real
+    # Databricks SQL warehouse, Snowflake account, Redshift cluster and BigQuery
+    # project (STO-1, STO-3, STO-4, STO-5, STO-6, DET-1, DET-3). It runs only where the repository holds that
+    # warehouse's credentials as secrets; a fork or a repository without them
+    # skips every step. Runs share one tenant per warehouse, so they queue.
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [databricks, snowflake, redshift, bigquery]
+    concurrency:
+      group: warehouse-${{ matrix.backend }}
+      cancel-in-progress: false
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      SHOC_DSN: postgresql://shoc:shoc@127.0.0.1:5432/shoc
+      SHOC_BACKEND: ${{ matrix.backend }}
+      SHOC_BACKENDS: ${{ matrix.backend }}
+      SHOC_TENANT: ci
+      SHOC_TEST_TENANT: ci
+      SHOC_DATABRICKS_HOST: ${{ secrets.SHOC_DATABRICKS_HOST }}
+      SHOC_DATABRICKS_HTTP_PATH: ${{ secrets.SHOC_DATABRICKS_HTTP_PATH }}
+      SHOC_DATABRICKS_TOKEN: ${{ secrets.SHOC_DATABRICKS_TOKEN }}
+      SHOC_SNOWFLAKE_ACCOUNT: ${{ secrets.SHOC_SNOWFLAKE_ACCOUNT }}
+      SHOC_SNOWFLAKE_USER: ${{ secrets.SHOC_SNOWFLAKE_USER }}
+      SHOC_SNOWFLAKE_PASSWORD: ${{ secrets.SHOC_SNOWFLAKE_PASSWORD }}
+      SHOC_SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SHOC_SNOWFLAKE_PRIVATE_KEY }}
+      SHOC_SNOWFLAKE_WAREHOUSE: ${{ secrets.SHOC_SNOWFLAKE_WAREHOUSE }}
+      SHOC_SNOWFLAKE_ROLE: ${{ secrets.SHOC_SNOWFLAKE_ROLE }}
+      SHOC_REDSHIFT_DSN: ${{ secrets.SHOC_REDSHIFT_DSN }}
+      SHOC_REDSHIFT_STAGE: ${{ secrets.SHOC_REDSHIFT_STAGE }}
+      SHOC_REDSHIFT_REGION: ${{ secrets.SHOC_REDSHIFT_REGION }}
+      SHOC_REDSHIFT_IAM_ROLE: ${{ secrets.SHOC_REDSHIFT_IAM_ROLE }}
+      SHOC_REDSHIFT_AWS_ACCESS_KEY_ID: ${{ secrets.SHOC_REDSHIFT_AWS_ACCESS_KEY_ID }}
+      SHOC_REDSHIFT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SHOC_REDSHIFT_AWS_SECRET_ACCESS_KEY }}
+      SHOC_BIGQUERY_PROJECT: ${{ secrets.SHOC_BIGQUERY_PROJECT }}
+      SHOC_BIGQUERY_CREDENTIALS: ${{ secrets.SHOC_BIGQUERY_CREDENTIALS }}
+      SHOC_BIGQUERY_LOCATION: ${{ secrets.SHOC_BIGQUERY_LOCATION }}
+      CREDENTIALS: >-
+        ${{ (matrix.backend == 'databricks' && secrets.SHOC_DATABRICKS_TOKEN)
+        || (matrix.backend == 'snowflake' && secrets.SHOC_SNOWFLAKE_USER)
+        || (matrix.backend == 'redshift' && secrets.SHOC_REDSHIFT_DSN)
+        || (matrix.backend == 'bigquery' && secrets.SHOC_BIGQUERY_CREDENTIALS) || '' }}
+    steps:
+      - name: no credentials, nothing to run
+        if: env.CREDENTIALS == ''
+        run: echo "::notice::no ${{ matrix.backend }} credentials in this repository; skipped"
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        if: env.CREDENTIALS != ''
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        if: env.CREDENTIALS != ''
+        with:
+          python-version: "3.12"
+      - if: env.CREDENTIALS != ''
+        run: pip install -e ".[dev,${{ matrix.backend }}]"
+      - name: control plane in Postgres, events in the warehouse
+        if: env.CREDENTIALS != ''
+        env:
+          PGHOST: 127.0.0.1
+          PGPASSWORD: postgres
+          POSTGRES_USER: postgres
+          SHOC_DB_PASSWORD: shoc
+          SHOC_AGENT_DB_PASSWORD: ci-readonly
+        run: |
+          sh deploy/postgres-init/10-shoc-role.sh
+          psql -U postgres -d postgres -c "ALTER ROLE shoc CREATEDB"
+          shoc migrate
+      - name: conformance suite and every rule's fixtures on ${{ matrix.backend }}
+        if: env.CREDENTIALS != ''
+        run: pytest tests/conformance -q
+
+  scaffold:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - name: a scaffolded connector and rule still pass their own tests
+        run: |
+          shoc new connector ci_example
+          shoc new rule ci_example_rule --product aws --service cloudtrail
+          pytest tests/unit/test_mappings_all.py -q -k ci_example
+          git checkout -- . && git clean -fd
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev,docs]"
+      - name: capability reference is up to date
+        run: |
+          python scripts/generate_reference.py
+          git diff --exit-code docs/reference.md || {
+            echo "docs/reference.md is stale; run python scripts/generate_reference.py"; exit 1; }
+      - name: links in docs resolve to files in the repo
+        run: python scripts/check_links.py
+      - name: the documentation site builds, with every link and anchor resolved
+        run: zensical build --strict
+      - name: the public contract has not changed by accident
+        run: python scripts/snapshot_contract.py --check
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: build the image
+        run: docker build -f deploy/Dockerfile -t shoc:ci .
+      - name: the image starts and answers
+        run: docker run --rm shoc:ci --version
+
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4.2.0
+      - name: the chart lints and renders
+        run: |
+          helm lint deploy/helm/shoc
+          helm template shoc deploy/helm/shoc \
+            --set secrets.existingSecret=shoc-secrets > /tmp/rendered.yaml
+          grep -q "kind: Deployment" /tmp/rendered.yaml
+      - name: the chart will not create a secret without tokens (D63)
+        run: |
+          if helm template shoc deploy/helm/shoc --set secrets.create=true \
+            --set secrets.values.SHOC_DSN=x --set secrets.values.SHOC_MASTER_KEY=x 2> /tmp/err
+          then exit 1; fi
+          grep -q SHOC_TOKENS /tmp/err
+          helm template shoc deploy/helm/shoc --set secrets.create=true \
+            --set secrets.values.SHOC_DSN=x --set secrets.values.SHOC_MASTER_KEY=x \
+            --set secrets.values.SHOC_TOKENS=x | grep -q "kind: Secret"

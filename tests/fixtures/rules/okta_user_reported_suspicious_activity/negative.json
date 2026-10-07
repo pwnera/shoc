@@ -1,0 +1,43 @@
+[
+  {
+    "uuid": "okta-user.account.update_password",
+    "eventType": "user.account.update_password",
+    "displayMessage": "user account update_password",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ]
+  }
+]

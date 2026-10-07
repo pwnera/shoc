@@ -1,0 +1,170 @@
+[
+  {
+    "id": "evt_cardtest_a",
+    "object": "event",
+    "livemode": true,
+    "pending_webhooks": 0,
+    "type": "charge.failed",
+    "data": {
+      "object": {
+        "id": "ch_cardtestA",
+        "object": "charge",
+        "amount": 100,
+        "amount_captured": 0,
+        "captured": false,
+        "currency": "usd",
+        "billing_details": {
+          "address": {
+            "postal_code": null
+          },
+          "email": null,
+          "name": null,
+          "phone": null
+        },
+        "failure_code": "card_declined",
+        "failure_message": "Your card was declined.",
+        "livemode": true,
+        "outcome": {
+          "network_status": "declined_by_network",
+          "reason": "generic_decline",
+          "risk_level": "normal",
+          "seller_message": "The bank did not return any further details with this decline.",
+          "type": "issuer_declined"
+        },
+        "paid": false,
+        "payment_intent": "pi_ch_cardtestA",
+        "payment_method": "pm_ch_cardtestA",
+        "payment_method_details": {
+          "card": {
+            "brand": "visa",
+            "checks": {
+              "cvc_check": "unchecked"
+            },
+            "country": "US",
+            "exp_month": 11,
+            "exp_year": 2028,
+            "fingerprint": "Xq1AcardTestA",
+            "funding": "credit",
+            "last4": "0341"
+          },
+          "type": "card"
+        },
+        "receipt_email": null,
+        "status": "failed"
+      }
+    },
+    "_repeat": 7
+  },
+  {
+    "id": "evt_cardtest_b",
+    "object": "event",
+    "livemode": true,
+    "pending_webhooks": 0,
+    "type": "charge.failed",
+    "data": {
+      "object": {
+        "id": "ch_cardtestB",
+        "object": "charge",
+        "amount": 100,
+        "amount_captured": 0,
+        "captured": false,
+        "currency": "usd",
+        "billing_details": {
+          "address": {
+            "postal_code": null
+          },
+          "email": null,
+          "name": null,
+          "phone": null
+        },
+        "failure_code": "incorrect_cvc",
+        "failure_message": "Your card's security code is incorrect.",
+        "livemode": true,
+        "outcome": {
+          "network_status": "declined_by_network",
+          "reason": "incorrect_cvc",
+          "risk_level": "normal",
+          "seller_message": "The bank returned the decline code `incorrect_cvc`.",
+          "type": "issuer_declined"
+        },
+        "paid": false,
+        "payment_intent": "pi_ch_cardtestB",
+        "payment_method": "pm_ch_cardtestB",
+        "payment_method_details": {
+          "card": {
+            "brand": "visa",
+            "checks": {
+              "cvc_check": "fail"
+            },
+            "country": "US",
+            "exp_month": 11,
+            "exp_year": 2028,
+            "fingerprint": "Xq1BcardTestB",
+            "funding": "credit",
+            "last4": "8817"
+          },
+          "type": "card"
+        },
+        "receipt_email": null,
+        "status": "failed"
+      }
+    },
+    "_repeat": 7
+  },
+  {
+    "id": "evt_cardtest_c",
+    "object": "event",
+    "livemode": true,
+    "pending_webhooks": 0,
+    "type": "charge.failed",
+    "data": {
+      "object": {
+        "id": "ch_cardtestC",
+        "object": "charge",
+        "amount": 100,
+        "amount_captured": 0,
+        "captured": false,
+        "currency": "usd",
+        "billing_details": {
+          "address": {
+            "postal_code": null
+          },
+          "email": null,
+          "name": null,
+          "phone": null
+        },
+        "failure_code": "card_declined",
+        "failure_message": "Your card was declined.",
+        "livemode": true,
+        "outcome": {
+          "network_status": "not_sent_to_network",
+          "reason": "highest_risk_level",
+          "risk_level": "highest",
+          "seller_message": "Stripe blocked this charge as too risky.",
+          "type": "blocked"
+        },
+        "paid": false,
+        "payment_intent": "pi_ch_cardtestC",
+        "payment_method": "pm_ch_cardtestC",
+        "payment_method_details": {
+          "card": {
+            "brand": "visa",
+            "checks": {
+              "cvc_check": "unchecked"
+            },
+            "country": "US",
+            "exp_month": 11,
+            "exp_year": 2028,
+            "fingerprint": "Xq1CcardTestC",
+            "funding": "credit",
+            "last4": "5520"
+          },
+          "type": "card"
+        },
+        "receipt_email": null,
+        "status": "failed"
+      }
+    },
+    "_repeat": 7
+  }
+]

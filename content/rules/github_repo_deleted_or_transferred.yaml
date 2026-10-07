@@ -1,0 +1,45 @@
+id: github_repo_deleted_or_transferred
+title: Repository deleted or transferred out
+description: >
+  A repository was deleted, transferred to another account, or the organisation
+  started a migration out. Moving a repository to a personal account is how a
+  departing engineer or an intruder takes the code; deleting one is extortion.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1485, T1537]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  # repo.transfer, by audit log or webhook, is a repository arriving in the organisation.
+  selection:
+    api.operation: [repo.destroy, repo.transfer_outgoing, repo.transfer_start, org.transfer, org.transfer_outgoing, migration.create]
+  condition: selection
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, resource.uid, api.operation, raw.new_nwo]
+sources:
+  - name: Elastic
+    title: GitHub Repository Deleted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/impact_github_repository_deleted
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Github Repository/Organization Transferred
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/application/github/audit/github_repo_or_org_transferred.yml
+    author: Romain Gaillard (@romain-gaillard)
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: Github Delete Action Invoked
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/application/github/audit/github_delete_action_invoked.yml
+    author: Muhammad Faisal (@faisalusuf)
+    license: DRL-1.1
+    relation: adapted
+  - name: GitHub
+    title: Audit log events for your organization
+    url: https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization
+    relation: inspired

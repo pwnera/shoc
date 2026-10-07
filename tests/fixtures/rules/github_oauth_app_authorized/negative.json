@@ -1,0 +1,44 @@
+[
+  {
+    "_document_id": "gh-repo.add_member",
+    "action": "repo.add_member",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "Mozilla/5.0",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-oauth_application.revoke_all_tokens",
+    "action": "oauth_application.revoke_all_tokens",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "org": "acme",
+    "oauth_application": "Repo Backup Pro",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-oauth_application.destroy",
+    "action": "oauth_application.destroy",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "org": "acme",
+    "oauth_application": "Repo Backup Pro",
+    "operation_type": "remove"
+  },
+  {
+    "_document_id": "gh-org.oauth_app_access_denied",
+    "action": "org.oauth_app_access_denied",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "org": "acme",
+    "oauth_application_name": "Repo Backup Pro",
+    "url": "https://backup.example.com",
+    "operation_type": "modify"
+  }
+]

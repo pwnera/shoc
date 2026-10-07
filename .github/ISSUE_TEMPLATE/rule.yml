@@ -1,0 +1,37 @@
+name: Rule request
+description: Propose a detection rule.
+labels: ["kind/rule", "area/detection", "needs-triage"]
+body:
+  - type: input
+    id: behaviour
+    attributes:
+      label: Behaviour to detect
+      description: One sentence, in the words an on-call engineer would use.
+    validations:
+      required: true
+  - type: input
+    id: attack
+    attributes:
+      label: ATT&CK technique
+      description: e.g. T1078.004
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Source
+      options: [AWS CloudTrail, Okta, GitHub, Entra ID, Google Workspace, M365, EDR, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: logic
+    attributes:
+      label: Detection logic
+      description: Fields, values, thresholds and the time window.
+  - type: textarea
+    id: fp
+    attributes:
+      label: Expected false positives
+      description: What legitimate activity looks the same? This becomes the negative fixture.
+    validations:
+      required: true

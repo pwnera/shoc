@@ -1,0 +1,108 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-InvokeModel",
+    "eventName": "InvokeModel",
+    "eventSource": "bedrock.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/BedrockAPIKey-ab12",
+      "accountId": "123456789012",
+      "userName": "BedrockAPIKey-ab12"
+    },
+    "requestParameters": {
+      "modelId": "anthropic.claude-3-haiku-20240307-v1:0"
+    },
+    "additionalEventData": {
+      "callWithBearerToken": true,
+      "inferenceRegion": "us-east-1"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateAccessKey",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "userName": "deploy-ci"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ListFoundationModels",
+    "eventName": "ListFoundationModels",
+    "eventSource": "bedrock.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-GetCallerIdentity",
+    "eventName": "GetCallerIdentity",
+    "eventSource": "sts.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/BedrockAPIKey-ab12",
+      "accountId": "123456789012",
+      "userName": "BedrockAPIKey-ab12",
+      "accessKeyId": "AKIAEXAMPLEPHANTOM01"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateInference",
+    "eventName": "CreateInference",
+    "eventSource": "bedrock-mantle.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "OpenAI/Python 1.50.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/BedrockAPIKey-ab12",
+      "accountId": "123456789012",
+      "userName": "BedrockAPIKey-ab12"
+    },
+    "requestParameters": {
+      "model": "anthropic.claude-3-haiku-20240307-v1:0",
+      "stream": true,
+      "callWithBearerToken": true,
+      "bearerTokenType": "ABSK"
+    },
+    "eventCategory": "Data",
+    "managementEvent": false
+  }
+]

@@ -1,0 +1,50 @@
+id: github_oauth_app_authorized
+title: OAuth app or GitHub App granted org access
+description: >
+  A third-party application was granted access to the organisation, a member
+  authorised one, or an OAuth app the organisation owns was created or changed.
+  Malicious OAuth apps are a quiet way to keep reading private repositories.
+  These events come from the audit-log API only; GitHub sends app installations
+  to the app's own webhook, never to an organisation webhook (D69).
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1550.001, T1528]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  selection:
+    api.operation|contains: oauth_application
+  # Deleting an app, or revoking its tokens or a secret, is the clean-up after one.
+  filter_cleanup:
+    api.operation: [oauth_application.destroy, oauth_application.remove_client_secret, oauth_application.revoke_all_tokens, oauth_application.revoke_tokens]
+  selection_install:
+    api.operation|contains: integration_installation.create
+  selection_grant:
+    api.operation: [org.oauth_app_access_approved, oauth_authorization.create]
+  condition: (selection and not filter_cleanup) or selection_install or selection_grant
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, raw.oauth_application, raw.oauth_application_name, raw.name]
+sources:
+  - name: Elastic
+    title: GitHub OAuth Application Authorized
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/github/persistence_github_oauth_application_authorized.toml
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: New GitHub App Installed
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/execution_new_github_app_installed
+    license: Elastic-2.0
+    relation: adapted
+  - name: GitHub
+    title: Audit log events for your organization
+    url: https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization
+    relation: inspired
+  - name: GitHub
+    title: Webhook events and payloads
+    url: https://docs.github.com/en/webhooks/webhook-events-and-payloads
+    relation: inspired

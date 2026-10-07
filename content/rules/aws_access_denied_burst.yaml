@@ -1,0 +1,46 @@
+id: aws_access_denied_burst
+title: Burst of AccessDenied errors
+description: >
+  Many permission failures for one principal in a short window: someone is
+  probing the edges of what a credential can do. AWS's own service roles,
+  calls AWS made on a principal's behalf and a person clicking through console
+  pages are left out. Calls from CloudShell still count, since it runs on
+  console credentials and an intruder who reached the console can script
+  from it.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: medium
+confidence: 0.65
+attack: [T1078.004, T1580]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.response.error: [AccessDenied, AccessDeniedException, UnauthorizedOperation, Client.UnauthorizedOperation, AuthorizationError]
+  filter_console:
+    raw.sessionCredentialFromConsole: true
+  # CloudShell runs on console credentials too, and scripts run there.
+  cloudshell:
+    http_request.user_agent|contains: exec-env/CloudShell
+  filter_aws:
+    actor.invoked_by|exists: true
+  filter_service_roles:
+    actor.user.name|startswith: AWSServiceRole
+  condition: selection and not (filter_console and not cloudshell) and not filter_aws and not filter_service_roles
+  timeframe: 15m
+  group_by: [actor.user.name]
+  count: ">= 10"
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip, api.response.error]
+sources:
+  - name: Elastic
+    title: AWS S3 Bucket Enumeration or Brute Force
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_aws_s3_bucket_enumeration_or_brute_force
+    license: Elastic-2.0
+    relation: inspired
+  - name: AWS
+    title: Incident response guide for AWS CloudTrail investigations, part 1
+    url: https://aws.amazon.com/blogs/security/incident-response-guide-for-aws-cloudtrail-investigations-part-1/
+    relation: inspired

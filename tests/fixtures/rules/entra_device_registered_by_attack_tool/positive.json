@@ -1,0 +1,69 @@
+[
+  {
+    "id": "en-Add device roadtools",
+    "activityDisplayName": "Add device",
+    "category": "Device",
+    "loggedByService": "Core Directory",
+    "operationType": "Add",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "jane@example.com",
+        "id": "u-1",
+        "ipAddress": "203.0.113.160"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Device",
+        "displayName": "DESKTOP-ZSMB1N2",
+        "id": "dev-1",
+        "modifiedProperties": [
+          { "displayName": "AccountEnabled", "newValue": "[true]", "oldValue": "[]" },
+          { "displayName": "DeviceId", "newValue": "[\"0f0e0d0c-0b0a-4909-8807-060504030201\"]", "oldValue": "[]" },
+          { "displayName": "DeviceOSType", "newValue": "[\"Windows\"]", "oldValue": "[]" },
+          { "displayName": "DeviceOSVersion", "newValue": "[\"10.0.19041.928\"]", "oldValue": "[]" },
+          { "displayName": "DisplayName", "newValue": "[\"DESKTOP-ZSMB1N2\"]", "oldValue": "[]" },
+          { "displayName": "DeviceTrustType", "newValue": "[\"Workplace\"]", "oldValue": "[]" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Add device phishing kit",
+    "activityDisplayName": "Add device",
+    "category": "Device",
+    "loggedByService": "Core Directory",
+    "operationType": "Add",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "bob@example.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.161"
+      },
+      "app": {
+        "displayName": "Device Registration Service",
+        "servicePrincipalId": "sp-drs-1"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Device",
+        "displayName": "DESKTOP-8KQ2M7XA",
+        "id": "dev-4",
+        "modifiedProperties": [
+          { "displayName": "CloudAccountEnabled", "newValue": "[true]", "oldValue": "[]" },
+          { "displayName": "CloudDeviceOSType", "newValue": "[\"Windows\"]", "oldValue": "[]" },
+          { "displayName": "CloudDeviceOSVersion", "newValue": "[\"10.0.19045.2006\"]", "oldValue": "[]" },
+          { "displayName": "CloudDisplayName", "newValue": "[\"DESKTOP-8KQ2M7XA\"]", "oldValue": "[]" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

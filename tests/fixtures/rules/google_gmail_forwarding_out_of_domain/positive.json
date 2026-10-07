@@ -1,0 +1,29 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-email_forwarding_out_of_domain",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "login",
+    "events": [
+      {
+        "type": "email_forwarding_change",
+        "name": "email_forwarding_out_of_domain",
+        "parameters": [
+          {
+            "name": "email_forwarding_destination_address",
+            "value": "drop@example.org"
+          }
+        ]
+      }
+    ]
+  }
+]

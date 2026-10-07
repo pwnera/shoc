@@ -1,0 +1,15 @@
+[
+  {
+    "Id": "m365-Update user",
+    "Operation": "Update user.",
+    "OrganizationId": "org-1",
+    "RecordType": 8,
+    "ResultStatus": "Success",
+    "UserKey": "u-2",
+    "UserType": 0,
+    "UserId": "admin@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.7",
+    "ObjectId": "ceo@example.com"
+  }
+]

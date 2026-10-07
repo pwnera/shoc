@@ -1,0 +1,18 @@
+shoc {{ .Chart.AppVersion }} is installed as {{ include "shoc.fullname" . }}.
+
+  serve:   {{ .Values.serve.replicas }} replica(s) on port {{ .Values.service.port }}
+  worker:  {{ .Values.worker.replicas }} replica(s)
+  dry run: {{ ternary "on, actions are planned and never executed" "OFF, actions will be executed" .Values.dryRun }}
+  crew:    {{ .Values.llm.provider }}
+
+Next:
+
+  kubectl port-forward svc/{{ include "shoc.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+  curl -s localhost:{{ .Values.service.port }}/healthz
+
+  kubectl exec deploy/{{ include "shoc.fullname" . }}-worker -- shoc health status
+  kubectl exec deploy/{{ include "shoc.fullname" . }}-worker -- shoc finding list --since=-24h
+
+{{ if and .Values.secrets.create (not .Values.secrets.values.SHOC_MIGRATE_DSN) }}SHOC_MIGRATE_DSN is empty, so serve and worker run as the role that owns the schema and could delete audit rows. Give them a role that does not own it (values.yaml, secrets).{{ end }}
+{{ if .Values.dryRun }}Dry run is on. Once you trust what `shoc action list` shows, set dryRun: false.{{ end }}
+{{ if eq .Values.llm.provider "none" }}No LLM is configured, so cases are handed to a human with their evidence. Set llm.provider and SHOC_LLM_API_KEY to run the crew.{{ end }}

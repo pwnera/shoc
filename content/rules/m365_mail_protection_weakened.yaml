@@ -1,0 +1,100 @@
+id: m365_mail_protection_weakened
+title: Exchange mail protection or audit logging turned off
+description: >
+  An anti-phishing, Safe Links, Safe Attachments or malware filter policy or
+  rule was removed or disabled, DKIM signing was turned off for a domain, an
+  account was exempted from mailbox audit logging, mailbox auditing was turned
+  off for the organization, or the unified audit log was turned off. The last
+  also blinds shoc's Microsoft 365 connector.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1562.001, T1562.008]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation:
+      - Remove-AntiPhishPolicy
+      - Remove-AntiPhishRule
+      - Disable-AntiPhishRule
+      - Disable-SafeLinksRule
+      - Disable-SafeAttachmentRule
+      - Remove-MalwareFilterPolicy
+      - Remove-MalwareFilterRule
+      - Disable-MalwareFilterRule
+  # The cmdlet with $false takes the exemption away again.
+  selection_bypass:
+    api.operation: Set-MailboxAuditBypassAssociation
+    unmapped.params.AuditBypassEnabled: true
+  # Mailbox auditing off for every mailbox; Set-Mailbox -AuditEnabled $false is ignored.
+  selection_mailbox_audit_off:
+    api.operation: Set-OrganizationConfig
+    unmapped.params.AuditDisabled: true
+  selection_audit_off:
+    api.operation: Set-AdminAuditLogConfig
+    unmapped.params.UnifiedAuditLogIngestionEnabled: false
+  # Mail from the domain can then be spoofed without failing DKIM.
+  selection_dkim_off:
+    api.operation: Set-DkimSigningConfig
+    unmapped.params.Enabled: false
+  filter_failed:
+    status: Failure
+  condition: >-
+    (selection or selection_bypass or selection_mailbox_audit_off or selection_audit_off
+    or selection_dkim_off) and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: M365 Exchange Anti-Phish Policy Deleted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_anti_phish_policy_deletion
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: M365 Exchange Anti-Phish Rule Modification
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_anti_phish_rule_modification
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: M365 Exchange Email Safe Link Policy Disabled
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_exchange_safelinks_disabled
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: M365 Exchange Email Safe Attachment Rule Disabled
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_safe_attach_rule_disabled
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: M365 Exchange Malware Filter Policy Deleted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_malware_filter_policy_deletion
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: M365 Exchange Malware Filter Rule Modified
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_malware_filter_rule_mod
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: M365 Exchange Mailbox Audit Logging Bypass Added
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_mailbox_audit_bypass_association
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: M365 Exchange DKIM Signing Configuration Disabled
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_dkim_signing_config_disabled
+    license: Elastic-2.0
+    relation: adapted
+  - name: Microsoft
+    title: Manage mailbox auditing
+    url: https://learn.microsoft.com/en-us/purview/audit-mailboxes
+    relation: inspired
+  - name: Microsoft
+    title: Set-MailboxAuditBypassAssociation
+    url: https://learn.microsoft.com/en-us/powershell/module/exchangepowershell/set-mailboxauditbypassassociation
+    relation: inspired

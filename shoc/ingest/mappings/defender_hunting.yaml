@@ -1,0 +1,351 @@
+# Microsoft Defender XDR Advanced Hunting tables, as the Streaming API writes
+# them -> OCSF, one class per table (ING-1, ING-3). Every record is
+# {time, tenantId, category: "AdvancedHunting-<Table>", properties: {<row>}}.
+#
+# The fields below read a row the way most tables use it: InitiatingProcess* is
+# the process that acted, FileName/FolderPath/SHA256 the file it acted on,
+# Local* the device's end and Remote* the other end. The derive rules first set
+# the class from `category` (and `properties.ActionType` where it changes the
+# class), then re-point the columns of the tables that differ: in
+# DeviceProcessEvents the started process is FileName and its parent the
+# initiating process; in DeviceLogonEvents and inbound connections the remote
+# end started it; the Identity tables come from the domain controller's sensor.
+# A `set` value with `path` reads the record; every other value is a literal.
+source: defender_hunting
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [edr, edr/telemetry, dns]
+
+constants:
+  # A table this file does not name yet lands here.
+  category_uid: 6
+  class_uid: 6003
+  class_name: API Activity
+  type_uid: 600399
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  cloud_provider: Microsoft
+  metadata_product: Microsoft Defender Advanced Hunting
+
+fields:
+  time: { paths: [properties.Timestamp, time], transform: iso8601 }
+  cloud_account_uid: { path: tenantId }
+  api_operation: { paths: [properties.OperationName, properties.ActionType] }
+  api_service_name:
+    paths: [properties.Application, properties.ServiceSource, properties.DataSource, properties.Workload]
+  message: { paths: [properties.Title, properties.Subject] }
+  status_code: { paths: [properties.FailureReason, properties.DeliveryAction, properties.ActionResult] }
+  device_hostname: { path: properties.DeviceName }
+  device_uid: { path: properties.DeviceId }
+  actor_user_name:
+    paths:
+      - properties.AccountUpn
+      - properties.AccountName
+      - properties.InitiatingProcessAccountUpn
+      - properties.InitiatingProcessAccountName
+      - properties.RecipientEmailAddress
+      - properties.SenderEmailAddress
+      - properties.AccountDisplayName
+      - properties.Account
+  actor_user_uid:
+    paths:
+      - properties.AccountObjectId
+      - properties.AccountSid
+      - properties.InitiatingProcessAccountObjectId
+      - properties.InitiatingProcessAccountSid
+      - properties.RecipientObjectId
+      - properties.SenderObjectId
+      - properties.AccountId
+  src_endpoint_ip:
+    paths:
+      - properties.LocalIP
+      - properties.IPAddress
+      - properties.SenderIPv4
+      - properties.SenderIPv6
+      - properties.RequestSourceIP
+      - properties.PublicIP
+  src_endpoint_port: { paths: [properties.LocalPort, properties.Port, properties.RequestSourcePort] }
+  src_endpoint_location_country: { paths: [properties.CountryCode, properties.Location] }
+  dst_endpoint_ip: { paths: [properties.RemoteIP, properties.DestinationIPAddress] }
+  dst_endpoint_port: { paths: [properties.RemotePort, properties.DestinationPort] }
+  # RemoteUrl holds a bare host name or a whole URL, as the sensor saw it; a
+  # derive below moves it to http_request_url when it carries a scheme.
+  dst_endpoint_domain: { paths: [properties.DestinationDeviceName, properties.RemoteUrl] }
+  http_request_url: { paths: [properties.Url, properties.FileOriginUrl] }
+  http_user_agent: { paths: [properties.UserAgent, properties.UserAgentHeader] }
+  process_name: { paths: [properties.InitiatingProcessFileName, properties.ProcessName] }
+  process_pid: { paths: [properties.InitiatingProcessId, properties.ProcessId] }
+  process_cmd_line: { paths: [properties.InitiatingProcessCommandLine, properties.ProcessCommandLine] }
+  process_hash_sha256: { path: properties.InitiatingProcessSHA256 }
+  process_parent_name: { paths: [properties.InitiatingProcessParentFileName, properties.ParentProcessName] }
+  process_file_path: { path: properties.InitiatingProcessFolderPath }
+  file_path: { path: properties.FolderPath }
+  file_hash_sha256: { path: properties.SHA256 }
+  # Joins the rows of one alert, one email or one Teams message across tables.
+  resource_uid:
+    paths:
+      - properties.AlertId
+      - properties.NetworkMessageId
+      - properties.TeamsMessageId
+      - properties.AzureResourceId
+      - properties.AwsResourceName
+      - properties.GcpFullResourceName
+
+derive:
+  - when: { properties.RemoteUrl: { contains: "://" } }
+    set:
+      http_request_url: { path: properties.RemoteUrl }
+      dst_endpoint_domain: { path: properties.DestinationDeviceName }
+  # -- endpoint ---------------------------------------------------------------
+  # A device row names its machine, which is what edr.isolate_host takes; the
+  # registry rule below points resource_uid at the key instead.
+  - when: { category: { in: [AdvancedHunting-DeviceProcessEvents, AdvancedHunting-DeviceNetworkEvents,
+                             AdvancedHunting-DeviceFileEvents, AdvancedHunting-DeviceLogonEvents,
+                             AdvancedHunting-DeviceEvents, AdvancedHunting-DeviceImageLoadEvents] } }
+    set: { resource_type: host, resource_uid: { path: properties.DeviceId } }
+  # Process id 0 is how the sensor writes an initiating process it did not see.
+  - when: { process_pid: { in: ["0", 0] } }
+    set: { process_pid: null }
+  - when: { category: AdvancedHunting-DeviceProcessEvents }
+    set:
+      category_uid: 1
+      class_uid: 1007
+      class_name: Process Activity
+      activity_id: 1
+      activity_name: Launch
+      type_uid: 100701
+      process_name: { path: properties.FileName }
+      process_pid: { path: properties.ProcessId }
+      process_cmd_line: { path: properties.ProcessCommandLine }
+      process_hash_sha256: { path: properties.SHA256 }
+      process_parent_name: { path: properties.InitiatingProcessFileName }
+      process_file_path: { path: properties.FolderPath }
+      file_path: null
+      file_hash_sha256: null
+  - when: { category: AdvancedHunting-CloudProcessEvents }
+    set:
+      category_uid: 1
+      class_uid: 1007
+      class_name: Process Activity
+      activity_id: 1
+      activity_name: Launch
+      type_uid: 100701
+      file_path: null
+  - when: { category: AdvancedHunting-DeviceNetworkEvents }
+    set:
+      category_uid: 4
+      class_uid: 4001
+      class_name: Network Activity
+      activity_id: 1
+      activity_name: Open
+      type_uid: 400101
+  - when: { category: AdvancedHunting-DeviceNetworkEvents, properties.ActionType: ConnectionSuccess }
+    set: { status: Success }
+  - when: { category: AdvancedHunting-DeviceNetworkEvents, properties.ActionType: { in: [ConnectionFailed, InboundConnectionFailed] } }
+    set: { activity_id: 4, activity_name: Fail, type_uid: 400104, status: Failure }
+  - when: { category: AdvancedHunting-DeviceNetworkEvents, properties.ActionType: ListeningConnectionCreated }
+    set: { activity_id: 7, activity_name: Listen, type_uid: 400107 }
+  - when: { category: AdvancedHunting-DeviceNetworkEvents, properties.ActionType: { contains: inbound } }
+    set:
+      src_endpoint_ip: { path: properties.RemoteIP }
+      src_endpoint_port: { path: properties.RemotePort }
+      dst_endpoint_ip: { path: properties.LocalIP }
+      dst_endpoint_port: { path: properties.LocalPort }
+  - when: { category: AdvancedHunting-DeviceNetworkEvents, properties.ActionType: DnsConnectionInspected }
+    set: { class_uid: 4003, class_name: DNS Activity, activity_id: 1, activity_name: Query, type_uid: 400301 }
+  - when: { category: AdvancedHunting-DeviceNetworkEvents, properties.ActionType: HttpConnectionInspected }
+    set: { class_uid: 4002, class_name: HTTP Activity, activity_id: 99, activity_name: Other, type_uid: 400299 }
+  - when: { category: AdvancedHunting-DeviceFileEvents }
+    set: { category_uid: 1, class_uid: 1001, class_name: File System Activity, activity_id: 99, activity_name: Other, type_uid: 100199 }
+  - when: { category: AdvancedHunting-DeviceFileEvents, properties.ActionType: FileCreated }
+    set: { activity_id: 1, activity_name: Create, type_uid: 100101 }
+  - when: { category: AdvancedHunting-DeviceFileEvents, properties.ActionType: FileModified }
+    set: { activity_id: 3, activity_name: Update, type_uid: 100103 }
+  - when: { category: AdvancedHunting-DeviceFileEvents, properties.ActionType: FileDeleted }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 100104 }
+  - when: { category: AdvancedHunting-DeviceFileEvents, properties.ActionType: FileRenamed }
+    set: { activity_id: 5, activity_name: Rename, type_uid: 100105 }
+  - when: { category: AdvancedHunting-DeviceRegistryEvents }
+    set:
+      category_uid: 1
+      class_uid: 201001
+      class_name: Registry Key Activity
+      activity_id: 99
+      activity_name: Other
+      type_uid: 20100199
+      resource_type: registry_key
+      resource_uid: { path: properties.RegistryKey }
+  - when: { category: AdvancedHunting-DeviceRegistryEvents, properties.ActionType: RegistryKeyCreated }
+    set: { activity_id: 1, activity_name: Create, type_uid: 20100101 }
+  - when: { category: AdvancedHunting-DeviceRegistryEvents, properties.ActionType: RegistryKeyDeleted }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 20100104 }
+  - when: { category: AdvancedHunting-DeviceRegistryEvents, properties.ActionType: RegistryKeyRenamed }
+    set: { activity_id: 5, activity_name: Rename, type_uid: 20100105 }
+  - when: { category: AdvancedHunting-DeviceRegistryEvents, properties.ActionType: RegistryValueSet }
+    set: { class_uid: 201002, class_name: Registry Value Activity, activity_id: 2, activity_name: Set, type_uid: 20100202 }
+  - when: { category: AdvancedHunting-DeviceRegistryEvents, properties.ActionType: RegistryValueDeleted }
+    set: { class_uid: 201002, class_name: Registry Value Activity, activity_id: 4, activity_name: Delete, type_uid: 20100204 }
+  - when: { category: AdvancedHunting-DeviceImageLoadEvents }
+    set: { category_uid: 1, class_uid: 1005, class_name: Module Activity, activity_id: 1, activity_name: Load, type_uid: 100501 }
+  - when: { category: AdvancedHunting-DeviceLogonEvents }
+    set:
+      category_uid: 3
+      class_uid: 3002
+      class_name: Authentication
+      activity_id: 1
+      activity_name: Logon
+      type_uid: 300201
+      src_endpoint_ip: { path: properties.RemoteIP }
+      src_endpoint_port: { path: properties.RemotePort }
+      src_endpoint_domain: { path: properties.RemoteDeviceName }
+      dst_endpoint_ip: null
+      dst_endpoint_port: null
+  # DeviceEvents: one table for many sensor events, classed by ActionType. What
+  # is not named here (PowerShellCommand, ScriptContent, ScreenshotTaken,
+  # GetClipboardData, PnpDeviceConnected, ...) stays Process Activity, Other,
+  # with the ActionType in api_operation.
+  - when: { category: AdvancedHunting-DeviceEvents }
+    set: { category_uid: 1, class_uid: 1007, class_name: Process Activity, activity_id: 99, activity_name: Other, type_uid: 100799 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: ProcessCreatedUsingWmiQuery }
+    set: { activity_id: 1, activity_name: Launch, type_uid: 100701 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: OpenProcessApiCall }
+    set: { activity_id: 3, activity_name: Open, type_uid: 100703 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: { in: [CreateRemoteThreadApiCall, QueueUserApcRemoteApiCall, SetThreadContextRemoteApiCall] } }
+    set: { activity_id: 4, activity_name: Inject, type_uid: 100704 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: { in: [NtAllocateVirtualMemoryApiCall, NtAllocateVirtualMemoryRemoteApiCall] } }
+    set: { class_uid: 1004, class_name: Memory Activity, activity_id: 1, activity_name: Allocate Page, type_uid: 100401 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: NtProtectVirtualMemoryApiCall }
+    set: { class_uid: 1004, class_name: Memory Activity, activity_id: 2, activity_name: Modify Page, type_uid: 100402 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: ReadProcessMemoryApiCall }
+    set: { class_uid: 1004, class_name: Memory Activity, activity_id: 7, activity_name: Read, type_uid: 100407 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: WriteProcessMemoryApiCall }
+    set: { class_uid: 1004, class_name: Memory Activity, activity_id: 8, activity_name: Write, type_uid: 100408 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: NtMapViewOfSectionRemoteApiCall }
+    set: { class_uid: 1004, class_name: Memory Activity, activity_id: 9, activity_name: Map View, type_uid: 100409 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: { in: [SensitiveFileRead, AntivirusDetection] } }
+    set: { class_uid: 1001, class_name: File System Activity, activity_id: 2, activity_name: Read, type_uid: 100102 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: AntivirusDetection }
+    set: { activity_id: 99, activity_name: Other, type_uid: 100199 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: ShellLinkCreateFileEvent }
+    set: { class_uid: 1001, class_name: File System Activity, activity_id: 1, activity_name: Create, type_uid: 100101 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: UsbDriveMounted }
+    set: { class_uid: 1001, class_name: File System Activity, activity_id: 12, activity_name: Mount, type_uid: 100112 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: UsbDriveUnmounted }
+    set: { class_uid: 1001, class_name: File System Activity, activity_id: 13, activity_name: Unmount, type_uid: 100113 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: ScheduledTaskCreated }
+    set: { class_uid: 1006, class_name: Scheduled Job Activity, activity_id: 1, activity_name: Create, type_uid: 100601 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: ScheduledTaskUpdated }
+    set: { class_uid: 1006, class_name: Scheduled Job Activity, activity_id: 2, activity_name: Update, type_uid: 100602 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: ScheduledTaskDeleted }
+    set: { class_uid: 1006, class_name: Scheduled Job Activity, activity_id: 3, activity_name: Delete, type_uid: 100603 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: ScheduledTaskEnabled }
+    set: { class_uid: 1006, class_name: Scheduled Job Activity, activity_id: 4, activity_name: Enable, type_uid: 100604 }
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: ScheduledTaskDisabled }
+    set: { class_uid: 1006, class_name: Scheduled Job Activity, activity_id: 5, activity_name: Disable, type_uid: 100605 }
+  # The connector decodes AdditionalFields, where the sensor puts the name asked for.
+  - when: { category: AdvancedHunting-DeviceEvents, properties.ActionType: DnsQueryResponse }
+    set:
+      category_uid: 4
+      class_uid: 4003
+      class_name: DNS Activity
+      activity_id: 2
+      activity_name: Response
+      type_uid: 400302
+      dns_query_hostname: { path: properties.AdditionalFields.DnsQueryString }
+  # Inventory and file-signature snapshots.
+  - when: { category: { in: [AdvancedHunting-DeviceInfo, AdvancedHunting-DeviceNetworkInfo] } }
+    set: { category_uid: 5, class_uid: 5001, class_name: Device Inventory Info, activity_id: 1, activity_name: Log, type_uid: 500101 }
+  - when: { category: AdvancedHunting-DeviceFileCertificateInfo }
+    set: { category_uid: 5, class_uid: 5007, class_name: File Query, activity_id: 1, activity_name: Query, type_uid: 500701 }
+  - when: { category: AdvancedHunting-IdentityInfo }
+    set: { category_uid: 5, class_uid: 5003, class_name: User Inventory Info, activity_id: 1, activity_name: Log, type_uid: 500301 }
+
+  # -- identity ---------------------------------------------------------------
+  # DeviceName is the device the user came from; the sensor sits on the
+  # domain controller named in DestinationDeviceName.
+  - when: { category: { in: [AdvancedHunting-IdentityLogonEvents, AdvancedHunting-IdentityQueryEvents, AdvancedHunting-IdentityDirectoryEvents] } }
+    set:
+      src_endpoint_domain: { path: properties.DeviceName }
+      device_hostname: { path: properties.DestinationDeviceName }
+      device_uid: null
+  - when: { category: AdvancedHunting-IdentityLogonEvents }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, activity_id: 1, activity_name: Logon, type_uid: 300201 }
+  - when: { category: AdvancedHunting-IdentityQueryEvents }
+    set: { category_uid: 6, class_uid: 6003, class_name: API Activity, activity_id: 2, activity_name: Read, type_uid: 600302 }
+  - when: { category: AdvancedHunting-IdentityQueryEvents, properties.ActionType: DNS query }
+    set:
+      category_uid: 4
+      class_uid: 4003
+      class_name: DNS Activity
+      activity_id: 1
+      activity_name: Query
+      type_uid: 400301
+      dns_query_hostname: { path: properties.QueryTarget }
+  - when: { category: AdvancedHunting-IdentityDirectoryEvents }
+    set: { category_uid: 3, class_uid: 3001, class_name: Account Change, activity_id: 99, activity_name: Other, type_uid: 300199 }
+  - when: { category: AdvancedHunting-IdentityDirectoryEvents, properties.ActionType: Account Password changed }
+    set: { activity_id: 3, activity_name: Password Change, type_uid: 300103 }
+  - when: { category: AdvancedHunting-IdentityDirectoryEvents, properties.ActionType: Account disabled }
+    set: { activity_id: 5, activity_name: Disable, type_uid: 300105 }
+  - when: { category: AdvancedHunting-IdentityDirectoryEvents, properties.ActionType: Account enabled }
+    set: { activity_id: 2, activity_name: Enable, type_uid: 300102 }
+  - when: { category: AdvancedHunting-IdentityDirectoryEvents, properties.ActionType: Group Membership changed }
+    set: { class_uid: 3006, class_name: Group Management, activity_id: 99, activity_name: Other, type_uid: 300699 }
+  - when: { category: { in: [AdvancedHunting-DeviceLogonEvents, AdvancedHunting-IdentityLogonEvents] }, properties.ActionType: LogonSuccess }
+    set: { status: Success }
+  - when: { category: { in: [AdvancedHunting-DeviceLogonEvents, AdvancedHunting-IdentityLogonEvents] }, properties.ActionType: LogonFailed }
+    set: { status: Failure }
+  - when: { category: { in: [AdvancedHunting-DeviceLogonEvents, AdvancedHunting-IdentityLogonEvents] }, properties.ActionType: LogonAttempted }
+    set: { status: Unknown }
+
+  # -- email and collaboration -----------------------------------------------
+  - when: { category: AdvancedHunting-EmailEvents }
+    set: { category_uid: 4, class_uid: 4009, class_name: Email Activity, activity_id: 2, activity_name: Receive, type_uid: 400902, resource_type: email }
+  - when: { category: AdvancedHunting-EmailEvents, properties.EmailDirection: { in: [Outbound, Intra-org] } }
+    set: { activity_id: 1, activity_name: Send, type_uid: 400901 }
+  - when: { category: AdvancedHunting-EmailPostDeliveryEvents }
+    set: { category_uid: 4, class_uid: 4009, class_name: Email Activity, activity_id: 99, activity_name: Other, type_uid: 400999, resource_type: email }
+  # OCSF 1.3: 4011 is Email File Activity and 4012 Email URL Activity.
+  - when: { category: AdvancedHunting-EmailAttachmentInfo }
+    set: { category_uid: 4, class_uid: 4011, class_name: Email File Activity, activity_id: 3, activity_name: Scan, type_uid: 401103, resource_type: email }
+  - when: { category: AdvancedHunting-EmailUrlInfo }
+    set: { category_uid: 4, class_uid: 4012, class_name: Email URL Activity, activity_id: 3, activity_name: Scan, type_uid: 401203, resource_type: email }
+  # A Safe Links click: the user's request for the URL, allowed or blocked.
+  - when: { category: AdvancedHunting-UrlClickEvents }
+    set: { category_uid: 4, class_uid: 4002, class_name: HTTP Activity, activity_id: 3, activity_name: Get, type_uid: 400203, resource_type: email }
+  - when: { category: AdvancedHunting-UrlClickEvents, properties.ActionType: ClickBlocked }
+    set: { status: Failure }
+  - when: { category: AdvancedHunting-UrlClickEvents, properties.ActionType: { in: [ClickAllowed, ClickedThrough] } }
+    set: { status: Success }
+  # Teams messages: OCSF 1.3 has no chat class, so they stay API Activity.
+  - when: { category: { in: [AdvancedHunting-MessageEvents, AdvancedHunting-MessagePostDeliveryEvents, AdvancedHunting-MessageUrlInfo] } }
+    set: { resource_type: teams_message }
+
+  # -- cloud ------------------------------------------------------------------
+  - when: { category: { in: [AdvancedHunting-CloudAppEvents, AdvancedHunting-CloudAuditEvents] } }
+    set: { resource_type: cloud_resource }
+  - when: { category: AdvancedHunting-CloudStorageAggregatedEvents }
+    set: { class_uid: 6005, class_name: Datastore Activity, activity_id: 99, activity_name: Other, type_uid: 600599, resource_type: storage_account }
+
+  # -- alerts (only when AlertInfo or AlertEvidence is in `tables`) -----------
+  - when: { category: { in: [AdvancedHunting-AlertInfo, AdvancedHunting-AlertEvidence] } }
+    set: { category_uid: 2, class_uid: 2004, class_name: Detection Finding, activity_id: 1, activity_name: Create, type_uid: 200401, severity_id: 3, resource_type: alert }
+  - when: { category: { in: [AdvancedHunting-AlertInfo, AdvancedHunting-AlertEvidence] }, properties.Severity: Informational }
+    set: { severity_id: 1 }
+  - when: { category: { in: [AdvancedHunting-AlertInfo, AdvancedHunting-AlertEvidence] }, properties.Severity: Low }
+    set: { severity_id: 2 }
+  - when: { category: { in: [AdvancedHunting-AlertInfo, AdvancedHunting-AlertEvidence] }, properties.Severity: High }
+    set: { severity_id: 4 }
+
+observables:
+  - { column: device_hostname, name: device.hostname, type: Hostname }
+  - { column: device_uid, name: device.uid, type: Device }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: dst_endpoint_ip, name: dst_endpoint.ip, type: "IP Address" }
+  - { column: process_name, name: process.name, type: "Process Name" }
+  - { column: process_hash_sha256, name: process.file.hashes.sha256, type: "File Hash" }
+  - { column: file_hash_sha256, name: file.hashes.sha256, type: "File Hash" }
+  - { column: http_request_url, name: http_request.url, type: "URL String" }
+  - { column: dns_query_hostname, name: query.hostname, type: "Domain Name" }

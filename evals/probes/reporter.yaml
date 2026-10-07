@@ -1,0 +1,7 @@
+# The Manager reading a report it did not compute (D47): every number in the
+# report is a query's, and the reading may say what they mean, never add one.
+role: reporter
+probes:
+  - id: weekly_after_a_leaked_key
+    scenario: leaked_aws_key
+    kind: weekly

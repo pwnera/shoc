@@ -1,0 +1,63 @@
+id: restore_aws_defences
+title: Put AWS logging and detection back on
+description: >
+  CloudTrail, AWS Config, GuardDuty, Security Hub, flow logs or another log
+  was turned off, or the password policy was weakened. Attackers do this before the part they do not want recorded.
+  Disabling the actor's key stops them doing more, and a human is paged. Then
+  whatever aws.get_defences finds off in the credential's regions is turned
+  back on: a stopped trail, a stopped Config recorder, a suspended GuardDuty
+  detector. A step whose service is on proposes nothing. A deleted trail,
+  recorder or detector, flow logs and the password policy are the human's.
+  Revoking the sessions the actor's key minted waits for a human.
+rules:
+  - aws_cloudtrail_logging_disabled
+  - aws_config_recorder_stopped
+  - aws_guardduty_disabled
+  - aws_password_policy_weakened
+  - aws_secondary_logging_disabled
+questions:
+  - id: around
+    ask: What did the same principal do in the hour before and the hour after the change?
+  - id: still_off
+    ask: Is the trail, recorder or detector still off, or was it turned back on?
+  - id: origin
+    ask: Did the principal act from an address and user agent it has used in the last 30 days?
+benign_when:
+  - The account is being decommissioned and the pipeline role made the change from its usual address.
+example: |
+  claim (still_off): "CloudTrail logging was stopped at 04:30 UTC and has not been restarted", citing the StopLogging event.
+  checked and absent: "a StartLogging event since (now)", and "a decommissioning note for this account", which rules out a planned teardown.
+  disposition: malicious, because logging went off from a key that had just enumerated the account.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: disable the actor's access key
+    action: aws.disable_access_key
+    optional: true
+    params:
+      access_key_id: "{{ entity.key }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: AWS logging or detection turned off, turn it back on: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: start the stopped trail
+    action: aws.start_cloudtrail_logging
+    optional: true
+    params: {}
+  - name: start the stopped Config recorder
+    action: aws.start_config_recorder
+    optional: true
+    params: {}
+  - name: enable the suspended GuardDuty detector
+    action: aws.enable_guardduty
+    optional: true
+    params: {}
+  - name: revoke the sessions minted from the actor's key
+    action: aws.revoke_sessions
+    optional: true
+    params:
+      access_key_id: "{{ entity.key }}"

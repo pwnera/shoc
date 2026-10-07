@@ -1,0 +1,15 @@
+[
+  {
+    "id": "hunt-entra-known-ip",
+    "userPrincipalName": "jane@example.com",
+    "userId": "u-1",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "203.0.113.200",
+    "location": { "countryOrRegion": "FR" },
+    "status": { "errorCode": 0 },
+    "correlationId": "c-0",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["interactiveUser"],
+    "_stream": "signIns"
+  }
+]

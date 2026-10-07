@@ -1,0 +1,129 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-DeleteIdentity",
+    "eventName": "DeleteIdentity",
+    "eventSource": "ses.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEBOB",
+      "arn": "arn:aws:iam::123456789012:user/bob",
+      "accountId": "123456789012",
+      "userName": "bob",
+      "accessKeyId": "AKIAEXAMPLEBOB000001"
+    },
+    "requestParameters": {
+      "identity": "news.example.com"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-VerifyDomainIdentity",
+    "eventName": "VerifyDomainIdentity",
+    "eventSource": "ses.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEALICE0001"
+    },
+    "requestParameters": {
+      "domain": "news.example.com"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-VerifyEmailIdentity",
+    "eventName": "VerifyEmailIdentity",
+    "eventSource": "ses.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLECAROL",
+      "arn": "arn:aws:iam::123456789012:user/carol",
+      "accountId": "123456789012",
+      "userName": "carol",
+      "accessKeyId": "AKIAEXAMPLECAROL0001"
+    },
+    "requestParameters": {
+      "emailAddress": "ops@example.com"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-DeleteIdentity",
+    "eventName": "DeleteIdentity",
+    "eventSource": "ses.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLECAROL",
+      "arn": "arn:aws:iam::123456789012:user/carol",
+      "accountId": "123456789012",
+      "userName": "carol",
+      "accessKeyId": "AKIAEXAMPLECAROL0001"
+    },
+    "requestParameters": {
+      "identity": "ops@example.com"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-denied",
+    "eventName": "DeleteIdentity",
+    "eventSource": "ses.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "identity": "x@example.org"
+    },
+    "errorCode": "AccessDenied"
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-VerifyEmailIdentity",
+    "eventName": "VerifyEmailIdentity",
+    "eventSource": "ses.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "emailAddress": "x@example.org"
+    }
+  }
+]

@@ -1,0 +1,49 @@
+[
+  {
+    "_source": "cloudflare_logs",
+    "_dataset": "gateway_dns",
+    "QueryName": "docs.example.com",
+    "QueryCategoryIDs": [
+      26
+    ],
+    "QueryCategoryNames": [
+      "Technology"
+    ],
+    "ResolverDecision": "allowedOnNoPolicyMatch",
+    "DeviceName": "LAPTOP-0042",
+    "DeviceID": "7f3e2a10-0c4d-4b8e-9a61-5d2c8e0f0042",
+    "Email": "john.doe@example.com",
+    "SrcIP": "203.0.113.81",
+    "QueryTypeName": "A",
+    "RCode": 0
+  },
+  {
+    "_source": "cloudflare_logs",
+    "_dataset": "gateway_dns",
+    "QueryName": "fresh-launch.example.org",
+    "QueryCategoryIDs": [
+      32,
+      169
+    ],
+    "QueryCategoryNames": [
+      "Security Risks",
+      "New Domains"
+    ],
+    "ResolverDecision": "allowedOnNoPolicyMatch",
+    "DeviceName": "LAPTOP-0042",
+    "DeviceID": "7f3e2a10-0c4d-4b8e-9a61-5d2c8e0f0042",
+    "Email": "john.doe@example.com",
+    "SrcIP": "203.0.113.81",
+    "QueryTypeName": "A",
+    "RCode": 0
+  },
+  {
+    "_source": "cloudflare_logs",
+    "_dataset": "dns_logs",
+    "QueryName": "c2.example.net",
+    "QueryType": 1,
+    "ResponseCode": 0,
+    "SourceIP": "198.51.100.53",
+    "ColoCode": "CDG"
+  }
+]

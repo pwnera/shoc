@@ -1,0 +1,37 @@
+[
+  {
+    "Id": "m365-Consent to application",
+    "Operation": "Consent to application.",
+    "OrganizationId": "org-1",
+    "RecordType": 8,
+    "ResultStatus": "Success",
+    "UserKey": "10032001A2B3C4D5@example.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "AzureActiveDirectory",
+    "ObjectId": "11111111-2222-4333-8444-555555555555",
+    "UserId": "jane@example.com",
+    "AzureActiveDirectoryEventType": 1,
+    "ExtendedProperties": [
+      { "Name": "additionalDetails", "Value": "{\"User-Agent\":\"EvoSTS\",\"AppId\":\"11111111-2222-4333-8444-555555555555\"}" },
+      { "Name": "extendedAuditEventCategory", "Value": "ServicePrincipal" }
+    ],
+    "ModifiedProperties": [
+      { "Name": "ConsentContext.IsAdminConsent", "NewValue": "False", "OldValue": "" },
+      { "Name": "ConsentContext.IsAppOnly", "NewValue": "False", "OldValue": "" },
+      { "Name": "ConsentContext.OnBehalfOfAll", "NewValue": "False", "OldValue": "" },
+      { "Name": "ConsentAction.Permissions", "NewValue": "[] => [[Id: example, ClientId: 33333333-3333-4333-8333-333333333333, PrincipalId: 55555555-5555-4555-8555-555555555555, ResourceId: 22222222-1111-4111-8111-222222222222, ConsentType: Principal, Scope:  openid profile email offline_access Mail.Read Files.Read.All, CreatedDateTime: , LastModifiedDateTime ]]; ", "OldValue": "" },
+      { "Name": "TargetId.ServicePrincipalNames", "NewValue": "11111111-2222-4333-8444-555555555555", "OldValue": "" }
+    ],
+    "Actor": [
+      { "ID": "jane@example.com", "Type": 5 },
+      { "ID": "Azure ESTS Service", "Type": 1 },
+      { "ID": "User_55555555-5555-4555-8555-555555555555", "Type": 2 }
+    ],
+    "Target": [
+      { "ID": "ServicePrincipal_33333333-3333-4333-8333-333333333333", "Type": 2 },
+      { "ID": "Mail Reader Pro", "Type": 1 }
+    ],
+    "_content_type": "Audit.AzureActiveDirectory"
+  }
+]

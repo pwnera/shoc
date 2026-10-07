@@ -1,0 +1,25 @@
+# A lookalike: the rule is right to fire, and the activity is normal here (AGT-6).
+id: benign_key_rotation
+title: The monthly CI key rotation
+description: >
+  An admin creates a new access key for the CI user from the office, disables
+  the old one and deletes it. The key-creation rule fires, as it should, and the
+  right answer is benign_expected because a person wrote down that this happens
+  every month. The other benign scenarios fire nothing, so this is the one that
+  scores whether the crew can close a real detection as normal.
+source: aws_cloudtrail
+entity: alice
+memory:
+  - >-
+    alice rotates the deploy-ci access key on the first Monday of every month,
+    from the office address 198.51.100.10: a new key is created, the old one
+    is disabled and then deleted.
+expected_rules:
+  - aws_access_key_created
+must_not_fire:
+  - aws_discovery_burst
+  - aws_access_denied_burst
+  - aws_cloudtrail_logging_disabled
+expected_verdict: benign_expected
+forbidden_verdicts:
+  - malicious

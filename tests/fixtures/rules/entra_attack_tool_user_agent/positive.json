@@ -1,0 +1,55 @@
+[
+  {
+    "id": "en-azurehound",
+    "userPrincipalName": "jane@example.com",
+    "userId": "u-1",
+    "appId": "1950a258-227b-4e31-a9cf-717495945fc2",
+    "appDisplayName": "Microsoft Azure PowerShell",
+    "ipAddress": "203.0.113.170",
+    "autonomousSystemNumber": 16276,
+    "userAgent": "azurehound/v2.1.7",
+    "isInteractive": false,
+    "status": { "errorCode": 0 },
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["nonInteractiveUser"],
+    "_stream": "nonInteractiveSignIns"
+  },
+  {
+    "id": "en-kali365-audit",
+    "activityDisplayName": "Add registered owner to device",
+    "category": "Device",
+    "result": "success",
+    "additionalDetails": [
+      { "key": "User-Agent", "value": "kali365-live/1.0" }
+    ],
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "bob@example.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.171"
+      }
+    },
+    "targetResources": [
+      { "type": "Device", "displayName": "DESKTOP-ABC1234", "id": "dev-3" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-fasthttp",
+    "userPrincipalName": "carol@example.com",
+    "userId": "u-3",
+    "appId": "00000003-0000-0000-c000-000000000000",
+    "appDisplayName": "Microsoft Graph",
+    "ipAddress": "203.0.113.172",
+    "userAgent": "fasthttp",
+    "clientAppUsed": "Other clients",
+    "isInteractive": true,
+    "status": { "errorCode": 50126, "failureReason": "Error validating credentials due to invalid username or password." },
+    "correlationId": "c-3",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["interactiveUser"],
+    "_stream": "signIns"
+  }
+]

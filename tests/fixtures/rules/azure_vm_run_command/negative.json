@@ -1,0 +1,99 @@
+[
+  {
+    "eventDataId": "az-runcommand-started",
+    "correlationId": "11111111-aaaa-4aaa-8aaa-111111111111",
+    "operationName": {
+      "value": "Microsoft.Compute/virtualMachines/runCommand/action",
+      "localizedValue": "Run Command on Virtual Machine"
+    },
+    "category": {
+      "value": "Administrative",
+      "localizedValue": "Administrative"
+    },
+    "status": {
+      "value": "Failed",
+      "localizedValue": "Failed"
+    },
+    "level": "Error",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com"
+    },
+    "httpRequest": {
+      "clientIpAddress": "198.51.100.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/virtualMachines/vm-01"
+  },
+  {
+    "eventDataId": "az-vm-write",
+    "correlationId": "33333333-aaaa-4aaa-8aaa-333333333333",
+    "operationName": {
+      "value": "Microsoft.Compute/virtualMachines/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com"
+    },
+    "httpRequest": {
+      "clientIpAddress": "198.51.100.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/virtualMachines/vm-01"
+  },
+  {
+    "eventDataId": "az-ext-mde",
+    "correlationId": "44444444-aaaa-4aaa-8aaa-444444444444",
+    "operationName": {
+      "value": "Microsoft.Compute/virtualMachines/extensions/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "66666666-7777-4888-8999-000000000001",
+    "claims": {
+      "appid": "66666666-7777-4888-8999-000000000001"
+    },
+    "httpRequest": {
+      "clientIpAddress": "198.51.100.40"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceGroupName": "rg-prod",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/virtualMachines/vm-01/extensions/MDE.Windows"
+  },
+  {
+    "eventDataId": "az-ext-vmsnapshot",
+    "correlationId": "55555555-aaaa-4aaa-8aaa-555555555555",
+    "operationName": {
+      "value": "Microsoft.Compute/virtualMachines/extensions/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "66666666-7777-4888-8999-000000000002",
+    "claims": {
+      "appid": "66666666-7777-4888-8999-000000000002"
+    },
+    "httpRequest": {
+      "clientIpAddress": "198.51.100.41"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceGroupName": "rg-prod",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/virtualMachines/vm-01/extensions/VMSnapshot"
+  }
+]

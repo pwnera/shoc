@@ -1,0 +1,166 @@
+[
+  {
+    "eventDataId": "az-snapshot-delete-1",
+    "correlationId": "bbbbbbbb-0001-4bbb-8bbb-bbbbbbbbbbbb",
+    "operationName": {
+      "value": "Microsoft.Compute/snapshots/delete"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/snapshots/snap-nightly-1"
+  },
+  {
+    "eventDataId": "az-snapshot-delete-1-started",
+    "correlationId": "bbbbbbbb-0001-4bbb-8bbb-bbbbbbbbbbbb",
+    "operationName": {
+      "value": "Microsoft.Compute/snapshots/delete"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Started"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/snapshots/snap-nightly-1"
+  },
+  {
+    "eventDataId": "az-snapshot-delete-2",
+    "correlationId": "bbbbbbbb-0002-4bbb-8bbb-bbbbbbbbbbbb",
+    "operationName": {
+      "value": "Microsoft.Compute/snapshots/delete"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/snapshots/snap-nightly-2"
+  },
+  {
+    "eventDataId": "az-restore-points-delete",
+    "correlationId": "bbbbbbbb-0003-4bbb-8bbb-bbbbbbbbbbbb",
+    "operationName": {
+      "value": "Microsoft.Compute/restorePointCollections/delete"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/restorePointCollections/rpc-vm-01"
+  },
+  {
+    "eventDataId": "az-storage-delete",
+    "correlationId": "bbbbbbbb-0004-4bbb-8bbb-bbbbbbbbbbbb",
+    "operationName": {
+      "value": "Microsoft.Storage/storageAccounts/delete"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Storage/storageAccounts/stexampleprod"
+  },
+  {
+    "eventDataId": "az-rg-delete",
+    "correlationId": "bbbbbbbb-0005-4bbb-8bbb-bbbbbbbbbbbb",
+    "operationName": {
+      "value": "Microsoft.Resources/subscriptions/resourceGroups/delete"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Started"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-backup",
+    "subStatus": {
+      "value": "Accepted"
+    }
+  },
+  {
+    "eventDataId": "az-lock-delete",
+    "correlationId": "bbbbbbbb-0006-4bbb-8bbb-bbbbbbbbbbbb",
+    "operationName": {
+      "value": "Microsoft.Authorization/locks/delete"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-backup/providers/Microsoft.Authorization/locks/do-not-delete"
+  }
+]

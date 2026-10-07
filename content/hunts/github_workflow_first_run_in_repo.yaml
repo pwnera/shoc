@@ -1,0 +1,32 @@
+id: github_workflow_first_run_in_repo
+title: A workflow runs in a repository where it never ran before
+hypothesis: >
+  Adding a workflow is how a stolen token turns into code running with the
+  repository's secrets. A workflow file that has never run in a repository is
+  either a change the team made or somebody else's. The file, not the display
+  name: a new file can reuse the name of the workflow already there. Workflow
+  runs reach shoc through the organisation webhook only: the audit-log API
+  records a run as `workflows.created_workflow_run` without the workflow file,
+  so an organisation read only through the audit log is not hunted here.
+attack: [T1195.002, T1552.001]
+logsource:
+  product: github
+  service: audit_log
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: workflow_run.requested
+  condition: selection
+baseline:
+  first_seen: [resource.uid, file.path]
+  lookback: 30d
+pivot: [resource.uid, file.path, message, actor.user.name]
+triage: >
+  Did somebody on the team add this workflow in a reviewed pull request? A workflow
+  added by a push straight to the branch, or one that reads secrets it never
+  needed, is the one to escalate.
+follow_up:
+  - Which commit added the workflow file, and was it reviewed?
+  - Who triggered the first run?
+sensitive: false

@@ -1,0 +1,39 @@
+[
+  {
+    "id": "en-tycoon",
+    "userPrincipalName": "jane@example.com",
+    "userId": "u-1",
+    "userType": "Member",
+    "appId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "203.0.113.120",
+    "autonomousSystemNumber": 20473,
+    "userAgent": "axios/1.7.7",
+    "clientAppUsed": "Browser",
+    "authenticationProtocol": "none",
+    "isInteractive": true,
+    "resourceId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "location": { "countryOrRegion": "US" },
+    "status": { "errorCode": 0 },
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["interactiveUser"],
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-tycoon-node",
+    "userPrincipalName": "bob@example.com",
+    "userId": "u-2",
+    "appId": "29d9ed98-a469-4536-ade2-f981bc1d605e",
+    "appDisplayName": "Microsoft Authentication Broker",
+    "ipAddress": "203.0.113.121",
+    "userAgent": "node",
+    "isInteractive": true,
+    "resourceId": "00000003-0000-0000-c000-000000000000",
+    "status": { "errorCode": 50126, "failureReason": "Invalid username or password." },
+    "correlationId": "c-2",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["interactiveUser"],
+    "_stream": "signIns"
+  }
+]

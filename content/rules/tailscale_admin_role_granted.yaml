@@ -1,0 +1,30 @@
+id: tailscale_admin_role_granted
+title: Tailscale user made an owner or an admin
+description: >
+  An admin edits the access policy, approves devices and mints keys for the
+  whole tailnet.
+status: stable
+date: 2026-09-30
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1098]
+sources:
+  - name: Tailscale
+    title: Configuration audit logging
+    url: https://tailscale.com/docs/features/logging/audit-logging
+    relation: inspired
+logsource:
+  product: tailscale
+  service: configuration_log
+detection:
+  # "Update role for user" is the only UPDATE on a user; no published record
+  # shows its property name, so the prefix is matched.
+  selection:
+    api.operation|startswith: USER.UPDATE
+  privileged:
+    raw.new|contains: [admin, owner]
+  condition: selection and privileged
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, cloud.account.uid]

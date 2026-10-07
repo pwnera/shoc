@@ -1,0 +1,82 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-GetSendQuota",
+    "eventName": "GetSendQuota",
+    "eventSource": "ses.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-UpdateAccountSendingEnabled",
+    "eventName": "UpdateAccountSendingEnabled",
+    "eventSource": "ses.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "enabled": true
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-AttachUserPolicy",
+    "eventName": "AttachUserPolicy",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "userName": "deploy-ci",
+      "policyArn": "arn:aws:iam::aws:policy/AmazonSESFullAccess"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ListBuckets-history",
+    "eventTime": "2026-08-01T00:00:00Z",
+    "eventName": "ListBuckets",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEBACKUP01",
+      "arn": "arn:aws:iam::123456789012:user/backup",
+      "accountId": "123456789012",
+      "userName": "backup",
+      "accessKeyId": "AKIAEXAMPLEBACKUP001"
+    }
+  }
+]

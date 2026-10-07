@@ -1,0 +1,39 @@
+id: github_repo_made_public
+title: Private repository made public
+description: >
+  A repository's visibility changed to public. Source code, and the secrets
+  committed to it, becomes world-readable within seconds of this event.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: critical
+confidence: 0.8
+attack: [T1567]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  selection:
+    api.operation: repo.access
+  # The audit log records both directions as repo.access. A record that does
+  # not say which way still fires.
+  filter_not_public:
+    raw.visibility: [private, internal]
+  condition: selection and not filter_not_public
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, resource.uid, src_endpoint.ip, raw.previous_visibility]
+sources:
+  - name: Elastic
+    title: GitHub Private Repository Turned Public
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/exfiltration_github_private_repository_turned_public
+    license: Elastic-2.0
+    relation: adapted
+  - name: GitHub
+    title: Audit log events for your organization
+    url: https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization
+    relation: inspired
+  - name: Wiz
+    title: "s1ngularity's Aftermath: AI, TTPs, and Impact in the Nx Supply Chain Attack"
+    url: https://www.wiz.io/blog/s1ngularitys-aftermath
+    relation: inspired

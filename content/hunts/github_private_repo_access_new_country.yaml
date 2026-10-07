@@ -1,0 +1,36 @@
+id: github_private_repo_access_new_country
+title: Someone clones or pushes a private repository from a new country
+hypothesis: >
+  A stolen token is used from wherever the attacker is. Each person here
+  clones and pushes from one or two countries, so a new one, on a private
+  repository, is a token in someone else's hands or a trip nobody mentioned.
+  Audit-log API on Enterprise Cloud only.
+attack: [T1078, T1213.003]
+logsource:
+  product: github
+  service: audit_log
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: [git.clone, git.push]
+    raw.repository_public: "false"
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, src_endpoint.location.country]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.location.country, src_endpoint.ip, resource.uid]
+triage: >
+  Is this person travelling, or does a CI provider in that country use their
+  token? A personal token used from a new country while its owner keeps working
+  from home is the one to escalate.
+follow_up:
+  - Was the access made with a token or SSH key, and which one?
+  - Did the same account sign in to GitHub from that country?
+sensitive: false
+sources:
+  - name: Elastic
+    title: Github Activity on a Private Repository from an Unusual IP
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/impact_github_repository_activity_from_unusual_ip
+    license: Elastic-2.0
+    relation: inspired

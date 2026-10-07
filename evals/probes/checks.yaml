@@ -1,0 +1,42 @@
+# The claim check behind measured confidence (RFC 0020): each claim is shown
+# only the events it cites, and is supported only when they show it. A checker
+# that waves claims through inflates the number automatic actions run on; one
+# that refuses true claims parks every case.
+role: checks
+probes:
+  - id: cloudtrail_claims
+    source: aws_cloudtrail
+    records:
+      - eventVersion: "1.08"
+        eventID: chk-login-1
+        eventTime: "2026-01-01T10:00:00Z"
+        eventSource: signin.amazonaws.com
+        eventName: ConsoleLogin
+        awsRegion: us-east-1
+        sourceIPAddress: 203.0.113.55
+        recipientAccountId: "123456789012"
+        userIdentity: {type: IAMUser, userName: alice, arn: "arn:aws:iam::123456789012:user/alice", accountId: "123456789012"}
+        responseElements: {ConsoleLogin: Success}
+        additionalEventData: {MFAUsed: "No"}
+      - eventVersion: "1.08"
+        eventID: chk-list-2
+        eventTime: "2026-01-01T10:05:00Z"
+        eventSource: s3.amazonaws.com
+        eventName: ListBuckets
+        awsRegion: us-east-1
+        sourceIPAddress: 198.51.100.20
+        recipientAccountId: "123456789012"
+        userIdentity: {type: IAMUser, userName: deploy-ci, arn: "arn:aws:iam::123456789012:user/deploy-ci", accountId: "123456789012", accessKeyId: AKIAIOSFODNN7EXAMPLE}
+    claims:
+      - says: alice signed in to the AWS console from 203.0.113.55 without MFA
+        cites: [0]
+        shown: true
+      - says: deploy-ci listed the S3 buckets from 203.0.113.55
+        cites: [1]
+        shown: false
+      - says: alice stopped CloudTrail logging
+        cites: [0]
+        shown: false
+      - says: The access key AKIAIOSFODNN7EXAMPLE was used to list buckets
+        cites: [1]
+        shown: true

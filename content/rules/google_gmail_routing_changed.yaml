@@ -1,0 +1,42 @@
+id: google_gmail_routing_changed
+title: Gmail routing, alias or forwarding rule changed by an admin
+description: >
+  An admin created or changed a domain-level Gmail route, alias table, mail
+  host or message rule. A route can copy every mailbox in the company to an
+  outside server, and no user sees it.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1114.003]
+logsource:
+  product: google
+  service: reports
+detection:
+  # One save logs several events in one activity: the legacy *_GMAIL_SETTING
+  # event names the rule type as SETTING_NAME, the *_APPLICATION_SETTING events
+  # carry it as SETTING_METADATA's rule_type. Only the first event is keyed, so
+  # the type is read from the activity's whole event list.
+  selection:
+    api.operation: [CREATE_GMAIL_SETTING, CHANGE_GMAIL_SETTING, CREATE_APPLICATION_SETTING, CHANGE_APPLICATION_SETTING]
+    raw.events|contains: [EMAIL_ROUTE, UNIFIED_MAIL_ROUTING, ALIAS_TABLE, MESSAGE_SECURITY_RULE]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, unmapped.params.SETTING_NAME, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Google Workspace Gmail Routing or Forwarding Rule Created or Modified
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/collection_google_workspace_custom_gmail_route_created_or_modified
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Google Workspace integration, admin audit sample with SETTING_METADATA
+    url: https://github.com/elastic/integrations/blob/main/packages/google_workspace/data_stream/admin/_dev/test/pipeline/test-admin-updated.log
+    license: Elastic-2.0
+    relation: inspired
+  - name: Google
+    title: Admin audit activity events, email settings
+    url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/admin-gmail-settings
+    relation: inspired

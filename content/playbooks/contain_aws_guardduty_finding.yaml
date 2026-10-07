@@ -1,0 +1,58 @@
+id: contain_aws_guardduty_finding
+title: Act on a GuardDuty finding
+description: >
+  GuardDuty reported a compromised access key, an instance or its credentials
+  misused, crypto mining, or anomalous S3 access. When the finding names a
+  long-term access key, disabling it stops the API access it describes. A
+  finding about an instance's role credentials carries a session key that IAM
+  cannot disable; after the page, revoking the sessions of the role it was
+  assumed from, or of the user behind a long-term key, waits for a human. A
+  finding about an instance (crypto mining, a backdoor, its credentials used
+  elsewhere) isolates it after the page, with a human's approval: its security
+  groups are swapped for one with no rule, and it keeps running so it can be
+  examined.
+rules:
+  - aws_guardduty_finding
+questions:
+  - id: still_active
+    ask: Is GuardDuty still updating the finding, and when did it see the activity first and last?
+  - id: cloudtrail_around
+    ask: What did the same access key or instance role do in CloudTrail in the hour around the finding's first sighting?
+  - id: resource_role
+    ask: What does the instance, bucket or key named in the finding do for the company, and who owns it?
+benign_when:
+  - The finding comes from a penetration test or a red-team exercise someone wrote down.
+  - The finding is about a scanner the company runs against itself, from its usual address.
+example: |
+  claim (cloudtrail_around): "The key in the finding listed every bucket and created a second access key from 203.0.113.55 within ten minutes of GuardDuty's first sighting", citing the ListBuckets and CreateAccessKey events.
+  checked and absent: "a penetration test or a red-team note for this account (30d)", which rules out a planned exercise.
+  disposition: malicious, because the address GuardDuty flagged went on to create a credential.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: disable the access key in the finding
+    action: aws.disable_access_key
+    optional: true
+    params:
+      access_key_id: "{{ rule.aws_guardduty_finding.key }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: GuardDuty finding confirmed malicious: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+      details:
+        case: "{{ case.case_uid }}"
+        resource: "{{ entity.resource }}"
+  - name: revoke the sessions minted from the key in the finding
+    action: aws.revoke_sessions
+    optional: true
+    params:
+      access_key_id: "{{ rule.aws_guardduty_finding.key }}"
+  - name: isolate the instance in the finding
+    action: aws.isolate_instance
+    optional: true
+    params:
+      instance_id: "{{ rule.aws_guardduty_finding.device }}"

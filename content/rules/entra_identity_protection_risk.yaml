@@ -1,0 +1,57 @@
+id: entra_identity_protection_risk
+title: Entra ID Protection marked a sign-in or user as high risk or compromised
+description: >
+  Microsoft's own risk engine rated a sign-in high risk, raised a risk
+  detection of medium or high, or an admin confirmed the account compromised.
+  It sees token and password-leak signals shoc cannot. Risk that was already
+  remediated, dismissed or confirmed safe is left out. Needs Entra ID P2; on P1
+  the risk fields read hidden and this stays quiet.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.75
+attack: [T1078.004]
+logsource:
+  product: entra
+  service: sign_ins
+detection:
+  selection_high:
+    - raw.riskLevelDuringSignIn: high
+    - raw.properties.riskLevelDuringSignIn: high
+  selection_compromised:
+    - raw.riskState: confirmedCompromised
+    - raw.riskDetail: [adminConfirmedSigninCompromised, adminConfirmedUserCompromised]
+    - raw.properties.riskState: confirmedCompromised
+  selection_detection:
+    class_uid: 2004
+    severity_id|gte: 3
+  filter_closed:
+    - raw.riskState: [remediated, dismissed, confirmedSafe]
+    - raw.properties.riskState: [remediated, dismissed, confirmedSafe]
+  condition: (selection_high or selection_compromised or selection_detection) and not filter_closed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip, src_endpoint.location.country, message]
+sources:
+  - name: Elastic
+    title: Entra ID High Risk Sign-in
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_high_risk_signin
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Entra ID Protection Admin Confirmed Compromise
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_protection_confirmed_compromise
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Entra ID High Risk User Sign-in Heuristic
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_risky_user_or_compromised_sign_in
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: Suspicious SignIns From A Non Registered Device
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_ad_risky_sign_ins_with_singlefactorauth_from_unknown_devices.yml
+    author: Harjot Singh, '@cyb3rjy0t'
+    license: DRL-1.1
+    relation: inspired

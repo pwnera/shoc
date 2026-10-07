@@ -1,0 +1,153 @@
+id: aws_identity_first_api_call
+title: An identity calls a sensitive API it has never called before
+hypothesis: >
+  An attacker using stolen credentials performs actions the legitimate owner of
+  those credentials has never performed. The first call of a sensitive API by a
+  given identity is therefore worth a look, even when every call succeeds and
+  no rule fires.
+attack: [T1078.004, T1580]
+logsource:
+  product: aws
+  service: cloudtrail
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation|in:
+      - ListBuckets
+      - GetSecretValue
+      - BatchGetSecretValue
+      - ListUsers
+      - ListRoles
+      - DescribeInstances
+      - ListAccessKeys
+      - GetAccountAuthorizationDetails
+      - GetCredentialReport
+      - ListAccounts
+      - DescribeOrganization
+      - AssumeRoot
+      - AddUserToGroup
+      - GetPasswordData
+      - DescribeInstanceAttribute
+      - CreateKeyPair
+      - ImportKeyPair
+      - SendSSHPublicKey
+      - SendCommand
+      - StartSession
+      - CreateDocument
+      - CreateStack
+      - ExportTableToPointInTime
+      - Subscribe
+      - CreateTopic
+      - GetFederationToken
+    status: Success
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, api.operation]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.ip, cloud.account.uid]
+triage: >
+  Is there a change (a new job, a new tool, a new deploy, somebody's first week)
+  that explains this identity doing this for the first time today? If the
+  identity is a service account, "it decided to look around" is not an
+  explanation.
+references:
+  - https://attack.mitre.org/techniques/T1078/004/
+sources:
+  - name: Elastic
+    title: AWS First Occurrence of STS GetFederationToken Request by User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_sts_get_federation_token
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS EC2 Unauthorized Admin Credential Fetch via Assumed Role
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/credential_access_aws_getpassword_for_ec2_instance
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS EC2 User Data Retrieval for EC2 Instance
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_ec2_userdata_request_for_ec2_instance
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS Account Discovery By Rare User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_organization_discovery_by_rare_user
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS IAM User Addition to Group
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/credential_access_iam_user_addition_to_group
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS STS AssumeRoot by Rare User and Member Account
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_sts_assume_root_from_rare_user_and_member_account
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS EC2 CreateKeyPair by New Principal from Non-Cloud AS Organization
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_new_terms_ec2_create_keypair_unusual_source_as
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS EC2 Instance Connect SSH Public Key Uploaded
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/lateral_movement_ec2_instance_connect_ssh_public_key_uploaded
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS SSM `SendCommand` Execution by Rare User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/execution_ssm_sendcommand_by_rare_user
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS SSM Session Started to EC2 Instance
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/lateral_movement_aws_ssm_start_session_to_ec2_instance
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS SSM Command Document Created by Rare User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/execution_ssm_command_document_created_by_rare_user
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: First Time AWS CloudFormation Stack Creation
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/execution_new_terms_cloudformation_createstack
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS DynamoDB Table Exported to S3
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_dynamodb_table_exported_to_s3
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS SNS Rare Protocol Subscription by User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_sns_rare_protocol_subscription_by_user
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: EC2 Suspicious Get User Password Request
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/ec2_suspicious_get_user_password_request.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: SSM Rare SendCommand Code Execution by EC2 Instance
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/ssm_rare_sendcommand_code_execution.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: SSM Start Remote Session to EC2 Instance
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/ssm_start_remote_session_to_ec2_instance.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: Potential Malicious Usage of CloudTrail System Manager
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_cloudtrail_ssm_malicious_usage.yml
+    author: jamesc-grafana
+    license: DRL-1.1
+    relation: inspired
+  - name: Sigma
+    title: AWS Key Pair Import Activity
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_ec2_import_key_pair_activity.yml
+    author: Ivan Saakov
+    license: DRL-1.1
+    relation: inspired

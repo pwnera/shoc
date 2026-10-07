@@ -1,0 +1,91 @@
+[
+  {
+    "action": "CREATE",
+    "actor": {
+      "displayName": "Mallory",
+      "id": "u999CNTRL",
+      "loginName": "mallory@example.com",
+      "type": "USER"
+    },
+    "eventGroupID": "a1b2c3d4e5f60718293a4b5c6d7e8f01",
+    "origin": "ADMIN_CONSOLE",
+    "target": {
+      "id": "kq7Rk2mNb11CNTRL",
+      "name": "OAuth client",
+      "type": "API_KEY"
+    },
+    "type": "CONFIG",
+    "new": {
+      "expires": "never",
+      "authTags": [
+        "tag:ci"
+      ],
+      "description": "deploy",
+      "domainLevel": true,
+      "capabilities": [
+        "OAUTH_CLIENT",
+        "CONTROL_API_SCOPE_DEVICES_CORE_READ",
+        "CONTROL_API_SCOPE_AUTH_KEYS"
+      ]
+    },
+    "event": "API_KEY.CREATE",
+    "tailnet": "example.com"
+  },
+  {
+    "action": "CREATE",
+    "actor": {
+      "displayName": "Mallory",
+      "id": "u999CNTRL",
+      "loginName": "mallory@example.com",
+      "type": "USER"
+    },
+    "eventGroupID": "a1b2c3d4e5f60718293a4b5c6d7e8f02",
+    "origin": "ADMIN_CONSOLE",
+    "target": {
+      "id": "k6r3fm3CNTRL",
+      "name": "Control API key",
+      "type": "API_KEY"
+    },
+    "type": "CONFIG",
+    "new": {
+      "capabilities": [
+        "CONTROL_API_SCOPE_ALL_READ",
+        "CONTROL_API_SCOPE_ALL"
+      ],
+      "expires": "2026-12-19 18:40:58.653877012 +0000 UTC"
+    },
+    "event": "API_KEY.CREATE",
+    "tailnet": "example.com"
+  },
+  {
+    "action": "CREATE",
+    "actor": {
+      "displayName": "Mallory",
+      "id": "u999CNTRL",
+      "loginName": "mallory@example.com",
+      "type": "USER"
+    },
+    "eventGroupID": "a1b2c3d4e5f60718293a4b5c6d7e8f03",
+    "origin": "ADMIN_CONSOLE",
+    "target": {
+      "id": "kZ4vT8pWq11CNTRL",
+      "name": "Auth key",
+      "type": "API_KEY"
+    },
+    "type": "CONFIG",
+    "new": {
+      "expires": "2026-12-29 22:28:44.261806069 +0000 UTC",
+      "authTags": [
+        "tag:server"
+      ],
+      "description": "backup",
+      "domainLevel": true,
+      "capabilities": [
+        "NODE_AUTH",
+        "NO_MACHINE_AUTH"
+      ]
+    },
+    "event": "API_KEY.CREATE",
+    "tailnet": "example.com"
+  }
+]

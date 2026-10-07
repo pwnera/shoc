@@ -1,0 +1,22 @@
+[
+  {
+    "Id": "m365-UserLoggedIn-devicecode",
+    "Operation": "UserLoggedIn",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Success",
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "203.0.113.90",
+    "ObjectId": "00000003-0000-0000-c000-000000000000",
+    "ExtendedProperties": [
+      { "Name": "UserAgent", "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" },
+      { "Name": "RequestType", "Value": "Cmsi:Cmsi" },
+      { "Name": "ResultStatusDetail", "Value": "Success" }
+    ],
+    "ApplicationId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "_content_type": "Audit.AzureActiveDirectory"
+  }
+]

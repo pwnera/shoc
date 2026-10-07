@@ -1,0 +1,30 @@
+[
+  {
+    "channels": "Operation",
+    "correlationId": "11111111-1111-1111-1111-111111111111",
+    "description": "Suspicious double extension file executed. Machine logs indicate an execution of a process with a suspicious double extension.",
+    "eventDataId": "az-defender-alert",
+    "eventName": {
+      "value": "Suspicious double extension file executed",
+      "localizedValue": "Suspicious double extension file executed"
+    },
+    "category": { "value": "Security", "localizedValue": "Security" },
+    "level": "Informational",
+    "operationName": {
+      "value": "Microsoft.Security/locations/alerts/activate/action",
+      "localizedValue": "Microsoft.Security/locations/alerts/activate/action"
+    },
+    "resourceGroupName": "rg-prod",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/providers/Microsoft.Security/locations/westeurope/alerts/2517_aaaa",
+    "status": { "value": "Active", "localizedValue": "Active" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "properties": {
+      "commandLine": "c:/users/public/invoice.pdf.exe",
+      "processId": "6988",
+      "processName": "c:/users/public/invoice.pdf.exe",
+      "userName": "vm-01/admin",
+      "compromisedEntity": "vm-01",
+      "Severity": "High"
+    }
+  }
+]

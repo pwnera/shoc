@@ -1,0 +1,49 @@
+id: endpoint_remote_logon_new_source
+title: An account logs on remotely from an address it never used
+hypothesis: >
+  Lateral movement and stolen credentials show up as a remote logon (RDP, or
+  SSH to a Linux server) from an address that account never came from. Admins
+  log on from the same few places; a new one is worth a look.
+attack: [T1021.001, T1021.004, T1078]
+sources:
+  - name: Elastic hunting
+    title: "Windows Logon Activity by Source IP"
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/windows/queries/windows_logon_activity_by_source_ip.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: "Logon Activity by Source IP"
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/linux/queries/login_activity_by_source_address.toml
+    license: Elastic-2.0
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+window: 1d
+cadence_days: 1
+detection:
+  sel_defender:
+    class_uid: 3002
+    status: Success
+    raw.properties.LogonType: RemoteInteractive
+  sel_falcon:
+    class_uid: 3002
+    api.operation: UserLogon
+    raw.LogonType: '10'
+  sel_s1:
+    class_uid: 3002
+    status: Success
+    raw.event.login.type: REMOTE_INTERACTIVE
+  condition: sel_defender or sel_falcon or sel_s1
+baseline:
+  first_seen: [actor.user.name, src_endpoint.ip]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.ip, device.hostname, device.uid]
+triage: >
+  Is the new address the admin's home, a new office or the VPN's new range? A
+  logon from another workstation that the account never used, or from the
+  internet, is the case.
+follow_up:
+  - What did the session do after the logon?
+  - Did the same account fail to log on elsewhere first?
+sensitive: true

@@ -1,0 +1,33 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-REMOVE_APPLICATION",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "DOMAIN_SETTINGS",
+        "name": "REMOVE_APPLICATION",
+        "parameters": [
+          {
+            "name": "APP_ID",
+            "value": "100000000001"
+          },
+          {
+            "name": "APPLICATION_NAME",
+            "value": "Mail Merge Pro"
+          }
+        ]
+      }
+    ]
+  }
+]

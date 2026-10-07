@@ -1,0 +1,67 @@
+id: aws_lambda_opened_to_outside
+title: Lambda function or layer opened to anyone or to another account
+description: >
+  A function URL was created without authentication, or a function or layer
+  permission was granted to anyone or to an account. An open function is a
+  backdoor that runs code with the function's role. A grant to the function's
+  own account by its bare id is not a match.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: medium
+confidence: 0.55
+attack: [T1546, T1133]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_url:
+    api.operation|startswith: [CreateFunctionUrlConfig, UpdateFunctionUrlConfig]
+    raw.requestParameters.authType: NONE
+  selection_any_principal:
+    api.operation|startswith: [AddPermission, AddLayerVersionPermission]
+    raw.requestParameters.principal: "*"
+  selection_account_principal:
+    api.operation|startswith: [AddPermission, AddLayerVersionPermission]
+    raw.requestParameters.principal|re: '^([0-9]{12}|arn:aws:iam::[0-9]{12}:.*)$'
+  # A bare account id that is the function's own account.
+  own_account:
+    raw.requestParameters.principal|fieldref: cloud.account.uid
+  success:
+    status: Success
+  condition: success and selection_* and not own_account
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, raw.requestParameters.functionName, raw.requestParameters.layerName, raw.requestParameters.principal]
+sources:
+  - name: Elastic
+    title: AWS Lambda Function URL Created with Public Access
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_lambda_function_url_public_access
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS Lambda Function Policy Updated to Allow Public Invocation
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_lambda_backdoor_invoke_function_for_any_principal
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS Lambda Function Policy Updated to Allow Cross-Account Invocation
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_lambda_cross_account_invocation_backdoor
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS Lambda Layer Shared Externally
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/execution_lambda_layer_shared_externally
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: Lambda Add Permissions for Write Actions to Function
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/lambda_add_permissions_for_write_actions_to_function.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: New AWS Lambda Function URL Configuration Created
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_lambda_function_url.yml
+    author: Ivan Saakov
+    license: DRL-1.1
+    relation: inspired

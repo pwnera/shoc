@@ -1,0 +1,78 @@
+[
+  {
+    "_document_id": "gh-protected_branch.create",
+    "action": "protected_branch.create",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "name": "main",
+    "user_agent": "Mozilla/5.0",
+    "operation_type": "create"
+  },
+  {
+    "_document_id": "gh-protected_branch.rejected_ref_update",
+    "action": "protected_branch.rejected_ref_update",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "org": "acme",
+    "repo": "acme/payments",
+    "branch": "refs/heads/main",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "github-webhook-ruleset-edited-active",
+    "action": "repository_ruleset.update",
+    "actor": "dana",
+    "org": "acme",
+    "repo": "acme/payments",
+    "repository_ruleset": {"id": 12, "name": "main", "enforcement": "active"},
+    "changes": {"enforcement": {"from": "disabled"}},
+    "webhook": {"event": "repository_ruleset", "action": "edited"}
+  },
+  {
+    "_document_id": "github-webhook-ruleset-draft-edited",
+    "action": "repository_ruleset.update",
+    "actor": "dana",
+    "org": "acme",
+    "repo": "acme/payments",
+    "repository_ruleset": {"id": 13, "name": "draft", "enforcement": "disabled"},
+    "changes": {"name": {"from": "draft-v1"}},
+    "webhook": {"event": "repository_ruleset", "action": "edited"}
+  },
+  {
+    "_document_id": "gh-repository_ruleset.update-draft",
+    "action": "repository_ruleset.update",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "actor_is_bot": false,
+    "org": "acme",
+    "repo": "acme/payments",
+    "public_repo": false,
+    "ruleset_id": 1082916,
+    "ruleset_name": "require-reviews-draft",
+    "ruleset_source_type": "Repository",
+    "ruleset_enforcement": "disabled",
+    "user_agent": "Mozilla/5.0",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-repository_ruleset.update-evaluate-off",
+    "action": "repository_ruleset.update",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "actor_is_bot": false,
+    "org": "acme",
+    "ruleset_id": 1082917,
+    "ruleset_name": "trial-org-ruleset",
+    "ruleset_source_type": "Organization",
+    "ruleset_enforcement": "disabled",
+    "ruleset_old_enforcement": "evaluate",
+    "user_agent": "Mozilla/5.0",
+    "operation_type": "modify"
+  }
+]

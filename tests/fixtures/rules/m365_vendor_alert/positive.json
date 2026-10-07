@@ -1,0 +1,34 @@
+[
+  {
+    "Id": "m365-AtpDetection",
+    "Operation": "AtpDetection",
+    "OrganizationId": "org-1",
+    "RecordType": 47,
+    "UserKey": "jane@example.com",
+    "UserType": 4,
+    "Workload": "ThreatIntelligence",
+    "UserId": "jane@example.com",
+    "DetectionMethod": "AntiMalware",
+    "FileData": {
+      "FileName": "invoice.html",
+      "FileVerdict": 1,
+      "MalwareFamily": "Phish.HTML",
+      "SHA256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    }
+  },
+  {
+    "Id": "m365-MCAS-high",
+    "Operation": "MCAS_ALERT_ANUBIS_DETECTION_MALICIOUS_INBOX_RULE",
+    "OrganizationId": "org-1",
+    "RecordType": 98,
+    "UserKey": "bob@example.com",
+    "UserType": 0,
+    "Workload": "MCAS",
+    "UserId": "bob@example.com",
+    "AlertDisplayName": "Suspicious inbox manipulation rule",
+    "AlertSeverity": "High",
+    "ClientIPs": ["203.0.113.180"],
+    "ObjectId": "643fdd70e8ff3e15bba6dfd9",
+    "ResultStatus": "New"
+  }
+]

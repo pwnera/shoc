@@ -1,0 +1,38 @@
+id: okta_sign_in_after_attack_from_address
+title: Okta sign-in succeeded from an address Okta had caught attacking
+description: >
+  Okta ThreatInsight recorded a password spray or brute force from an address,
+  and within three hours a sign-in from that same address succeeded. The
+  failures were the attacker guessing; the success is the password that worked.
+  Lockouts are not used as the first event: after a help-desk unlock, the whole
+  office signs in from the address that locked.
+status: experimental
+date: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1110.003, T1110.004, T1078.004]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  attack_seen:
+    api.operation: security.threat.detected
+  signed_in:
+    api.operation: [user.session.start, user.authentication.sso, user.authentication.auth_via_mfa,
+                    user.authentication.verify]
+    status: Success
+    actor.user.type: User
+  sequence:
+    by: [src_endpoint.ip]
+    first: attack_seen
+    then: signed_in
+    within: 3h
+entity: [actor.user.name, src_endpoint.ip]
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.location.country, src_endpoint.asn,
+         http_request.user_agent]
+sources:
+  - name: Elastic
+    title: Okta Successful Login After Credential Attack
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_successful_login_after_credential_attack
+    license: Elastic-2.0
+    relation: inspired

@@ -1,0 +1,1146 @@
+/*
+ * The shoc console design system's components: edition two's rules from its
+ * components/bundle.css, class prefix sh-, painted only with the tokens in
+ * ../../tokens/, then edition three's primitives and shell surfaces under their
+ * own banner. Kept in the design system's own compact form so an edition can be
+ * diffed against the last. Edition-two rules edition three changes are edited
+ * in place, and the blocks it retired are gone.
+ *
+ * In the components layer, so a Tailwind utility on the same element wins.
+ * A screen cannot reach a part from Tailwind: an arbitrary variant reads "_"
+ * as a space, so [&_.sh-x__part] never matches. Ask for a modifier here, or
+ * use a scoped class in the screen's own CSS.
+ */
+@layer components {
+  /* ── Text roles ─────────────────────────────────────────── */
+  .sh-label { font: var(--text-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--fg-4); }
+  .sh-index { font: var(--text-index); color: var(--fg-4); font-variant-numeric: tabular-nums; }
+  .sh-mono { font: var(--text-mono); color: var(--fg-3); }
+  .sh-mono--strong { color: var(--fg-1); }
+  .sh-micro { font: var(--text-micro); color: var(--fg-4); }
+  .sh-fact { font: var(--text-fact); color: var(--fg-1); font-variant-numeric: tabular-nums; }
+  .sh-kbd { display: inline-flex; align-items: center; height: 16px; padding: 0 4px; border: var(--hairline); border-radius: var(--radius-1); font: var(--text-kbd); color: var(--fg-4); background: var(--bg-1); }
+
+  /* ── Button ─────────────────────────────────────────────── */
+  .sh-btn { display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-1); font: var(--text-button); cursor: pointer; transition: var(--transition-color); border: 1px solid var(--line-2); background: var(--bg-1); color: var(--fg-1); white-space: nowrap; }
+  .sh-btn:hover { border-color: var(--line-2); background: var(--bg-2); }
+  .sh-btn:disabled { pointer-events: none; color: var(--fg-disabled); border-color: var(--line-1); background: transparent; }
+  .sh-btn--ghost:disabled { border-color: transparent; }
+  .sh-btn--md { height: 32px; padding: 0 12px; gap: 8px; }
+  .sh-btn--sm { height: 24px; padding: 0 8px; gap: 6px; font-size: 12px; }
+  .sh-btn--icon { height: 32px; width: 32px; padding: 0; }
+  .sh-btn--icon.sh-btn--sm { height: 24px; width: 24px; }
+  .sh-btn--primary { background: var(--fill-light); color: var(--on-light); border-color: var(--fill-light); }
+  .sh-btn--primary:hover { background: color-mix(in oklch, var(--fill-light) 88%, var(--bg-2)); border-color: transparent; }
+  .sh-btn--danger { background: var(--bad-fill); color: var(--bad); border-color: var(--bad-line); }
+  .sh-btn--danger:hover { background: color-mix(in oklch, var(--bad-fill) 60%, var(--bad-line)); }
+  .sh-btn--ghost { background: transparent; border-color: transparent; color: var(--fg-3); }
+  .sh-btn--ghost:hover { color: var(--fg-1); background: var(--bg-2); border-color: transparent; }
+  .sh-btn--crew { background: var(--crew-fill); color: var(--crew); border-color: var(--crew-line); }
+  .sh-btn--crew:hover { background: color-mix(in oklch, var(--crew-fill) 60%, var(--crew-line)); }
+  /* The crew mark is rendered once, explicitly (<CrewMark/>), never by a pseudo-element. */
+  .sh-crewmark { font: var(--text-mono); font-weight: 600; color: var(--crew-strong); }
+
+  /* ── Badge ──────────────────────────────────────────────── */
+  .sh-badge { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; height: 18px; padding: 0 6px; white-space: nowrap; border-radius: var(--radius-1); border: 1px solid var(--line-1); background: var(--bg-2); color: var(--fg-2); font: var(--text-label); letter-spacing: 0.02em; }
+  .sh-badge--caps { text-transform: uppercase; letter-spacing: var(--tracking-label); }
+  .sh-tone-critical { border-color: var(--critical-line); background: var(--critical-fill); color: var(--critical); }
+  .sh-tone-high { border-color: var(--high-line); background: var(--high-fill); color: var(--high); }
+  .sh-tone-medium { border-color: var(--medium-line); background: var(--medium-fill); color: var(--medium); }
+  /* Status tones are outlined (transparent ground, -line edge, status ink); severity tones are filled. */
+  .sh-tone-good { border-color: var(--good-line); background: transparent; color: var(--good); }
+  .sh-tone-warn { border-color: var(--warn-line); background: transparent; color: var(--warn); }
+  .sh-tone-bad { border-color: var(--bad-line); background: transparent; color: var(--bad); }
+  .sh-tone-idle { border-color: var(--line-2); background: transparent; color: var(--fg-3); }
+  .sh-tone-crew { border-color: var(--crew-line); background: var(--crew-fill); color: var(--crew); }
+  .sh-tone-muted { color: var(--fg-3); }
+  .sh-tone-faint { color: var(--fg-4); background: transparent; }
+  .sh-verdict { display: inline-flex; flex-shrink: 0; align-items: center; gap: 8px; white-space: nowrap; }
+
+  /* ── ConfidenceBar: five segments ───────────────────────── */
+  .sh-conf { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; }
+  .sh-conf__seg { display: inline-flex; gap: 2px; }
+  .sh-conf__seg i { display: block; width: 6px; height: 8px; background: var(--line-2); border-radius: 1px; }
+  .sh-conf__seg i.on { background: var(--crew-bar); }
+  .sh-conf__num { font: var(--text-index); color: var(--fg-4); min-width: 4ch; text-align: right; }
+  /* A finding's, a rule's or a playbook floor's confidence: not the crew's, so not blue. */
+  .sh-conf--plain .sh-conf__seg i.on { background: var(--fg-2); }
+
+  /* ── Panel (Card) ───────────────────────────────────────── */
+  .sh-card { border-radius: var(--radius-2); border: var(--hairline); background: var(--bg-1); min-width: 0; }
+  .sh-card__header { display: flex; align-items: center; gap: var(--space-2); height: var(--row-h); padding: 0 var(--panel-pad); border-bottom: var(--hairline); }
+  .sh-card__title { margin: 0; font: var(--text-card-title); color: var(--fg-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sh-card__subtitle { margin: 0 0 0 auto; font: var(--text-mono); color: var(--fg-4); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .sh-card__actions { display: flex; align-items: center; gap: var(--space-1); margin-left: auto; }
+  .sh-card__subtitle + .sh-card__actions { margin-left: 0; }
+  .sh-card__body { padding: var(--panel-pad); }
+  /* On a phone the header wraps and its controls shrink, so a card never scrolls the page sideways. */
+  @media (max-width: 767px) {
+    .sh-card__header { flex-wrap: wrap; height: auto; min-height: var(--row-h); padding-block: 4px; box-sizing: border-box; }
+    .sh-card__actions { flex-wrap: wrap; min-width: 0; max-width: 100%; }
+    .sh-card__actions > :is(.sh-input, .sh-select) { flex: 1 1 8rem; min-width: 0; }
+  }
+
+  /* ── Stat ───────────────────────────────────────────────── */
+  /* Each stat draws the hairline after it and under it into the 1px gap, so wrapped rows keep their
+     dividers and a short last row leaves its empty cells blank (print view). */
+  .sh-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 1px; overflow: hidden; }
+  .sh-stat { background: var(--bg-1); min-width: 0; padding: var(--space-3); display: flex; flex-direction: column; gap: 4px; box-shadow: 1px 0 0 var(--line-1), 0 1px 0 var(--line-1), 1px 1px 0 var(--line-1); }
+  .sh-stat--link { text-decoration: none; transition: var(--transition-color); }
+  .sh-stat--link:hover { background: var(--bg-2); }
+  .sh-stat--link:hover .sh-stat__label { color: var(--fg-2); }
+  .sh-stat__label { font: var(--text-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--fg-4); }
+  .sh-stat__value { font: var(--text-stat); letter-spacing: var(--tracking-tight); font-variant-numeric: tabular-nums; color: var(--fg-1); }
+  .sh-stat__value--warn { color: var(--warn-value); }
+  .sh-stat__value--bad { color: var(--danger-value); }
+  .sh-stat__value--good { color: var(--good-value); }
+  .sh-stat__value--crew { color: var(--crew); }
+  .sh-stat__hint { font: var(--text-mono); color: var(--fg-4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── Table ──────────────────────────────────────────────── */
+  .sh-table-wrap { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+  .sh-table { width: 100%; border-collapse: collapse; font: var(--text-body); table-layout: fixed; }
+  .sh-table thead th { height: 28px; padding: 0 var(--cell-pad-x); text-align: left; font: var(--text-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--fg-4); border-bottom: var(--hairline); white-space: nowrap; background: var(--bg-1); box-sizing: border-box; }
+  .sh-table thead th.is-num, .sh-table td.is-num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sh-table tbody tr { border-bottom: var(--hairline); }
+  .sh-table tbody tr:last-child { border-bottom: 0; }
+  .sh-table tbody tr.is-link { cursor: pointer; }
+  .sh-table tbody tr.is-link:hover { background: var(--bg-2); }
+  .sh-table tbody tr.is-link:focus-visible { box-shadow: inset 0 0 0 1px var(--focus); outline: none; }
+  .sh-table thead.sh-table__srhead th { height: 0; padding: 0; border: 0; overflow: hidden; white-space: normal; word-break: break-all; line-height: 0; color: transparent; }
+  .sh-table tbody tr.is-selected { background: var(--bg-3); }
+  .sh-table tbody tr.is-selected td.is-idx { color: var(--fg-3); }
+  .sh-table td { height: var(--row-h); padding: 0 var(--cell-pad-x); color: var(--fg-2); white-space: nowrap; }
+  .sh-table td.is-idx { width: 32px; font: var(--text-index); color: var(--fg-4); padding-right: 0; }
+  .sh-table td.is-mono { font: var(--text-mono); color: var(--fg-3); }
+  .sh-table td.is-strong { color: var(--fg-1); }
+  .sh-cell { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── Tabs: underline ────────────────────────────────────── */
+  /* Never wider than the page (WCAG 1.4.10 at 320px): the row scrolls sideways, so its line is drawn inside the box. */
+  .sh-tabs { display: flex; align-items: stretch; gap: var(--space-4); min-width: 0; overflow-x: auto; scrollbar-width: none; box-shadow: inset 0 -1px 0 var(--line-1); height: var(--row-h); }
+  .sh-tab { position: relative; display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; padding: 0 2px; border: 0; background: none; font: var(--text-body); color: var(--fg-3); cursor: pointer; transition: color var(--dur-2) var(--ease); }
+  .sh-tab:hover { color: var(--fg-1); }
+  .sh-tab::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: transparent; }
+  .sh-tab[aria-selected="true"] { color: var(--fg-1); font-weight: 500; }
+  .sh-tab[aria-selected="true"]::after { background: var(--fill-light); }
+  .sh-tab__count { font: var(--text-index); color: var(--fg-4); }
+  .sh-tab[aria-selected="true"] .sh-tab__count { color: var(--fg-3); }
+  .sh-tab--crew[aria-selected="true"]::after { background: var(--crew-strong); }
+
+  /* ── Input, Select, Field ───────────────────────────────── */
+  .sh-input, .sh-select { height: 32px; border-radius: var(--radius-1); border: var(--hairline); background: var(--bg-2); font: var(--text-body); color: var(--fg-1); box-sizing: border-box; transition: var(--transition-color); }
+  .sh-input { width: 100%; padding: 0 var(--space-2); }
+  .sh-input::placeholder { color: var(--fg-4); }
+  .sh-input:hover, .sh-select:hover { border-color: var(--line-2); }
+  .sh-input:focus-visible, .sh-select:focus-visible { border-color: var(--line-2); box-shadow: var(--focus-ring); }
+  .sh-input--mono { font: var(--text-mono); color: var(--fg-1); }
+  .sh-select { padding: 0 var(--space-2); color: var(--fg-2); appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--fg-4) 50%), linear-gradient(135deg, var(--fg-4) 50%, transparent 50%); background-position: calc(100% - 13px) 14px, calc(100% - 9px) 14px; background-size: 4px 4px; background-repeat: no-repeat; padding-right: 24px; }
+  .sh-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .sh-field__label { font: var(--text-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--fg-4); }
+  .sh-field__hint { font: var(--text-small); color: var(--fg-4); }
+  .sh-field--error .sh-input { border-color: var(--critical-line); }
+  .sh-field--error .sh-field__hint { color: var(--critical); }
+
+  /* ── Switch ─────────────────────────────────────────────── */
+  .sh-switch { display: inline-flex; align-items: center; gap: var(--space-2); cursor: pointer; font: var(--text-body); color: var(--fg-2); background: none; border: 0; padding: 0; }
+  .sh-switch__track { width: 28px; height: 16px; border-radius: var(--radius-1); border: var(--hairline-strong); background: var(--bg-2); position: relative; transition: var(--transition-color); flex-shrink: 0; box-sizing: border-box; }
+  .sh-switch__track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 1px; background: var(--fg-4); transition: transform var(--dur-2) var(--ease), background-color var(--dur-2) var(--ease); }
+  .sh-switch[aria-checked="true"] .sh-switch__track { background: var(--fill-light); border-color: var(--fill-light); }
+  .sh-switch[aria-checked="true"] .sh-switch__track::after { transform: translateX(12px); background: var(--on-light); }
+  .sh-switch:disabled { pointer-events: none; color: var(--fg-disabled); }
+
+  /* ── Fields (dl), Json ──────────────────────────────────── */
+  .sh-fields { display: grid; grid-template-columns: minmax(0, max-content) minmax(0, 1fr); column-gap: var(--space-4); row-gap: 0; margin: 0; font: var(--text-body); }
+  .sh-fields dt { font: var(--text-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--fg-4); min-height: 24px; display: flex; align-items: flex-start; padding-top: 4px; overflow-wrap: anywhere; min-width: 0; }
+  .sh-fields dd { margin: 0; min-width: 0; overflow-wrap: anywhere; color: var(--fg-2); min-height: 24px; display: flex; align-items: center; padding: 2px 0; }
+  .sh-fields dd.is-mono { font: var(--text-mono); color: var(--fg-1); }
+  .sh-fields--ruled dt, .sh-fields--ruled dd { border-bottom: var(--hairline); }
+  .sh-fields--ruled dt:last-of-type, .sh-fields--ruled dd:last-of-type { border-bottom: 0; }
+  /* On a phone each pair stacks, the label a line above its value, as the finding's Match card does. */
+  @media (max-width: 767px) {
+    .sh-fields { grid-template-columns: minmax(0, 1fr); }
+    .sh-fields dt { min-height: 0; padding-top: 6px; font-size: 10px; }
+    .sh-fields--ruled dt { border-bottom: 0; }
+  }
+  .sh-json { max-height: 20rem; overflow: auto; white-space: pre; border-radius: var(--radius-1); border: var(--hairline); background: var(--bg-0); padding: var(--space-2) var(--space-3); margin: 0; font: var(--text-json); color: var(--fg-3); counter-reset: line; }
+  .sh-json .ln { display: block; }
+  .sh-json .ln::before { counter-increment: line; content: counter(line); display: inline-block; width: 3ch; margin-right: 2ch; text-align: right; color: var(--fg-4); }
+  .sh-json .k { color: var(--fg-2); }
+  .sh-json .s { color: var(--series-3); }
+  .sh-json .n { color: var(--series-3); }
+
+  /* ── States: Loading, Empty, ErrorNote ──────────────────── */
+  .sh-loading { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-8) var(--space-4); font: var(--text-mono); color: var(--fg-4); }
+  /* A spinner appears after 300ms, so a fast answer never flashes one; reduced motion shows "…". */
+  .sh-spin { width: 14px; height: 14px; opacity: 0; animation: sh-spin 1s linear infinite, sh-appear var(--dur-1) var(--ease) 300ms forwards; }
+  .sh-spin__dots { display: none; font: var(--text-mono); color: var(--fg-4); }
+  @media (prefers-reduced-motion: reduce) { .sh-spin { display: none; } .sh-spin__dots { display: inline; } }
+  /* Edition three: one line, 32px, no glyph. */
+  .sh-empty { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); min-height: 32px; padding: var(--space-2) var(--space-3); box-sizing: border-box; }
+  .sh-empty__icon { width: 16px; height: 16px; color: var(--fg-4); flex-shrink: 0; }
+  .sh-empty__title { margin: 0; font: var(--text-body); color: var(--fg-2); }
+  .sh-empty__meta { font: var(--text-mono); color: var(--fg-4); }
+  .sh-empty__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  .sh-empty__action { margin-left: auto; }
+  .sh-empty--clear .sh-empty__icon { color: var(--good-dot); }
+  .sh-empty--row { min-height: var(--row-h); padding: 0 var(--cell-pad-x); }
+  .sh-empty--page { flex-direction: column; justify-content: center; text-align: center; padding: var(--space-12) var(--space-4); }
+  .sh-empty--page .sh-empty__action { margin-left: 0; }
+  .sh-empty--center { justify-content: center; text-align: center; padding: var(--space-8) var(--space-4); }
+  .sh-error { display: flex; align-items: flex-start; gap: var(--space-2); border-radius: var(--radius-1); border: 1px solid var(--bad-line); background: var(--bad-fill); padding: var(--space-2) var(--space-3); font: var(--text-body); color: var(--bad); }
+  .sh-error svg { margin-top: 3px; width: 14px; height: 14px; flex-shrink: 0; }
+  .sh-error__text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .sh-error__retry { flex-shrink: 0; margin: -2px -4px -2px auto; }
+  .sh-error--inline { align-items: center; border: 0; background: none; padding: var(--space-1) 0; min-height: 24px; font: var(--text-small); }
+  .sh-error--inline svg { margin-top: 0; }
+  /* With no padding of its own, the inline note's Retry keeps inside the edge it sits on. */
+  .sh-error--inline .sh-error__retry { margin-right: 0; }
+
+  /* ── Citations ──────────────────────────────────────────── */
+  /* Edition three: an 18px E-chip that lights the same event everywhere (lib/cite.ts numbers it). */
+  .sh-cite { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 3px; box-sizing: border-box; border: 1px solid var(--crew-line); border-radius: var(--radius-1); background: transparent; font: var(--text-index); color: var(--crew); cursor: pointer; transition: var(--transition-color); }
+  .sh-cite:hover, .sh-cite[data-hl] { background: var(--crew-fill); }
+  .sh-cite--more { border-style: dashed; }
+  .sh-cite--none { border-color: var(--warn-line); color: var(--warn); cursor: default; white-space: nowrap; }
+  .sh-cite-row { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: 4px; }
+
+  /* ── Dialog ─────────────────────────────────────────────── */
+  /* Anchored to the top, so a step to a taller or shorter record never moves the head and its stepper. */
+  .sh-dialog { width: min(44rem, calc(100vw - 2rem)); max-height: calc(100dvh - min(12dvh, 96px) - 1.5rem); margin: min(12dvh, 96px) auto auto; border-radius: var(--radius-2); border: 0; background: var(--bg-float); box-shadow: var(--elev-float); color: var(--fg-2); padding: 0; box-sizing: border-box; overflow: clip; }
+  .sh-dialog[open] { display: flex; flex-direction: column; animation: sh-enter var(--dur-4) var(--ease); }
+  .sh-dialog::backdrop { background: var(--scrim); }
+  /* The dialog takes focus itself on open; its edge is already the elevation. */
+  .sh-dialog:focus { outline: none; }
+  .sh-dialog--sm { width: min(28rem, calc(100vw - 2rem)); }
+  .sh-dialog--wide { width: min(64rem, calc(100vw - 2rem)); }
+  .sh-dialog__head { display: flex; flex-shrink: 0; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); min-height: 40px; border-bottom: var(--hairline); padding: var(--space-1) var(--space-3); box-sizing: border-box; }
+  /* The title keeps 40% of the row; head items that do not fit beside it wrap under it. */
+  .sh-dialog__title { margin: 0; flex: 1 1 0; min-width: min(40%, 100%); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--text-card-title); color: var(--fg-1); }
+  .sh-dialog__id { flex-shrink: 0; align-self: flex-start; height: 20px; }
+  .sh-dialog__close { background: none; border: 0; color: var(--fg-4); cursor: pointer; padding: 0; display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border-radius: var(--radius-1); }
+  .sh-dialog__close:hover { color: var(--fg-1); background: var(--bg-2); }
+  /* The body is the only scroller: nested JSON and code lose their own max-height. */
+  .sh-dialog__body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-3); }
+  .sh-dialog__body > * { min-width: 0; max-width: 100%; }
+  /* A phone sheet: the title and Close on the first line, the badges and ‹ 1 / 9 › on the second. */
+  @media (max-width: 767px) {
+    .sh-dialog__head > * { order: 2; }
+    .sh-dialog__head > .sh-dialog__title { order: 0; flex: 1 1 calc(100% - 32px); min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; }
+    .sh-dialog__head > .sh-dialog__close:last-child { order: 1; }
+    .sh-dialog__head > .sh-dialog__step { margin-left: auto; }
+  }
+  .sh-dialog__body .sh-json, .sh-dialog__body .sh-code { max-height: none; overflow: visible; }
+  .sh-dialog__step { display: inline-flex; align-items: center; gap: 2px; font: var(--text-mono); color: var(--fg-4); font-variant-numeric: tabular-nums; }
+  /* At least 48px, and taller when an inline confirm opens in it. */
+  .sh-dialog__foot { display: flex; flex-shrink: 0; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-2); min-height: 48px; padding: var(--space-2) var(--space-3); box-sizing: border-box; border-top: var(--hairline); }
+  .sh-dialog__foot .sh-kbd { margin-right: auto; }
+
+  /* ── Nav (sidebar) ──────────────────────────────────────── */
+  .sh-nav { display: flex; flex-direction: column; gap: 1px; width: var(--rail-w); padding: var(--space-2); box-sizing: border-box; }
+  .sh-nav__group { display: flex; align-items: center; height: 24px; padding: 0 var(--space-2); margin-top: var(--space-2); font: var(--text-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--fg-4); }
+  .sh-nav__group:first-child { margin-top: 0; }
+  .sh-nav__item { display: flex; align-items: center; gap: var(--space-2); height: 28px; border-radius: var(--radius-1); padding: 0 var(--space-2); font: var(--text-body); color: var(--fg-3); text-decoration: none; transition: var(--transition-color); }
+  .sh-nav__item:hover { background: var(--bg-2); color: var(--fg-1); }
+  .sh-nav__item[aria-current="page"] { background: var(--bg-3); color: var(--fg-1); font-weight: 500; box-shadow: inset 2px 0 0 var(--fg-1); }
+  .sh-nav__item[aria-current="page"]:focus-visible { box-shadow: inset 2px 0 0 var(--fg-1), var(--focus-ring-inset); }
+  .sh-nav__item svg { width: 14px; height: 14px; color: var(--fg-4); }
+  .sh-nav__item[aria-current="page"] svg { color: var(--fg-1); }
+  .sh-nav__count { margin-left: auto; font: var(--text-index); color: var(--crew); }
+
+  /* ── Shell: topbar, rail, page ──────────────────────────── */
+  .sh-shell { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); grid-template-rows: var(--topbar-h) minmax(0, 1fr); min-height: 100vh; }
+  .sh-shell__brand { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-4); border-right: var(--hairline); border-bottom: var(--hairline); font: var(--text-card-title); color: var(--fg-1); }
+  .sh-shell__brand img { width: 28px; height: 28px; }
+  .sh-shell__brand .sh-mono { margin-left: auto; }
+  .sh-shell__rail { border-right: var(--hairline); }
+  .sh-shell__top { border-bottom: var(--hairline); display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-4); }
+  /* The bottom padding keeps the floating Ask the crew launcher off the last row and the pagination. */
+  .sh-shell__page { padding: var(--gutter-wide); padding-bottom: 4.5rem; display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+  @media (max-width: 767px) { .sh-shell { grid-template-columns: minmax(0, 1fr); } .sh-shell__brand, .sh-shell__rail { display: none; } .sh-shell__page { padding: var(--gutter); padding-bottom: 4.5rem; } }
+
+  /* ── PageHeader ─────────────────────────────────────────── */
+  .sh-page { display: flex; flex-direction: column; gap: var(--space-2); padding-bottom: var(--space-4); border-bottom: var(--hairline); }
+  .sh-page__crumbs { display: flex; align-items: center; gap: var(--space-2); font: var(--text-mono); color: var(--fg-4); min-width: 0; }
+  .sh-page__crumbs a { color: var(--fg-4); text-decoration: none; }
+  .sh-page__crumbs a:hover { color: var(--fg-2); }
+  .sh-page__crumbs i { font-style: normal; color: var(--fg-4); }
+  .sh-page__row { display: flex; align-items: center; gap: var(--space-3); min-width: 0; min-height: 32px; }
+  .sh-page__title { margin: 0; font: var(--text-page-title); letter-spacing: var(--tracking-tight); color: var(--fg-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  /* Focused by the shell after a route change, so the next Tab starts on the page; no ring for a heading. */
+  .sh-page__title:focus { outline: none; box-shadow: none; }
+  .sh-page__actions { display: flex; align-items: center; gap: var(--space-2); margin-left: auto; flex-shrink: 0; }
+  .sh-page__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); font: var(--text-mono); color: var(--fg-4); }
+  .sh-page__meta b { font-weight: 400; color: var(--fg-2); }
+
+  /* ── Timeline ───────────────────────────────────────────── */
+  .sh-tl { display: grid; grid-template-columns: 64px 12px minmax(0, 1fr); margin: 0; padding: 0; list-style: none; }
+  .sh-tl__t { font: var(--text-mono); color: var(--fg-4); font-variant-numeric: tabular-nums; height: 28px; display: flex; align-items: center; }
+  .sh-tl__axis { position: relative; }
+  .sh-tl__axis::before { content: ""; position: absolute; left: 3px; top: 0; bottom: 0; width: 1px; background: var(--line-1); }
+  .sh-tl__dot { position: absolute; left: 0; top: 11px; width: 7px; height: 7px; border-radius: 1px; background: var(--bg-1); border: 1px solid var(--fg-4); box-sizing: border-box; }
+  .sh-tl__dot--crew { border-color: var(--crew-strong); background: var(--crew-strong); }
+  .sh-tl__dot--critical { border-color: var(--critical); background: var(--critical); }
+  .sh-tl__dot--ok { border-color: var(--ok-dot); background: var(--ok-dot); }
+  .sh-tl__dot--human { border-color: var(--fg-1); background: var(--fg-1); }
+  .sh-tl__body { min-height: 28px; display: flex; align-items: center; gap: var(--space-2); padding-left: var(--space-2); font: var(--text-body); color: var(--fg-2); min-width: 0; }
+  .sh-tl__body a { color: var(--fg-1); text-decoration: none; border-bottom: 1px solid var(--line-2); }
+  .sh-tl__body a:hover { border-bottom-color: var(--fg-1); }
+  .sh-tl__who { font: var(--text-index); color: var(--fg-4); }
+  .sh-tl__who--crew { color: var(--crew); }
+  .sh-tl li:first-child .sh-tl__axis::before { top: 14px; }
+  .sh-tl li:last-child .sh-tl__axis::before { bottom: auto; height: 14px; }
+  .sh-tl li { display: contents; }
+
+  /* ── Toast ──────────────────────────────────────────────── */
+  /* Edition three (section 3.5): a floating surface, up to two lines, a lifetime bar that pauses on hover. */
+  .sh-toast { position: relative; display: flex; align-items: center; gap: var(--space-2); width: 380px; max-width: 100%; min-height: 40px; padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3); border: 0; border-radius: var(--radius-2); background: var(--bg-float); box-shadow: var(--elev-float); color: var(--fg-2); font: var(--text-body); box-sizing: border-box; overflow: hidden; animation: sh-enter var(--dur-3) var(--ease); }
+  .sh-toast__dot { width: 6px; height: 6px; border-radius: 1px; background: var(--fg-4); flex-shrink: 0; }
+  .sh-toast--ok .sh-toast__dot { background: var(--good-dot); }
+  .sh-toast--critical .sh-toast__dot { background: var(--bad-dot); }
+  .sh-toast--crew .sh-toast__dot { background: var(--crew-dot); }
+  .sh-toast__text { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+  .sh-toast__text b, .sh-toast__text a { font-weight: 500; color: var(--fg-1); }
+  .sh-toast__time { font: var(--text-mono); color: var(--fg-4); }
+
+  /* ── Pagination ─────────────────────────────────────────── */
+  .sh-pager { display: flex; align-items: center; gap: var(--space-2); height: var(--row-h); padding: 0 var(--panel-pad); border-top: var(--hairline); font: var(--text-mono); color: var(--fg-4); font-variant-numeric: tabular-nums; }
+  .sh-pager__range { flex: 1; }
+  .sh-pager__range b { font-weight: 400; color: var(--fg-2); }
+  .sh-pager .sh-btn--sm { min-width: 24px; }
+
+  /* ── Console additions ──────────────────────────────────── */
+  /* lucide glyphs sized for the button they sit in */
+  .sh-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .sh-btn--sm svg { width: 12px; height: 12px; }
+  /* 24px controls for a panel header, chevron re-centred */
+  .sh-input--sm, .sh-select--sm { height: 24px; font-size: 12px; }
+  .sh-select--sm { background-position: calc(100% - 13px) 10px, calc(100% - 9px) 10px; }
+  /* a block of text or code on the page ground: a rule's logic, a diff, SQL */
+  .sh-code { margin: 0; max-height: 20rem; overflow: auto; white-space: pre; border-radius: var(--radius-1); border: var(--hairline); background: var(--bg-0); padding: var(--space-3); font: var(--text-json); color: var(--fg-2); scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+  /* a link in running text or a field: the timeline's link, since blue belongs to the crew */
+  .sh-link { color: var(--fg-1); text-decoration: none; border-bottom: 1px solid var(--line-2); transition: var(--transition-color); }
+  .sh-link:hover { border-bottom-color: var(--fg-1); }
+
+  /* ── Edition three ──────────────────────────────────────── */
+  /* Section 2.2 primitives and section 3 shell surfaces. Colour rule: severity tones only on
+     severity data; status is outlined and shaped (good ■, warn ▲, bad ■ with a bar, idle □);
+     blue only for the crew. Every value is a token. */
+
+  /* Tone carrier: a mark, fill or ring reads var(--tone) from the nearest [data-tone]. */
+  [data-tone="critical"] { --tone: var(--critical-dot); --tone-ink: var(--critical); }
+  [data-tone="high"] { --tone: var(--high-dot); --tone-ink: var(--high); }
+  [data-tone="medium"] { --tone: var(--medium-dot); --tone-ink: var(--medium); }
+  [data-tone="low"], [data-tone="informational"] { --tone: var(--low-dot); --tone-ink: var(--fg-3); }
+  [data-tone="good"] { --tone: var(--good-dot); --tone-ink: var(--good); }
+  [data-tone="warn"] { --tone: var(--warn-dot); --tone-ink: var(--warn); }
+  [data-tone="bad"] { --tone: var(--bad-dot); --tone-ink: var(--bad); }
+  [data-tone="idle"] { --tone: var(--idle-dot); --tone-ink: var(--fg-3); }
+  [data-tone="running"] { --tone: var(--fg-2); --tone-ink: var(--fg-2); }
+  [data-tone="crew"] { --tone: var(--crew-dot); --tone-ink: var(--crew); }
+  [data-tone="human"] { --tone: var(--human); --tone-ink: var(--human); }
+  [data-tone="muted"] { --tone: var(--chart-muted); --tone-ink: var(--fg-3); }
+  [data-tone="neutral"] { --tone: var(--fg-3); --tone-ink: var(--fg-2); }
+  /* The neutral ramp, faint to strong in both themes: a share whose parts are an order, not a status. */
+  [data-tone="seq-1"] { --tone: var(--seq-1); --tone-ink: var(--fg-3); }
+  [data-tone="seq-2"] { --tone: var(--seq-2); --tone-ink: var(--fg-3); }
+  [data-tone="seq-3"] { --tone: var(--seq-3); --tone-ink: var(--fg-2); }
+  [data-tone="seq-4"] { --tone: var(--seq-4); --tone-ink: var(--fg-2); }
+  /* An fg-2 mark that is not running: a cited event. */
+  [data-tone="plain"] { --tone: var(--fg-2); --tone-ink: var(--fg-2); }
+  /* Shaped variants for an absence or a softer good: good hollow (explained), idle dashed (never
+     sent), idle hatched (no source, couldn't look). Marks, share segments and bar parts draw them. */
+  [data-tone="good-hollow"] { --tone: var(--good-dot); --tone-ink: var(--good); }
+  [data-tone="idle-dashed"], [data-tone="idle-hatched"] { --tone: var(--idle-dot); --tone-ink: var(--fg-3); }
+  :is(.sh-mark, .sh-share__seg i, .sh-timebar__bar i, .sh-meter__fill)[data-tone="good-hollow"] { background: transparent; box-shadow: inset 0 0 0 1px var(--good-dot); }
+  :is(.sh-mark, .sh-share__seg i, .sh-timebar__bar i, .sh-meter__fill)[data-tone="idle-dashed"] { background: transparent; outline: 1px dashed var(--idle-dot); outline-offset: -1px; }
+  :is(.sh-mark, .sh-share__seg i, .sh-timebar__bar i, .sh-meter__fill)[data-tone="idle-hatched"] { background: repeating-linear-gradient(135deg, var(--idle-dot) 0 1px, transparent 1px 3px); box-shadow: inset 0 0 0 1px var(--idle-dot); }
+
+  /* Status and severity marks: 6px, shaped so hue is never the only signal. */
+  .sh-mark { display: inline-block; flex-shrink: 0; width: 6px; height: 6px; border-radius: 1px; background: var(--tone, var(--idle-dot)); vertical-align: middle; }
+  .sh-mark[data-tone="warn"] { width: 8px; height: 7px; border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+  .sh-mark[data-tone="bad"] { width: 7px; height: 7px; background: linear-gradient(var(--bad-dot) 0 3px, transparent 3px 4px, var(--bad-dot) 4px); }
+  .sh-mark[data-tone="idle"] { background: transparent; box-shadow: inset 0 0 0 1px var(--idle-dot); }
+  .sh-mark[data-tone="running"] { animation: sh-pulse 1.2s ease-in-out infinite; }
+  .sh-mark--lg { width: 8px; height: 8px; }
+
+  [data-new] { animation: sh-flash var(--dur-flash) var(--ease); }
+  .sh-skip { position: fixed; left: var(--space-2); top: var(--space-2); z-index: var(--z-toast); padding: var(--space-1) var(--space-2); border-radius: var(--radius-1); background: var(--bg-float); font: var(--text-body); color: var(--fg-1); transform: translateY(-200%); }
+  /* The elevation only once it is on screen: off it, the 32px shadow would still reach into the top bar. */
+  .sh-skip:focus { transform: none; box-shadow: var(--elev-float); }
+  /* Inputs carry a 3:1 edge; hover darkens it rather than fading it to line-2. */
+  .sh-input, .sh-select { border-color: var(--line-3); }
+  .sh-input:hover, .sh-select:hover { border-color: var(--fg-4); }
+  .sh-input:focus-visible, .sh-select:focus-visible { border-color: var(--line-3); }
+  :is(.sh-table-wrap, .sh-dialog__body, .sh-layout__aside, .sh-palette__list, .sh-chat__log) :is(.sh-input, .sh-select):focus-visible { box-shadow: var(--focus-ring-inset); }
+  .sh-card .sh-code, .sh-dialog .sh-code { border: 0; }
+  .sh-badge svg { width: 10px; height: 10px; flex-shrink: 0; }
+  .sh-tab:focus-visible { box-shadow: var(--focus-ring-inset); outline-offset: -2px; border-radius: var(--radius-1); }
+
+  /* ── Strip: the state strip inside a page header ─────────── */
+  .sh-strip { display: flex; align-items: center; gap: var(--space-2) var(--space-6); min-height: var(--strip-h); min-width: 0; }
+  .sh-strip--alert { box-shadow: inset 2px 0 0 var(--bad-dot); padding-left: var(--space-3); }
+  .sh-strip__state { display: inline-flex; flex-shrink: 0; align-items: center; gap: var(--space-2); font: 600 13px/20px var(--font-sans); color: var(--fg-1); white-space: nowrap; }
+  .sh-strip__state[data-tone] { color: var(--tone-ink); }
+  /* The facts wrap rather than scroll, so a narrow strip never cuts one or clips a focus ring. */
+  .sh-strip__facts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-4); min-width: 0; }
+  .sh-strip__fact { display: inline-flex; flex-shrink: 0; align-items: baseline; gap: 6px; padding: 4px 6px; margin: 0 -6px; border: 1px solid transparent; border-radius: var(--radius-1); background: none; color: inherit; font: inherit; text-decoration: none; white-space: nowrap; transition: var(--transition-color); }
+  /* On a phone a fact of chips wraps inside itself, so no single fact is wider than the page. */
+  @media (max-width: 767px) { .sh-strip__fact { flex-wrap: wrap; flex-shrink: 1; min-width: 0; white-space: normal; } }
+  :is(a, button).sh-strip__fact { cursor: pointer; }
+  :is(a, button).sh-strip__fact:hover { background: var(--bg-2); }
+  .sh-strip__fact[aria-pressed="true"] { background: var(--bg-2); border-color: var(--line-2); }
+  .sh-strip__value { font: var(--text-fact); color: var(--fg-1); font-variant-numeric: tabular-nums; }
+  .sh-strip__value[data-tone] { color: var(--tone-ink); }
+  .sh-strip__label { font: var(--text-label); color: var(--fg-4); }
+  .sh-strip__viz { display: flex; flex: 0 1 240px; align-items: center; min-width: 120px; }
+  /* A wide chart takes the rest of the row (all of it under 1024px); stage steps wrap, and the clip hides the hairline that joins a stage starting a new line. */
+  .sh-strip__viz--wide { flex: 1 1 240px; flex-wrap: wrap; gap: 6px var(--space-4); min-width: 0; }
+  .sh-strip__viz--wide .sh-steps--stage { flex-wrap: wrap; row-gap: 6px; overflow: hidden; padding: 2px 0; }
+  .sh-strip__aside { display: flex; flex-shrink: 0; align-items: center; gap: var(--space-2); margin-left: auto; }
+  .sh-strip__stale { font: var(--text-mono); color: var(--warn); white-space: nowrap; }
+  @media (max-width: 1023px) { .sh-strip { flex-wrap: wrap; } .sh-strip__facts { order: 3; flex-basis: 100%; } .sh-strip__viz--wide { flex-basis: 100%; } }
+
+  /* ── Page header (changed) ──────────────────────────────── */
+  /* Badges never wrap or clip: one 18px line, and a badge that does not fit drops to a hidden second line. */
+  .sh-page__badges { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); height: 18px; overflow: hidden; }
+  /* On a phone the aside stays on the title's line while the title keeps 8rem, and the badges take the next line. */
+  @media (max-width: 767px) {
+    .sh-page__row { flex-wrap: wrap; row-gap: var(--space-2); }
+    .sh-page__title { flex: 1 1 8rem; }
+    .sh-page__badges { order: 1; flex-basis: 100%; }
+    .sh-page__actions { flex-shrink: 1; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+  }
+  .sh-page__crumbs .sh-copy { height: 20px; }
+
+  /* ── Segmented control ──────────────────────────────────── */
+  /* Never wider than its row: several counted options scroll inside it at 390px. */
+  .sh-seg { display: inline-flex; flex-shrink: 0; align-items: stretch; gap: 2px; height: 24px; max-width: 100%; padding: 2px; box-sizing: border-box; overflow-x: auto; scrollbar-width: none; border: var(--hairline); border-radius: var(--radius-1); background: var(--bg-2); }
+  .sh-seg--md { height: 32px; }
+  .sh-seg__item { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid transparent; border-radius: 3px; background: none; font: var(--text-small); color: var(--fg-3); white-space: nowrap; cursor: pointer; transition: var(--transition-color); }
+  .sh-seg--md .sh-seg__item { padding: 0 10px; font: var(--text-body); }
+  .sh-seg__item:hover { color: var(--fg-1); }
+  .sh-seg__item[aria-checked="true"] { background: var(--bg-1); color: var(--fg-1); border-color: var(--line-2); }
+  .sh-seg__item:disabled { pointer-events: none; color: var(--fg-disabled); }
+  .sh-seg__item:focus-visible { box-shadow: var(--focus-ring-inset); outline-offset: -2px; }
+  .sh-seg__count { font: var(--text-index); color: var(--fg-4); }
+
+  /* ── Chip and filter bar ────────────────────────────────── */
+  .sh-chip { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; height: 24px; max-width: 100%; padding: 0 8px; box-sizing: border-box; border: var(--hairline); border-radius: var(--radius-1); background: var(--bg-2); font: var(--text-small); color: var(--fg-2); white-space: nowrap; }
+  button.sh-chip { cursor: pointer; transition: var(--transition-color); }
+  button.sh-chip:hover { border-color: var(--line-2); color: var(--fg-1); }
+  button.sh-chip:disabled { pointer-events: none; }
+  button.sh-chip:disabled .sh-chip__value { color: var(--fg-4); }
+  .sh-chip__label { color: var(--fg-3); }
+  .sh-chip__value { min-width: 0; overflow: hidden; text-overflow: ellipsis; font: var(--text-mono); color: var(--fg-1); }
+  .sh-chip__count { font: var(--text-index); color: var(--fg-4); }
+  .sh-chip__remove { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-right: -4px; padding: 0; border: 0; border-radius: 2px; background: none; color: var(--fg-4); cursor: pointer; }
+  .sh-chip__remove:hover { background: var(--bg-3); color: var(--fg-1); }
+  .sh-chip__remove svg { width: 12px; height: 12px; }
+  .sh-chip--active { border-color: var(--line-2); color: var(--fg-1); }
+  .sh-chip--dashed { border-style: dashed; border-color: var(--line-2); background: transparent; color: var(--fg-3); }
+  .sh-chip--dashed .sh-chip__value { color: var(--fg-3); }
+  .sh-chip--struck .sh-chip__value, .sh-chip--struck .sh-chip__label { text-decoration: line-through; }
+  .sh-card__toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-height: 40px; padding: var(--space-1) var(--panel-pad); box-sizing: border-box; border-bottom: var(--hairline); }
+  .sh-filterbar__text { width: 240px; max-width: 100%; }
+  .sh-filterbar__gap { flex: 1 1 0; }
+  /* A scope switch (Open | Closed, Read | Unread) leads the row, before the text. */
+  .sh-filterbar > .sh-seg { order: -1; }
+  .sh-filterbar__clear { padding: 0; border: 0; background: none; font: var(--text-small); color: var(--fg-3); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--line-2); }
+  .sh-filterbar__clear:hover { color: var(--fg-1); }
+  /* A dimension's own menu content (the tactic cells) under Back and its heading. */
+  .sh-filterbar__menu { display: flex; flex-direction: column; gap: var(--space-1); }
+  .sh-filterbar__menu > :not(.sh-menu) { margin: 0 var(--space-2) var(--space-2); }
+
+  /* ── Popover, menu, confirm ─────────────────────────────── */
+  /* text-align resets what a right-aligned host (a row's ⋯ cell) would hand down. */
+  .sh-pop { position: fixed; inset: auto; margin: 0; padding: var(--space-1); min-width: 160px; max-width: min(360px, calc(100vw - 16px)); max-height: min(420px, calc(100dvh - 16px)); overflow: auto; box-sizing: border-box; border: 0; border-radius: var(--radius-2); background: var(--bg-float); box-shadow: var(--elev-float); color: var(--fg-2); font: var(--text-body); text-align: left; scrollbar-width: thin; }
+  .sh-pop:popover-open { animation: sh-enter var(--dur-3) var(--ease); }
+  .sh-pop--pad { padding: var(--space-3); }
+  .sh-menu { display: flex; flex-direction: column; min-width: 200px; }
+  .sh-menu__item { display: flex; align-items: center; gap: var(--space-2); width: 100%; height: var(--row-h-dense); padding: 0 var(--space-2); box-sizing: border-box; border: 0; border-radius: var(--radius-1); background: none; font: var(--text-body); color: var(--fg-2); text-align: left; text-decoration: none; white-space: nowrap; cursor: pointer; }
+  .sh-menu__item:hover, .sh-menu__item:focus-visible { background: var(--bg-3); color: var(--fg-1); box-shadow: none; }
+  .sh-menu__item svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--fg-4); }
+  .sh-menu__item[aria-disabled="true"] { pointer-events: none; color: var(--fg-disabled); }
+  .sh-menu__item--danger, .sh-menu__item--danger svg { color: var(--bad); }
+  .sh-menu__text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .sh-menu__meta { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .sh-menu__kbd, .sh-menu__count { flex-shrink: 0; margin-left: auto; font: var(--text-kbd); color: var(--fg-4); }
+  .sh-menu__item:is(:hover, :focus-visible) :is(.sh-menu__kbd, .sh-menu__count, .sh-menu__meta) { color: var(--fg-3); }
+  .sh-menu__count { font: var(--text-index); }
+  .sh-menu__check { display: inline-flex; width: 14px; flex-shrink: 0; justify-content: center; }
+  .sh-menu__check svg { color: var(--fg-1); }
+  .sh-menu__label { padding: var(--space-2) var(--space-2) var(--space-0-5); font: var(--text-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--fg-4); }
+  .sh-menu__sep { height: 1px; margin: var(--space-1) 0; border: 0; background: var(--line-1); }
+  .sh-confirm { display: flex; flex-direction: column; gap: var(--space-2); min-width: 260px; max-width: 360px; padding: var(--space-2); }
+  .sh-confirm__what { font: var(--text-mono); color: var(--fg-1); overflow-wrap: anywhere; }
+  .sh-confirm__facts { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  .sh-confirm__row { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); }
+  .sh-confirm[data-busy] .sh-confirm__cancel { pointer-events: none; }
+  .sh-confirm--inline { max-width: none; min-width: 0; padding: 0; }
+
+  /* ── Tooltip ────────────────────────────────────────────── */
+  .sh-tip { position: fixed; inset: auto; margin: 0; max-width: 240px; padding: var(--space-1) var(--space-2); box-sizing: border-box; border: 0; border-radius: var(--radius-1); background: var(--bg-float); box-shadow: var(--elev-float); font: var(--text-small); color: var(--fg-2); overflow-wrap: anywhere; pointer-events: none; }
+  .sh-tip:popover-open { display: flex; align-items: center; gap: var(--space-2); animation: sh-appear var(--dur-2) var(--ease); }
+  .sh-tip--mono { font: var(--text-mono); }
+  .sh-tip__kbd { flex-shrink: 0; padding: 0 4px; border: var(--hairline); border-radius: var(--radius-1); font: var(--text-kbd); color: var(--fg-4); }
+
+  /* ── Skeleton: appears after 150ms, no shimmer ──────────── */
+  .sh-skel { display: inline-block; width: 100%; height: 12px; border-radius: var(--radius-1); background: var(--bg-2); vertical-align: middle; opacity: 0; animation: sh-appear var(--dur-1) var(--ease) 150ms forwards; }
+  .sh-skel--text { width: 8em; height: 10px; }
+  .sh-skel--badge { width: 56px; height: 18px; }
+  .sh-skel--fact { width: 3ch; height: 16px; }
+  .sh-skel--block { display: block; height: 64px; }
+  .sh-skel--row { display: block; height: 10px; }
+  .sh-card .sh-skel, .sh-dialog .sh-skel { background: var(--bg-3); }
+
+  /* ── Meter, share, confidence ───────────────────────────── */
+  .sh-meter { display: inline-flex; align-items: center; gap: var(--space-2); min-width: 0; vertical-align: middle; }
+  .sh-meter__track { position: relative; display: flex; flex: 1; gap: 1px; min-width: 32px; height: 4px; border-radius: 1px; background: var(--bg-3); }
+  .sh-meter--md .sh-meter__track { height: 6px; }
+  .sh-meter__fill { height: 100%; border-radius: 1px; background: var(--tone, var(--fg-3)); }
+  .sh-meter__fill[data-tone="crew"] { background: var(--crew-bar); }
+  .sh-meter--stacked .sh-meter__fill { border-radius: 0; }
+  .sh-meter__mark { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--fg-2); }
+  .sh-meter__value { min-width: 4ch; font: var(--text-mono); color: var(--fg-2); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .sh-meter--badge { height: 18px; padding: 0 6px; box-sizing: border-box; border: var(--hairline); border-radius: var(--radius-1); background: var(--bg-2); gap: 6px; }
+  .sh-meter--badge .sh-meter__track { flex: none; width: 48px; }
+  .sh-meter--badge .sh-meter__value { font: var(--text-index); min-width: 3ch; }
+  .sh-share { display: flex; gap: 2px; width: 100%; min-width: 0; }
+  .sh-share__seg { display: flex; flex-direction: column; gap: 4px; min-width: 2px; padding: 0; overflow: hidden; border: 0; background: none; color: var(--fg-3); font: var(--text-micro); text-align: left; cursor: pointer; }
+  .sh-share__seg i { display: block; height: 8px; background: var(--tone, var(--chart-muted)); }
+  .sh-share__seg:first-child i { border-radius: 1px 0 0 1px; }
+  .sh-share__seg:last-child i { border-radius: 0 1px 1px 0; }
+  .sh-share__seg span { overflow: hidden; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .sh-share__seg:hover span { color: var(--fg-1); }
+  .sh-share__seg[aria-pressed="true"] i { box-shadow: 0 0 0 1px var(--fg-1); }
+  .sh-share__seg:focus-visible { box-shadow: none; }
+  .sh-share__seg:focus-visible i { box-shadow: 0 0 0 2px var(--focus); }
+  .sh-share__seg--static { cursor: default; }
+  .sh-share__seg--static:hover span { color: var(--fg-3); }
+  .sh-conf__seg i.on { background: var(--crew-bar); }
+
+  /* ── Time bar ───────────────────────────────────────────── */
+  .sh-timebar { position: relative; height: 32px; min-width: 0; user-select: none; touch-action: pan-y; }
+  .sh-timebar--bars { height: 64px; }
+  .sh-timebar--spark { height: 24px; }
+  .sh-timebar:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-1); }
+  .sh-timebar__plot { position: absolute; inset: 0 0 14px 0; }
+  .sh-timebar--spark .sh-timebar__plot { inset: 0; }
+  .sh-timebar__axis { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--line-3); }
+  .sh-timebar__tick { position: absolute; bottom: -14px; font: var(--text-micro); color: var(--fg-4); white-space: nowrap; transform: translateX(-50%); }
+  .sh-timebar__ymax { position: absolute; top: -2px; left: 0; font: var(--text-micro); color: var(--fg-4); text-align: right; font-variant-numeric: tabular-nums; }
+  .sh-timebar__mark { position: absolute; bottom: 3px; display: flex; align-items: center; justify-content: center; width: 12px; height: 12px; margin-left: -6px; padding: 0; border: 0; border-radius: 2px; background: none; color: var(--tone, var(--fg-3)); font: var(--text-micro); cursor: pointer; }
+  .sh-timebar__mark::before { content: ""; display: block; width: 8px; height: 8px; border-radius: 1px; background: var(--tone, var(--fg-3)); }
+  .sh-timebar__mark[data-kind="case"]::before { width: 9px; height: 8px; border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+  .sh-timebar__mark[data-kind="decision"]::before { width: 7px; height: 7px; transform: rotate(45deg); }
+  .sh-timebar__mark[data-kind="finding"]::before { width: 7px; height: 7px; border-radius: 50%; }
+  .sh-timebar__mark[data-kind="event"]::before { width: 1px; height: 10px; border-radius: 0; }
+  .sh-timebar__mark:is([data-kind="page"], [data-kind="closed"], [data-kind="undone"])::before { width: auto; height: auto; border-radius: 0; background: none; font: 600 12px/1 var(--font-mono); }
+  .sh-timebar__mark[data-kind="page"]::before { content: "⌁"; }
+  .sh-timebar__mark[data-kind="closed"]::before { content: "▽"; font-size: 10px; }
+  .sh-timebar__mark[data-kind="undone"]::before { content: "↺"; }
+  .sh-timebar__mark:hover, .sh-timebar__mark.is-hl, .sh-timebar__mark[data-active] { box-shadow: 0 0 0 1px var(--fg-1); }
+  .sh-timebar__mark:focus-visible { box-shadow: 0 0 0 2px var(--focus); }
+  .sh-timebar__mark[data-stack="over"] { bottom: 7px; }
+  .sh-timebar__mark[data-kind="event"][data-stack="under"]::before { height: 5px; margin-top: 5px; }
+  /* A merged mark's count, a badge on its upper right corner, so it reads as that mark's. */
+  .sh-timebar__count { position: absolute; top: -5px; left: calc(100% - 4px); min-width: 10px; padding: 0 2px; box-sizing: border-box; border-radius: 2px; background: var(--bg-3); font: var(--text-micro); color: var(--fg-2); text-align: center; pointer-events: none; }
+  /* One bar width on every chart: at most 8px, in the middle of its slot, which stays whole to hover and press. */
+  .sh-timebar__bar { position: absolute; bottom: 1px; display: flex; flex-direction: column-reverse; align-items: center; gap: 1px; min-height: 1px; padding: 0; border: 0; background: none; cursor: pointer; }
+  .sh-timebar__bar i { display: block; width: 100%; max-width: 8px; min-height: 1px; background: var(--tone, var(--chart-muted)); }
+  .sh-timebar__bar:hover i, .sh-timebar__bar[data-active] i { filter: brightness(1.15); }
+  .sh-timebar__bar[data-active] { box-shadow: 0 0 0 1px var(--fg-1); }
+  .sh-timebar__bar.is-empty i { background: var(--line-1); }
+  /* A shrunk stretch: the axis breaks between two slashes, its length sits in the tick row under it. */
+  .sh-timebar__gap { position: absolute; bottom: -4px; height: 9px; background: var(--bg-1); font: var(--text-micro); color: var(--fg-4); white-space: nowrap; }
+  .sh-timebar__gap::before, .sh-timebar__gap::after { content: ""; position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line-3); transform: skewX(-25deg); }
+  .sh-timebar__gap::before { left: 3px; }
+  .sh-timebar__gap::after { right: 3px; }
+  .sh-timebar__gap span { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); }
+  .sh-timebar__gap--warn { color: var(--warn); }
+  .sh-timebar__brush { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--line-2); border-right: 1px solid var(--line-2); background: var(--brush); pointer-events: none; }
+  .sh-timebar__cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line-3); pointer-events: none; }
+  /* The reading sits on the tick row, under the plot, so it never covers the strip above the chart. */
+  .sh-timebar__cursor span { position: absolute; top: 100%; left: 0; transform: translateX(-50%); padding: 1px 6px; border-radius: var(--radius-1); background: var(--bg-float); box-shadow: var(--elev-float); font: var(--text-micro); color: var(--fg-2); white-space: nowrap; z-index: 1; }
+  .sh-timebar--spark .sh-timebar__axis, .sh-timebar--spark .sh-timebar__tick { display: none; }
+
+  /* ── Avatar, presence, crew state ───────────────────────── */
+  .sh-avatar { position: relative; display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 20px; height: 20px; box-sizing: border-box; border: 1px solid var(--line-1); border-radius: var(--radius-1); background: transparent; font: var(--text-micro); letter-spacing: -0.02em; color: var(--fg-4); vertical-align: middle; }
+  .sh-avatar--16 { width: 16px; height: 16px; font-size: 9px; }
+  .sh-avatar--24 { width: 24px; height: 24px; }
+  .sh-avatar svg { width: 12px; height: 12px; }
+  .sh-avatar--16 svg { width: 10px; height: 10px; }
+  .sh-avatar--crew { border-color: var(--crew-line); background: var(--crew-fill); color: var(--crew); }
+  .sh-avatar--code { border: 1px dashed var(--crew-line); color: var(--crew); }
+  .sh-avatar--human { border-color: var(--human-line); color: var(--human); }
+  .sh-avatar--system { border: 1px dashed var(--line-2); color: var(--fg-3); }
+  .sh-avatar--external { border-color: var(--line-2); color: var(--fg-3); }
+  .sh-presence { position: absolute; right: -2px; bottom: -2px; width: 6px; height: 6px; box-sizing: border-box; border-radius: 1px; box-shadow: 0 0 0 1px var(--bg-1); }
+  .sh-presence--working { background: var(--crew-dot); animation: sh-pulse 1.2s ease-in-out infinite; }
+  .sh-presence--idle { border: 1px solid var(--idle-dot); background: var(--bg-1); }
+  .sh-presence--down { background: var(--bad-dot); }
+  .sh-avatar-stack { display: inline-flex; flex-shrink: 0; align-items: center; }
+  .sh-avatar-stack > .sh-avatar + .sh-avatar { margin-left: -4px; box-shadow: 0 0 0 1px var(--bg-1); }
+  .sh-avatar-stack__more { margin-left: 4px; font: var(--text-micro); color: var(--fg-4); }
+  .sh-live { display: inline-flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; }
+  .sh-live__glyph { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 16px; height: 16px; }
+  .sh-live__glyph::before { content: ""; width: 6px; height: 6px; box-sizing: border-box; border-radius: 1px; }
+  .sh-live--working .sh-live__glyph::before { background: var(--crew-dot); animation: sh-pulse 1.2s ease-in-out infinite; }
+  .sh-live--waiting .sh-live__glyph::before { width: 8px; height: 8px; border: 2px solid var(--crew-dot); }
+  .sh-live--stalled .sh-live__glyph::before { width: 9px; height: 8px; border-radius: 0; background: var(--warn-dot); clip-path: polygon(evenodd, 50% 0, 100% 100%, 0 100%, 50% 0, 50% 38%, 24% 84%, 76% 84%, 50% 38%); }
+  .sh-live--budget .sh-live__glyph::before { background: var(--warn-dot); }
+  /* Idle has no mark: the full variant drops the glyph, the row glyph keeps its empty 16px for the tip. */
+  .sh-live--idle .sh-live__glyph::before { content: none; }
+  .sh-live--idle:not(.sh-live--glyph) .sh-live__glyph { display: none; }
+  .sh-live__text { min-width: 0; overflow: hidden; text-overflow: ellipsis; font: var(--text-mono); color: var(--fg-3); }
+  .sh-live--working .sh-live__text, .sh-live--waiting .sh-live__text { color: var(--crew); }
+  .sh-live--stalled .sh-live__text, .sh-live--budget .sh-live__text { color: var(--warn); }
+
+  /* ── Trace: a crew discussion or a run, as rows that open a popup ── */
+  .sh-trace { position: relative; margin: 0; padding: 0; list-style: none; }
+  .sh-trace::before { content: ""; position: absolute; top: 0; bottom: 0; left: 11.5px; width: 1px; background: var(--line-1); }
+  .sh-trace__item { position: relative; }
+  .sh-trace__row { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; column-gap: var(--space-2); align-items: start; width: 100%; min-height: 32px; padding: 6px 0; box-sizing: border-box; border: 0; border-radius: var(--radius-1); background: none; color: inherit; font: var(--text-body); text-align: left; cursor: pointer; }
+  .sh-trace__row:hover { background: var(--bg-2); }
+  .sh-trace__row--static { cursor: default; }
+  .sh-trace__row--static:hover { background: none; }
+  .sh-trace__item[data-active] .sh-trace__row { background: var(--bg-2); box-shadow: inset 2px 0 0 var(--fg-1); }
+  .sh-trace__node { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; height: 20px; background: var(--bg-1); font: 600 12px/1 var(--font-mono); color: var(--tone-ink, var(--fg-3)); }
+  .sh-trace__head { display: flex; align-items: center; gap: var(--space-2); min-width: 0; min-height: 20px; }
+  .sh-trace__text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-2); }
+  .sh-trace__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-1); }
+  .sh-trace__meta { display: flex; align-items: center; gap: var(--space-1); padding-right: var(--space-1); font: var(--text-mono); line-height: 20px; color: var(--fg-4); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  button.sh-trace__row:hover .sh-trace__node, .sh-trace__item[data-active] .sh-trace__node { background: var(--bg-2); }
+  .sh-trace__round { position: relative; display: flex; align-items: center; gap: var(--space-2); height: 24px; padding-left: 32px; font: var(--text-label); letter-spacing: var(--tracking-label); color: var(--fg-4); }
+  .sh-trace__round::after { content: ""; flex: 1; height: 1px; background: var(--line-1); }
+  .sh-trace__item--human .sh-trace__node { color: var(--human); }
+  .sh-trace__item--error .sh-trace__node, .sh-trace__item--error .sh-trace__text { color: var(--bad); }
+  .sh-trace__item--pending .sh-trace__text { color: var(--fg-3); }
+  .sh-trace__item--dead .sh-trace__node, .sh-trace__item--dead .sh-trace__text { color: var(--fg-4); text-decoration: line-through; }
+
+  /* ── Approval card and countdown ────────────────────────── */
+  .sh-approval { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--crew-line); border-left: 2px solid var(--crew-bar); border-radius: var(--radius-2); background: var(--crew-fill); }
+  .sh-approval__head { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+  .sh-approval__title { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--text-card-title); color: var(--fg-1); }
+  .sh-approval__facts { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  .sh-approval__deadline { display: inline-flex; flex-shrink: 0; align-items: center; gap: var(--space-2); font: var(--text-mono); color: var(--fg-3); white-space: nowrap; }
+  .sh-approval__deadline svg { width: 12px; height: 12px; color: var(--crew); }
+  .sh-approval__resumes { font: var(--text-mono); color: var(--fg-4); }
+  .sh-approval__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+  .sh-approval__actions { display: flex; flex-shrink: 0; align-items: center; gap: var(--space-2); margin-left: auto; }
+  .sh-approval__settled { margin-left: auto; font: var(--text-mono); color: var(--fg-3); white-space: nowrap; }
+  .sh-approval--compact { flex-direction: row; align-items: center; gap: var(--space-3); height: 40px; padding: 0 var(--space-3); border: 0; border-bottom: var(--hairline); border-radius: 0; background: transparent; box-shadow: inset 2px 0 0 var(--crew-bar); }
+  .sh-approval--compact:hover { background: var(--bg-2); }
+  .sh-approval--compact .sh-approval__head { flex: 1; }
+  .sh-approval--compact[data-active] { background: var(--bg-2); box-shadow: inset 2px 0 0 var(--fg-1); }
+  .sh-approval--settled { border-color: var(--line-1); border-left-color: var(--line-2); background: var(--bg-1); }
+  .sh-approval--compact.sh-approval--settled { background: transparent; box-shadow: inset 2px 0 0 var(--line-2); }
+  .sh-approval--busy .sh-approval__actions { pointer-events: none; }
+  /* On a phone a compact row is two lines, the deadline under the name, and the ApprovalDialog's sheet decides. */
+  @media (max-width: 767px) {
+    .sh-approval--compact { flex-wrap: wrap; height: auto; row-gap: var(--space-1); padding-block: var(--space-2); }
+    .sh-approval--compact .sh-approval__actions { display: none; }
+    .sh-approval--compact .sh-approval__deadline { flex-basis: 100%; padding-left: calc(14px + var(--space-3)); }
+    /* The full card (the decide sheet) names the action on its own line, up to two, the target and severity under it. */
+    .sh-approval:not(.sh-approval--compact) > .sh-approval__head { flex-wrap: wrap; row-gap: var(--space-1); }
+    .sh-approval:not(.sh-approval--compact) > .sh-approval__head > .sh-approval__title { flex-basis: 100%; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+  }
+  /*
+   * The Overview inbox: every row is glyph, badge, name, time, button. From
+   * 768px the list is a grid and each row (an approval card too) a subgrid of
+   * it, so names start and times end on one edge; the badge column fits the
+   * widest badge and an approval's countdown sits in the time column. Under
+   * 1024px the countdown drops under the name, so the name keeps its room
+   * beside Approve and Reject. The name is one 20px line that wraps and clips:
+   * the target chip stays on it only while the words leave it 88px. An
+   * approval's name has the body weight of every other row's.
+   */
+  .sh-inbox .sh-approval__title { font-weight: 400; }
+  .sh-inbox .sh-approval__head { height: 20px; flex-wrap: wrap; overflow: hidden; }
+  .sh-inbox .sh-approval__head > .sh-entity { flex-grow: 1; flex-basis: 88px; max-width: max-content; }
+  @media (min-width: 768px) {
+    .sh-inbox { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; column-gap: var(--space-3); }
+    .sh-inbox .sh-approval--compact { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+    .sh-inbox .sh-approval--compact > .sh-badge { justify-self: start; }
+    .sh-inbox .sh-approval--compact .sh-approval__head { grid-column-start: 3; }
+    .sh-inbox .sh-approval--compact > :last-child { grid-column-start: 5; justify-self: end; }
+  }
+  @media (min-width: 1024px) { .sh-inbox .sh-approval__deadline { grid-column-start: 4; justify-self: end; } }
+  @media (max-width: 1023px) { .sh-inbox .sh-approval--compact { height: auto; row-gap: var(--space-1); padding-block: var(--space-2); } }
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .sh-inbox .sh-approval__head { height: auto; row-gap: var(--space-1); }
+    .sh-inbox .sh-approval__deadline { grid-column: 3 / -1; grid-row-start: 2; }
+  }
+  /* The dialog's phone sheet: 48px Reject | Approve held at its foot, and the confirm in their place while it asks. */
+  .sh-approval__pair { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--space-2); padding-top: var(--space-2); background: var(--bg-float); box-shadow: 0 var(--space-3) 0 var(--bg-float); }
+  .sh-approval__pair > .sh-btn, .sh-approval__pair .sh-confirm__row .sh-btn { flex: 1; height: 48px; }
+  .sh-approval__pair .sh-confirm { flex: 1; }
+  .sh-countdown { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; font: var(--text-mono); color: var(--fg-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .sh-countdown__bar { width: 32px; height: 3px; border-radius: 1px; background: var(--bg-3); overflow: hidden; }
+  .sh-countdown__bar i { display: block; height: 100%; background: var(--tone, var(--fg-3)); }
+  .sh-countdown[data-tone="warn"], .sh-countdown[data-tone="bad"] { color: var(--tone-ink); }
+  .sh-countdown[data-tone="idle"] { color: var(--fg-4); }
+
+  /* ── Graph: SVG, pixels from a ResizeObserver ───────────── */
+  .sh-graph { --graph-ground: var(--bg-1); position: relative; width: 100%; min-width: 0; overflow: auto hidden; }
+  .sh-graph svg:focus { outline: none; }
+  :is(.sh-dialog, .sh-pop) .sh-graph { --graph-ground: var(--bg-float); }
+  .sh-graph svg { display: block; overflow: visible; }
+  .sh-graph__lane { font: var(--text-micro); letter-spacing: var(--tracking-label); fill: var(--fg-4); }
+  .sh-graph__edge { fill: none; stroke: var(--line-3); }
+  /* Labels sit on the edges they cross with a halo in the ground colour. */
+  .sh-graph__edge-label, .sh-graph__label { paint-order: stroke; stroke: var(--graph-ground); stroke-width: 6px; stroke-linejoin: round; }
+  .sh-graph__edge-label { font: var(--text-micro); fill: var(--fg-4); }
+  .sh-graph__node { cursor: pointer; color: var(--fg-2); }
+  .sh-graph__box { fill: var(--bg-2); stroke: var(--line-3); stroke-width: 1; }
+  .sh-graph__node:hover .sh-graph__box { fill: var(--bg-3); }
+  .sh-graph__node:focus-visible .sh-graph__box { stroke: var(--focus); stroke-width: 2; }
+  .sh-graph__node--focus .sh-graph__box { stroke: var(--fg-1); stroke-width: 2; }
+  .sh-graph__node[data-tone] .sh-graph__box { stroke: var(--tone); stroke-width: 1.5; }
+  .sh-graph__node--ghost { color: var(--fg-4); }
+  .sh-graph__node--ghost .sh-graph__box { fill: transparent; stroke-dasharray: 3 2; }
+  .sh-graph__label { font: var(--text-micro); fill: var(--fg-3); }
+  .sh-graph__ring { fill: none; stroke: var(--tone, var(--line-3)); stroke-width: 2; }
+  .sh-graph__ring--done { stroke: var(--good-dot); }
+  .sh-graph__ring--planned { stroke: var(--good-dot); stroke-dasharray: 3 2; }
+  .sh-graph__ring--undone { stroke: var(--idle-dot); stroke-dasharray: 3 2; }
+  .sh-graph__ring--pending { stroke: var(--crew-dot); animation: sh-pulse 1.2s ease-in-out infinite; }
+  .sh-graph__more { font: var(--text-micro); fill: var(--fg-3); cursor: pointer; }
+  .sh-graph__more:hover { fill: var(--fg-1); }
+  .sh-graph__more:focus-visible { fill: var(--fg-1); text-decoration: underline; outline: none; }
+  .sh-graph .is-dim { opacity: 0.3; }
+  .sh-graph .is-hl .sh-graph__box { stroke: var(--fg-1); stroke-width: 2; }
+
+  /* ── Entity chip ────────────────────────────────────────── */
+  .sh-entity { display: inline-flex; flex-shrink: 1; align-items: center; gap: 4px; height: 20px; min-width: 0; max-width: 100%; padding: 0 6px; box-sizing: border-box; border: var(--hairline); border-radius: var(--radius-1); background: var(--bg-2); font: var(--text-mono); color: var(--fg-1); white-space: nowrap; vertical-align: middle; }
+  .sh-entity svg { width: 12px; height: 12px; flex-shrink: 0; color: var(--fg-4); }
+  .sh-entity__value { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .sh-entity--button { cursor: pointer; transition: var(--transition-color); }
+  .sh-entity--button:hover { border-color: var(--line-2); background: var(--bg-3); }
+
+  /* ── Timeline (changed): day rows, HH:MM:SS, avatar, one end slot ── */
+  .sh-tl li.sh-tl__day, .sh-tl li.sh-tl__gap, .sh-tl li.sh-tl__new, .sh-tl li.sh-tl__item { display: block; grid-column: 1 / -1; }
+  .sh-tl__day { position: sticky; top: var(--sticky-top, 0); z-index: 1; display: flex; align-items: center; height: 24px; padding-left: var(--space-1); background: var(--bg-1); font: var(--text-mono); color: var(--fg-3); }
+  .sh-tl li.sh-tl__day { display: flex; }
+  /* The row button and its end slot sit side by side in the item, so an E-chip at the end is a button of its own. */
+  .sh-tl li.sh-tl__item { display: flex; align-items: center; border-radius: var(--radius-1); }
+  .sh-tl__row { display: grid; flex: 1; grid-template-columns: var(--tl-time-w) 12px 20px minmax(0, 1fr); column-gap: var(--space-2); align-items: center; min-width: 0; min-height: 28px; padding: 0; box-sizing: border-box; border: 0; border-radius: var(--radius-1); background: none; color: var(--fg-2); font: var(--text-body); text-align: left; cursor: pointer; }
+  .sh-tl li.sh-tl__item:hover { background: var(--bg-2); }
+  .sh-tl__time { padding-left: var(--space-1); font: var(--text-mono); color: var(--fg-4); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .sh-tl__mark { position: relative; align-self: stretch; }
+  .sh-tl__mark::before { content: ""; position: absolute; top: 0; bottom: 0; left: 5.5px; width: 1px; background: var(--line-1); }
+  .sh-tl__mark .sh-tl__dot { left: 2px; top: 50%; margin-top: -4px; width: 8px; height: 8px; }
+  .sh-tl__dot--event { border-color: var(--fg-4); background: var(--bg-1); }
+  .sh-tl__dot--cited { border-color: var(--crew-dot); background: var(--bg-1); }
+  .sh-tl__dot--extended { border-style: dashed; border-color: var(--fg-4); background: var(--bg-1); }
+  .sh-tl__dot--finding { border-color: var(--tone, var(--fg-3)); background: var(--tone, var(--fg-3)); border-radius: 50%; }
+  .sh-tl__dot--system { border-style: dashed; border-color: var(--idle-dot); background: var(--bg-1); }
+  .sh-tl__dot--done { border-color: var(--good-dot); background: var(--good-dot); }
+  .sh-tl__dot--failed { border-color: var(--bad-dot); background: var(--bad-dot); }
+  .sh-tl__dot--undone { border-color: var(--idle-dot); background: var(--bg-1); }
+  .sh-tl__dot--crew { border-color: var(--crew-dot); background: var(--crew-dot); }
+  .sh-tl__dot--human { border-color: var(--human); background: var(--human); }
+  .sh-tl__what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sh-tl__end { display: flex; flex-shrink: 0; align-items: center; gap: var(--space-1); padding: 0 var(--space-1) 0 var(--space-2); }
+  .sh-tl__count { margin-left: 6px; font: var(--text-mono); color: var(--fg-4); }
+  .sh-tl__gap { height: 12px; padding-left: calc(var(--tl-time-w) + var(--space-2) + 12px + var(--space-2)); font: var(--text-micro); line-height: 12px; color: var(--fg-4); }
+  .sh-tl__gap--warn { color: var(--warn); }
+  .sh-tl__new { height: 16px; }
+  .sh-tl li.sh-tl__new { display: flex; align-items: center; gap: var(--space-2); font: var(--text-micro); color: var(--fg-3); }
+  .sh-tl li.sh-tl__new::after { content: ""; flex: 1; height: 1px; background: var(--line-2); }
+  .sh-tl li.sh-tl__item:is([data-active], :has(> .sh-tl__row[data-active])) { background: var(--bg-2); box-shadow: inset 2px 0 0 var(--fg-1); }
+  .sh-tl li.sh-tl__item.is-hl { background: var(--bg-2); }
+  .sh-tl li.is-out { display: none; }
+  .sh-tl--feed .sh-tl__row { grid-template-columns: var(--tl-time-w) 20px minmax(0, 1fr); }
+  @media (max-width: 767px) { .sh-tl { --tl-time-w: 40px; } }
+
+  /* ── Tactics ────────────────────────────────────────────── */
+  .sh-tactics { display: inline-grid; grid-template-columns: repeat(14, 24px); gap: 2px; }
+  .sh-tactics__cell { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; box-sizing: border-box; border: var(--hairline); border-radius: 2px; background: transparent; font: var(--text-micro); color: var(--fg-4); }
+  .sh-tactics__cell[data-level="1"] { border-color: transparent; background: var(--seq-1); color: var(--fg-2); }
+  .sh-tactics__cell[data-level="2"] { border-color: transparent; background: var(--seq-2); color: var(--fg-1); }
+  .sh-tactics__cell[data-level="3"] { border-color: transparent; background: var(--seq-3); color: var(--fg-1); }
+  .sh-tactics__cell[data-level="4"] { border-color: transparent; background: var(--seq-4); color: var(--on-light); }
+  button.sh-tactics__cell { cursor: pointer; }
+  button.sh-tactics__cell:hover { border-color: var(--line-3); }
+  .sh-tactics__cell[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--fg-1); }
+  .sh-tactics__list { display: flex; flex-direction: column; gap: 2px; margin: var(--space-1) 0 0; padding: 0; list-style: none; font: var(--text-mono); }
+  /* 14 × 20px and 1px gaps: 293px, inside a 320px aside. */
+  .sh-tactics--compact { grid-template-columns: repeat(14, 20px); gap: 1px; }
+  .sh-tactics--compact .sh-tactics__cell { width: 20px; height: 20px; }
+  /* On a phone the fourteen share the row instead of running past it. */
+  @media (max-width: 767px) {
+    .sh-tactics { grid-template-columns: repeat(14, minmax(0, 24px)); max-width: 100%; }
+    .sh-tactics > .sh-tactics__cell { width: auto; height: auto; aspect-ratio: 1; }
+  }
+
+  /* ── Steps ──────────────────────────────────────────────── */
+  .sh-steps { display: flex; align-items: flex-start; margin: 0; padding: 0; list-style: none; min-width: 0; }
+  .sh-steps__step { position: relative; display: flex; flex: 1; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+  .sh-steps__step::before { content: ""; position: absolute; top: 4px; right: calc(50% + 7px); left: calc(-50% + 7px); height: 1px; background: var(--line-2); }
+  .sh-steps__step:first-child::before { display: none; }
+  .sh-steps--interactive:not(.sh-steps--vertical) .sh-steps__step::before { top: 6px; }
+  /* Above the connectors; hollow dots take the panel ground so a connector never shows through. */
+  .sh-steps__dot { position: relative; z-index: 1; width: 9px; height: 9px; flex-shrink: 0; box-sizing: border-box; border: 1px solid var(--line-3); border-radius: 2px; background: var(--bg-1); }
+  .sh-steps__step[data-state="done"] .sh-steps__dot { border-color: var(--good-dot); background: var(--good-dot); }
+  .sh-steps__step[data-state="current"] .sh-steps__dot { border-color: var(--fg-1); background: var(--fg-1); }
+  .sh-steps__step[data-state="running"] .sh-steps__dot { border-color: var(--fg-1); background: var(--fg-1); animation: sh-pulse 1.2s ease-in-out infinite; }
+  .sh-steps__step[data-state="waiting"] .sh-steps__dot { border: 2px solid var(--human); }
+  .sh-steps__step[data-state="failed"] .sh-steps__dot { border-color: var(--bad-dot); background: var(--bad-dot); }
+  .sh-steps__step[data-state="skipped"] .sh-steps__dot, .sh-steps__step[data-optional] .sh-steps__dot { border-style: dashed; }
+  .sh-steps__step[data-state="always"] .sh-steps__dot { border-color: var(--fg-3); background: var(--fg-3); }
+  .sh-steps__icon { display: inline-flex; flex-shrink: 0; align-items: center; width: 16px; height: 16px; color: var(--fg-4); }
+  .sh-steps__icon :is(svg, img) { width: 14px; height: 14px; }
+  .sh-steps__label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--text-micro); color: var(--fg-3); }
+  .sh-steps__step[data-state="current"] .sh-steps__label, .sh-steps__step[data-state="running"] .sh-steps__label { color: var(--fg-1); }
+  .sh-steps__step[data-state="failed"] .sh-steps__label { color: var(--bad); }
+  .sh-steps__value { font: var(--text-mono); color: var(--fg-2); font-variant-numeric: tabular-nums; }
+  .sh-steps__body { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; max-width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; }
+  button.sh-steps__body { padding: 2px 4px; border-radius: var(--radius-1); cursor: pointer; }
+  button.sh-steps__body:hover { background: var(--bg-2); }
+  .sh-steps--vertical { flex-direction: column; align-items: stretch; }
+  .sh-steps--vertical .sh-steps__step { flex-direction: row; align-items: center; gap: var(--space-2); min-height: 28px; }
+  .sh-steps--vertical .sh-steps__step::before { top: -14px; bottom: auto; left: 4px; right: auto; width: 1px; height: 28px; }
+  .sh-steps--vertical .sh-steps__label { font: var(--text-body); color: var(--fg-2); }
+  .sh-steps--vertical .sh-steps__value { margin-left: auto; }
+  .sh-steps--vertical .sh-steps__body { flex-direction: row; gap: var(--space-2); width: 100%; }
+  /* A button body is padded 4px, so the joining line moves with the dot. */
+  .sh-steps--vertical.sh-steps--interactive .sh-steps__step::before { left: 8px; }
+  .sh-steps--stage .sh-steps__body { flex-direction: row; gap: 6px; }
+  .sh-steps--progress { display: inline-flex; align-items: center; gap: 6px; font: var(--text-mono); color: var(--fg-3); font-variant-numeric: tabular-nums; }
+  .sh-steps--progress .sh-meter__track { width: 48px; flex: none; }
+  .sh-steps--stage { align-items: center; gap: var(--space-4); }
+  .sh-steps--stage .sh-steps__step { flex: none; flex-direction: row; align-items: center; gap: 6px; height: 28px; padding: 0 var(--space-2); border: var(--hairline); border-radius: var(--radius-1); }
+  .sh-steps--stage .sh-steps__step::before { top: 50%; left: calc(-1 * var(--space-4) - 1px); right: auto; width: var(--space-4); }
+  .sh-steps--stage .sh-steps__label { font: var(--text-small); color: var(--fg-2); }
+
+  /* ── Status, autonomy, banner ───────────────────────────── */
+  .sh-status { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; font: var(--text-mono); color: var(--fg-3); white-space: nowrap; }
+  .sh-status[data-tone="warn"], .sh-status[data-tone="bad"], .sh-status[data-tone="crew"] { color: var(--tone-ink); }
+  .sh-status--badge { height: 18px; padding: 0 6px; box-sizing: border-box; border: 1px solid var(--line-2); border-radius: var(--radius-1); font: var(--text-label); letter-spacing: 0.02em; }
+  .sh-status--badge[data-tone="good"] { border-color: var(--good-line); color: var(--good); }
+  .sh-status--badge[data-tone="warn"] { border-color: var(--warn-line); }
+  .sh-status--badge[data-tone="bad"] { border-color: var(--bad-line); }
+  .sh-status--badge[data-tone="crew"] { border-color: var(--crew-line); }
+  .sh-status--badge[data-tone="idle-dashed"] { border-style: dashed; }
+  .sh-auto--l0 { border-color: var(--line-1); background: transparent; color: var(--fg-4); }
+  .sh-auto--l1 { border-color: var(--line-2); background: var(--bg-2); color: var(--fg-2); }
+  .sh-auto--l2 { border-color: var(--human-line); background: transparent; color: var(--human); }
+  .sh-banner { display: flex; align-items: center; gap: var(--space-2); height: 32px; padding: 0 var(--space-4); box-sizing: border-box; border-bottom: 1px solid var(--warn-line); background: var(--warn-fill); font: var(--text-body); color: var(--warn); }
+  .sh-banner--bad { border-bottom-color: var(--bad-line); background: var(--bad-fill); color: var(--bad); }
+  .sh-banner svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .sh-banner__text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sh-banner__action { flex-shrink: 0; padding: 0; border: 0; background: none; font: var(--text-button); color: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+  .sh-banner__close { flex-shrink: 0; display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: var(--radius-1); background: none; color: inherit; cursor: pointer; }
+
+  /* ── Quote, field, copy, pivots ─────────────────────────── */
+  .sh-quote { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; margin: 0; padding-left: var(--space-3); border-left: 2px solid var(--line-2); }
+  .sh-quote--crew { border-left-color: var(--crew-line); }
+  .sh-quote__text { max-height: 240px; margin: 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: var(--text-body); color: var(--fg-2); scrollbar-width: thin; }
+  .sh-quote--crew:has(.sh-prose) { padding: var(--space-2) var(--space-3); border-radius: 0 var(--radius-1) var(--radius-1) 0; border-left-color: var(--crew-bar); background: var(--crew-fill); }
+  .sh-quote__text:has(> .sh-prose) { max-height: none; overflow: visible; white-space: normal; color: var(--fg-1); }
+  .sh-quote__text > .sh-prose { max-width: 72ch; }
+  .sh-prose :is(p, ul, ol) { margin: 0 0 var(--space-3); }
+  .sh-prose :is(p, ul, ol):last-child { margin-bottom: 0; }
+  .sh-prose :is(ul, ol) { padding-left: var(--space-4); }
+  .sh-prose ul { list-style: disc; }
+  .sh-prose ol { list-style: decimal; }
+  .sh-prose code { padding: 0 3px; border-radius: 2px; background: var(--bg-2); font: var(--text-mono); }
+  .sh-prose strong { font-weight: 600; color: var(--fg-1); }
+  .sh-prose .sh-entity { vertical-align: -4px; }
+  .sh-quote__by { display: flex; align-items: center; gap: 6px; min-width: 0; font: var(--text-mono); color: var(--fg-4); }
+  .sh-quote__by b { font-weight: 400; color: var(--fg-2); }
+  .sh-field__error { font: var(--text-small); color: var(--bad); }
+  .sh-field--error .sh-input, .sh-field--error .sh-select { border-color: var(--bad-line); }
+  .sh-field__row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+  .sh-copy { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; height: 24px; padding: 0 6px; box-sizing: border-box; border: var(--hairline); border-radius: var(--radius-1); background: var(--bg-0); font: var(--text-mono); color: var(--fg-1); text-align: left; cursor: copy; }
+  .sh-copy:hover { border-color: var(--line-2); }
+  .sh-copy__value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; user-select: all; }
+  .sh-copy--block { display: flex; align-items: flex-start; width: 100%; height: auto; padding: var(--space-2) var(--space-3); }
+  .sh-copy--block .sh-copy__value { flex: 1; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .sh-copy__done { flex-shrink: 0; margin-left: auto; font: var(--text-micro); color: var(--fg-3); }
+  .sh-copy__icon { width: 12px; height: 12px; flex-shrink: 0; color: var(--fg-4); }
+  .sh-copy--block .sh-copy__icon { margin-top: 3px; }
+  .sh-fields dd { gap: var(--space-2); }
+  .sh-fields__pivot { display: inline-flex; flex-shrink: 0; gap: 2px; margin-left: auto; opacity: 0; transition: opacity var(--dur-1) var(--ease); }
+  .sh-fields dd:hover .sh-fields__pivot, .sh-fields dd:focus-within .sh-fields__pivot { opacity: 1; }
+  .sh-fields__pivot button { display: inline-flex; width: 20px; height: 20px; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: var(--radius-1); background: none; font: var(--text-mono); color: var(--fg-4); cursor: pointer; }
+  .sh-fields__pivot button:hover { background: var(--bg-3); color: var(--fg-1); }
+  .sh-fields__pivot svg { width: 12px; height: 12px; }
+
+  /* ── Layouts ────────────────────────────────────────────── */
+  .sh-layout--aside { display: grid; grid-template-columns: minmax(0, 1fr) var(--aside-w); gap: var(--space-6); align-items: start; }
+  .sh-layout--rail { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+  .sh-layout__main { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+  .sh-layout__aside { position: sticky; top: calc(var(--topbar-h) + var(--space-4)); display: flex; flex-direction: column; gap: var(--space-4); max-height: calc(100dvh - var(--topbar-h) - var(--space-8)); min-width: 0; overflow-y: auto; scrollbar-width: thin; }
+  @media (max-width: 1023px) { .sh-layout--aside, .sh-layout--rail { grid-template-columns: minmax(0, 1fr); } .sh-layout__aside { position: static; max-height: none; } }
+
+  /* ── New pill, charts ───────────────────────────────────── */
+  .sh-newpill { position: sticky; top: calc(var(--sticky-top, 0px) + var(--space-2)); z-index: var(--z-sticky); display: flex; align-items: center; gap: 6px; width: max-content; height: 24px; margin: 0 auto; padding: 0 var(--space-3); border: 1px solid var(--line-2); border-radius: var(--radius-1); background: var(--bg-float); box-shadow: var(--elev-float); font: var(--text-mono); color: var(--fg-1); cursor: pointer; animation: sh-enter var(--dur-3) var(--ease); }
+  .sh-newpill--crew { border-color: var(--crew-line); background: var(--crew-fill); color: var(--crew); }
+  .sh-barlist { display: grid; grid-template-columns: minmax(0, max-content) minmax(48px, 1fr) max-content; align-items: center; column-gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+  .sh-barlist li { display: contents; }
+  .sh-barlist__label { max-width: 200px; height: 24px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--text-mono); line-height: 24px; color: var(--fg-3); }
+  button.sh-barlist__label { padding: 0; border: 0; background: none; text-align: left; cursor: pointer; }
+  button.sh-barlist__label:hover { color: var(--fg-1); }
+  .sh-barlist__track { height: 6px; overflow: hidden; border-radius: 1px; background: var(--bg-3); }
+  .sh-barlist__fill { display: block; height: 100%; background: var(--tone, var(--fg-3)); }
+  .sh-barlist__value { font: var(--text-mono); color: var(--fg-2); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ── Table (changed) ────────────────────────────────────── */
+  .sh-table thead th { position: sticky; top: 0; z-index: 1; }
+  .sh-table-wrap--bounded { max-height: var(--table-max, 480px); overflow-y: auto; }
+  .sh-table tbody tr[data-active], .sh-table tbody tr.is-link:focus-visible { background: var(--bg-2); box-shadow: none; }
+  .sh-table tbody tr[data-active] > td:first-child { box-shadow: inset 2px 0 0 var(--fg-1); }
+  .sh-table tbody tr.is-link:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+  /* The floating launcher sits over the right edge of the page: the last column keeps clear of it. */
+  .sh-shell__page { --launcher-room: 40px; }
+  :is(.sh-dialog, .sh-pop, .sh-chat) { --launcher-room: 0px; }
+  /* What sticks on the scrolled page (a day row, the new pill) sticks under the 48px top bar; inside a scroll box, at its top. */
+  .sh-shell__page { --sticky-top: var(--topbar-h); }
+  /* J and K scroll a row "nearest": it stops above the chat launcher, not under it. */
+  html { scroll-padding-bottom: calc(var(--bar-h) + var(--space-4)); }
+  :is(.sh-dialog__body, .sh-pop, .sh-chat, .sh-layout__aside, .sh-table-wrap, .overflow-y-auto, .overflow-auto) { --sticky-top: 0px; }
+  .sh-table :is(th, td):last-child { padding-right: calc(var(--cell-pad-x) + var(--launcher-room, 0px)); }
+  .sh-tl__end { padding-right: calc(var(--space-1) + var(--launcher-room, 0px)); }
+  .sh-trace__meta { padding-right: calc(var(--space-1) + var(--launcher-room, 0px)); }
+  .sh-pager { padding-right: calc(var(--panel-pad) + var(--launcher-room, 0px)); }
+  @media (max-width: 767px) {
+    .sh-shell__page { --launcher-room: 0px; }
+    /* A row's status badge whose mark has a shape of its own keeps the mark and drops the word, so the name keeps the room; idle marks all look alike, so they keep their word. */
+    :is(.sh-table td, .sh-tl__end) .sh-status--badge:is([data-tone="good"], [data-tone="warn"], [data-tone="bad"], [data-tone="running"]) { gap: 0; padding: 0; border: 0; font-size: 0; }
+    /* A row that wraps to two lines keeps an inset from the hairlines. */
+    .sh-table td { padding-block: 6px; }
+  }
+  .sh-table tbody tr.is-new { animation: sh-flash var(--dur-flash) var(--ease); }
+  /* Room before a narrow panel scrolls sideways; the hide:"md" columns stop counting once they are gone. */
+  .sh-table { min-width: var(--table-min, 0); }
+  @media (max-width: 1023px) { .sh-table { min-width: var(--table-min-md, var(--table-min, 0)); } }
+  .sh-table--fit { table-layout: auto; }
+  .sh-table--fit .is-fit { width: 1px; }
+  .sh-table--fit td.is-free { width: 100%; max-width: 0; }
+  .sh-table td.is-fit .sh-cell { overflow: visible; }
+  .sh-table td.is-menu { padding: 0 var(--space-1); text-align: right; }
+  .sh-table tr.is-skel:hover { background: none; }
+  .sh-table tbody tr.is-empty td { height: auto; padding: 0; }
+  @media (max-width: 1023px) { .sh-table .is-hide-md { display: none; } .sh-table tbody tr[data-active] > td.is-hide-md:first-child + td { box-shadow: inset 2px 0 0 var(--fg-1); } }
+
+  /* ── Shell (section 3) ──────────────────────────────────── */
+  .sh-shell { --rail-current: var(--rail-w); }
+  .sh-shell--collapsed { grid-template-columns: var(--rail-w-collapsed) minmax(0, 1fr); --rail-current: var(--rail-w-collapsed); }
+  .sh-shell__banner { grid-column: 2; }
+  /* Three rows: the top bar, a banner row that is empty unless a banner applies, the page. */
+  .sh-shell { grid-template-rows: var(--topbar-h) auto minmax(0, 1fr); }
+  .sh-shell__brand, .sh-shell__top { grid-row: 1; position: sticky; top: 0; z-index: var(--z-sticky); background: var(--bg-0); }
+  .sh-shell__brand { min-width: 0; overflow: hidden; }
+  .sh-shell--collapsed .sh-shell__brand { justify-content: center; padding: 0; }
+  .sh-shell--collapsed .sh-shell__brand span { display: none; }
+  .sh-shell__rail { grid-row: 2 / span 2; position: sticky; top: var(--topbar-h); align-self: start; display: flex; flex-direction: column; height: calc(100dvh - var(--topbar-h)); overflow-y: auto; scrollbar-width: thin; }
+  .sh-shell__rail .sh-nav:first-child { flex: 1; }
+  .sh-shell__banner { grid-row: 2; }
+  .sh-shell__banner .sh-banner { border-radius: 0; }
+  .sh-shell__page { grid-row: 3; }
+  .sh-shell__page:focus { outline: none; }
+  .sh-shell__search { display: flex; flex: 1; align-items: center; gap: var(--space-2); max-width: 480px; height: 32px; padding: 0 var(--space-2) 0 var(--space-3); box-sizing: border-box; border: var(--hairline); border-radius: var(--radius-1); background: var(--bg-2); font: var(--text-body); color: var(--fg-4); text-align: left; cursor: pointer; transition: var(--transition-color); }
+  .sh-shell__search:hover { border-color: var(--line-2); }
+  .sh-shell__search svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .sh-shell__search span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sh-shell__crew, .sh-shell__health { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; height: 28px; padding: 0 var(--space-2); border: 0; border-radius: var(--radius-1); background: none; font: var(--text-mono); color: var(--fg-3); text-decoration: none; white-space: nowrap; cursor: pointer; transition: var(--transition-color); }
+  .sh-shell__crew { margin-left: auto; }
+  .sh-shell__crew:hover, .sh-shell__health:hover { background: var(--bg-2); color: var(--fg-1); }
+  .sh-shell__health[data-stale] { opacity: 0.6; }
+  .sh-shell__crew[data-state="working"] { color: var(--crew); }
+  .sh-shell__crew[data-state="down"] { color: var(--bad); }
+  .sh-shell__account { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--radius-1); background: none; cursor: pointer; transition: var(--transition-color); }
+  .sh-shell__account:hover { background: var(--bg-2); }
+  .sh-nav__dot { flex-shrink: 0; width: 6px; height: 6px; margin-left: auto; border-radius: 1px; background: var(--tone, var(--critical-dot)); }
+  .sh-nav__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sh-nav--collapsed { width: var(--rail-w-collapsed); align-items: center; padding: var(--space-2) var(--space-1); }
+  .sh-nav--collapsed .sh-nav__item { position: relative; justify-content: center; width: 40px; padding: 0; }
+  .sh-nav--collapsed .sh-nav__count { display: none; }
+  .sh-nav--collapsed .sh-nav__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .sh-nav--collapsed .sh-nav__group { justify-content: center; width: 24px; height: 9px; padding: 0; font-size: 0; border-top: var(--hairline); margin-top: var(--space-2); }
+  .sh-nav--collapsed .sh-nav__group:first-child { border-top: 0; }
+  .sh-nav--collapsed .sh-nav__dot { position: absolute; top: 5px; right: 7px; }
+  .sh-nav--collapsed .sh-nav__count:not(:empty) + .sh-nav__dot { display: none; }
+  .sh-drawer { width: 280px; max-width: 85vw; height: 100dvh; max-height: none; margin: 0 auto 0 0; padding: 0; border: 0; background: var(--bg-float); box-shadow: var(--elev-float); color: var(--fg-2); }
+  .sh-drawer::backdrop { background: var(--scrim); }
+  .sh-drawer[open] { animation: sh-enter var(--dur-4) var(--ease); }
+  .sh-drawer .sh-nav { width: 100%; }
+  .sh-drawer__brand { display: flex; align-items: center; gap: var(--space-2); height: var(--topbar-h); padding: 0 var(--space-4); border-bottom: var(--hairline); font: var(--text-card-title); color: var(--fg-1); }
+  .sh-drawer__brand img { width: 24px; height: 24px; }
+  @media (max-width: 767px) {
+    .sh-shell { --rail-current: 0px; }
+    .sh-shell__page { padding-bottom: calc(var(--bar-h) + env(safe-area-inset-bottom) + 4.5rem); }
+    /* Every top-bar mark is a borderless 32px square, like the ≡ beside it. */
+    .sh-shell__search { flex: none; width: 32px; padding: 0; justify-content: center; border-color: transparent; background: none; color: var(--fg-3); }
+    .sh-shell__crew, .sh-shell__health, .sh-shell__account { min-width: 32px; height: 32px; justify-content: center; }
+    .sh-shell__search > :not(svg) { display: none; }
+    .sh-shell__banner { grid-column: 1; }
+    .sh-shell__brand, .sh-shell__rail { display: none; }
+  }
+
+  /* ── Logos (components/brands.ts): official colours, so a dark wordmark (AWS, GitHub) sits on a light tile in dark mode ── */
+  .sh-logo { flex-shrink: 0; padding: 1px; box-sizing: content-box; border-radius: 2px; object-fit: contain; }
+  /* A product with no logo file: its initial in a hairline tile, the same outer size as a logo. */
+  .sh-logo-tile { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; margin: 1px; border: 1px solid var(--line-2); border-radius: 2px; font: var(--text-micro); line-height: 1; color: var(--fg-3); text-transform: uppercase; }
+  :root:not([data-theme="light"]) .sh-logo { background: oklch(0.97 0 0); }
+  /* The one-ink marks (GitHub, Okta, ChatGPT, Cursor, Tailscale) turn light on the dark ground instead of sitting on a white tile. */
+  :root:not([data-theme="light"]) .sh-logo:is([src$="/github.svg"], [src$="/okta.svg"], [src$="/chatgpt.svg"], [src$="/cursor.svg"], [src$="/tailscale.svg"]) { background: none; filter: invert(1); }
+
+  /* ── Toaster (section 3.5): bottom-left of the page; the bottom-right belongs to the chat ── */
+  .sh-toaster { position: fixed; left: calc(var(--rail-current, var(--rail-w)) + var(--space-4)); bottom: var(--space-4); z-index: var(--z-toast); display: flex; flex-direction: column-reverse; align-items: flex-start; gap: var(--space-2); max-width: calc(100vw - var(--rail-current, var(--rail-w)) - 96px); pointer-events: none; }
+  .sh-toaster > * { pointer-events: auto; }
+  @media (min-width: 768px) {
+    .sh-toaster[data-chat="open"] { max-width: max(15rem, calc(100vw - var(--rail-current, var(--rail-w)) - var(--chat-w) - 3rem)); }
+    .sh-toaster[data-chat="wide"] { max-width: max(15rem, calc(100vw - var(--rail-current, var(--rail-w)) - var(--chat-w-wide) - 3rem)); }
+  }
+  .sh-toast__who { flex-shrink: 0; }
+  .sh-toast__subject { flex-shrink: 0; font: var(--text-mono); color: var(--fg-1); text-decoration: none; }
+  a.sh-toast__subject:hover { text-decoration: underline; text-underline-offset: 2px; }
+  .sh-toast__action { flex-shrink: 0; }
+  .sh-toast__count { flex-shrink: 0; font: var(--text-mono); color: var(--fg-4); }
+  .sh-toast__close { display: inline-flex; flex-shrink: 0; width: 24px; height: 24px; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: var(--radius-1); background: none; color: var(--fg-4); cursor: pointer; }
+  .sh-toast__close:hover { background: var(--bg-3); color: var(--fg-1); }
+  .sh-toast__close svg { width: 14px; height: 14px; }
+  .sh-toast__life { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--line-3); transform-origin: left; animation: sh-life var(--life, 6s) linear forwards; }
+  .sh-toast:hover .sh-toast__life, .sh-toast:focus-within .sh-toast__life { animation-play-state: paused; }
+  .sh-toaster__more, .sh-toaster__chord { padding: 2px var(--space-2); border-radius: var(--radius-1); background: var(--bg-float); box-shadow: var(--elev-float); font: var(--text-mono); color: var(--fg-3); }
+  .sh-toaster__chord { color: var(--fg-2); }
+  @media (prefers-reduced-motion: reduce) { .sh-toast__life { opacity: 0; } }
+  @media (max-width: 767px) { .sh-toaster { top: calc(var(--topbar-h) + var(--space-2)); bottom: auto; left: var(--gutter); right: var(--gutter); max-width: none; flex-direction: column; align-items: stretch; } .sh-toast { width: 100%; } }
+
+  /* ── Palette (section 3.3): model-free, a native modal <dialog> ── */
+  .sh-palette { width: min(var(--palette-w), calc(100vw - 2rem)); max-width: none; max-height: none; margin: 15dvh auto auto; padding: 0; overflow: hidden; border: 0; border-radius: var(--radius-2); background: var(--bg-float); box-shadow: var(--elev-float); color: var(--fg-2); }
+  .sh-palette[open] { display: flex; flex-direction: column; animation: sh-enter var(--dur-4) var(--ease); }
+  .sh-palette::backdrop { background: var(--scrim); }
+  .sh-palette__bar { position: relative; display: flex; flex-shrink: 0; align-items: center; gap: var(--space-2); height: 48px; padding: 0 var(--space-3); border-bottom: var(--hairline); }
+  .sh-palette__bar > svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--fg-4); }
+  .sh-palette__scope { flex-shrink: 1; }
+  .sh-palette__input { flex: 1; min-width: 0; height: 40px; padding: 0; border: 0; background: transparent; font: 400 15px/20px var(--font-sans); color: var(--fg-1); }
+  .sh-palette__input::placeholder { color: var(--fg-4); }
+  .sh-palette__input:focus-visible { box-shadow: none; }
+  .sh-palette__pending { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--line-3); animation: sh-pulse 1.2s ease-in-out infinite; }
+  .sh-palette__list { max-height: 56dvh; margin: 0; padding: var(--space-1) var(--space-1) var(--space-2); overflow-y: auto; list-style: none; scrollbar-width: thin; }
+  .sh-palette__group { display: flex; align-items: center; gap: var(--space-2); min-height: 28px; padding: var(--space-2) var(--space-2) var(--space-1); font: var(--text-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--fg-4); }
+  .sh-palette__group > :last-child:not(:first-child) { margin-left: auto; text-transform: none; letter-spacing: 0; }
+  .sh-palette__item { display: flex; align-items: center; gap: var(--space-2); height: 32px; padding: 0 var(--space-2); border-radius: var(--radius-1); color: var(--fg-2); cursor: pointer; }
+  .sh-palette__item:hover { background: var(--bg-2); }
+  .sh-palette__item[aria-selected="true"] { background: var(--bg-3); box-shadow: inset 2px 0 0 var(--fg-1); color: var(--fg-1); }
+  .sh-palette__icon { display: inline-flex; flex-shrink: 0; justify-content: center; width: 16px; color: var(--fg-4); }
+  .sh-palette__icon svg { width: 14px; height: 14px; }
+  .sh-palette__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sh-palette__meta { flex: 0 1 auto; min-width: 0; max-width: 45%; overflow: hidden; text-overflow: ellipsis; font: var(--text-mono); color: var(--fg-4); white-space: nowrap; }
+  /* fg-4 on bg-3 is under 4.5:1 in dark: the selected row lifts its quiet text to fg-3. */
+  .sh-palette__item[aria-selected="true"] :is(.sh-palette__meta, .sh-palette__icon, .sh-kbd) { color: var(--fg-3); }
+  .sh-palette__keys { display: inline-flex; flex-shrink: 0; gap: 2px; }
+  .sh-palette__item--crew, .sh-palette__item--crew .sh-palette__icon { color: var(--crew); }
+  .sh-palette__item--crew[aria-selected="true"] { background: var(--crew-fill); box-shadow: inset 2px 0 0 var(--crew-bar); color: var(--crew); }
+  .sh-palette__empty { padding: var(--space-2); font: var(--text-body); color: var(--fg-3); }
+  .sh-palette__foot { display: flex; flex-shrink: 0; align-items: center; gap: var(--space-4); height: 32px; padding: 0 var(--space-3); overflow: hidden; border-top: var(--hairline); font: var(--text-mono); color: var(--fg-4); white-space: nowrap; }
+  @media (max-width: 767px) { .sh-palette__meta { max-width: 30%; flex-shrink: 3; } }
+  /* A touch screen has no keys to hint at. */
+  @media (pointer: coarse) { .sh-palette :is(.sh-kbd, .sh-palette__foot) { display: none; } }
+  @media (max-width: 767px) { .sh-palette { width: 100vw; height: calc(100dvh - var(--topbar-h)); margin: var(--topbar-h) 0 0; border-radius: 0; } .sh-palette__list { flex: 1; max-height: none; } .sh-palette__foot { display: none; } }
+
+  /* ── Crew chat (section 3.4): a floating, non-modal window bottom-right ── */
+  .sh-chat__launcher { position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: var(--z-float); display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: 1px solid var(--crew-line); border-radius: var(--radius-2); background: var(--crew-fill); box-shadow: var(--elev-float); font: 600 16px/1 var(--font-mono); color: var(--crew-strong); cursor: pointer; transition: var(--transition-color); }
+  .sh-chat__launcher:hover { background: color-mix(in oklch, var(--crew-fill) 60%, var(--crew-line)); }
+  .sh-chat__launcher:focus-visible { box-shadow: var(--focus-ring), var(--elev-float); }
+  .sh-chat__launcher[data-unread]::after { content: ""; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border-radius: 2px; background: var(--crew-dot); box-shadow: 0 0 0 2px var(--bg-0); }
+  .sh-chat__launcher[data-pending]::before { content: ""; position: absolute; inset: -4px; border: 1px solid var(--crew-line); border-radius: 10px; animation: sh-pulse 2s ease-in-out infinite; }
+  .sh-chat { position: fixed; inset: auto var(--space-4) var(--space-4) auto; z-index: var(--z-float); width: min(var(--chat-w), calc(100vw - 2rem)); height: min(var(--chat-h), calc(100dvh - 96px)); max-width: none; max-height: none; margin: 0; padding: 0; overflow: hidden; border: 0; border-radius: var(--radius-2); background: var(--bg-float); box-shadow: var(--elev-float); color: var(--fg-2); }
+  .sh-chat[open] { display: flex; flex-direction: column; animation: sh-enter var(--dur-4) var(--ease); }
+  .sh-chat--wide { width: min(var(--chat-w-wide), calc(100vw - 2rem)); height: min(80dvh, calc(100dvh - 96px)); }
+  .sh-chat__head { display: flex; flex-shrink: 0; align-items: center; gap: var(--space-2); height: 40px; padding: 0 var(--space-1) 0 var(--space-3); border-bottom: var(--hairline); }
+  .sh-chat__title { margin: 0; font: var(--text-card-title); color: var(--fg-1); }
+  .sh-chat__tools { display: flex; gap: 2px; margin-left: auto; }
+  .sh-chat__log { display: flex; flex: 1; flex-direction: column; gap: var(--space-3); min-height: 0; padding: var(--space-3); overflow-y: auto; scrollbar-width: thin; }
+  .sh-chat__bubble { position: relative; max-width: 85%; padding: var(--space-2) var(--space-3); box-sizing: border-box; border-radius: var(--radius-2); font: var(--text-body); color: var(--fg-1); overflow-wrap: anywhere; }
+  .sh-chat__bubble--you { align-self: flex-end; background: var(--bg-3); white-space: pre-wrap; }
+  .sh-chat__bubble--crew { align-self: flex-start; padding-left: 24px; border: 1px solid var(--crew-line); background: var(--crew-fill); }
+  .sh-chat__bubble--crew::before { content: "›"; position: absolute; left: 10px; top: var(--space-2); font: 600 13px/20px var(--font-mono); color: var(--crew-strong); }
+  .sh-chat__bubble--pending { color: var(--fg-3); }
+  .sh-chat__bubble--error { border-color: var(--bad-line); background: var(--bad-fill); color: var(--bad); }
+  .sh-chat__bubble--error::before { color: var(--bad); }
+  .sh-chat__under { display: flex; flex-direction: column; align-self: flex-start; gap: 6px; max-width: 100%; margin-top: calc(-1 * var(--space-1)); padding-left: var(--space-1); }
+  .sh-chat__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); min-width: 0; }
+  .sh-chat__meta { font: var(--text-mono); color: var(--fg-4); }
+  .sh-chat__suggest { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+  .sh-chat__context { display: flex; flex-shrink: 0; align-items: center; gap: 6px; padding: var(--space-2) var(--space-3) 0; border-top: var(--hairline); }
+  .sh-chat__composer { display: flex; flex-shrink: 0; align-items: flex-end; gap: var(--space-2); padding: var(--space-2) var(--space-3) var(--space-3); }
+  .sh-chat__context + .sh-chat__composer { padding-top: var(--space-1-5); }
+  .sh-chat__log + .sh-chat__composer { border-top: var(--hairline); }
+  .sh-chat__composer textarea { flex: 1; min-height: 32px; max-height: 132px; padding: 6px var(--space-2); box-sizing: border-box; resize: none; border: 1px solid var(--line-3); border-radius: var(--radius-1); background: var(--bg-1); font: var(--text-body); color: var(--fg-1); field-sizing: content; }
+  .sh-chat__composer textarea::placeholder { color: var(--fg-4); }
+  /* Fields focused on open (the composer, the gate's token) take a quiet edge, not the 3px ring. */
+  .sh-chat__composer textarea:focus-visible, .sh-input.sh-input--quiet:focus-visible { border-color: var(--fg-3); box-shadow: none; outline-offset: -2px; }
+  [data-kbd] :is(.sh-chat__composer textarea, .sh-input.sh-input--quiet):focus-visible { box-shadow: var(--focus-ring-inset); }
+  .sh-chat__down { flex-shrink: 0; height: 28px; padding: 0 var(--space-3); border-bottom: 1px solid var(--bad-line); }
+  .sh-chat__down a { font: var(--text-button); color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+  @media (max-width: 767px) {
+    .sh-chat__launcher { display: none; bottom: calc(var(--bar-h) + env(safe-area-inset-bottom) + var(--space-3)); }
+    .sh-shell:has(.sh-bottombar--decide) .sh-chat__launcher { display: flex; }
+    .sh-chat, .sh-chat--wide { inset: auto 0 0 0; width: 100vw; height: min(var(--chat-h), 92dvh); border-radius: var(--radius-2) var(--radius-2) 0 0; }
+  }
+
+  /* ── Bottom bar (section 3.7): the mobile shell's tabs, or Reject | Approve ── */
+  .sh-bottombar { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-float); display: none; height: calc(var(--bar-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box; border-top: var(--hairline); background: var(--bg-float); }
+  .sh-bottombar__item { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0; border: 0; background: none; font: var(--text-micro); color: var(--fg-3); text-decoration: none; cursor: pointer; }
+  .sh-bottombar__item svg { width: 18px; height: 18px; }
+  .sh-bottombar__item[aria-current="page"] { color: var(--fg-1); }
+  .sh-bottombar__count { font: var(--text-index); color: var(--crew); }
+  .sh-bottombar__ask { position: relative; color: var(--crew); }
+  .sh-bottombar__ask b { font: 600 18px/18px var(--font-mono); color: var(--crew-strong); }
+  .sh-bottombar__ask[data-unread]::after { content: ""; position: absolute; top: 8px; left: calc(50% + 8px); width: 6px; height: 6px; border-radius: 1px; background: var(--crew-dot); }
+  .sh-bottombar--decide { align-items: center; gap: var(--space-2); padding-left: var(--gutter); padding-right: var(--gutter); }
+  .sh-bottombar--decide .sh-btn { flex: 1; height: 48px; }
+  @media (max-width: 767px) {
+    .sh-bottombar { display: flex; }
+    .sh-dialog { inset: auto 0 0 0; width: 100vw; max-width: 100vw; max-height: 92dvh; margin: 0; border-radius: var(--radius-2) var(--radius-2) 0 0; }
+    /* A long title (a case about one key, a rule) takes two lines before it clips. */
+    .sh-page__title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+  }
+
+  /* ── Clamped text: two lines, and "more" only when they overflow ── */
+  .sh-clamp__more { padding: 0; border: 0; background: none; font: var(--text-small); color: var(--fg-3); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--line-2); }
+  .sh-clamp__more:hover { color: var(--fg-1); }
+
+  /* ── Played card (the front page, Workflows.tsx): what arrives enters as a floating surface does, a changed value
+     fades in its new text, a status eases between colours. The hunt card plays RunTrace a step at a time: its strip
+     stands in for the rows step, and its query shows three lines. ── */
+  .sh-play :is(.sh-trace__item, .sh-fields :is(dt, dd), .sh-quote, .sh-table tbody tr, .sh-cite, .sh-play__fade) { animation: sh-enter var(--dur-4) var(--ease); }
+  .sh-play :is(.sh-steps__dot, .sh-strip__state, .sh-status, .sh-mark) { transition: var(--transition-color); }
+  .sh-play__fade { display: inline-block; }
+  .sh-play__run > ol > li:nth-child(3), .sh-play__run[data-shown="1"] > ol > li:nth-child(n+2), .sh-play__run[data-shown="2"] > ol > li:nth-child(n+3) { display: none; }
+  .sh-play__run .sh-copy--block .sh-copy__value { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+
+  /* Forced colours drop backgrounds and shadows: the data marks keep their own paint, so a status square, a bar or
+     the rail's dot keeps its shape; the focus ring is the transparent outline index.css sets, painted by the system. */
+  @media (forced-colors: active) {
+    :is(.sh-mark, .sh-timebar__bar i, .sh-meter__fill, .sh-share__seg i, .sh-conf__seg i.on, .sh-nav__dot, .sh-barlist__fill) { forced-color-adjust: none; }
+    /* Selected, checked, pressed and current states drew only with backgrounds and shadows: the system's highlight draws them. */
+    :is(.sh-palette__item[aria-selected="true"], .sh-seg__item[aria-checked="true"], .sh-strip__fact[aria-pressed="true"], .sh-chip[aria-pressed="true"]) { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+    .sh-tab[aria-selected="true"]::after { forced-color-adjust: none; background: Highlight; height: 2px; }
+    :is(.sh-nav__item[aria-current="page"], .sh-table tbody tr[data-active] > td:first-child, .sh-trace__item[data-active] .sh-trace__row, .sh-tl__item[data-active]) { border-left: 2px solid Highlight; }
+  }
+}
+
+/*
+ * Print (.sh-print): a dialog holding a print view (Measurement's report)
+ * prints that view alone, pinned to the top of the first page, in the light
+ * theme's ink whatever the screen shows; the shell, the backdrop and the
+ * dialog's chrome stay off paper. Bars are backgrounds, which browsers leave
+ * out of a print unless asked. Outside the layers, so it wins in print only.
+ */
+@media print {
+  @page { size: A4; margin: 16mm; }
+  body:has(.sh-print) * { visibility: hidden; }
+  .sh-print, .sh-print * { visibility: visible; }
+  .sh-print { print-color-adjust: exact; -webkit-print-color-adjust: exact; --fg-1: #111; --fg-2: #333; --fg-3: #555; --fg-4: #777; --bg-1: #fff; --bg-2: #f4f4f5; --bg-3: #e4e4e7; --line-1: #d4d4d8; }
+  dialog.sh-dialog:has(.sh-print) { position: absolute; inset: 0 auto auto 0; margin: 0; width: 100%; max-width: none; height: auto; max-height: none; overflow: visible; box-shadow: none; background: #fff; color: #000; }
+  dialog.sh-dialog:has(.sh-print)::backdrop { display: none; }
+  .sh-dialog:has(.sh-print) .sh-dialog__body { overflow: visible; padding: 0; }
+  .sh-dialog:has(.sh-print) :is(.sh-dialog__head, .sh-dialog__foot) { display: none; }
+}

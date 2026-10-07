@@ -1,0 +1,65 @@
+id: edr_medium_severity_detection
+title: Medium-severity endpoint detection
+description: >
+  The endpoint agent raised a medium alert, or stopped something it rated
+  higher. Nothing pages on this; it sits next to an identity finding on the
+  same person so triage can ask whether anything happened on their laptop.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: medium
+confidence: 0.5
+attack: [T1204]
+sources:
+  - name: Elastic
+    title: "CrowdStrike External Alerts"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/promotions/crowdstrike_external_alerts.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: "SentinelOne Threat External Alerts"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/promotions/sentinelone_threat_external_alerts.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: "Microsoft Defender XDR Alert External Alerts"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/promotions/m365_defender_alert_external_alerts.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft
+    title: "Microsoft Graph security enum values (serviceSource)"
+    url: https://learn.microsoft.com/en-us/graph/api/resources/enums-security?view=graph-rest-1.0
+    relation: inspired
+  - name: Microsoft
+    title: "Handling future members in evolvable enumerations"
+    url: https://learn.microsoft.com/en-us/graph/best-practices-concept#handling-future-members-in-evolvable-enumerations
+    relation: inspired
+logsource:
+  product: edr
+  service: alerts
+detection:
+  selection:
+    class_uid: 2004
+    severity_id: 3
+  # Wazuh levels 7 to 9 include every file integrity change.
+  filter_wazuh:
+    metadata.product.name: Wazuh
+  # Falcon's incident and lead summaries repeat the detections they group.
+  filter_rollups:
+    raw.metadata.eventType: [IncidentSummaryEvent, AutomatedLeadSummaryEvent]
+  # Office 365, Identity, Cloud Apps, Entra ID Protection, App Governance and
+  # Purview alerts from Defender, and Falcon Identity Protection: about an
+  # account, not a host. Defender for Cloud alerts are azure_vendor_alert's;
+  # Graph sends them and Sentinel's as unknownFutureValue unless asked not to.
+  filter_not_endpoint:
+    - api.service.name: [microsoftDefenderForOffice365, microsoftDefenderForIdentity,
+                         microsoftDefenderForCloudApps, azureAdIdentityProtection,
+                         microsoftAppGovernance, dataLossPrevention, microsoftDefenderForCloud,
+                         unknownFutureValue]
+    - api.service.name|startswith: idp
+  condition: selection and not filter_wazuh and not filter_rollups and not filter_not_endpoint
+  timeframe: 1h
+# An alert with no device id keys on the host name, then the user.
+entity: [resource.uid, device.hostname, actor.user.name]
+fields: [device.hostname, actor.user.name, api.operation, message, process.name, process.cmd_line,
+         process.file.hashes.sha256, file.path, status_code]

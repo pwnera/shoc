@@ -1,0 +1,38 @@
+id: anthropic_org_data_exported
+title: Claude organisation data exported, or the organisation deleted
+description: >
+  Someone downloaded the organisation's data export or the compliance audit-log
+  export, asked for the organisation to be deleted, or started a bulk delete.
+  An export holds every member's conversations and files.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.55
+attack: [T1530, T1485]
+logsource:
+  product: anthropic
+  service: activity_feed
+detection:
+  selection:
+    api.operation: [org_data_export_accessed, audit_log_export_accessed, org_deletion_requested, org_bulk_delete_initiated]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, api.operation]
+sources:
+  - name: Elastic
+    title: Anthropic Organization Data Export Accessed
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/collection_anthropic_organization_data_export_accessed.toml
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Anthropic Compliance Audit Log Export Accessed
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/collection_anthropic_compliance_audit_log_export_accessed.toml
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Anthropic Organization Deletion
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/impact_anthropic_organization_destructive_action.toml
+    license: Elastic-2.0
+    relation: adapted

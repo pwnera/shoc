@@ -1,0 +1,34 @@
+[
+  {
+    "id": "en-officehome-browser",
+    "userPrincipalName": "jane@example.com",
+    "userId": "u-1",
+    "userType": "Member",
+    "appId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "198.51.100.7",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+    "isInteractive": true,
+    "resourceId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "status": { "errorCode": 0 },
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["interactiveUser"],
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-own-app-axios",
+    "userPrincipalName": "build@example.com",
+    "userId": "u-9",
+    "appId": "11111111-2222-3333-4444-555555555555",
+    "appDisplayName": "Internal Dashboard",
+    "ipAddress": "198.51.100.8",
+    "userAgent": "axios/1.7.7",
+    "isInteractive": false,
+    "status": { "errorCode": 0 },
+    "correlationId": "c-2",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["nonInteractiveUser"],
+    "_stream": "nonInteractiveSignIns"
+  }
+]

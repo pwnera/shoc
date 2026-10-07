@@ -1,0 +1,67 @@
+[
+  {
+    "insertId": "gcp-key-create",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "service_account",
+      "labels": {
+        "project_id": "example-prod",
+        "email_id": "ci-deployer@example-prod.iam.gserviceaccount.com"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.admin.v1.CreateServiceAccountKey",
+      "resourceName": "projects/-/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.81",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/google.iam.admin.v1.CreateServiceAccountKeyRequest",
+        "name": "projects/-/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com",
+        "private_key_type": 2
+      },
+      "response": {
+        "@type": "type.googleapis.com/google.iam.admin.v1.ServiceAccountKey",
+        "name": "projects/example-prod/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com/keys/3f1c0a9b8e7d6c5b4a39281706f5e4d3c2b1a090",
+        "key_type": 1,
+        "key_origin": 2
+      }
+    }
+  },
+  {
+    "insertId": "gcp-key-upload",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "service_account",
+      "labels": {
+        "project_id": "example-prod",
+        "email_id": "ci-deployer@example-prod.iam.gserviceaccount.com"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.admin.v1.UploadServiceAccountKey",
+      "resourceName": "projects/-/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.81",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/google.iam.admin.v1.UploadServiceAccountKeyRequest",
+        "name": "projects/-/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com"
+      }
+    }
+  }
+]

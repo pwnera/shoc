@@ -1,0 +1,249 @@
+# SentinelOne Cloud Funnel 2.0 telemetry -> OCSF system, network and IAM classes. ING-1, ING-3.
+# Cloud Funnel writes Deep Visibility events with flat dotted keys
+# ("src.process.name"); the connector nests them on the dots, so a path here
+# reads src.process.name as it would any nested field. A key that is both a
+# value and a prefix (winEventLog.description) keeps its value under _value.
+#
+# event.category picks the class, event.type the activity; SentinelOne writes
+# the type both spaced ("Process Creation") and joined ("ProcessCreation"), so
+# each rule names both. For a process event process_* is the process that
+# started and process_parent_name the source that started it. For a
+# cross-process event process_* is the target and the source stays in raw. For
+# every other event process_* is the process that acted, and its parent stays
+# in raw.
+# None of this is a finding: SentinelOne raises its own threats and alerts, which
+# reach shoc through the sentinelone connector.
+source: sentinelone_cloudfunnel
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [edr, edr/telemetry, dns]
+
+constants:
+  # Every record names the process behind it, so an unknown category is a
+  # process event of an unknown kind.
+  category_uid: 1
+  class_uid: 1007
+  class_name: Process Activity
+  type_uid: 100799
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  status: Success
+  cloud_provider: SentinelOne
+  metadata_product: SentinelOne Cloud Funnel
+  api_service_name: sentinelone
+
+fields:
+  # The management account: which console isolates the agent (RFC 0025).
+  cloud_account_uid: { path: account.id }
+  event_uid: { path: event.id }
+  # event.time is epoch milliseconds; some exports carry only a time of day in
+  # `timestamp`, so it comes second.
+  time: { paths: [event.time, timestamp], transform: iso8601 }
+  api_operation:
+    paths: [indicator.name, tiIndicator.name, winEventLog.data.event.system.eventID, event.type]
+  message:
+    paths: [indicator.description, cmdScript.content, event.login.failureReason,
+            winEventLog.description._value, winEventLog.description]
+  actor_user_name:
+    paths: [event.login.userName, winEventLog.data.event.eventData.targetUserName,
+            tgt.process.user, src.process.user, src.process.lUserName, src.process.eUserName,
+            winEventLog.data.event.eventData.subjectUserName]
+  actor_user_uid:
+    paths: [event.login.accountSid, winEventLog.data.event.eventData.targetUserSid]
+  actor_session_uid: { path: winEventLog.data.event.eventData.targetLogonId }
+  src_endpoint_ip:
+    paths: [src.ip.address, src.endpoint.ip.address, winEventLog.data.event.eventData.ipAddress]
+  src_endpoint_port: { paths: [src.port.number, winEventLog.data.event.eventData.ipPort] }
+  dst_endpoint_ip: { path: dst.ip.address }
+  dst_endpoint_port: { path: dst.port.number }
+  dns_query_hostname: { path: event.dns.request }
+  http_request_url: { path: url.address }
+  device_hostname: { path: endpoint.name }
+  device_uid: { path: agent.uuid }
+  # The key or the task a registry or task event acted on; on every other event
+  # the agent's UUID, which edr.isolate_host takes for SentinelOne.
+  resource_uid: { paths: [registry.keyPath, task.name, agent.uuid] }
+  resource_type: { const: host }
+  process_name: { paths: [tgt.process.name, src.process.name] }
+  process_file_path: { paths: [tgt.process.image.path, src.process.image.path] }
+  process_pid: { paths: [tgt.process.pid, src.process.pid] }
+  process_cmd_line: { paths: [tgt.process.cmdline, src.process.cmdline] }
+  process_hash_sha256:
+    paths: [tgt.process.image.sha256, src.process.image.sha256]
+    transform: lower
+  process_parent_name: { path: src.process.name }
+  file_path: { paths: [tgt.file.path, module.path] }
+  file_hash_sha256: { path: tgt.file.sha256, transform: lower }
+
+derive:
+  # Process (1007). The source process started, opened or injected into the target.
+  - when: { event.type: { in: [Process Creation, ProcessCreation] } }
+    set: { type_uid: 100701, activity_id: 1, activity_name: Launch }
+  - when: { event.type: { in: [Process Termination, ProcessTermination] } }
+    set: { type_uid: 100702, activity_id: 2, activity_name: Terminate }
+  - when: { event.category: cross_process }
+    set: { type_uid: 100703, activity_id: 3, activity_name: Open }
+  - when: { event.type: { in: [Remote Thread Creation, RemoteThreadCreation] } }
+    set: { type_uid: 100704, activity_id: 4, activity_name: Inject }
+  # A script's content is what a rule reads; OCSF 1.3 has no script class, and
+  # the script ran inside the source process, so it stays Process Activity, Other.
+  # A behavioural indicator tags what one process did; SentinelOne turns the
+  # ones that matter into threats, so it stays here too.
+
+  # Other events: process_* is the acting process or, cross-process, the target;
+  # src.process is neither one's parent.
+  - when: { event.category: { in: [cross_process, file, registry, scheduled_task, dns, ip,
+                                   url, logins, module, driver, indicators, command_script,
+                                   threat_intelligence_indicators, group, windows_event_logs] } }
+    set: { process_parent_name: null }
+
+  # File (1001).
+  - when: { event.category: file }
+    set: { category_uid: 1, class_uid: 1001, class_name: File System Activity,
+           type_uid: 100199, activity_id: 99, activity_name: Other }
+  - when: { event.type: { in: [File Creation, FileCreation] } }
+    set: { type_uid: 100101, activity_id: 1, activity_name: Create }
+  - when: { event.type: { in: [File Modification, FileModification] } }
+    set: { type_uid: 100103, activity_id: 3, activity_name: Update }
+  - when: { event.type: { in: [File Deletion, FileDeletion] } }
+    set: { type_uid: 100104, activity_id: 4, activity_name: Delete }
+  - when: { event.type: { in: [File Rename, FileRename] } }
+    set: { type_uid: 100105, activity_id: 5, activity_name: Rename }
+  - when: { event.type: { in: [File Scan, FileScan] } }
+    set: { type_uid: 100102, activity_id: 2, activity_name: Read }
+
+  # Module (1005) and driver (1002, Kernel Extension Activity).
+  - when: { event.category: module }
+    set: { category_uid: 1, class_uid: 1005, class_name: Module Activity, type_uid: 100501,
+           activity_id: 1, activity_name: Load }
+  - when: { event.category: driver }
+    set: { category_uid: 1, class_uid: 1002, class_name: Kernel Extension Activity,
+           type_uid: 100201, activity_id: 1, activity_name: Load }
+
+  # Scheduled task (1006). resource_uid is the task's name.
+  - when: { event.category: scheduled_task }
+    set: { category_uid: 1, class_uid: 1006, class_name: Scheduled Job Activity,
+           type_uid: 100699, activity_id: 99, activity_name: Other, resource_type: scheduled task }
+  - when: { event.type: { in: [Task Register, TaskRegister] } }
+    set: { type_uid: 100601, activity_id: 1, activity_name: Create }
+  - when: { event.type: { in: [Task Update, TaskUpdate] } }
+    set: { type_uid: 100602, activity_id: 2, activity_name: Update }
+  - when: { event.type: { in: [Task Delete, TaskDelete] } }
+    set: { type_uid: 100603, activity_id: 3, activity_name: Delete }
+  - when: { event.type: { in: [Task Start, TaskStart] } }
+    set: { type_uid: 100606, activity_id: 6, activity_name: Start }
+
+  # Registry (201001 keys, 201002 values). resource_uid is the key path.
+  - when: { event.category: registry }
+    set: { category_uid: 1, class_uid: 201001, class_name: Registry Key Activity,
+           type_uid: 20100199, activity_id: 99, activity_name: Other, resource_type: registry key }
+  - when: { event.type: { in: [Registry Key Create, RegistryKeyCreate] } }
+    set: { type_uid: 20100101, activity_id: 1, activity_name: Create }
+  - when: { event.type: { in: [Registry Key Delete, RegistryKeyDelete] } }
+    set: { type_uid: 20100104, activity_id: 4, activity_name: Delete }
+  - when: { event.type: { in: [Registry Key Rename, RegistryKeyRename] } }
+    set: { type_uid: 20100105, activity_id: 5, activity_name: Rename }
+  - when: { event.type: { in: [Registry Key Security Changed, RegistryKeySecurityChanged] } }
+    set: { type_uid: 20100106, activity_id: 6, activity_name: Set Security }
+  - when: { event.type: { in: [Registry Key Import, RegistryKeyImport] } }
+    set: { type_uid: 20100108, activity_id: 8, activity_name: Import }
+  - when: { event.type: { in: [Registry Key Export, RegistryKeyExport] } }
+    set: { type_uid: 20100109, activity_id: 9, activity_name: Export }
+  - when: { event.type: { in: [Registry Value Create, RegistryValueCreate] } }
+    set: { class_uid: 201002, class_name: Registry Value Activity, type_uid: 20100202,
+           activity_id: 2, activity_name: Set }
+  - when: { event.type: { in: [Registry Value Modified, RegistryValueModified] } }
+    set: { class_uid: 201002, class_name: Registry Value Activity, type_uid: 20100203,
+           activity_id: 3, activity_name: Modify }
+  - when: { event.type: { in: [Registry Value Delete, RegistryValueDelete] } }
+    set: { class_uid: 201002, class_name: Registry Value Activity, type_uid: 20100204,
+           activity_id: 4, activity_name: Delete }
+
+  # Network (4001). src and dst are as the agent saw them: on an INCOMING
+  # connection the remote peer is src.
+  - when: { event.category: ip }
+    set: { category_uid: 4, class_uid: 4001, class_name: Network Activity, type_uid: 400101,
+           activity_id: 1, activity_name: Open }
+  - when: { event.type: { in: [IP Listen, IPListen] } }
+    set: { type_uid: 400107, activity_id: 7, activity_name: Listen }
+  - when: { event.network.connectionStatus: FAILURE }
+    set: { type_uid: 400104, activity_id: 4, activity_name: Fail, status: Failure }
+
+  # DNS (4003): one record holds the query and its answer.
+  - when: { event.category: dns }
+    set: { category_uid: 4, class_uid: 4003, class_name: DNS Activity, type_uid: 400306,
+           activity_id: 6, activity_name: Traffic }
+  - when: { event.type: { in: [DNS Unresolved, DNSUnresolved] } }
+    set: { status: Failure }
+
+  # HTTP (4002): event.url.action is the method.
+  - when: { event.category: url }
+    set: { category_uid: 4, class_uid: 4002, class_name: HTTP Activity, type_uid: 400299,
+           activity_id: 99, activity_name: Other }
+  - when: { event.url.action: GET }
+    set: { type_uid: 400203, activity_id: 3, activity_name: Get }
+  - when: { event.url.action: POST }
+    set: { type_uid: 400206, activity_id: 6, activity_name: Post }
+  - when: { event.url.action: PUT }
+    set: { type_uid: 400207, activity_id: 7, activity_name: Put }
+  - when: { event.url.action: DELETE }
+    set: { type_uid: 400202, activity_id: 2, activity_name: Delete }
+  - when: { event.url.action: HEAD }
+    set: { type_uid: 400204, activity_id: 4, activity_name: Head }
+  - when: { event.url.action: CONNECT }
+    set: { type_uid: 400201, activity_id: 1, activity_name: Connect }
+
+  # Logins on the endpoint (3002).
+  - when: { event.category: logins }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, type_uid: 300201,
+           activity_id: 1, activity_name: Logon }
+  - when: { event.type: Logout }
+    set: { type_uid: 300202, activity_id: 2, activity_name: Logoff }
+  - when: { event.login.loginIsSuccessful: false }
+    set: { status: Failure }
+
+  # Windows event logs: the security events a rule reads get their class; the
+  # rest are records of the event log itself (1008, Other).
+  - when: { event.category: windows_event_logs }
+    set: { category_uid: 1, class_uid: 1008, class_name: Event Log Activity, type_uid: 100899,
+           activity_id: 99, activity_name: Other }
+  - when: { winEventLog.data.event.system.eventID: { in: ["4624", "4625", "4648"] } }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, type_uid: 300201,
+           activity_id: 1, activity_name: Logon }
+  - when: { winEventLog.data.event.system.eventID: { in: ["4634", "4647"] } }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, type_uid: 300202,
+           activity_id: 2, activity_name: Logoff }
+  - when: { winEventLog.data.event.system.eventID: { in: ["4768", "4771"] } }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, type_uid: 300203,
+           activity_id: 3, activity_name: Authentication Ticket }
+  - when: { winEventLog.data.event.system.eventID: "4769" }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, type_uid: 300204,
+           activity_id: 4, activity_name: Service Ticket Request }
+  - when: { winEventLog.data.event.system.eventID: { in: ["4625", "4771"] } }
+    set: { status: Failure }
+  - when: { winEventLog.data.event.system.eventID: "1102" }
+    set: { type_uid: 100801, activity_id: 1, activity_name: Clear }
+  - when: { winEventLog.data.event.system.eventID: "4720" }
+    set: { category_uid: 3, class_uid: 3001, class_name: Account Change, type_uid: 300101,
+           activity_id: 1, activity_name: Create }
+  - when: { winEventLog.data.event.system.eventID: "4726" }
+    set: { category_uid: 3, class_uid: 3001, class_name: Account Change, type_uid: 300106,
+           activity_id: 6, activity_name: Delete }
+  - when: { winEventLog.data.event.system.eventID: { in: ["4728", "4732", "4756"] } }
+    set: { category_uid: 3, class_uid: 3006, class_name: Group Management, type_uid: 300603,
+           activity_id: 3, activity_name: Add User }
+  - when: { winEventLog.data.event.system.eventID: { in: ["4729", "4733", "4757"] } }
+    set: { category_uid: 3, class_uid: 3006, class_name: Group Management, type_uid: 300604,
+           activity_id: 4, activity_name: Remove User }
+
+observables:
+  - { column: device_hostname, name: device.hostname, type: Hostname }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: dst_endpoint_ip, name: dst_endpoint.ip, type: "IP Address" }
+  - { column: dns_query_hostname, name: query.hostname, type: "Domain Name" }
+  - { column: http_request_url, name: http_request.url.url_string, type: "URL String" }
+  - { column: process_name, name: process.name, type: "Process Name" }
+  - { column: process_hash_sha256, name: process.file.hashes.sha256, type: "File Hash" }
+  - { column: file_hash_sha256, name: file.hashes.sha256, type: "File Hash" }

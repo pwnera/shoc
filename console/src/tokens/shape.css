@@ -1,0 +1,17 @@
+/* Shape and depth. Softly rounded panels and hairlines. Pages and cards stay flat; floating
+   surfaces (palette, chat, popovers, menus, tooltips, toasts, dialogs) get the one elevation. */
+:root,
+:root[data-theme="dark"] {
+  --radius-0: 0px;
+  --radius-1: 4px; /* controls, badges, kbd, inner boxes */
+  --radius-2: 8px; /* panels, dialogs, toasts, menus */
+  --hairline: 1px solid var(--line-1);
+  --hairline-strong: 1px solid var(--line-2);
+  --focus-ring: 0 0 0 1px var(--bg-0), 0 0 0 3px var(--focus);
+  /* Inside a scroll box, where overflow would clip the outer ring */
+  --focus-ring-inset: inset 0 0 0 2px var(--focus);
+  --elev-float: 0 0 0 1px var(--line-2), 0 12px 32px oklch(0 0 0 / 0.5);
+}
+:root[data-theme="light"] {
+  --elev-float: 0 0 0 1px var(--line-2), 0 12px 32px oklch(0.3 0.04 275 / 0.14);
+}

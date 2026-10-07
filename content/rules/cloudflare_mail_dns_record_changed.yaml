@@ -1,0 +1,36 @@
+id: cloudflare_mail_dns_record_changed
+title: MX or NS record changed in Cloudflare
+description: >
+  Whoever controls the MX records receives the company's mail, password resets
+  included, and an NS record hands a subdomain to another server.
+status: stable
+date: 2026-09-30
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1584.002]
+sources:
+  - name: Cloudflare
+    title: Batch DNS Records
+    url: https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/batch/
+    relation: inspired
+logsource:
+  product: cloudflare
+  service: audit_log
+detection:
+  selection:
+    raw.raw.uri|contains: /dns_records
+    raw.resource.request.type: [MX, NS]
+  # A request may leave the type out; the response holds the record.
+  selection_response:
+    raw.raw.uri|contains: /dns_records
+    raw.resource.response.type: [MX, NS]
+  # The batch endpoint changes many records in one call; its response lists
+  # every record it posted, patched, put or deleted, each with its type.
+  selection_batch:
+    raw.raw.uri|contains: /dns_records/batch
+    raw.resource.response|re: '"type"\s*:\s*"(MX|NS)"'
+  condition: selection or selection_response or selection_batch
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, src_endpoint.ip, resource.uid]

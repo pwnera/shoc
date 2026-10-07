@@ -1,0 +1,29 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-CUSTOMER_TAKEOUT_CREATED",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "CUSTOMER_TAKEOUT",
+        "name": "CUSTOMER_TAKEOUT_CREATED",
+        "parameters": [
+          {
+            "name": "OBFUSCATED_CUSTOMER_TAKEOUT_REQUEST_ID",
+            "value": "00aaaaaaaaaaaaa"
+          }
+        ]
+      }
+    ]
+  }
+]

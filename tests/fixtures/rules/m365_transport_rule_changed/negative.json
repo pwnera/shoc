@@ -1,0 +1,27 @@
+[
+  {
+    "Id": "m365-Get-TransportRule",
+    "Operation": "Get-TransportRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:51000"
+  },
+  {
+    "Id": "m365-New-TransportRule-failed",
+    "Operation": "New-TransportRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "False",
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:51000",
+    "ObjectId": "Disclaimer"
+  }
+]

@@ -1,0 +1,56 @@
+[
+  {
+    "_document_id": "gh-repo.add_member",
+    "action": "repo.add_member",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "Mozilla/5.0",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-repo.access-private",
+    "action": "repo.access",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "org": "acme",
+    "repo": "acme/landing-page",
+    "public_repo": false,
+    "visibility": "private",
+    "previous_visibility": "public",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-repo.access-internal",
+    "action": "repo.access",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "org": "acme",
+    "repo": "acme/handbook",
+    "public_repo": false,
+    "visibility": "internal",
+    "previous_visibility": "private",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "github-webhook-repo-privatized",
+    "action": "repository.privatized",
+    "actor": "dana",
+    "actor_id": 7,
+    "org": "acme",
+    "repo": "acme/landing-page",
+    "repository": {
+      "full_name": "acme/landing-page",
+      "private": true,
+      "visibility": "private"
+    },
+    "webhook": {
+      "event": "repository",
+      "action": "privatized"
+    }
+  }
+]

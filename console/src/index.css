@@ -1,0 +1,138 @@
+@import "tailwindcss";
+@import "./tokens/color.css";
+@import "./tokens/type.css";
+@import "./tokens/space.css";
+@import "./tokens/shape.css";
+@import "./tokens/motion.css";
+@import "./components/ui/shoc.css";
+
+/*
+ * Edition three of the console design system, extending edition two: flat
+ * panels on hairlines, four indigo-tinted grounds plus one float ground with the
+ * one elevation, a blue crew accent, softly rounded corners, and Geist Mono for
+ * every label, id and count. The values live in tokens/ and the components in
+ * components/ui/shoc.css; this block only names the tokens for Tailwind, so
+ * `bg-bg-1`, `text-fg-3`, `border-line-1`, `text-crew`, `rounded-control` (4px)
+ * and `rounded-panel` (8px). Severity hues mean severity, status hues (good,
+ * warn, bad) mean status, blue means the crew; none is decoration.
+ */
+@theme inline {
+  --color-bg-0: var(--bg-0);
+  --color-bg-1: var(--bg-1);
+  --color-bg-2: var(--bg-2);
+  --color-bg-3: var(--bg-3);
+  --color-bg-float: var(--bg-float);
+  --color-line-1: var(--line-1);
+  --color-line-2: var(--line-2);
+  --color-line-3: var(--line-3);
+  --color-fg-1: var(--fg-1);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-fg-4: var(--fg-4);
+  --color-fg-disabled: var(--fg-disabled);
+  --color-fill-light: var(--fill-light);
+  --color-on-light: var(--on-light);
+
+  --color-crew: var(--crew);
+  --color-crew-strong: var(--crew-strong);
+  --color-crew-bar: var(--crew-bar);
+  --color-crew-line: var(--crew-line);
+  --color-crew-fill: var(--crew-fill);
+  --color-crew-dot: var(--crew-dot);
+  --color-human: var(--human);
+
+  --color-critical: var(--critical);
+  --color-critical-line: var(--critical-line);
+  --color-critical-fill: var(--critical-fill);
+  --color-high: var(--high);
+  --color-high-line: var(--high-line);
+  --color-high-fill: var(--high-fill);
+  --color-medium: var(--medium);
+  --color-medium-line: var(--medium-line);
+  --color-medium-fill: var(--medium-fill);
+  --color-critical-dot: var(--critical-dot);
+  --color-high-dot: var(--high-dot);
+  --color-medium-dot: var(--medium-dot);
+  --color-low-dot: var(--low-dot);
+
+  --color-good: var(--good);
+  --color-good-dot: var(--good-dot);
+  --color-good-line: var(--good-line);
+  --color-good-fill: var(--good-fill);
+  --color-warn: var(--warn);
+  --color-warn-dot: var(--warn-dot);
+  --color-warn-line: var(--warn-line);
+  --color-warn-fill: var(--warn-fill);
+  --color-bad: var(--bad);
+  --color-bad-dot: var(--bad-dot);
+  --color-bad-line: var(--bad-line);
+  --color-bad-fill: var(--bad-fill);
+  --color-idle-dot: var(--idle-dot);
+
+  --color-ok: var(--ok);
+  --color-ok-dot: var(--ok-dot);
+  --color-ok-line: var(--ok-line);
+  --color-ok-fill: var(--ok-fill);
+  --color-degraded-dot: var(--degraded-dot);
+  --color-unknown-dot: var(--unknown-dot);
+  --color-danger-text: var(--danger-text);
+  --color-danger-value: var(--danger-value);
+  --color-warn-value: var(--warn-value);
+  --color-good-value: var(--good-value);
+  --color-no-evidence: var(--no-evidence);
+
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-chart-muted: var(--chart-muted);
+  --color-seq-1: var(--seq-1);
+  --color-seq-2: var(--seq-2);
+  --color-seq-3: var(--seq-3);
+  --color-seq-4: var(--seq-4);
+
+  --radius-control: var(--radius-1);
+  --radius-panel: var(--radius-2);
+}
+
+/* Body text is 13/20 and a page title 20/28 in this edition. */
+@theme {
+  --text-sm: 13px;
+  --text-sm--line-height: 20px;
+  --text-lg: 20px;
+  --text-lg--line-height: 28px;
+}
+
+@layer base {
+  body {
+    background: var(--bg-0);
+    color: var(--fg-2);
+    font: var(--text-body);
+    font-feature-settings: var(--font-features);
+  }
+  /* A 2px ring outside a 1px gap in the ground colour, on every interactive thing; inset
+     inside a scroll box, where overflow would clip it. The transparent outline draws nothing,
+     except in forced colours, which drop the shadow and paint the outline in a system colour. */
+  :focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring);
+  }
+  :is(.sh-table-wrap, .sh-dialog__body, .sh-layout__aside, .sh-palette__list, .sh-chat__log)
+    :focus-visible {
+    outline-offset: -2px;
+    box-shadow: var(--focus-ring-inset);
+  }
+  ::selection {
+    background: var(--selection);
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-2) transparent;
+  }
+}

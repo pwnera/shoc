@@ -1,0 +1,120 @@
+# GCP Cloud Audit Logs -> OCSF. ING-1, ING-3.
+# Cloud Logging wraps the audit record in protoPayload; everything a rule needs
+# is in there, so the paths reach through it. API calls are API Activity (6003).
+# Google Workspace sign-in events shared to Cloud Logging (login.googleapis.com,
+# the event in protoPayload.metadata.event) are mapped the way the
+# google_workspace source maps the same events.
+source: gcp_audit
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [gcp]
+
+# An IAM policy change lists what it added and removed as binding deltas. Keyed
+# by action and role (`unmapped.deltas.ADD.roles_owner.member`) and by action
+# and member (`unmapped.members.ADD.allUsers.role`), so a rule reads one delta
+# exactly instead of matching the list's text (RFC 0023).
+keyed:
+  deltas: { path: protoPayload.serviceData.policyDelta.bindingDeltas, key: [action, role] }
+  members: { path: protoPayload.serviceData.policyDelta.bindingDeltas, key: [action, member] }
+
+constants:
+  category_uid: 6
+  class_uid: 6003
+  class_name: API Activity
+  type_uid: 600399
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  status: Success
+  cloud_provider: GCP
+  metadata_product: GCP Cloud Audit
+  api_service_name: gcp
+
+fields:
+  event_uid: { paths: [insertId, "protoPayload.requestMetadata.requestAttributes.id"] }
+  time: { paths: [timestamp, receiveTimestamp, "protoPayload.requestMetadata.requestAttributes.time"], transform: iso8601 }
+  api_operation: { paths: ["protoPayload.metadata.event[0].eventName", "protoPayload.methodName"] }
+  api_service_name: { paths: ["protoPayload.serviceName"] }
+  message: { paths: ["protoPayload.status.message", "protoPayload.methodName"] }
+  status_code: { path: "protoPayload.status.code", transform: str }
+  api_response_code: { path: "protoPayload.status.code" }
+  api_response_error: { path: "protoPayload.status.message" }
+  # An account warning has no principal; the user it is about is a parameter.
+  actor_user_name:
+    paths:
+      - "protoPayload.authenticationInfo.principalEmail"
+      - "protoPayload.metadata.event[0].parameter[name=affected_email_address].value"
+  actor_user_uid: { paths: ["protoPayload.authenticationInfo.principalSubject"] }
+  # The service-account key a call was signed with, the GCP analogue of an AWS access key.
+  actor_session_uid: { paths: ["protoPayload.authenticationInfo.serviceAccountKeyName"] }
+  actor_invoked_by: { paths: ["protoPayload.authenticationInfo.serviceAccountDelegationInfo[0].firstPartyPrincipal.principalEmail"] }
+  src_endpoint_ip: { paths: ["protoPayload.requestMetadata.callerIp"] }
+  http_user_agent: { paths: ["protoPayload.requestMetadata.callerSuppliedUserAgent"] }
+  cloud_account_uid: { paths: ["resource.labels.project_id"] }
+  cloud_region: { paths: ["resource.labels.location", "resource.labels.zone", "protoPayload.resourceLocation.currentLocations[0]"] }
+  resource_type: { paths: ["protoPayload.authorizationInfo[0].resourceAttributes.type", "resource.type"] }
+  resource_uid: { paths: ["protoPayload.resourceName"] }
+
+derive:
+  - when: { "protoPayload.status.code": { gte: 1 } }
+    set: { status: Failure, severity_id: 2 }
+  - when: { "protoPayload.methodName": { contains: .get } }
+    set: { activity_id: 2, activity_name: Read, type_uid: 600302 }
+  - when: { "protoPayload.methodName": { contains: list } }
+    set: { activity_id: 2, activity_name: Read, type_uid: 600302 }
+  - when: { "protoPayload.methodName": { contains: .create } }
+    set: { activity_id: 1, activity_name: Create, type_uid: 600301 }
+  - when: { "protoPayload.methodName": { contains: .insert } }
+    set: { activity_id: 1, activity_name: Create, type_uid: 600301 }
+  - when: { "protoPayload.methodName": { contains: .update } }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303 }
+  - when: { "protoPayload.methodName": { contains: .patch } }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303 }
+  - when: { "protoPayload.methodName": { contains: .delete } }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 600304, severity_id: 3 }
+  - when: { "protoPayload.methodName": { contains: SetIamPolicy } }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303, severity_id: 3 }
+  - when: { "protoPayload.methodName": { contains: CreateServiceAccountKey } }
+    set: { severity_id: 3 }
+  - when: { severity: { in: [ERROR, CRITICAL, ALERT, EMERGENCY] } }
+    set: { severity_id: 3 }
+
+  # Workspace sign-in events (login.googleapis.com).
+  - when: { "protoPayload.serviceName": login.googleapis.com }
+    set: { category_uid: 3, class_uid: 3001, class_name: "Account Change", activity_id: 99, activity_name: Other, type_uid: 300199, severity_id: 1 }
+  - when: { "protoPayload.metadata.event[0].eventType": login }
+    set: { class_uid: 3002, class_name: Authentication, activity_id: 1, activity_name: Logon, type_uid: 300201 }
+  - when: { "protoPayload.metadata.event[0].eventName": login_failure }
+    set: { status: Failure, severity_id: 2 }
+  - when: { "protoPayload.metadata.event[0].eventName": login_success, "protoPayload.metadata.event[0].parameter[name=is_suspicious].boolValue": true }
+    set: { severity_id: 3 }
+  - when: { "protoPayload.metadata.event[0].eventName": logout }
+    set: { activity_id: 2, activity_name: Logoff, type_uid: 300202 }
+  # A challenge is a step of the sign-in; Google records whether it was passed.
+  - when: { "protoPayload.metadata.event[0].eventName": { in: [login_challenge, login_verification] } }
+    set: { activity_id: 6, activity_name: Preauth, type_uid: 300206, status: Unknown }
+  - when: { "protoPayload.metadata.event[0].eventName": { in: [login_challenge, login_verification] }, "protoPayload.metadata.event[0].parameter[name=login_challenge_status].value": passed }
+    set: { status: Success }
+  - when: { "protoPayload.metadata.event[0].eventName": { in: [login_challenge, login_verification] }, "protoPayload.metadata.event[0].parameter[name=login_challenge_status].value": { in: [incorrect_answer_entered, challenge_failed, failed] } }
+    set: { status: Failure, severity_id: 2 }
+  - when: { "protoPayload.metadata.event[0].eventName": password_edit }
+    set: { activity_id: 3, activity_name: "Password Change", type_uid: 300103 }
+  - when: { "protoPayload.metadata.event[0].eventName": { in: [2sv_enroll, titanium_enroll] } }
+    set: { activity_id: 10, activity_name: "MFA Factor Enable", type_uid: 300110 }
+  - when: { "protoPayload.metadata.event[0].eventName": { in: [2sv_disable, titanium_unenroll] } }
+    set: { activity_id: 11, activity_name: "MFA Factor Disable", type_uid: 300111, severity_id: 3 }
+  - when: { "protoPayload.metadata.event[0].eventName": email_forwarding_out_of_domain }
+    set: { severity_id: 3 }
+  # Google's own warnings about an account: suspicious sign-ins, accounts it
+  # disabled, government-backed attacks.
+  - when: { "protoPayload.metadata.event[0].eventType": { in: [account_warning, attack_warning] } }
+    set: { category_uid: 2, class_uid: 2004, class_name: "Detection Finding", activity_id: 1, activity_name: Create, type_uid: 200401, severity_id: 3 }
+  - when: { "protoPayload.metadata.event[0].eventName": { contains: account_disabled } }
+    set: { severity_id: 4 }
+  - when: { "protoPayload.metadata.event[0].eventName": gov_attack_warning }
+    set: { severity_id: 4 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: resource_uid, name: resource.uid, type: Resource }

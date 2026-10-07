@@ -1,0 +1,39 @@
+id: entra_sign_in_failure_burst
+title: Password spray against Entra ID from one address
+description: >
+  Ten or more different accounts failed to sign in from one address within
+  half an hour, on a wrong password, an unknown or locked account, or a
+  disabled user: somebody is trying a few passwords against the whole tenant.
+  Failures that only ask for MFA, a fresh token or a compliant device do not
+  count, and one person retrying their own password is one account.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: medium
+confidence: 0.6
+attack: [T1110.003, T1110.001]
+logsource:
+  product: entra
+  service: sign_ins
+detection:
+  selection:
+    status: Failure
+    status_code: ["50126", "50053", "50056", "50055", "50034", "50057", "50064", "50144"]
+  condition: selection
+  timeframe: 30m
+  group_by: [src_endpoint.ip]
+  count_distinct: actor.user.name
+  count: ">= 10"
+entity: src_endpoint.ip
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.location.country, status_code]
+sources:
+  - name: Elastic
+    title: Entra ID User Sign-in Brute Force Attempted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/credential_access_entra_id_brute_force_activity
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: Azure Entra Excessive Single-Factor Non-Interactive Sign-Ins
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/azure/queries/entra_excessive_non_interactive_sfa_sign_ins_across_users.toml
+    license: Elastic-2.0
+    relation: inspired

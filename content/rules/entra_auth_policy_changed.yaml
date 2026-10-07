@@ -1,0 +1,66 @@
+id: entra_auth_policy_changed
+title: Authentication, PIM or device registration policy changed
+description: >
+  Someone changed which sign-in methods the tenant accepts, the PIM settings
+  that gate admin roles, a PIM alert, the risk and MFA registration policy, or
+  who may register devices. Each one quietly lowers the bar for the next
+  sign-in, which is why attackers change them before they need them.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.6
+attack: [T1556.009, T1562.001]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection:
+    api.operation|contains:
+      - update role setting in pim
+      - disable pim alert
+      - authentication methods policy update
+      - update user risk and mfa registration policy
+      - set device registration policies
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Sigma
+    title: Changes To PIM Settings
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_pim_change_settings.yml
+    author: Mark Morowczynski '@markmorow', Yochana Henderson, '@Yochana-H'
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: PIM Alert Setting Changes To Disabled
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_pim_alerts_disabled.yml
+    author: Mark Morowczynski '@markmorow', Yochana Henderson, '@Yochana-H'
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: Certificate-Based Authentication Enabled
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_ad_certificate_based_authencation_enabled.yml
+    author: Harjot Shah Singh, '@cyb3rjy0t'
+    license: DRL-1.1
+    relation: inspired
+  - name: Sigma
+    title: User Risk and MFA Registration Policy Updated
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_update_risk_and_mfa_registration_policy.yml
+    author: Harjot Singh (@cyb3rjy0t)
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: Changes to Device Registration Policy
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_ad_device_registration_policy_changes.yml
+    author: Michael Epping, '@mepples21'
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: Entra ID Privileged Identity Management (PIM) Role Modified
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_privileged_identity_management_role_modified
+    license: Elastic-2.0
+    relation: adapted

@@ -1,0 +1,41 @@
+id: github_member_role_elevated
+title: Organisation member made an owner
+description: >
+  Owner rights in a GitHub organisation include every repository and every
+  secret in it. Only a grant, invitation or change to the owner role fires;
+  ordinary hires and demotions do not.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: high
+confidence: 0.6
+attack: [T1098, T1098.003]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  selection:
+    api.operation: [org.update_member, org.add_member, org.invite_member]
+  # The audit log names the new role in `permission`; a webhook in the
+  # membership or the invitation.
+  owner_audit_log:
+    raw.permission: admin
+  owner_webhook_member:
+    raw.membership.role: admin
+  owner_webhook_invite:
+    raw.invitation.role: admin
+  condition: selection and owner_*
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid]
+sources:
+  - name: Elastic
+    title: GitHub Owner Role Granted To User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/persistence_organization_owner_role_granted
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: New GitHub Owner Added
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/persistence_github_org_owner_added
+    license: Elastic-2.0
+    relation: adapted

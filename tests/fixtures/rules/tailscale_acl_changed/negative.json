@@ -1,0 +1,21 @@
+[
+  {
+    "action": "UPDATE",
+    "actor": {
+      "displayName": "Mallory",
+      "id": "u999CNTRL",
+      "loginName": "mallory@example.com",
+      "type": "USER"
+    },
+    "origin": "ADMIN_CONSOLE",
+    "target": {
+      "id": "T1234CNTRL",
+      "name": "target",
+      "type": "TAILNET",
+      "property": "DNS_CONFIG"
+    },
+    "type": "CONFIG",
+    "event": "TAILNET.UPDATE.DNS_CONFIG",
+    "tailnet": "T1234CNTRL"
+  }
+]

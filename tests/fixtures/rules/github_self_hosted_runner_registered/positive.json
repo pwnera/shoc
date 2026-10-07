@@ -1,0 +1,13 @@
+[
+  {
+    "_document_id": "gh-repo.register_self_hosted_runner",
+    "action": "repo.register_self_hosted_runner",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "public_repo": false,
+    "operation_type": "create"
+  }
+]

@@ -1,0 +1,32 @@
+# A session key and a long-term key on one case, with two users (RSP-2).
+id: aws_session_key_two_users
+title: Stolen instance credentials create an IAM user that then sweeps the account
+description: >
+  The instance role web-role's session key (ASIA…) is used from 203.0.113.55 to
+  create the IAM user support and an access key for it. The same address then
+  enumerates the account with support's key, and GuardDuty reports the
+  instance credentials used outside AWS. The case names support and web-role;
+  support sorts first, and is not a role.
+source: aws_cloudtrail
+entity: 203.0.113.55
+expected_rules:
+  - aws_workload_credentials_misused
+  - aws_iam_user_created
+  - aws_access_key_created
+  - aws_discovery_burst
+  - aws_guardduty_finding
+expected_verdict: malicious
+minimum_confidence: 0.6
+min_cases: 1
+max_cases: 1
+playbook_targets:
+  contain_workload_credentials:
+    revoke the role's older sessions: {role_name: web-role}
+  contain_leaked_cloud_key:
+    disable the access key: {access_key_id: AKIAEXAMPLESUPPORT01}
+  # The key GuardDuty named, not support's, which sorts first on the case.
+  contain_aws_guardduty_finding:
+    revoke the sessions minted from the key in the finding:
+      access_key_id: ASIAEXAMPLEINSTANCE1
+      user_name: web-role
+      principal_type: AssumedRole

@@ -1,0 +1,48 @@
+id: entra_mfa_registered_after_risky_sign_in
+title: MFA method registered within an hour of a risky Entra sign-in
+description: >
+  Entra ID Protection rated a sign-in medium or high risk, or raised a risk
+  detection, and within the hour the same user registered or changed an MFA
+  method. An attacker with a stolen password or session adds their own
+  authenticator first, so the account stays theirs after the password reset.
+status: experimental
+date: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1098.005, T1556.006]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  risky:
+    - raw.riskLevelDuringSignIn: [medium, high]
+    - raw.properties.riskLevelDuringSignIn: [medium, high]
+    # Identity Protection risk detections.
+    - class_uid: 2004
+  closed:
+    - raw.riskState: [remediated, dismissed, confirmedSafe]
+    - raw.properties.riskState: [remediated, dismissed, confirmedSafe]
+  registered:
+    api.operation|contains: [user registered, user changed default security info]
+    status: Success
+  # The sign-in and the detection name the user who signed in; a user's own
+  # registration names the same user as its initiator.
+  sequence:
+    by: [actor.user.name]
+    first: risky and not closed
+    then: registered
+    within: 1h
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip, message]
+sources:
+  - name: Elastic
+    title: Entra ID Protection User Alert and Device Registration
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_identity_protect_alert_followed_by_device_reg
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: Change to Authentication Method
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_change_to_authentication_method.yml
+    author: AlertIQ
+    license: DRL-1.1
+    relation: inspired

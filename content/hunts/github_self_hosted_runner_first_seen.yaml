@@ -1,0 +1,35 @@
+id: github_self_hosted_runner_first_seen
+title: A self-hosted runner picks up a job for the first time
+hypothesis: >
+  The Shai-Hulud worm registered its own runner in victims' repositories to run
+  code with their secrets. Free and Team plans have no audit-log API, so the
+  webhook's job events are where a new runner shows: its name, and the one
+  repository it runs in.
+attack: [T1195.002, T1543]
+logsource:
+  product: github
+  service: audit_log
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation|startswith: workflow_job.
+    device.hostname|exists: true
+  condition: selection
+baseline:
+  first_seen: [device.hostname]
+  lookback: 30d
+pivot: [device.hostname, resource.uid, actor.user.name]
+triage: >
+  Did the team add build capacity this week? A runner named after a worm, or one
+  that only ever runs in a single repository nobody builds there, is the one to escalate.
+follow_up:
+  - Who registered the runner, and which repositories can use it?
+  - Which secrets did the jobs on it read?
+sensitive: true
+sources:
+  - name: Elastic
+    title: New GitHub Self Hosted Action Runner
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/initial_access_github_register_self_hosted_runner
+    license: Elastic-2.0
+    relation: inspired

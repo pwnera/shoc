@@ -1,0 +1,48 @@
+[
+  {
+    "uuid": "okta-user.authentication.auth_via_mfa",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "FastPass declined phishing attempt"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "debugContext": {
+      "debugData": {
+        "factor": "SIGNED_NONCE"
+      }
+    }
+  }
+]

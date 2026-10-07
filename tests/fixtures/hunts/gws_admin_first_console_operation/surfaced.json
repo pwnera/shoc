@@ -1,0 +1,23 @@
+[
+  {
+    "id": {
+      "uniqueQualifier": "hunt-ASSIGN_ROLE-mallory@acme.com",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "mallory@acme.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "admin",
+        "name": "ASSIGN_ROLE",
+        "parameters": []
+      }
+    ]
+  }
+]

@@ -1,0 +1,44 @@
+id: google_admin_privilege_granted
+title: Admin role granted in Google Workspace
+description: >
+  A user was given super admin or another built-in admin role. User
+  management and help desk admins can reset the password of anyone below
+  super admin, so each is a takeover of most of the company. In a company of
+  this size that should happen about once a year, and never by surprise.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: high
+confidence: 0.75
+attack: [T1098.003]
+logsource:
+  product: google
+  service: reports
+detection:
+  selection:
+    api.operation|contains: [grant_admin_privilege, grant_delegated_admin_privileges]
+  # The newer audit name. Built-in admin roles only (`_SEED_ADMIN_ROLE` is
+  # super admin): shoc's own setup assigns a custom Reports role to its
+  # service account, which google_custom_admin_role_changed sees.
+  selection_admin_role:
+    api.operation: ASSIGN_ROLE
+    unmapped.params.ROLE_NAME|endswith: _ADMIN_ROLE
+  selection_super_admin:
+    api.operation: ASSIGN_ROLE
+    unmapped.params.ROLE_NAME: Super Admin
+  condition: selection or selection_admin_role or selection_super_admin
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, unmapped.params.ROLE_NAME, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Google Workspace Admin Role Assigned to a User or Group
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/persistence_google_workspace_admin_role_assigned_to_user
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Google Workspace User Granted Admin Privileges
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/gcp/gworkspace/admin/gcp_gworkspace_user_granted_admin_privileges.yml
+    author: Austin Songer
+    license: DRL-1.1
+    relation: adapted

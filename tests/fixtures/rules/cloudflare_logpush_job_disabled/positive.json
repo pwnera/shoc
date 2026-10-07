@@ -1,0 +1,74 @@
+[
+  {
+    "id": "cf-logpush-del",
+    "account": {
+      "id": "acc-1",
+      "name": "Acme"
+    },
+    "action": {
+      "type": "delete",
+      "description": "Logpush job",
+      "result": "success"
+    },
+    "actor": {
+      "id": "f6b5de0326bb5182b8a4840ee01ec774",
+      "context": "dash",
+      "email": "mallory@example.com",
+      "ip_address": "203.0.113.7",
+      "type": "user"
+    },
+    "raw": {
+      "method": "DELETE",
+      "status_code": 200,
+      "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/logpush/jobs/7",
+      "user_agent": "Mozilla/5.0"
+    },
+    "resource": {
+      "id": "job-7",
+      "product": "logpush",
+      "request": {},
+      "response": {}
+    },
+    "zone": {
+      "id": "023e105f4ecef8ad9ca31a8372d0c353",
+      "name": "example.com"
+    }
+  },
+  {
+    "id": "cf-logpush-off",
+    "account": {
+      "id": "acc-1",
+      "name": "Acme"
+    },
+    "action": {
+      "type": "update",
+      "description": "Logpush job",
+      "result": "success"
+    },
+    "actor": {
+      "id": "f6b5de0326bb5182b8a4840ee01ec774",
+      "context": "dash",
+      "email": "mallory@example.com",
+      "ip_address": "203.0.113.7",
+      "type": "user"
+    },
+    "raw": {
+      "method": "PUT",
+      "status_code": 200,
+      "uri": "/accounts/acc-1/logpush/jobs/8",
+      "user_agent": "Mozilla/5.0"
+    },
+    "resource": {
+      "id": "job-7",
+      "product": "logpush",
+      "request": {
+        "enabled": false
+      },
+      "response": {}
+    },
+    "zone": {
+      "id": "023e105f4ecef8ad9ca31a8372d0c353",
+      "name": "example.com"
+    }
+  }
+]

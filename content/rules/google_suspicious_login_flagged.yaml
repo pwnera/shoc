@@ -1,0 +1,49 @@
+id: google_suspicious_login_flagged
+title: Google flagged a sign-in or warned about an account
+description: >
+  Google marked a sign-in as suspicious, warned of a government-backed attack,
+  signed a user out over a suspicious session cookie, or disabled the account
+  for hijacking or a leaked password. Google sees far more sign-ins than one
+  company and flags few of them.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1078.004]
+logsource:
+  product: google
+  service: reports
+detection:
+  # account_warning and attack_warning events are mapped to Detection Finding.
+  selection_warning:
+    api.service.name: login
+    class_uid: 2004
+  # Google files a user adding or removing a passkey as an account warning.
+  filter_passkey:
+    api.operation: [passkey_enrolled, passkey_removed]
+  # The mapping raises a login_success Google marked is_suspicious to 3.
+  selection_suspicious_success:
+    api.operation: login_success
+    severity_id|gte: 3
+  condition: (selection_warning and not filter_passkey) or selection_suspicious_success
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip, src_endpoint.location.country]
+sources:
+  - name: Sigma
+    title: Suspicious Login Activity Classified By Google
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/gcp/gworkspace/login/gcp_gworkspace_suspicious_login.yml
+    author: Tom Kluter
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: Google Workspace Government Attack Warning
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/gcp/gworkspace/login/gcp_gworkspace_govattack.yml
+    author: Tom Kluter
+    license: DRL-1.1
+    relation: adapted
+  - name: Google
+    title: Login audit activity events
+    url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/login
+    relation: inspired

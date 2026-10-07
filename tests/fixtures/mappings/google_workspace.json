@@ -1,0 +1,1696 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2026-09-20T10:00:00.000Z",
+      "uniqueQualifier": "gw-1",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@acme.com",
+      "profileId": "1234",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "login",
+    "events": [
+      {
+        "type": "login",
+        "name": "login_failure",
+        "parameters": [
+          {
+            "name": "login_type",
+            "value": "google_password"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-11-07T14:23:22.470Z",
+      "uniqueQualifier": "-7203312395540000000",
+      "applicationName": "context_aware_access",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"M7TKrOH_7SmMcgNyv3m2zFZr0EiRGbeupcJ_yRi3fFQ\"",
+    "actor": {
+      "callerType": "USER",
+      "email": "john.doe@example.com",
+      "profileId": "user1"
+    },
+    "ipAddress": "192.0.2.1",
+    "events": [
+      {
+        "type": "CONTEXT_AWARE_ACCESS_USER_EVENT",
+        "name": "MONITOR_MODE_ACCESS_DENY_EVENT",
+        "parameters": [
+          {
+            "name": "CAA_ACCESS_LEVEL_APPLIED",
+            "multiValue": [
+              "is admin-approved IOS",
+              "is admin-approved android",
+              "Is Corporate Device"
+            ]
+          },
+          {
+            "name": "CAA_ACCESS_LEVEL_UNSATISFIED",
+            "multiValue": [
+              "is admin-approved android",
+              "EDR Compliant Device",
+              "is admin-approved IOS",
+              "Is Corporate Device"
+            ]
+          },
+          {
+            "name": "CAA_APPLICATION",
+            "value": "GMAIL"
+          },
+          {
+            "name": "BLOCKED_API_ACCESS",
+            "multiValue": [
+              "GMAIL"
+            ]
+          },
+          {
+            "name": "CAA_DEVICE_ID",
+            "value": "UNKNOWN"
+          },
+          {
+            "name": "CAA_DEVICE_STATE",
+            "value": "No Device Signals"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2025-12-01T11:00:20.545Z",
+      "uniqueQualifier": "-2222222222222222222",
+      "applicationName": "admin",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"Abc/Def\"",
+    "actor": {
+      "callerType": "USER",
+      "email": "john.doe@example.com",
+      "profileId": "111111111111111111111"
+    },
+    "ipAddress": "203.0.113.50",
+    "networkInfo": {
+      "ipAsn": [
+        3215
+      ],
+      "regionCode": "FR",
+      "subdivisionCode": "FR-IDF"
+    },
+    "events": [
+      {
+        "type": "SECURITY_INVESTIGATION",
+        "name": "SECURITY_INVESTIGATION_CONTENT_ACCESS",
+        "parameters": [
+          {
+            "name": "INVESTIGATION_DATA_SOURCE",
+            "value": "GMAIL"
+          },
+          {
+            "name": "INVESTIGATION_CONTENT_ACCESS_ENTITY_ID",
+            "value": "(<test@example.org> jane.doe@example.net)"
+          },
+          {
+            "name": "INVESTIGATION_CONTENT_ACCESS_JUSTIFICATION",
+            "value": "https://tickets.example.com/ALRT-1"
+          },
+          {
+            "name": "INVESTIGATION_CONTENT_ACCESS_DEVICE",
+            "value": "REDACTED"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-03-12T14:50:56.780Z",
+      "uniqueQualifier": "-68755428425",
+      "applicationName": "admin",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"BvGfkzKoKVD0NM7VdXdzkXDD-nHLkyMjheL_9Z5X0H\"",
+    "actor": {
+      "callerType": "USER",
+      "email": "test@example.com",
+      "profileId": "user1"
+    },
+    "ipAddress": "FE80:000:333:1111:7777:5555:6666:ddd",
+    "events": [
+      {
+        "type": "ALERT_CENTER",
+        "name": "ALERT_CENTER_VIEW",
+        "parameters": [
+          {
+            "name": "ALERT_ID",
+            "value": "445831ce-36e0-44b5-aca6-0d85f7454df7,69f7ac90-44de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-03-12T14:41:33.804Z",
+      "uniqueQualifier": "-4779949128172",
+      "applicationName": "admin",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"BvGfkzKoKVD0NM7VdXdzkXDD-nHLkyMjheL_9Z5X0\"",
+    "actor": {
+      "email": "test@example.com",
+      "profileId": "user1"
+    },
+    "ipAddress": "FE80:000:333:1111:7777:5555:6666:ddd",
+    "events": [
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "ALLOW_STRONG_AUTHENTICATION",
+        "parameters": [
+          {
+            "name": "OLD_VALUE",
+            "value": "INHERIT_FROM_PARENT"
+          },
+          {
+            "name": "NEW_VALUE",
+            "value": "true"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "IT"
+          }
+        ]
+      },
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "ENFORCE_STRONG_AUTHENTICATION",
+        "parameters": [
+          {
+            "name": "OLD_VALUE",
+            "value": "INHERIT_FROM_PARENT"
+          },
+          {
+            "name": "NEW_VALUE",
+            "value": "true"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "IT"
+          }
+        ]
+      },
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "CHANGE_TWO_STEP_VERIFICATION_FREQUENCY",
+        "parameters": [
+          {
+            "name": "OLD_VALUE",
+            "value": "INHERIT_FROM_PARENT"
+          },
+          {
+            "name": "NEW_VALUE",
+            "value": "DISABLE_USERS_TO_TRUST_DEVICE"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "IT"
+          }
+        ]
+      },
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "CHANGE_TWO_STEP_VERIFICATION_ENROLLMENT_PERIOD_DURATION",
+        "parameters": [
+          {
+            "name": "OLD_VALUE",
+            "value": "INHERIT_FROM_PARENT"
+          },
+          {
+            "name": "NEW_VALUE",
+            "value": "1 week"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "IT"
+          }
+        ]
+      },
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "CHANGE_TWO_STEP_VERIFICATION_GRACE_PERIOD_DURATION",
+        "parameters": [
+          {
+            "name": "OLD_VALUE",
+            "value": "INHERIT_FROM_PARENT"
+          },
+          {
+            "name": "NEW_VALUE",
+            "value": "1 day"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "IT"
+          }
+        ]
+      },
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "CHANGE_ALLOWED_TWO_STEP_VERIFICATION_METHODS",
+        "parameters": [
+          {
+            "name": "ALLOWED_TWO_STEP_VERIFICATION_METHOD",
+            "value": "NO_TELEPHONY"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "IT"
+          }
+        ]
+      },
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "CHANGE_TWO_STEP_VERIFICATION_START_DATE",
+        "parameters": [
+          {
+            "name": "OLD_VALUE",
+            "value": "INHERIT_FROM_PARENT"
+          },
+          {
+            "name": "NEW_VALUE",
+            "value": "2019-10-31"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "IT"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-03-13T10:36:57.929Z",
+      "uniqueQualifier": "2480088525820",
+      "applicationName": "calendar",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"BvGfkzKoKVD0NM7VdXdzkXDD-nHLkyMjheL\"",
+    "actor": {
+      "email": "john.doe@example.com",
+      "profileId": "user1"
+    },
+    "ownerDomain": "example.com",
+    "ipAddress": "192.0.2.1",
+    "events": [
+      {
+        "type": "event_change",
+        "name": "create_event",
+        "parameters": [
+          {
+            "name": "event_id",
+            "value": "fksdqs5mv613b"
+          },
+          {
+            "name": "organizer_calendar_id",
+            "value": "john.doe@example.com"
+          },
+          {
+            "name": "calendar_id",
+            "value": "jane.doe@example.com"
+          },
+          {
+            "name": "event_title",
+            "value": "Test title"
+          },
+          {
+            "name": "is_recurring",
+            "boolValue": false
+          },
+          {
+            "name": "recurring",
+            "value": "no"
+          },
+          {
+            "name": "client_side_encrypted",
+            "value": "no"
+          },
+          {
+            "name": "start_time",
+            "intValue": "63846450000"
+          },
+          {
+            "name": "end_time",
+            "intValue": "63846453600"
+          },
+          {
+            "name": "user_agent",
+            "value": "ExampleApp"
+          }
+        ]
+      },
+      {
+        "type": "event_change",
+        "name": "add_event_guest",
+        "parameters": [
+          {
+            "name": "event_id",
+            "value": "fksdqs5mv613b"
+          },
+          {
+            "name": "organizer_calendar_id",
+            "value": "john.doe@example.com"
+          },
+          {
+            "name": "calendar_id",
+            "value": "jane.doe@example.com"
+          },
+          {
+            "name": "event_title",
+            "value": "Test title"
+          },
+          {
+            "name": "is_recurring",
+            "boolValue": false
+          },
+          {
+            "name": "recurring",
+            "value": "no"
+          },
+          {
+            "name": "client_side_encrypted",
+            "value": "no"
+          },
+          {
+            "name": "event_guest",
+            "value": "jane.doe@example.com"
+          },
+          {
+            "name": "user_agent",
+            "value": "ExampleApp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-03-12T10:01:16.430Z",
+      "uniqueQualifier": "-2323518099402",
+      "applicationName": "chat",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"BvGfkzKoKVD0NM7VdXdzkXDD-nHLkyMjheL_9Z5X0\"",
+    "actor": {
+      "callerType": "USER",
+      "email": "jane.doe@example.com",
+      "profileId": "user1"
+    },
+    "events": [
+      {
+        "type": "user_action",
+        "name": "room_created",
+        "parameters": [
+          {
+            "name": "room_id",
+            "value": "AAAAAAAAA"
+          },
+          {
+            "name": "actor",
+            "value": "jane.doe@example.com"
+          },
+          {
+            "name": "external_room",
+            "value": "DISABLED"
+          },
+          {
+            "name": "room_name",
+            "value": "Group Chat (AAAAAAAAA)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-11-05T11:58:46.000Z",
+      "uniqueQualifier": "5756634282037777777777",
+      "applicationName": "chrome",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"vj4PvLCfb9kD8ZfWJ2Smlh/sS5BbT29sC\"",
+    "actor": {
+      "callerType": "USER",
+      "profileId": "user1"
+    },
+    "events": [
+      {
+        "type": "CHROME_OS_LOGIN_LOGOUT_TYPE",
+        "name": "CHROME_OS_LOGIN_FAILURE_EVENT",
+        "parameters": [
+          {
+            "name": "TIMESTAMP",
+            "intValue": "1730800000000"
+          },
+          {
+            "name": "EVENT_REASON",
+            "value": "CHROMEOS_AFFILIATED_LOGIN"
+          },
+          {
+            "name": "DEVICE_NAME",
+            "value": "example.com"
+          },
+          {
+            "name": "DEVICE_USER",
+            "value": "redacted"
+          },
+          {
+            "name": "CLIENT_TYPE",
+            "value": "CHROME_OS_DEVICE"
+          },
+          {
+            "name": "DEVICE_PLATFORM",
+            "value": "ChromeOS 16033.43.0"
+          },
+          {
+            "name": "DIRECTORY_DEVICE_ID",
+            "value": "cbc28748-a199-47c1-b483-000000000000000000"
+          },
+          {
+            "name": "LOGIN_FAILURE_REASON",
+            "value": "AUTHENTICATION_ERROR"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "Microsoft"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-10-21T13:47:41.000Z",
+      "uniqueQualifier": "-41312380982470000000",
+      "applicationName": "chrome",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"vj4PvLCfb9kD84uxgdiOjzAg0/ydpRq7PE6Sq81YCdl1\"",
+    "actor": {
+      "callerType": "USER",
+      "email": "redacted",
+      "profileId": "user1"
+    },
+    "events": [
+      {
+        "type": "CHROME_OS_CRD_CLIENT_CONNECTED_TYPE",
+        "name": "CHROME_OS_CRD_CLIENT_CONNECTED",
+        "parameters": [
+          {
+            "name": "TIMESTAMP",
+            "intValue": "17290000000"
+          },
+          {
+            "name": "EVENT_REASON",
+            "value": "CHROMEOS_CRD_CLIENT_CONNECTED"
+          },
+          {
+            "name": "DEVICE_NAME",
+            "value": "example.com"
+          },
+          {
+            "name": "DEVICE_USER",
+            "value": "Admin"
+          },
+          {
+            "name": "CLIENT_TYPE",
+            "value": "CHROME_OS_DEVICE"
+          },
+          {
+            "name": "CONNECTION_TYPE",
+            "value": "RELAY"
+          },
+          {
+            "name": "DEVICE_PLATFORM",
+            "value": "ChromeOS 16002.58.0"
+          },
+          {
+            "name": "DIRECTORY_DEVICE_ID",
+            "value": "0f9e7f45-b777-4777-b777-c214388888888"
+          },
+          {
+            "name": "SESSION_ID",
+            "value": "joedoe@example.com/chromoting_ftl_d2cd9895-eeee-5555-0000-00040059755"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-10-11T15:56:35.651Z",
+      "uniqueQualifier": "2420143888886666888",
+      "applicationName": "chrome",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"vj4PvLCfb9AGttWx4uxgdiOjzAg0/qXWA2OAs3YpjtVNEo9y\"",
+    "actor": {
+      "callerType": "USER",
+      "email": "redacted",
+      "profileId": "user1"
+    },
+    "events": [
+      {
+        "type": "CHROMEOS_PERIPHERAL_ADDED_TYPE",
+        "name": "CHROMEOS_PERIPHERAL_ADDED",
+        "parameters": [
+          {
+            "name": "TIMESTAMP",
+            "intValue": "122222225555"
+          },
+          {
+            "name": "EVENT_REASON",
+            "value": "CHROMEOS_PERIPHERAL_ADDED"
+          },
+          {
+            "name": "DEVICE_NAME",
+            "value": "example.com"
+          },
+          {
+            "name": "DEVICE_USER",
+            "value": "redacted"
+          },
+          {
+            "name": "CLIENT_TYPE",
+            "value": "CHROME_OS_DEVICE"
+          },
+          {
+            "name": "DEVICE_PLATFORM",
+            "value": "ChromeOS 16002.44.0"
+          },
+          {
+            "name": "DIRECTORY_DEVICE_ID",
+            "value": "4ebc7777-cccc-8888-7777-f16211111111b"
+          },
+          {
+            "name": "PRODUCT_ID",
+            "value": "222234"
+          },
+          {
+            "name": "PRODUCT_NAME",
+            "value": "USB2.0 FHD UVC WebCam"
+          },
+          {
+            "name": "VENDOR_ID",
+            "value": "0x222e"
+          },
+          {
+            "name": "VENDOR_NAME",
+            "value": "Example Vendor"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2025-03-18T13:32:31.497Z",
+      "uniqueQualifier": "-6347820133480887822",
+      "applicationName": "admin",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"M7TKrOH_7SmMcgNyv3m2zFZr0EiRGbeupcJ_yRi3fFQ\"",
+    "actor": {
+      "callerType": "USER",
+      "email": "johndoe@example.com",
+      "profileId": "user1"
+    },
+    "ipAddress": "203.0.113.50",
+    "events": [
+      {
+        "type": "USER_SETTINGS",
+        "name": "DELETE_USER",
+        "parameters": [
+          {
+            "name": "USER_EMAIL",
+            "value": "janedoe@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2023-09-04T08:42:51.615Z",
+      "uniqueQualifier": "-2222222222222222222",
+      "applicationName": "drive",
+      "customerId": "111111111"
+    },
+    "actor": {
+      "email": "john.doe@example.org",
+      "profileId": "444444444444444444444"
+    },
+    "ipAddress": "203.0.113.50",
+    "events": [
+      {
+        "type": "access",
+        "name": "view",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "billable",
+            "boolValue": true
+          },
+          {
+            "name": "owner_is_shared_drive",
+            "boolValue": true
+          },
+          {
+            "name": "owner_team_drive_id",
+            "value": "DDD_111111111111111"
+          },
+          {
+            "name": "owner",
+            "value": "J.DOE"
+          },
+          {
+            "name": "doc_id",
+            "value": "333333333333333333333333333333333"
+          },
+          {
+            "name": "doc_type",
+            "value": "folder"
+          },
+          {
+            "name": "is_encrypted",
+            "boolValue": false
+          },
+          {
+            "name": "doc_title",
+            "value": "MyDocs"
+          },
+          {
+            "name": "visibility",
+            "value": "people_within_domain_with_link"
+          },
+          {
+            "name": "shared_drive_id",
+            "value": "DDD_222222222222222"
+          },
+          {
+            "name": "originating_app_id",
+            "value": "666666666666"
+          },
+          {
+            "name": "actor_is_collaborator_account",
+            "boolValue": false
+          },
+          {
+            "name": "owner_is_team_drive",
+            "boolValue": true
+          },
+          {
+            "name": "team_drive_id",
+            "value": "DDD_888888888888888"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-01-17T11:09:39.840Z",
+      "uniqueQualifier": "111111",
+      "applicationName": "drive",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "aaa-aaa/aaa",
+    "actor": {
+      "email": "johndoe@example.com",
+      "profileId": "11111"
+    },
+    "ipAddress": "0.0.0.0",
+    "events": [
+      {
+        "type": "access",
+        "name": "edit",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": false
+          },
+          {
+            "name": "billable",
+            "boolValue": true
+          },
+          {
+            "name": "owner_is_shared_drive",
+            "boolValue": false
+          },
+          {
+            "name": "owner",
+            "value": "owner@example.com"
+          },
+          {
+            "name": "doc_id",
+            "value": "111111111111"
+          },
+          {
+            "name": "doc_type",
+            "value": "document"
+          },
+          {
+            "name": "is_encrypted",
+            "boolValue": false
+          },
+          {
+            "name": "doc_title",
+            "value": "Doc Temp"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "originating_app_id",
+            "value": "111111"
+          },
+          {
+            "name": "actor_is_collaborator_account",
+            "boolValue": false
+          },
+          {
+            "name": "owner_is_team_drive",
+            "boolValue": false
+          }
+        ]
+      },
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "billable",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "redacted"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_edit"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "shared_internally"
+          },
+          {
+            "name": "owner_is_shared_drive",
+            "boolValue": false
+          },
+          {
+            "name": "owner",
+            "value": "owner@example.com"
+          },
+          {
+            "name": "doc_id",
+            "value": "11111"
+          },
+          {
+            "name": "doc_type",
+            "value": "document"
+          },
+          {
+            "name": "is_encrypted",
+            "boolValue": false
+          },
+          {
+            "name": "doc_title",
+            "value": "Doc Temp"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "originating_app_id",
+            "value": "11111"
+          },
+          {
+            "name": "actor_is_collaborator_account",
+            "boolValue": false
+          },
+          {
+            "name": "owner_is_team_drive",
+            "boolValue": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2025-02-18T17:10:20.317Z",
+      "uniqueQualifier": "-12345678",
+      "applicationName": "drive",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"ABCDEF123\"",
+    "actor": {
+      "email": "",
+      "profileId": "105250506097979753968"
+    },
+    "events": [
+      {
+        "type": "access",
+        "name": "sheets_import_range",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "billable",
+            "boolValue": false
+          },
+          {
+            "name": "sheets_import_range_recipient_doc",
+            "value": "123qwerty456"
+          },
+          {
+            "name": "owner_is_shared_drive",
+            "boolValue": true
+          },
+          {
+            "name": "owner_team_drive_id",
+            "value": "asdf678"
+          },
+          {
+            "name": "owner",
+            "value": "johndoe"
+          },
+          {
+            "name": "doc_id",
+            "value": "zxcv890"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "is_encrypted",
+            "boolValue": false
+          },
+          {
+            "name": "doc_title",
+            "value": "TPS report"
+          },
+          {
+            "name": "visibility",
+            "value": "people_with_link"
+          },
+          {
+            "name": "shared_drive_id",
+            "value": "asdf678"
+          },
+          {
+            "name": "actor_is_collaborator_account",
+            "boolValue": false
+          },
+          {
+            "name": "owner_is_team_drive",
+            "boolValue": true
+          },
+          {
+            "name": "team_drive_id",
+            "value": "asdf678"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-11-14T12:07:37.366Z",
+      "uniqueQualifier": "-3853857772415670247",
+      "applicationName": "meet",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"M7TKrOH_7SmMcgNyv3m2zFZr0EiRGbeupcJ_yRi3fFQ/t2tqco4M6QzgpdeZHhmJy_6yJUU\"",
+    "actor": {
+      "callerType": "KEY",
+      "key": "HANGOUTS_EXTERNAL_OR_ANONYMOUS"
+    },
+    "events": [
+      {
+        "type": "call",
+        "name": "call_ended",
+        "parameters": [
+          {
+            "name": "video_send_seconds",
+            "intValue": "173"
+          },
+          {
+            "name": "screencast_recv_bitrate_kbps_mean",
+            "intValue": "61"
+          },
+          {
+            "name": "location_country",
+            "value": "FR"
+          },
+          {
+            "name": "identifier_type",
+            "value": "device_id"
+          },
+          {
+            "name": "audio_send_bitrate_kbps_mean",
+            "intValue": "0"
+          },
+          {
+            "name": "video_send_packet_loss_max",
+            "intValue": "2"
+          },
+          {
+            "name": "endpoint_id",
+            "value": "boq_hlane_QGKxiQcCZvF"
+          },
+          {
+            "name": "device_type",
+            "value": "meet_hardware"
+          },
+          {
+            "name": "video_send_packet_loss_mean",
+            "intValue": "0"
+          },
+          {
+            "name": "screencast_recv_long_side_median_pixels",
+            "intValue": "1568"
+          },
+          {
+            "name": "calendar_event_id",
+            "value": "3ckjqg60dq5j4eu9cgjtdb396c"
+          },
+          {
+            "name": "screencast_send_seconds",
+            "intValue": "0"
+          },
+          {
+            "name": "video_send_fps_mean",
+            "intValue": "30"
+          },
+          {
+            "name": "audio_send_packet_loss_max",
+            "intValue": "0"
+          },
+          {
+            "name": "network_send_jitter_msec_mean",
+            "intValue": "1"
+          },
+          {
+            "name": "screencast_recv_fps_mean",
+            "intValue": "29"
+          },
+          {
+            "name": "audio_recv_seconds",
+            "intValue": "33"
+          },
+          {
+            "name": "network_congestion",
+            "intValue": "0"
+          },
+          {
+            "name": "network_estimated_download_kbps_mean",
+            "intValue": "74"
+          },
+          {
+            "name": "audio_send_packet_loss_mean",
+            "intValue": "0"
+          },
+          {
+            "name": "network_transport_protocol",
+            "value": "udp"
+          },
+          {
+            "name": "duration_seconds",
+            "intValue": "15317"
+          },
+          {
+            "name": "video_send_bitrate_kbps_mean",
+            "intValue": "19"
+          },
+          {
+            "name": "identifier",
+            "value": "644e7990-c69d-4e09-8cd2-6ae52406c21c"
+          },
+          {
+            "name": "location_region",
+            "value": "Paris"
+          },
+          {
+            "name": "audio_recv_packet_loss_max",
+            "intValue": "0"
+          },
+          {
+            "name": "audio_recv_packet_loss_mean",
+            "intValue": "0"
+          },
+          {
+            "name": "network_recv_jitter_msec_max",
+            "intValue": "2"
+          },
+          {
+            "name": "organizer_email",
+            "value": "redacted"
+          },
+          {
+            "name": "screencast_recv_short_side_median_pixels",
+            "intValue": "980"
+          },
+          {
+            "name": "is_external",
+            "boolValue": false
+          },
+          {
+            "name": "network_recv_jitter_msec_mean",
+            "intValue": "1"
+          },
+          {
+            "name": "ip_address",
+            "value": "203.0.113.50"
+          },
+          {
+            "name": "audio_send_seconds",
+            "intValue": "15316"
+          },
+          {
+            "name": "display_name",
+            "value": "Room 1"
+          },
+          {
+            "name": "screencast_recv_packet_loss_max",
+            "intValue": "0"
+          },
+          {
+            "name": "video_recv_seconds",
+            "intValue": "0"
+          },
+          {
+            "name": "network_rtt_msec_mean",
+            "intValue": "8"
+          },
+          {
+            "name": "video_send_long_side_median_pixels",
+            "intValue": "320"
+          },
+          {
+            "name": "screencast_recv_packet_loss_mean",
+            "intValue": "0"
+          },
+          {
+            "name": "conference_id",
+            "value": "rJ7fsV2IE2eFwTlTZ88tDxIQOAIIigIgABgDCA"
+          },
+          {
+            "name": "screencast_recv_seconds",
+            "intValue": "14874"
+          },
+          {
+            "name": "product_type",
+            "value": "meet"
+          },
+          {
+            "name": "network_estimated_upload_kbps_mean",
+            "intValue": "7"
+          },
+          {
+            "name": "video_send_short_side_median_pixels",
+            "intValue": "180"
+          },
+          {
+            "name": "meeting_code",
+            "value": "ABCDEFGHIJ"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2025-02-18T16:00:24.311Z",
+      "uniqueQualifier": "-123456",
+      "applicationName": "groups_enterprise",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"ABCDEF123\"",
+    "actor": {
+      "callerType": "KEY",
+      "key": "SYSTEM"
+    },
+    "events": [
+      {
+        "type": "moderator_action",
+        "name": "remove_user",
+        "parameters": [
+          {
+            "name": "member_id",
+            "value": "john.doe@example.com"
+          },
+          {
+            "name": "group_id",
+            "value": "team@example.com"
+          },
+          {
+            "name": "member_type",
+            "value": "user"
+          }
+        ]
+      },
+      {
+        "type": "moderator_action",
+        "name": "remove_member",
+        "parameters": [
+          {
+            "name": "member_id",
+            "value": "john.doe@example.com"
+          },
+          {
+            "name": "group_id",
+            "value": "team@example.com"
+          },
+          {
+            "name": "member_type",
+            "value": "user"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-03-11T15:20:33.157Z",
+      "uniqueQualifier": "-92180609786",
+      "applicationName": "groups_enterprise",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"BvGfkzKoKVD0NM7VdXdzkXDD-nHLkyMjheL\"",
+    "actor": {
+      "callerType": "USER",
+      "email": "jane.doe@example.com",
+      "profileId": "user1"
+    },
+    "events": [
+      {
+        "type": "moderator_action",
+        "name": "delete_group",
+        "parameters": [
+          {
+            "name": "group_id",
+            "value": "testgroup@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2025-08-12T06:27:17.877Z",
+      "uniqueQualifier": "id-1",
+      "applicationName": "login",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"etag-placeholder\"",
+    "actor": {
+      "callerType": "USER",
+      "email": "user1@example.com",
+      "profileId": "user1"
+    },
+    "ipAddress": "192.0.2.20",
+    "networkInfo": {
+      "ipAsn": [
+        12345
+      ],
+      "regionCode": "XX",
+      "subdivisionCode": "XX-YYY"
+    },
+    "events": [
+      {
+        "type": "blocked_sender_change",
+        "name": "blocked_sender",
+        "parameters": [
+          {
+            "name": "affected_email_address",
+            "value": "noreply@example.org"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-11-07T14:21:46.270Z",
+      "uniqueQualifier": "-49907177521610000000",
+      "applicationName": "rules",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"M7TKrOH_7SmMcgNyv3m2zFZr0EiRGbeupcJ_yRi3fFQ/\"",
+    "actor": {
+      "email": "john.doe@example.com",
+      "profileId": "user1"
+    },
+    "events": [
+      {
+        "type": "content_matched_type",
+        "name": "content_matched",
+        "parameters": [
+          {
+            "name": "data_source",
+            "value": "DRIVE"
+          },
+          {
+            "name": "resource_id",
+            "value": "1K23Am8JmHL9vgGwUjUPaqDZV"
+          },
+          {
+            "name": "resource_owner_email",
+            "value": "john.doe@example.com"
+          },
+          {
+            "name": "rule_resource_name",
+            "value": "policies/aka000000000"
+          },
+          {
+            "name": "rule_name",
+            "value": "DLP [Drive] - D\u00e9tecter le partage de International - Num\u00e9ro IBAN"
+          },
+          {
+            "name": "rule_type",
+            "value": "DLP"
+          },
+          {
+            "name": "matched_detectors",
+            "multiMessageValue": [
+              {
+                "parameter": [
+                  {
+                    "name": "detector_id",
+                    "value": "IBAN_CODE"
+                  },
+                  {
+                    "name": "detector_type",
+                    "value": "PREDEFINED_DLP"
+                  },
+                  {
+                    "name": "display_name",
+                    "value": "IBAN_CODE"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "triggered_actions",
+            "multiMessageValue": [
+              {
+                "parameter": [
+                  {
+                    "name": "action_type",
+                    "value": "DRIVE_WARN_ON_EXTERNAL_SHARING"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "resource_recipients",
+            "multiValue": [
+              "john.doe@example.com"
+            ]
+          },
+          {
+            "name": "scan_type",
+            "value": "DRIVE_ONLINE_SCAN"
+          },
+          {
+            "name": "severity",
+            "value": "LOW"
+          },
+          {
+            "name": "resource_type",
+            "value": "DOCUMENT"
+          },
+          {
+            "name": "resource_title",
+            "value": "8157822-2024-11-7-15-21-0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-11-07T14:26:15.515Z",
+      "uniqueQualifier": "4091348940000000",
+      "applicationName": "saml",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"M7TKrOH_7SmMcgNyv3m2zFZr0EiRGbeupcJ_yRi3fFQ\"",
+    "actor": {
+      "email": "John.doe@example.com",
+      "profileId": "user1"
+    },
+    "ipAddress": "192.0.2.1",
+    "events": [
+      {
+        "type": "login",
+        "name": "login_success",
+        "parameters": [
+          {
+            "name": "orgunit_path",
+            "value": "/test/implementation"
+          },
+          {
+            "name": "initiated_by",
+            "value": "sp"
+          },
+          {
+            "name": "application_name",
+            "value": "AWS"
+          },
+          {
+            "name": "saml_status_code",
+            "value": "SUCCESS_URI"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-07-09T14:05:42.528Z",
+      "uniqueQualifier": "0123456789101112131",
+      "applicationName": "admin",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "BvGfkzKoKVD0NM7VdXdzkXDD-nHLkyMjheL_9Z5X0",
+    "actor": {
+      "callerType": "USER",
+      "email": "john.doe@example.net",
+      "profileId": "user1"
+    },
+    "ipAddress": "203.0.113.50",
+    "events": [
+      {
+        "type": "USER_SETTINGS",
+        "name": "SUSPEND_USER",
+        "parameters": [
+          {
+            "name": "USER_EMAIL",
+            "value": "jdoe@example.net"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-03-13T11:24:59.810Z",
+      "uniqueQualifier": "515960775816012389",
+      "applicationName": "token",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"BvGfkzKoKVD0NM7VdXdzkXDD-nHLkyMjheL_9Z5X0H\"",
+    "actor": {
+      "email": "JOHN.DOE@example.com",
+      "profileId": "user1"
+    },
+    "ipAddress": "203.0.113.50",
+    "events": [
+      {
+        "name": "authorize",
+        "parameters": [
+          {
+            "name": "client_id",
+            "value": "user1"
+          },
+          {
+            "name": "app_name",
+            "value": "Test Log Workspace"
+          },
+          {
+            "name": "client_type",
+            "value": "WEB"
+          },
+          {
+            "name": "scope_data",
+            "multiMessageValue": [
+              {
+                "parameter": [
+                  {
+                    "name": "scope_name",
+                    "value": "https://www.googleapis.com/auth/admin.reports.audit.readonly"
+                  },
+                  {
+                    "name": "product_bucket",
+                    "multiValue": [
+                      "GSUITE_ADMIN"
+                    ]
+                  }
+                ]
+              },
+              {
+                "parameter": [
+                  {
+                    "name": "scope_name",
+                    "value": "https://www.googleapis.com/auth/admin.reports.usage.readonly"
+                  },
+                  {
+                    "name": "product_bucket",
+                    "multiValue": [
+                      "GSUITE_ADMIN"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "scope",
+            "multiValue": [
+              "https://www.googleapis.com/auth/admin.reports.audit.readonly",
+              "https://www.googleapis.com/auth/admin.reports.usage.readonly"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-03-13T11:25:23.391Z",
+      "uniqueQualifier": "-38605878274",
+      "applicationName": "token",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"BvGfkzKoKVD0NM7VdXdzkXDD-nHLkyMjheL_9Z5X0H0/t\"",
+    "actor": {
+      "email": "JOHN.DOE@example.com",
+      "profileId": "user1"
+    },
+    "ipAddress": "203.0.113.52",
+    "events": [
+      {
+        "type": "auth",
+        "name": "activity",
+        "parameters": [
+          {
+            "name": "api_name",
+            "value": "admin"
+          },
+          {
+            "name": "method_name",
+            "value": "reports.activities.list"
+          },
+          {
+            "name": "client_id",
+            "value": "user1"
+          },
+          {
+            "name": "num_response_bytes",
+            "intValue": "7"
+          },
+          {
+            "name": "product_bucket",
+            "value": "GSUITE_ADMIN"
+          },
+          {
+            "name": "app_name",
+            "value": "Test Log Workspace"
+          },
+          {
+            "name": "client_type",
+            "value": "WEB"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2026-01-06T11:21:54.304Z",
+      "uniqueQualifier": "-123456",
+      "applicationName": "user_accounts",
+      "customerId": "REDACTED"
+    },
+    "etag": "\"abc\"",
+    "actor": {
+      "callerType": "USER",
+      "email": "john.doe@example.com",
+      "profileId": "REDACTED"
+    },
+    "ipAddress": "FE80:000:333:1111:7777:5555:6666:ddd",
+    "networkInfo": {
+      "ipAsn": [
+        12345
+      ],
+      "regionCode": "FR",
+      "subdivisionCode": "FR-HDF"
+    },
+    "events": [
+      {
+        "type": "email_forwarding_change",
+        "name": "email_forwarding_out_of_domain",
+        "parameters": [
+          {
+            "name": "email_forwarding_destination_address",
+            "value": "jane.doe@example.net"
+          }
+        ],
+        "resourceIds": [
+          "RESOURCE_ID1"
+        ]
+      }
+    ],
+    "resourceDetails": [
+      {
+        "id": "RESOURCE_ID1",
+        "type": "USER"
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2024-10-24T12:15:09.887Z",
+      "uniqueQualifier": "38392508037850000000",
+      "applicationName": "vault",
+      "customerId": "ANONYMIZED"
+    },
+    "etag": "\"v9u8pSCZPl3C66fdSWYRyXweF216RQ7SWqFaenjlgO0/aMkDQ5g3000000000000000000000\"",
+    "actor": {
+      "callerType": "USER",
+      "email": "redacted",
+      "profileId": "user1"
+    },
+    "events": [
+      {
+        "type": "user_action",
+        "name": "view_cross_matter_litigation_hold_report"
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "time": "2026-10-01T08:00:00.000Z",
+      "uniqueQualifier": "gw-login-success-1",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "1234",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.30",
+    "networkInfo": {
+      "ipAsn": [
+        64500
+      ],
+      "regionCode": "PT",
+      "subdivisionCode": "PT-11"
+    },
+    "events": [
+      {
+        "type": "login",
+        "name": "login_success",
+        "parameters": [
+          {
+            "name": "login_type",
+            "value": "google_password"
+          },
+          {
+            "name": "login_challenge_method",
+            "multiValue": [
+              "password"
+            ]
+          },
+          {
+            "name": "is_suspicious",
+            "boolValue": true
+          }
+        ]
+      }
+    ]
+  }
+]

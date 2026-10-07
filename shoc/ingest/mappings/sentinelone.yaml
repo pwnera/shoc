@@ -1,0 +1,168 @@
+# SentinelOne threats and unified alerts -> OCSF Detection Finding (2004). ING-1, ING-3.
+# Reads three shapes. A threat from /web/api/v2.1/threats has threatInfo,
+# agentDetectionInfo and agentRealtimeInfo. A Unified Alert Management node
+# (STAR, Identity, cloud) has name, severity, asset or assets, process and, for
+# Identity, rawData with its own OCSF evidences. An activity from
+# /web/api/v2.1/activities (the console audit log, which a customer may load
+# with events.ingest) has activityType and data; it is telemetry, never a
+# finding: the threats and alerts it announces reach shoc as their own rows.
+source: sentinelone
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [edr, edr/alerts]
+
+constants:
+  category_uid: 2
+  class_uid: 2004
+  class_name: Detection Finding
+  type_uid: 200401
+  activity_id: 1
+  activity_name: Create
+  severity_id: 3
+  status: Success
+  cloud_provider: SentinelOne
+  metadata_product: SentinelOne
+  api_service_name: sentinelone
+
+fields:
+  # The management account: which console isolates the agent (RFC 0025).
+  cloud_account_uid: { paths: [agentRealtimeInfo.accountId, agentDetectionInfo.accountId, accountId] }
+  event_uid: { paths: [id, "threatInfo.threatId"] }
+  time: { paths: ["threatInfo.createdAt", detectedAt, createdAt], transform: iso8601 }
+  api_operation:
+    paths: ["threatInfo.classification", "threatInfo.threatName", classification, name,
+            "analytics.name", activityType]
+    transform: str
+  message:
+    paths: ["threatInfo.threatName", "threatInfo.originatorProcess", name, primaryDescription,
+            description]
+  actor_user_name:
+    paths: ["agentDetectionInfo.agentLastLoggedInUserName", "threatInfo.processUser",
+            "assets[*].lastLoggedInUser", "rawData.evidences[*].actor.user.name",
+            "data.byUser", "data.username", "data.userName", "data.lastLoggedInUserName"]
+  actor_user_uid: { paths: ["rawData.evidences[*].actor.user.uid", userId] }
+  src_endpoint_ip:
+    paths: ["agentRealtimeInfo.networkInterfaces[*].inet[0]", "agentDetectionInfo.agentIpV4",
+            "rawData.evidences[*].src_endpoint.ip", "data.ipAddress", "data.externalIp"]
+  # Rules read the agent's host here, as they did before device_* existed.
+  src_endpoint_domain:
+    paths: ["agentRealtimeInfo.agentComputerName", "assets[*].name",
+            "rawData.evidences[*].src_endpoint.hostname", "data.computerName", "data.origagentname"]
+  dst_endpoint_ip: { paths: ["rawData.evidences[*].dst_endpoint.ip", "data.dstip"] }
+  dst_endpoint_domain: { path: "rawData.evidences[*].dst_endpoint.hostname" }
+  dns_query_hostname: { path: "data.dnsrequest" }
+  device_hostname:
+    paths: ["agentRealtimeInfo.agentComputerName", "assets[*].name", "asset.name",
+            "data.computerName", "data.origagentname"]
+  # The agent UUID, which Cloud Funnel telemetry also carries (agent.uuid);
+  # resource_uid keeps the console's agent id, which the response actions take.
+  device_uid:
+    paths: ["agentRealtimeInfo.agentUuid", "agentDetectionInfo.agentUuid", "assets[*].agentUuid",
+            "asset.agentUuid", "data.uuid", "data.origagentuuid"]
+  resource_type: { const: host }
+  resource_uid:
+    paths: ["agentRealtimeInfo.agentId", "assets[*].id", "rawData.resources[*].uid", agentId]
+  # A threat's file is what the engine convicted; the process that wrote or
+  # launched it is the originator, so it is the parent here.
+  process_name: { paths: ["data.sourceprocessname", "process.file.path"], transform: basename }
+  process_pid: { path: "data.sourceprocesspid" }
+  process_cmd_line:
+    paths: ["threatInfo.maliciousProcessArguments", "process.cmdLine",
+            "data.sourceprocesscommandline"]
+  process_hash_sha256:
+    paths: ["process.file.sha256", "data.sourceprocesssha256"]
+    transform: lower
+  process_parent_name:
+    paths: ["threatInfo.originatorProcess", "process.parentName", "data.sourceparentprocessname"]
+  file_path: { paths: ["threatInfo.filePath", "data.filePath", "data.tgtfilepath"] }
+  file_hash_sha256: { paths: ["threatInfo.sha256", "data.tgtfilehashsha256"], transform: lower }
+  status_code:
+    paths: ["threatInfo.mitigationStatus", status, result]
+
+derive:
+  # Threats: the engine's confidence, raised for ransomware, lowered once handled.
+  - when: { "threatInfo.confidenceLevel": malicious }
+    set: { severity_id: 4 }
+  - when: { "threatInfo.classification": Ransomware }
+    set: { severity_id: 5 }
+  # Mitigated drops one band, never below medium, so a quarantined malicious
+  # threat still becomes a finding (edr_medium_severity_detection).
+  - when: { "threatInfo.mitigationStatus": mitigated }
+    set: { severity_id: 3 }
+  - when: { "threatInfo.mitigationStatus": marked_as_benign }
+    set: { severity_id: 1 }
+  - when: { "threatInfo.analystVerdict": false_positive }
+    set: { severity_id: 1 }
+  # Unified alerts: confidence when that is all there is, then the OCSF
+  # severity Identity puts in rawData, then the alert's own severity.
+  - when: { confidenceLevel: MALICIOUS }
+    set: { severity_id: 4 }
+  - when: { "rawData.severity_id": 1 }
+    set: { severity_id: 1 }
+  - when: { "rawData.severity_id": 2 }
+    set: { severity_id: 2 }
+  - when: { "rawData.severity_id": 4 }
+    set: { severity_id: 4 }
+  - when: { "rawData.severity_id": { gte: 5 } }
+    set: { severity_id: 5 }
+  - when: { severity: INFO }
+    set: { severity_id: 1 }
+  - when: { severity: LOW }
+    set: { severity_id: 2 }
+  - when: { severity: MEDIUM }
+    set: { severity_id: 3 }
+  - when: { severity: HIGH }
+    set: { severity_id: 4 }
+  - when: { severity: CRITICAL }
+    set: { severity_id: 5 }
+  # An Identity alert about an account names the account as its asset, not a host.
+  - when: { "asset.category": Identity }
+    set: { device_hostname: null, resource_type: user }
+
+  # Activities: API Activity by default, Authentication and Account Change for
+  # the console's own users, Network Activity for a Firewall Control block.
+  - when: { activityType: { exists: true } }
+    set: { category_uid: 6, class_uid: 6003, class_name: API Activity, type_uid: 600399,
+           activity_id: 99, activity_name: Other, severity_id: 1 }
+  # Exclusions, blocklist entries and custom rules: what an intruder edits to hide.
+  # 3001 is an exclusion added or changed, 3006 a blocklist hash, 3016 a path
+  # exclusion deleted; 3100 (a new agent package) is not one of these.
+  - when: { activityType: { in: [3001, 3002, 3005, 3006, 3008, 3009, 3010, 3011, 3600,
+                                 3616] } }
+    set: { type_uid: 600301, activity_id: 1, activity_name: Create }
+  - when: { activityType: { in: [3012, 3013, 3014, 3015, 3101, 3601, 3603, 3623] } }
+    set: { type_uid: 600303, activity_id: 3, activity_name: Update }
+  - when: { activityType: { in: [3016, 3017, 3018, 3019, 3020, 3021, 3022, 3023, 3102, 3602,
+                                 3622] } }
+    set: { type_uid: 600304, activity_id: 4, activity_name: Delete }
+  - when: { activityType: { in: [27, 3624, 3629] } }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, type_uid: 300201,
+           activity_id: 1, activity_name: Logon }
+  - when: { activityType: { in: [133, 134, 3625] } }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, type_uid: 300201,
+           activity_id: 1, activity_name: Logon, status: Failure }
+  - when: { activityType: 33 }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, type_uid: 300202,
+           activity_id: 2, activity_name: Logoff }
+  - when: { activityType: { in: [23, 1023] } }
+    set: { category_uid: 3, class_uid: 3001, class_name: Account Change, type_uid: 300101,
+           activity_id: 1, activity_name: Create }
+  - when: { activityType: { in: [24, 37, 67, 1024] } }
+    set: { category_uid: 3, class_uid: 3001, class_name: Account Change, type_uid: 300199,
+           activity_id: 99, activity_name: Other }
+  - when: { activityType: { in: [25, 102, 103] } }
+    set: { category_uid: 3, class_uid: 3001, class_name: Account Change, type_uid: 300106,
+           activity_id: 6, activity_name: Delete }
+  - when: { activityType: 5232 }
+    set: { category_uid: 4, class_uid: 4001, class_name: Network Activity, type_uid: 400105,
+           activity_id: 5, activity_name: Refuse }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: dst_endpoint_ip, name: dst_endpoint.ip, type: "IP Address" }
+  - { column: resource_uid, name: device.uid, type: Device }
+  - { column: device_hostname, name: device.hostname, type: Hostname }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: file_hash_sha256, name: file.hashes.sha256, type: "File Hash" }
+  - { column: process_hash_sha256, name: process.file.hashes.sha256, type: "File Hash" }
+  - { column: dns_query_hostname, name: query.hostname, type: "Domain Name" }

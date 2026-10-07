@@ -1,0 +1,38 @@
+[
+  {
+    "id": 9201,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Project",
+    "event_name": "deploy_key_added",
+    "details": {
+      "event_name": "deploy_key_added",
+      "author_name": "Mallory",
+      "author_class": "User",
+      "author_email": "mallory@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform/api",
+      "custom_message": "Added deploy key",
+      "target_type": "DeployKey",
+      "target_details": "backup-key"
+    }
+  },
+  {
+    "id": 9202,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "group_access_token_created",
+    "details": {
+      "event_name": "group_access_token_created",
+      "author_name": "Mallory",
+      "author_class": "User",
+      "author_email": "mallory@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform",
+      "custom_message": "Created group access token with token_id: 77 with scopes: [:api] and Owner access level.",
+      "target_type": "PersonalAccessToken",
+      "target_details": "sync-bot"
+    }
+  }
+]

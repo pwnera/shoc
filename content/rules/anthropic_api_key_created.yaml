@@ -1,0 +1,34 @@
+id: anthropic_api_key_created
+title: Claude API key created
+description: >
+  A key spends the organization's money from anywhere, and someone who got
+  into a Console session makes one before the session is noticed. An Admin key
+  is worse: it manages every other key, every member and the Compliance API.
+status: stable
+date: 2026-09-30
+modified: 2026-10-02
+severity: high
+confidence: 0.5
+attack: [T1098.001]
+logsource:
+  product: anthropic
+  service: api_keys
+detection:
+  selection:
+    # The key list, or the activity feed where the organization has it on.
+    api.operation: [api_key.created, platform_api_key_created, api_key_created, admin_api_key_created]
+  condition: selection
+  timeframe: 15m
+entity: actor.session.uid
+fields: [actor.user.name, actor.session.uid, resource.uid]
+sources:
+  - name: Elastic
+    title: Anthropic Admin API Key Created
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/persistence_anthropic_admin_api_key_created.toml
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Anthropic Compliance API Key Created
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/persistence_anthropic_compliance_api_key_created.toml
+    license: Elastic-2.0
+    relation: adapted

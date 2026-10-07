@@ -1,0 +1,27 @@
+[
+  {
+    "insertId": "hunt-gcp-key-new",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.aggregatedList",
+      "resourceName": "projects/example-prod/global/instances",
+      "authenticationInfo": {
+        "principalEmail": "ci-deployer@example-prod.iam.gserviceaccount.com",
+        "serviceAccountKeyName": "//iam.googleapis.com/projects/example-prod/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com/keys/3f1c0a9b8e7d6c5b4a39281706f5e4d3c2b1a090"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.86",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      }
+    }
+  }
+]

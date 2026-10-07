@@ -1,0 +1,50 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "SensitiveFileRead",
+      "FileName": "Login Data",
+      "FolderPath": "C:\\Users\\jdoe\\AppData\\Local\\Google\\Chrome\\User Data\\Default",
+      "InitiatingProcessFileName": "chrome.exe",
+      "InitiatingProcessFolderPath": "c:\\users\\jdoe\\appdata\\local\\temp\\chrome.exe",
+      "InitiatingProcessCommandLine": "chrome.exe",
+      "InitiatingProcessAccountName": "jdoe"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "SensitiveFileRead",
+      "FileName": "Cookies",
+      "FolderPath": "C:\\Users\\jdoe\\AppData\\Local\\Google\\Chrome\\User Data\\Default",
+      "InitiatingProcessFileName": "MsMpEng.exe",
+      "InitiatingProcessFolderPath": "c:\\users\\jdoe\\appdata\\local\\temp\\MsMpEng.exe",
+      "InitiatingProcessCommandLine": "MsMpEng.exe",
+      "InitiatingProcessAccountName": "jdoe"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "SensitiveFileRead",
+      "FileName": "report.docx",
+      "FolderPath": "C:\\Users\\jdoe\\Documents",
+      "InitiatingProcessFileName": "svc_update.exe",
+      "InitiatingProcessFolderPath": "c:\\users\\jdoe\\appdata\\local\\temp\\svc_update.exe",
+      "InitiatingProcessCommandLine": "svc_update.exe",
+      "InitiatingProcessAccountName": "jdoe"
+    }
+  }
+]

@@ -1,0 +1,16 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "bk-0",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.20",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "arn": "arn:aws:iam::123456789012:role/backup",
+      "accountId": "123456789012"
+    }
+  }
+]

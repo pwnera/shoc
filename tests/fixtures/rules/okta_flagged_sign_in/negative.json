@@ -1,0 +1,192 @@
+[
+  {
+    "uuid": "okta-user.account.lock",
+    "eventType": "user.account.lock",
+    "displayMessage": "user account lock",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "LOCKED_OUT"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "debugContext": {
+      "debugData": {
+        "behaviors": "{New Geo-Location=NEGATIVE, New Device=POSITIVE, New IP=POSITIVE, New State=NEGATIVE, New Country=NEGATIVE, Velocity=NEGATIVE, New City=NEGATIVE}",
+        "risk": "{reasons=Anomalous Device, level=MEDIUM}",
+        "threatSuspected": "false"
+      }
+    }
+  },
+  {
+    "uuid": "okta-policy.evaluate_sign_on",
+    "eventType": "policy.evaluate_sign_on",
+    "displayMessage": "policy evaluate_sign_on",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "DENY",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "0oa0",
+        "type": "AppInstance",
+        "alternateId": "Okta Admin Console",
+        "displayName": "Okta Admin Console"
+      }
+    ],
+    "debugContext": {
+      "debugData": {
+        "behaviors": "{New Geo-Location=POSITIVE, New Device=NEGATIVE, New IP=POSITIVE, New State=POSITIVE, New Country=POSITIVE, Velocity=POSITIVE, New City=POSITIVE}",
+        "threatSuspected": "true"
+      }
+    }
+  },
+  {
+    "uuid": "okta-new-laptop-log-only",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "legacyEventType": "core.user_auth.login_success",
+    "severity": "INFO",
+    "actor": {
+      "id": "00u3ijkl",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "Carol Diaz"
+    },
+    "client": {
+      "ipAddress": "198.51.100.23",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Lyon"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102CarolLaptop01"
+    },
+    "securityContext": {
+      "asNumber": 64502,
+      "isProxy": false
+    },
+    "target": null,
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/api/v1/authn",
+        "threatSuspected": "false",
+        "logOnlySecurityData": "{\"risk\":{\"reasons\":\"Anomalous Device\",\"level\":\"MEDIUM\"},\"behaviors\":{\"New Geo-Location\":\"NEGATIVE\",\"New Device\":\"POSITIVE\",\"New IP\":\"NEGATIVE\",\"New State\":\"NEGATIVE\",\"New Country\":\"NEGATIVE\",\"Velocity\":\"NEGATIVE\",\"New City\":\"NEGATIVE\"}}"
+      }
+    }
+  },
+  {
+    "uuid": "okta-denied-log-only-high",
+    "eventType": "policy.evaluate_sign_on",
+    "displayMessage": "Evaluation of sign-on policy",
+    "severity": "WARN",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "203.0.113.41",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+        "os": "Linux",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States",
+        "city": "Ashburn"
+      }
+    },
+    "outcome": {
+      "result": "DENY",
+      "reason": "Sign-on policy evaluation resulted in DENY"
+    },
+    "authenticationContext": {
+      "externalSessionId": "102JaneDenied01"
+    },
+    "securityContext": {
+      "asNumber": 64496,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "0oa1dash",
+        "type": "AppInstance",
+        "alternateId": "Okta Dashboard",
+        "displayName": "Okta Dashboard"
+      }
+    ],
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/idp/idx/identify",
+        "threatSuspected": "false",
+        "logOnlySecurityData": "{\"risk\":{\"reasons\":\"Anomalous Location, Anomalous Device\",\"level\":\"HIGH\"},\"behaviors\":{\"New Geo-Location\":\"POSITIVE\",\"New Device\":\"POSITIVE\",\"New IP\":\"POSITIVE\",\"New State\":\"POSITIVE\",\"New Country\":\"POSITIVE\",\"Velocity\":\"POSITIVE\",\"New City\":\"POSITIVE\"}}"
+      }
+    }
+  }
+]

@@ -1,0 +1,249 @@
+[
+  {
+    "uuid": "okta-spray-0",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u0",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "_repeat": 2,
+    "target": [
+      {
+        "id": "00u0",
+        "type": "User",
+        "alternateId": "jane@example.com",
+        "displayName": "jane"
+      },
+      {
+        "id": "lae1pwd",
+        "type": "AuthenticatorEnrollment",
+        "alternateId": "unknown",
+        "displayName": "Password",
+        "detailEntry": {
+          "methodTypeUsed": "Password",
+          "methodUsedVerifiedProperties": "[USER_PRESENCE]"
+        }
+      }
+    ]
+  },
+  {
+    "uuid": "okta-spray-1",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "actor": {
+      "id": "00u1",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "bob"
+    },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "_repeat": 2
+  },
+  {
+    "uuid": "okta-spray-2",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u2",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "carol"
+    },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "_repeat": 2,
+    "target": [
+      {
+        "id": "00u2",
+        "type": "User",
+        "alternateId": "carol@example.com",
+        "displayName": "carol"
+      },
+      {
+        "id": "lae1pwd",
+        "type": "AuthenticatorEnrollment",
+        "alternateId": "unknown",
+        "displayName": "Password",
+        "detailEntry": {
+          "methodTypeUsed": "Password",
+          "methodUsedVerifiedProperties": "[USER_PRESENCE]"
+        }
+      }
+    ]
+  },
+  {
+    "uuid": "okta-spray-3",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "actor": {
+      "id": "00u3",
+      "type": "User",
+      "alternateId": "dave@example.com",
+      "displayName": "dave"
+    },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "_repeat": 2
+  },
+  {
+    "uuid": "okta-spray-4",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u4",
+      "type": "User",
+      "alternateId": "erin@example.com",
+      "displayName": "erin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "_repeat": 2,
+    "target": [
+      {
+        "id": "00u4",
+        "type": "User",
+        "alternateId": "erin@example.com",
+        "displayName": "erin"
+      },
+      {
+        "id": "lae1pwd",
+        "type": "AuthenticatorEnrollment",
+        "alternateId": "unknown",
+        "displayName": "Password",
+        "detailEntry": {
+          "methodTypeUsed": "Password",
+          "methodUsedVerifiedProperties": "[USER_PRESENCE]"
+        }
+      }
+    ]
+  }
+]

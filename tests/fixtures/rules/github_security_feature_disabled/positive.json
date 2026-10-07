@@ -1,0 +1,42 @@
+[
+  {
+    "_document_id": "github-webhook-push-protection-off",
+    "action": "repository_secret_scanning_push_protection.disable",
+    "actor": "mallory",
+    "org": "acme",
+    "webhook": {
+      "event": "security_and_analysis",
+      "action": ""
+    },
+    "repo": "acme/payments",
+    "changes": {
+      "from": {
+        "security_and_analysis": {
+          "secret_scanning_push_protection": {
+            "status": "enabled"
+          }
+        }
+      }
+    }
+  },
+  {
+    "_document_id": "gh-org.disable_two_factor_requirement",
+    "action": "org.disable_two_factor_requirement",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-repository_secret_scanning_custom_pattern_push_protection.disabled",
+    "action": "repository_secret_scanning_custom_pattern_push_protection.disabled",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "public_repo": false,
+    "operation_type": "modify"
+  }
+]

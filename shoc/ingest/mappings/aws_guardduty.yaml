@@ -1,0 +1,135 @@
+# AWS GuardDuty findings -> OCSF Detection Finding (2004). ING-1, ING-3.
+# GuardDuty names the two ends of a connection remote and local. The remote peer
+# goes on src_endpoint and the AWS resource on dst_endpoint, except for an
+# OUTBOUND connection, where the instance is the source.
+source: aws_guardduty
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [aws, aws/guardduty]
+
+constants:
+  category_uid: 2
+  class_uid: 2004
+  class_name: Detection Finding
+  type_uid: 200401
+  activity_id: 1
+  activity_name: Create
+  severity_id: 2
+  status: Success
+  cloud_provider: AWS
+  metadata_product: AWS GuardDuty
+  api_service_name: guardduty
+
+fields:
+  event_uid: { path: id }
+  time: { paths: [updatedAt, createdAt], transform: iso8601 }
+  api_operation: { paths: [type, "service.action.actionType"] }
+  message: { paths: [description, title] }
+  cloud_account_uid: { path: accountId }
+  cloud_region: { path: region }
+  resource_type: { path: resource.resourceType }
+  # The most specific resource first: a finding on a bucket or cluster also
+  # names the access key or instance involved.
+  resource_uid:
+    paths:
+      - "resource.s3BucketDetails[*].arn"
+      - resource.eksClusterDetails.arn
+      - resource.ecsClusterDetails.arn
+      - resource.rdsDbInstanceDetails.dbInstanceIdentifier
+      - resource.lambdaDetails.functionArn
+      - resource.containerDetails.id
+      - resource.instanceDetails.instanceId
+      - resource.accessKeyDetails.accessKeyId
+  device_uid: { path: resource.instanceDetails.instanceId }
+  device_hostname: { path: "resource.instanceDetails.networkInterfaces[*].privateDnsName" }
+  actor_user_name:
+    paths:
+      - resource.kubernetesDetails.kubernetesUserDetails.username
+      - resource.accessKeyDetails.userName
+      - resource.accessKeyDetails.principalId
+      - resource.rdsDbUserDetails.user
+  actor_user_type: { path: resource.accessKeyDetails.userType }
+  actor_session_uid: { path: resource.accessKeyDetails.accessKeyId }
+  src_endpoint_ip:
+    paths:
+      - service.action.networkConnectionAction.remoteIpDetails.ipAddressV4
+      - service.action.awsApiCallAction.remoteIpDetails.ipAddressV4
+      - service.action.kubernetesApiCallAction.remoteIpDetails.ipAddressV4
+      - service.action.rdsLoginAttemptAction.remoteIpDetails.ipAddressV4
+      - "service.action.portProbeAction.portProbeDetails[*].remoteIpDetails.ipAddressV4"
+      - "service.action.kubernetesApiCallAction.sourceIPs[*]"
+  src_endpoint_port: { path: service.action.networkConnectionAction.remotePortDetails.port }
+  src_endpoint_location_country:
+    paths:
+      - service.action.networkConnectionAction.remoteIpDetails.country.countryName
+      - service.action.awsApiCallAction.remoteIpDetails.country.countryName
+      - service.action.kubernetesApiCallAction.remoteIpDetails.country.countryName
+      - service.action.rdsLoginAttemptAction.remoteIpDetails.country.countryName
+      - "service.action.portProbeAction.portProbeDetails[*].remoteIpDetails.country.countryName"
+  src_endpoint_asn:
+    paths:
+      - service.action.networkConnectionAction.remoteIpDetails.organization.asn
+      - service.action.awsApiCallAction.remoteIpDetails.organization.asn
+      - service.action.kubernetesApiCallAction.remoteIpDetails.organization.asn
+      - service.action.rdsLoginAttemptAction.remoteIpDetails.organization.asn
+      - "service.action.portProbeAction.portProbeDetails[*].remoteIpDetails.organization.asn"
+    transform: str
+  dst_endpoint_ip:
+    paths:
+      - service.action.networkConnectionAction.localIpDetails.ipAddressV4
+      - "service.action.portProbeAction.portProbeDetails[*].localIpDetails.ipAddressV4"
+  dst_endpoint_port:
+    paths:
+      - service.action.networkConnectionAction.localPortDetails.port
+      - "service.action.portProbeAction.portProbeDetails[*].localPortDetails.port"
+  # The name an instance looked up (Trojan:EC2/DNSDataExfiltration and friends).
+  dns_query_hostname: { path: service.action.dnsRequestAction.domain }
+  http_user_agent: { path: service.action.kubernetesApiCallAction.userAgent }
+  # Runtime Monitoring: the process GuardDuty saw.
+  process_name: { path: service.runtimeDetails.process.name }
+  process_pid: { path: service.runtimeDetails.process.pid }
+  process_hash_sha256: { path: service.runtimeDetails.process.executableSha256 }
+  process_parent_name: { path: "service.runtimeDetails.process.lineage[0].name" }
+  # Malware Protection: the first infected file of the first threat.
+  file_path:
+    paths:
+      - "service.ebsVolumeScanDetails.scanDetections.threatDetectedByName.threatNames[0].filePaths[0].filePath"
+      - "service.malwareScanDetails.threats[0].itemPaths[0].nestedItemPath"
+  file_hash_sha256:
+    paths:
+      - "service.ebsVolumeScanDetails.scanDetections.threatDetectedByName.threatNames[0].filePaths[0].hash"
+      - "service.malwareScanDetails.threats[0].itemPaths[0].hash"
+
+derive:
+  # AWS's documented bands for the 1.0-10.0 severity: low below 4, medium to
+  # 6.9, high to 8.9, critical from 9.
+  - when: { severity: { lt: 4 } }
+    set: { severity_id: 2 }
+  - when: { severity: { gte: 4 } }
+    set: { severity_id: 3 }
+  - when: { severity: { gte: 7 } }
+    set: { severity_id: 4 }
+  - when: { severity: { gte: 9 } }
+    set: { severity_id: 5 }
+  # The country and ASN describe the remote peer, which is now the destination;
+  # they stay in unmapped.
+  - when: { service.action.networkConnectionAction.connectionDirection: OUTBOUND }
+    set:
+      src_endpoint_ip: { path: service.action.networkConnectionAction.localIpDetails.ipAddressV4 }
+      src_endpoint_port: { path: service.action.networkConnectionAction.localPortDetails.port }
+      dst_endpoint_ip: { path: service.action.networkConnectionAction.remoteIpDetails.ipAddressV4 }
+      dst_endpoint_port: { path: service.action.networkConnectionAction.remotePortDetails.port }
+      src_endpoint_location_country: null
+      src_endpoint_asn: null
+  # An archived finding was closed by a person or a suppression rule.
+  - when: { service.archived: true }
+    set: { activity_id: 3, activity_name: Close, type_uid: 200403 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_session_uid, name: actor.session.uid, type: "Access Key" }
+  - { column: resource_uid, name: resource.uid, type: Resource }
+  - { column: dns_query_hostname, name: query.hostname, type: "Domain Name" }
+  - { column: device_hostname, name: device.hostname, type: Hostname }
+  - { column: file_hash_sha256, name: file.hashes.sha256, type: "File Hash" }
+  - { column: process_hash_sha256, name: process.file.hashes.sha256, type: "File Hash" }

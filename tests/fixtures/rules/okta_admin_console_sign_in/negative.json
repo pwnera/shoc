@@ -1,0 +1,261 @@
+[
+  {
+    "uuid": "okta-admin-console-new-ip-only",
+    "eventType": "policy.evaluate_sign_on",
+    "displayMessage": "Evaluation of sign-on policy",
+    "severity": "INFO",
+    "version": "0",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe",
+      "detailEntry": null
+    },
+    "client": {
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "zone": "null",
+      "device": "Computer",
+      "id": null,
+      "ipAddress": "198.51.100.5",
+      "geographicalContext": {
+        "city": "Paris",
+        "state": "Ile-de-France",
+        "country": "France",
+        "postalCode": "75000"
+      }
+    },
+    "authenticationContext": {
+      "authenticationStep": 0,
+      "externalSessionId": "idxJaneLaptop01"
+    },
+    "outcome": {
+      "result": "ALLOW",
+      "reason": "Sign-on policy evaluation resulted in ALLOW"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/oauth2/v1/authorize",
+        "threatSuspected": "false",
+        "behaviors": "{New Geo-Location=NEGATIVE, New Device=NEGATIVE, New IP=POSITIVE, New State=NEGATIVE, New Country=NEGATIVE, Velocity=NEGATIVE, New City=POSITIVE}"
+      }
+    },
+    "target": [
+      {
+        "id": "0oa1admin",
+        "type": "AppInstance",
+        "alternateId": "Okta Admin Console",
+        "displayName": "Okta Admin Console",
+        "detailEntry": {
+          "signOnModeType": "OPENID_CONNECT",
+          "signOnModeEvaluationResult": "ALLOW"
+        }
+      },
+      {
+        "id": "rul1admin",
+        "type": "Rule",
+        "alternateId": "unknown",
+        "displayName": "Admin App Policy",
+        "detailEntry": null
+      }
+    ]
+  },
+  {
+    "uuid": "okta-admin-console-log-only-known",
+    "eventType": "policy.evaluate_sign_on",
+    "displayMessage": "Evaluation of sign-on policy",
+    "severity": "INFO",
+    "version": "0",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe",
+      "detailEntry": null
+    },
+    "client": {
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "zone": "null",
+      "device": "Computer",
+      "id": null,
+      "ipAddress": "198.51.100.5",
+      "geographicalContext": {
+        "city": "Paris",
+        "state": "Ile-de-France",
+        "country": "France",
+        "postalCode": "75000"
+      }
+    },
+    "authenticationContext": {
+      "authenticationStep": 0,
+      "externalSessionId": "idxJaneLaptop01"
+    },
+    "outcome": {
+      "result": "ALLOW",
+      "reason": "Sign-on policy evaluation resulted in ALLOW"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/oauth2/v1/authorize",
+        "threatSuspected": "false",
+        "logOnlySecurityData": "{\"risk\":{\"level\":\"LOW\"},\"behaviors\":{\"New Geo-Location\":\"NEGATIVE\",\"New Device\":\"NEGATIVE\",\"New IP\":\"POSITIVE\",\"New State\":\"NEGATIVE\",\"New Country\":\"NEGATIVE\",\"Velocity\":\"NEGATIVE\",\"New City\":\"NEGATIVE\"}}"
+      }
+    },
+    "target": [
+      {
+        "id": "0oa1admin",
+        "type": "AppInstance",
+        "alternateId": "Okta Admin Console",
+        "displayName": "Okta Admin Console",
+        "detailEntry": {
+          "signOnModeType": "OPENID_CONNECT",
+          "signOnModeEvaluationResult": "ALLOW"
+        }
+      },
+      {
+        "id": "rul1admin",
+        "type": "Rule",
+        "alternateId": "unknown",
+        "displayName": "Admin App Policy",
+        "detailEntry": null
+      }
+    ]
+  },
+  {
+    "uuid": "okta-dashboard-new-device",
+    "eventType": "policy.evaluate_sign_on",
+    "displayMessage": "Evaluation of sign-on policy",
+    "severity": "INFO",
+    "version": "0",
+    "actor": {
+      "id": "00u3ijkl",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "Carol Diaz",
+      "detailEntry": null
+    },
+    "client": {
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "zone": "null",
+      "device": "Computer",
+      "id": null,
+      "ipAddress": "198.51.100.23",
+      "geographicalContext": {
+        "city": "Lyon",
+        "state": "Auvergne-Rhone-Alpes",
+        "country": "France",
+        "postalCode": "69000"
+      }
+    },
+    "authenticationContext": {
+      "authenticationStep": 0,
+      "externalSessionId": "idxCarolNewLaptop01"
+    },
+    "outcome": {
+      "result": "CHALLENGE",
+      "reason": "Sign-on policy evaluation resulted in CHALLENGE"
+    },
+    "securityContext": {
+      "asNumber": 64502,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/idp/idx/identify",
+        "threatSuspected": "false",
+        "logOnlySecurityData": "{\"risk\":{\"reasons\":\"Anomalous Device\",\"level\":\"MEDIUM\"},\"behaviors\":{\"New Geo-Location\":\"NEGATIVE\",\"New Device\":\"POSITIVE\",\"New IP\":\"POSITIVE\",\"New State\":\"NEGATIVE\",\"New Country\":\"NEGATIVE\",\"Velocity\":\"NEGATIVE\",\"New City\":\"NEGATIVE\"}}"
+      }
+    },
+    "target": [
+      {
+        "id": "0oa1dash",
+        "type": "AppInstance",
+        "alternateId": "Okta Dashboard",
+        "displayName": "Okta Dashboard",
+        "detailEntry": {
+          "signOnModeType": "OPENID_CONNECT",
+          "signOnModeEvaluationResult": "CHALLENGE"
+        }
+      },
+      {
+        "id": "rul1dash",
+        "type": "Rule",
+        "alternateId": "unknown",
+        "displayName": "Catch-all Rule",
+        "detailEntry": null
+      }
+    ]
+  },
+  {
+    "uuid": "okta-session-start-new-device",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "severity": "INFO",
+    "version": "0",
+    "legacyEventType": "core.user_auth.login_success",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe",
+      "detailEntry": null
+    },
+    "client": {
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "zone": "null",
+      "device": "Computer",
+      "id": null,
+      "ipAddress": "198.51.100.5",
+      "geographicalContext": {
+        "city": "Paris",
+        "state": "Ile-de-France",
+        "country": "France",
+        "postalCode": "75000"
+      }
+    },
+    "authenticationContext": {
+      "authenticationStep": 0,
+      "externalSessionId": "idxJaneLaptop01"
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/api/v1/authn",
+        "threatSuspected": "false",
+        "behaviors": "{New Geo-Location=NEGATIVE, New Device=POSITIVE, New IP=POSITIVE, New State=NEGATIVE, New Country=NEGATIVE, Velocity=NEGATIVE, New City=NEGATIVE}"
+      }
+    },
+    "target": null
+  }
+]

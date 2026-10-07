@@ -1,0 +1,41 @@
+id: cloudflare_api_token_revoked
+title: A Cloudflare API token was deleted, rolled or disabled
+description: >
+  Deleting, rolling or disabling a token stops whatever used it. When the token
+  is the one shoc reads the audit log with, the account goes unwatched from that
+  moment, which is the first thing an intruder in the dashboard would do. The
+  intake check never treats a change to shoc's own token as shoc's own (RFC 0021).
+status: stable
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1562.008, T1531]
+sources:
+  - name: Cloudflare
+    title: Update Token
+    url: https://developers.cloudflare.com/api/resources/accounts/subresources/tokens/methods/update/
+    relation: inspired
+  - name: Cloudflare
+    title: Roll Token
+    url: https://developers.cloudflare.com/api/resources/accounts/subresources/tokens/subresources/value/methods/update/
+    relation: inspired
+logsource:
+  product: cloudflare
+  service: audit_log
+detection:
+  selection_delete:
+    raw.raw.method: DELETE
+    raw.raw.uri|contains: /tokens/
+  selection_roll:
+    raw.raw.method: PUT
+    raw.raw.uri|endswith: /value
+  # An update that sets the status stops the token as surely as a delete.
+  selection_disable:
+    raw.raw.method: PUT
+    raw.raw.uri|contains: /tokens/
+    raw.resource.request.status: [disabled, expired]
+  condition: selection_delete or selection_roll or selection_disable
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip]

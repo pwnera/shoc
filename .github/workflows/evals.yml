@@ -1,0 +1,100 @@
+name: Evals
+
+# The crew scored against the replayed scenarios (AGT-6). It needs a model, so
+# it runs when a pull request touches what the crew reads or how it reasons,
+# and for every release, whose verdict scores are attached to the release.
+# Without the SHOC_LLM_API_KEY secret (a fork's pull request, a repository
+# that has not set one) the job says so and passes.
+
+on:
+  pull_request:
+    paths:
+      - "shoc/agents/**"
+      - "shoc/cases/review.py"
+      - "content/**"
+      - "evals/**"
+  workflow_call:
+    inputs:
+      tag:
+        description: The release to attach the scores to
+        type: string
+        required: true
+    secrets:
+      SHOC_LLM_API_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals-${{ github.ref }}-${{ inputs.tag }}
+  cancel-in-progress: true
+
+env:
+  SHOC_MASTER_KEY: ci-master-key-not-a-secret
+
+jobs:
+  verdicts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # attaching the report to a release
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      SHOC_DSN: postgresql://shoc:shoc@127.0.0.1:5432/shoc
+      SHOC_LLM_PROVIDER: ${{ vars.SHOC_LLM_PROVIDER || 'anthropic' }}
+      SHOC_LLM_MODEL: ${{ vars.SHOC_LLM_MODEL }}
+      SHOC_LLM_API_KEY: ${{ secrets.SHOC_LLM_API_KEY }}
+    steps:
+      - name: no model key, nothing to score
+        if: env.SHOC_LLM_API_KEY == ''
+        run: echo "SHOC_LLM_API_KEY is not set; verdicts are not scored." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        if: env.SHOC_LLM_API_KEY != ''
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        if: env.SHOC_LLM_API_KEY != ''
+        with:
+          python-version: "3.12"
+      - if: env.SHOC_LLM_API_KEY != ''
+        run: pip install -e ".[dev]"
+      - name: create the shoc role the way deploy/ does
+        if: env.SHOC_LLM_API_KEY != ''
+        env:
+          PGHOST: 127.0.0.1
+          PGPASSWORD: postgres
+          POSTGRES_USER: postgres
+          SHOC_DB_PASSWORD: shoc
+          SHOC_AGENT_DB_PASSWORD: ci-readonly
+        run: |
+          sh deploy/postgres-init/10-shoc-role.sh
+          shoc migrate
+      - name: run the crew on every scenario and score its verdicts
+        if: env.SHOC_LLM_API_KEY != ''
+        run: python -m evals.run --investigate --json evals-verdicts.json --markdown evals-verdicts.md
+      - name: score the roles a replayed case does not reach
+        if: always() && env.SHOC_LLM_API_KEY != ''
+        run: python -m evals.roles --json evals-roles.json
+      - name: publish the scores
+        if: always() && env.SHOC_LLM_API_KEY != ''
+        run: cat evals-verdicts.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        if: always() && env.SHOC_LLM_API_KEY != ''
+        with:
+          name: eval-verdicts
+          path: evals-*
+      - name: attach the scores to the release
+        if: always() && inputs.tag && env.SHOC_LLM_API_KEY != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release upload "${{ inputs.tag }}" evals-verdicts.json evals-verdicts.md evals-roles.json
+          --clobber --repo "${{ github.repository }}"

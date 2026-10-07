@@ -1,0 +1,25 @@
+[
+  {
+    "Id": "m365-AnonymousLinkCreated",
+    "Operation": "AnonymousLinkCreated",
+    "OrganizationId": "org-1",
+    "RecordType": 14,
+    "UserKey": "i:0h.f|membership|10032001a2b3c4d5@live.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "SharePoint",
+    "ClientIP": "203.0.113.80",
+    "UserId": "jane@example.com",
+    "AuthenticationType": "OAuth",
+    "EventSource": "SharePoint",
+    "ItemType": "File",
+    "Platform": "WinDesktop",
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
+    "SourceFileExtension": "xlsx",
+    "SiteUrl": "https://example.sharepoint.com/sites/finance/",
+    "SourceRelativeUrl": "Shared Documents",
+    "SourceFileName": "payroll.xlsx",
+    "ObjectId": "https://example.sharepoint.com/sites/finance/Shared Documents/payroll.xlsx",
+    "_content_type": "Audit.SharePoint"
+  }
+]

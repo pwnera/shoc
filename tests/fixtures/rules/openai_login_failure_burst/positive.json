@@ -1,0 +1,91 @@
+[
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-login-failed-a",
+    "type": "login.failed",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-dana",
+          "email": "dana@example.com"
+        },
+        "ip_address": "198.51.100.7",
+        "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+        "ip_address_details": {
+          "country": "NL",
+          "asn": "64501"
+        }
+      }
+    },
+    "login.failed": {
+      "error_code": "invalid_credentials",
+      "error_message": "Invalid username or password"
+    },
+    "details": {
+      "error_code": "invalid_credentials",
+      "error_message": "Invalid username or password"
+    },
+    "key_id": null,
+    "_repeat": 2
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-login-failed-b",
+    "type": "login.failed",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-dana",
+          "email": "dana@example.com"
+        },
+        "ip_address": "198.51.100.61",
+        "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+        "ip_address_details": {
+          "country": "NL",
+          "asn": "64501"
+        }
+      }
+    },
+    "login.failed": {
+      "error_code": "invalid_credentials",
+      "error_message": "Invalid username or password"
+    },
+    "details": {
+      "error_code": "invalid_credentials",
+      "error_message": "Invalid username or password"
+    },
+    "key_id": null,
+    "_repeat": 2
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-login-failed-c",
+    "type": "login.failed",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-dana",
+          "email": "dana@example.com"
+        },
+        "ip_address": "203.0.113.90",
+        "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+        "ip_address_details": {
+          "country": "NL",
+          "asn": "64501"
+        }
+      }
+    },
+    "login.failed": {
+      "error_code": "invalid_credentials",
+      "error_message": "Invalid username or password"
+    },
+    "details": {
+      "error_code": "invalid_credentials",
+      "error_message": "Invalid username or password"
+    },
+    "key_id": null
+  }
+]

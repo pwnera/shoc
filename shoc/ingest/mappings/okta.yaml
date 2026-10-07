@@ -1,0 +1,174 @@
+# Okta System Log -> OCSF. ING-1, ING-3.
+# Sign-ins and MFA are Authentication (3002); user lifecycle, password and
+# factor changes are Account Change (3001); admin roles, custom role bindings
+# (iam.*) and app assignments are User Access Management (3005); groups are
+# Group Management (3006); policy, app sign-on policy, IdP, app, token and
+# network-zone administration is Entity Management (3004);
+# Okta's own threat detections are Detection Finding (2004).
+source: okta
+ocsf_version: "1.3.0"
+
+constants:
+  category_uid: 3
+  class_uid: 3002
+  class_name: Authentication
+  type_uid: 300201
+  activity_id: 1
+  activity_name: Logon
+  severity_id: 1
+  status: Success
+  cloud_provider: Okta
+  metadata_product: Okta System Log
+  api_service_name: okta
+
+fields:
+  event_uid: { path: uuid }
+  time: { path: published, transform: iso8601 }
+  api_operation: { path: eventType }
+  message: { path: displayMessage }
+  status_code: { path: outcome.reason }
+  actor_user_name: { paths: [actor.alternateId, actor.displayName, actor.id] }
+  actor_user_uid: { path: actor.id }
+  actor_user_type: { path: actor.type }
+  actor_session_uid: { paths: [authenticationContext.externalSessionId, authenticationContext.rootSessionId] }
+  src_endpoint_ip: { paths: [client.ipAddress, "request.ipChain[0].ip"] }
+  src_endpoint_location_country: { path: client.geographicalContext.country }
+  src_endpoint_asn: { path: securityContext.asNumber, transform: str }
+  http_user_agent: { path: client.userAgent.rawUserAgent }
+  # Okta Verify and device-assurance events name the device that signed in.
+  device_uid: { path: device.id }
+  device_hostname: { path: device.name }
+  resource_type: { path: "target[*].type" }
+  resource_uid: { paths: ["target[*].alternateId", "target[*].id"] }
+
+derive:
+  # Outcome and Okta's own severity first; the class rules below keep them.
+  - when: { severity: WARN }
+    set: { severity_id: 2 }
+  - when: { severity: ERROR }
+    set: { severity_id: 3 }
+  - when: { outcome.result: { in: [FAILURE, DENY] } }
+    set: { status: Failure, severity_id: 2 }
+  - when: { outcome.result: { in: [CHALLENGE, SKIPPED] } }
+    set: { status: Other }
+  - when: { outcome.result: UNKNOWN }
+    set: { status: Unknown }
+  # Okta writes "unknown" when the event has no session.
+  - when: { actor_session_uid: unknown }
+    set: { actor_session_uid: null }
+
+  # Authentication (3002).
+  - when: { eventType: { contains: "user.session.end" } }
+    set: { activity_id: 2, activity_name: Logoff, type_uid: 300202 }
+  - when: { eventType: { contains: "user.authentication.sso" } }
+    set: { activity_id: 4, activity_name: "Service Ticket Request", type_uid: 300204 }
+  # A rejected push is one failed step of a sign-in.
+  - when: { eventType: { contains: "user.mfa.okta_verify.deny_push" } }
+    set: { activity_id: 6, activity_name: Preauth, type_uid: 300206, status: Failure, severity_id: 2 }
+  - when: { eventType: { contains: "user.mfa.attempt_bypass" } }
+    set: { activity_id: 6, activity_name: Preauth, type_uid: 300206, severity_id: 3 }
+
+  # Account Change (3001).
+  - when: { eventType: { contains: "user.lifecycle." } }
+    set: { category_uid: 3, class_uid: 3001, class_name: "Account Change", activity_id: 99, activity_name: Other, type_uid: 300199 }
+  - when: { eventType: { contains: "user.lifecycle.create" } }
+    set: { activity_id: 1, activity_name: Create, type_uid: 300101 }
+  - when: { eventType: { in: [user.lifecycle.activate, user.lifecycle.reactivate, user.lifecycle.unsuspend] } }
+    set: { activity_id: 2, activity_name: Enable, type_uid: 300102 }
+  - when: { eventType: { in: [user.lifecycle.deactivate, user.lifecycle.suspend] } }
+    set: { activity_id: 5, activity_name: Disable, type_uid: 300105 }
+  - when: { eventType: { contains: "user.lifecycle.delete" } }
+    set: { activity_id: 6, activity_name: Delete, type_uid: 300106 }
+  - when: { eventType: { contains: "user.account." } }
+    set: { category_uid: 3, class_uid: 3001, class_name: "Account Change", activity_id: 99, activity_name: Other, type_uid: 300199 }
+  - when: { eventType: { contains: "user.account.update_password" } }
+    set: { activity_id: 3, activity_name: "Password Change", type_uid: 300103 }
+  - when: { eventType: { contains: "user.account.reset_password" } }
+    set: { activity_id: 4, activity_name: "Password Reset", type_uid: 300104 }
+  - when: { eventType: { contains: "user.account.lock" } }
+    set: { activity_id: 9, activity_name: Lock, type_uid: 300109, severity_id: 3 }
+  - when: { eventType: { contains: "user.mfa.factor." } }
+    set: { category_uid: 3, class_uid: 3001, class_name: "Account Change", activity_id: 99, activity_name: Other, type_uid: 300199 }
+  - when: { eventType: { contains: "user.mfa.factor.activate" } }
+    set: { activity_id: 10, activity_name: "MFA Factor Enable", type_uid: 300110 }
+  - when: { eventType: { in: [user.mfa.factor.deactivate, user.mfa.factor.reset_all, user.mfa.factor.suspend] } }
+    set: { activity_id: 11, activity_name: "MFA Factor Disable", type_uid: 300111, severity_id: 3 }
+
+  # User Access Management (3005): admin roles and app assignments.
+  - when: { eventType: { contains: "user.account.privilege." } }
+    set: { category_uid: 3, class_uid: 3005, class_name: "User Access Management", activity_id: 99, activity_name: Other, type_uid: 300599, severity_id: 3 }
+  - when: { eventType: { contains: "user.account.privilege.grant" } }
+    set: { activity_id: 1, activity_name: "Assign Privileges", type_uid: 300501 }
+  - when: { eventType: { contains: "user.account.privilege.revoke" } }
+    set: { activity_id: 2, activity_name: "Revoke Privileges", type_uid: 300502 }
+  # Custom admin roles, resource sets and their bindings (iam.*).
+  - when: { eventType: { contains: "iam." } }
+    set: { category_uid: 3, class_uid: 3005, class_name: "User Access Management", activity_id: 99, activity_name: Other, type_uid: 300599, severity_id: 3 }
+  - when: { eventType: { contains: "iam.resourceset.bindings.add" } }
+    set: { activity_id: 1, activity_name: "Assign Privileges", type_uid: 300501 }
+  - when: { eventType: { contains: "iam.resourceset.bindings.delete" } }
+    set: { activity_id: 2, activity_name: "Revoke Privileges", type_uid: 300502 }
+  - when: { eventType: { contains: "application.user_membership." } }
+    set: { category_uid: 3, class_uid: 3005, class_name: "User Access Management", activity_id: 99, activity_name: Other, type_uid: 300599 }
+  - when: { eventType: { contains: "application.user_membership.add" } }
+    set: { activity_id: 1, activity_name: "Assign Privileges", type_uid: 300501 }
+  - when: { eventType: { contains: "application.user_membership.remove" } }
+    set: { activity_id: 2, activity_name: "Revoke Privileges", type_uid: 300502 }
+
+  # Group Management (3006).
+  - when: { eventType: { contains: "group." } }
+    set: { category_uid: 3, class_uid: 3006, class_name: "Group Management", activity_id: 99, activity_name: Other, type_uid: 300699 }
+  - when: { eventType: { contains: "group.user_membership.add" } }
+    set: { activity_id: 3, activity_name: "Add User", type_uid: 300603 }
+  - when: { eventType: { contains: "group.user_membership.remove" } }
+    set: { activity_id: 4, activity_name: "Remove User", type_uid: 300604 }
+  - when: { eventType: { contains: "group.lifecycle.create" } }
+    set: { activity_id: 6, activity_name: Create, type_uid: 300606 }
+  - when: { eventType: { contains: "group.lifecycle.delete" } }
+    set: { activity_id: 5, activity_name: Delete, type_uid: 300605 }
+  - when: { eventType: { contains: "group.privilege.grant" } }
+    set: { activity_id: 1, activity_name: "Assign Privileges", type_uid: 300601, severity_id: 3 }
+  - when: { eventType: { contains: "group.privilege.revoke" } }
+    set: { activity_id: 2, activity_name: "Revoke Privileges", type_uid: 300602 }
+
+  # Entity Management (3004): org configuration.
+  # policy.evaluate_sign_on is part of a sign-in and stays Authentication.
+  - when: { eventType: { contains: "policy.lifecycle." } }
+    set: { category_uid: 3, class_uid: 3004, class_name: "Entity Management", activity_id: 3, activity_name: Update, type_uid: 300403, severity_id: 2 }
+  - when: { eventType: { contains: "policy.rule." } }
+    set: { category_uid: 3, class_uid: 3004, class_name: "Entity Management", activity_id: 3, activity_name: Update, type_uid: 300403, severity_id: 2 }
+  # One app's sign-on policy and its rules (application.policy.sign_on.*).
+  - when: { eventType: { contains: "application.policy." } }
+    set: { category_uid: 3, class_uid: 3004, class_name: "Entity Management", activity_id: 3, activity_name: Update, type_uid: 300403, severity_id: 2 }
+  - when: { eventType: { contains: "system." } }
+    set: { category_uid: 3, class_uid: 3004, class_name: "Entity Management", activity_id: 3, activity_name: Update, type_uid: 300403 }
+  - when: { eventType: { contains: "application.lifecycle." } }
+    set: { category_uid: 3, class_uid: 3004, class_name: "Entity Management", activity_id: 3, activity_name: Update, type_uid: 300403 }
+  - when: { eventType: { contains: "zone." } }
+    set: { category_uid: 3, class_uid: 3004, class_name: "Entity Management", activity_id: 3, activity_name: Update, type_uid: 300403, severity_id: 2 }
+  - when: { class_uid: 3004, eventType: { contains: ".create" } }
+    set: { activity_id: 1, activity_name: Create, type_uid: 300401 }
+  - when: { class_uid: 3004, eventType: { contains: ".delete" } }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 300404, severity_id: 2 }
+  - when: { class_uid: 3004, eventType: { contains: ".revoke" } }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 300404 }
+  - when: { class_uid: 3004, eventType: { contains: ".activate" } }
+    set: { activity_id: 10, activity_name: Activate, type_uid: 300410 }
+  - when: { class_uid: 3004, eventType: { contains: ".deactivate" } }
+    set: { activity_id: 11, activity_name: Deactivate, type_uid: 300411, severity_id: 2 }
+  - when: { eventType: { in: [system.api_token.create, system.idp.lifecycle.create] } }
+    set: { severity_id: 3 }
+  # A push, SMS or call sent to verify a factor is a sign-in step, though Okta
+  # files it under system.
+  - when: { eventType: { contains: "send_factor_verify" } }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, activity_id: 6, activity_name: Preauth, type_uid: 300206 }
+
+  # Okta's own detections (ThreatInsight, suspicious activity reports).
+  - when: { eventType: { in: [security.threat.detected, security.attack.start, user.account.report_suspicious_activity_by_enduser, security.breached_credential.detected] } }
+    set: { category_uid: 2, class_uid: 2004, class_name: "Detection Finding", activity_id: 1, activity_name: Create, type_uid: 200401, severity_id: 3 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: actor_session_uid, name: actor.session.uid, type: "Session UID" }
+  - { column: device_hostname, name: device.hostname, type: Hostname }

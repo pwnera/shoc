@@ -1,0 +1,29 @@
+id: gws_admin_first_console_operation
+title: An account performs an admin console operation it never performed before
+hypothesis: >
+  Somebody holding a stolen admin session or a newly granted role uses the admin
+  console for things its owner never does: creating users, changing roles, adding
+  a domain-wide delegation. Each admin console here has a handful of people, so
+  the first time one of them does a given operation is worth explaining.
+attack: [T1098, T1078.004]
+logsource:
+  product: google
+  service: reports
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.service.name: admin
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, api.operation]
+  lookback: 30d
+pivot: [actor.user.name, api.operation, src_endpoint.ip, cloud.account.uid]
+triage: >
+  Is this person an administrator who would do this, and does a ticket, a new
+  hire or a change they announced explain it? An operation on roles, delegation
+  or security settings by somebody who never touched them is the one to escalate.
+follow_up:
+  - Did the same account sign in from a new address or country that day?
+  - Did it also change roles, two-step settings or delegation for other users?
+sensitive: true

@@ -1,0 +1,52 @@
+[
+  {
+    "id": 9203,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "User",
+    "event_name": "personal_access_token_created",
+    "details": {
+      "event_name": "personal_access_token_created",
+      "author_name": "Mallory",
+      "author_class": "User",
+      "author_email": "mallory@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "mallory",
+      "custom_message": "Created personal access token with id 501",
+      "target_type": "PersonalAccessToken"
+    }
+  },
+  {
+    "id": 9204,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Project",
+    "event_name": "project_access_token_creation_failed",
+    "details": {
+      "event_name": "project_access_token_creation_failed",
+      "author_name": "Mallory",
+      "author_class": "User",
+      "author_email": "mallory@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform/api",
+      "custom_message": "Attempted to create project access token but failed"
+    }
+  },
+  {
+    "id": 9205,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Project",
+    "event_name": "deploy_key_removed",
+    "details": {
+      "event_name": "deploy_key_removed",
+      "author_name": "Mallory",
+      "author_class": "User",
+      "author_email": "mallory@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform/api",
+      "custom_message": "Removed deploy key",
+      "target_details": "old-key"
+    }
+  }
+]

@@ -1,0 +1,48 @@
+id: gke_cluster_admin_bound
+title: cluster-admin bound to someone in a GKE cluster
+description: >
+  A ClusterRoleBinding to cluster-admin was created or changed by a person, a
+  service account, a workload or an anonymous caller. cluster-admin reads every
+  secret in the cluster and runs anything on any node; Kubernetes' own
+  components are left out.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1098.003]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection:
+    api.operation|endswith: [clusterrolebindings.create, clusterrolebindings.patch, clusterrolebindings.update]
+  # A patch logs only the fields it changes; the binding it returns names the role.
+  cluster_admin:
+    - raw.protoPayload.request.roleRef.name: cluster-admin
+    - raw.protoPayload.response.roleRef.name: cluster-admin
+  filter_system:
+    actor.user.name|startswith: "system:"
+  # A pod's service account token or an unauthenticated request is how a
+  # cluster is usually taken over; these stay in.
+  workload:
+    actor.user.name|startswith: ["system:serviceaccount:", "system:anonymous"]
+  condition: selection and cluster_admin and (workload or not filter_system)
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, resource.uid, cloud.account.uid]
+sources:
+  - name: Elastic
+    title: GKE Cluster-Admin Role Binding Created or Modified
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/persistence_gcp_gke_cluster_admin_role_binding
+    license: Elastic-2.0
+    relation: inspired
+  - name: Google
+    title: GKE audit policy
+    url: https://docs.cloud.google.com/kubernetes-engine/docs/concepts/audit-policy
+    relation: inspired
+  - name: Aqua Security
+    title: First-ever attack leveraging Kubernetes RBAC to backdoor clusters
+    url: https://www.aquasec.com/blog/leveraging-kubernetes-rbac-to-backdoor-clusters/
+    author: Assaf Morag, Michael Katchinskiy
+    relation: inspired

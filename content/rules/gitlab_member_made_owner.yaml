@@ -1,0 +1,48 @@
+id: gitlab_member_made_owner
+title: GitLab group or project member made an Owner
+description: >
+  A member was added as, or changed to, Owner of a group or project. An Owner
+  changes protected branches, CI variables and who else gets in, across every
+  project below the group. A change to an existing Owner's expiry date does not
+  fire.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1098.003]
+logsource:
+  product: gitlab
+  service: audit_events
+detection:
+  # Current GitLab writes the role as "Default role: Owner", older releases as "Owner".
+  selection_change:
+    api.operation: member_updated
+    raw.details.to: [Owner, "Default role: Owner"]
+  filter_was_owner:
+    raw.details.from: [Owner, "Default role: Owner"]
+  selection_added:
+    api.operation: member_created
+    raw.details.as: [Owner, "Default role: Owner"]
+  condition: (selection_change and not filter_was_owner) or selection_added
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.invoked_by, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: GitHub Owner Role Granted To User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/persistence_organization_owner_role_granted
+    license: Elastic-2.0
+    relation: inspired
+  - name: GitLab
+    title: Member update audit event, ee/app/services/ee/members/update_service.rb
+    url: https://gitlab.com/gitlab-org/gitlab/-/blob/master/ee/app/services/ee/members/update_service.rb
+    relation: inspired
+  - name: GitLab
+    title: Member create audit event, ee/app/services/ee/members/create_service.rb
+    url: https://gitlab.com/gitlab-org/gitlab/-/blob/master/ee/app/services/ee/members/create_service.rb
+    relation: inspired
+  - name: GitLab
+    title: Role labels, lib/gitlab/access.rb
+    url: https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/access.rb
+    relation: inspired

@@ -1,0 +1,28 @@
+[
+  {
+    "id": {
+      "uniqueQualifier": "hunt-authorize-jane@acme.com",
+      "applicationName": "token",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@acme.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "token",
+    "events": [
+      {
+        "type": "auth",
+        "name": "authorize",
+        "parameters": [
+          {
+            "name": "client_id",
+            "value": "100000000000000000077"
+          }
+        ]
+      }
+    ]
+  }
+]

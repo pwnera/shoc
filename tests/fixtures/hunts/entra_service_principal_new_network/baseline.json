@@ -1,0 +1,19 @@
+[
+  {
+    "id": "hunt-sp-known-asn",
+    "appId": "66666666-6666-6666-6666-666666666666",
+    "appDisplayName": "invoice-sync",
+    "servicePrincipalName": "invoice-sync",
+    "servicePrincipalId": "sp-1",
+    "ipAddress": "203.0.113.191",
+    "autonomousSystemNumber": 14061,
+    "location": { "countryOrRegion": "DE" },
+    "status": { "errorCode": 0 },
+    "clientCredentialType": "clientSecret",
+    "correlationId": "c-0",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["servicePrincipal"],
+    "_stream": "servicePrincipalSignIns",
+    "_repeat": 5
+  }
+]

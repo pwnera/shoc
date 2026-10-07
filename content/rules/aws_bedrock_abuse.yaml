@@ -1,0 +1,64 @@
+id: aws_bedrock_abuse
+title: Bedrock model access requested, or a Bedrock API key user acting elsewhere
+description: >
+  Someone requested access to a Bedrock model or accepted its agreement
+  (denied attempts included), or the IAM user behind a Bedrock API key called
+  something other than Bedrock or was given a key or console password. Stolen
+  keys are resold for model use at thousands of dollars a day, and model
+  access is the step before.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1496.004, T1078.004, T1098.001]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_access:
+    api.operation: [PutUseCaseForModelAccess, CreateFoundationModelAgreement, PutFoundationModelEntitlement]
+  selection_key_user:
+    actor.user.type: IAMUser
+    actor.user.name|startswith: BedrockAPIKey-
+  # Bedrock on either endpoint, its marketplace subscription and SDK credential checks are the key's own use.
+  filter_bedrock:
+    api.service.name: [bedrock.amazonaws.com, bedrock-mantle.amazonaws.com, signin.amazonaws.com, agreement-marketplace.amazonaws.com, discovery-marketplace.amazonaws.com]
+  filter_credential_check:
+    api.operation: [GetCallerIdentity, GetSessionToken, GetAccessKeyInfo]
+  selection_key_user_creds:
+    api.operation: [CreateAccessKey, CreateLoginProfile, UpdateLoginProfile]
+    raw.requestParameters.userName|startswith: BedrockAPIKey-
+  condition: selection_access or (selection_key_user and not filter_bedrock and not filter_credential_check) or selection_key_user_creds
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, api.service.name, cloud.region]
+sources:
+  - name: Elastic
+    title: AWS Bedrock Foundation Model Access Enabled or Entitlement Granted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_bedrock_foundation_model_access_enabled_or_entitlement_granted
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS Bedrock Unauthorized Foundation Model Access Attempt
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_bedrock_foundation_model_access_denied_attempt
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS Bedrock API Key Phantom User Activity Outside Bedrock
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_bedrock_phantom_user_activity_outside_bedrock
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS IAM Credentials Added to a Bedrock API Key Phantom User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_bedrock_phantom_user_credentials_added
+    license: Elastic-2.0
+    relation: adapted
+  - name: AWS
+    title: Monitor bedrock-mantle API calls using CloudTrail
+    url: https://docs.aws.amazon.com/bedrock/latest/userguide/logging-cloudtrail-mantle.html
+    relation: inspired
+  - name: AWS Security Blog
+    title: "Securing Amazon Bedrock API keys: Best practices for implementation and management"
+    url: https://aws.amazon.com/blogs/security/securing-amazon-bedrock-api-keys-best-practices-for-implementation-and-management/
+    relation: inspired

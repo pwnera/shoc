@@ -1,0 +1,116 @@
+id: contain_account_takeover
+title: Contain an account takeover
+description: >
+  Someone else is in a user's account. Revoking the sessions is reversible and
+  immediate; suspending the account is not something a model should decide at
+  3am, so it waits for a human, after the page, as does removing the newest
+  factor enrolled in the last week, which only the user can enrol again, and
+  resetting the password, which the attacker may know and only the user can
+  set again. All four are optional: the page
+  must go out even when the identity provider refuses the call, no credential
+  acts there, or the case came from a Cloudflare Access login. An
+  admin resetting someone else's factors is answered on the account that was
+  reset, in contain_account_recovery_abuse.
+rules:
+  - okta_mfa_push_fatigue
+  - okta_push_approved_after_denial
+  - okta_session_used_by_two_browsers
+  - hunt:okta_first_login_country
+  - okta_flagged_sign_in
+  - okta_user_reported_suspicious_activity
+  - okta_fastpass_phishing_blocked
+  - okta_mfa_bypass_attempt
+  - hunt:okta_factor_enrolled_from_new_network
+  - hunt:okta_session_via_anonymising_proxy
+  - hunt:okta_session_from_several_addresses
+  - hunt:okta_user_two_countries_in_a_day
+  - entra_device_code_sign_in
+  - m365_device_code_sign_in
+  - entra_aitm_kit_sign_in
+  - m365_aitm_kit_sign_in
+  - entra_user_reported_suspicious_activity
+  - entra_identity_protection_risk
+  - entra_mfa_registered_after_risky_sign_in
+  - entra_mfa_denied_burst
+  - entra_device_registered_by_attack_tool
+  - entra_attack_tool_user_agent
+  - hunt:entra_first_sign_in_country
+  - hunt:entra_security_info_registered_from_new_address
+  - hunt:cloudflare_access_first_login_country
+  - hunt:entra_sign_in_from_hosting_network
+questions:
+  - id: push_approved
+    ask: Was a push approved after the denials, and from which address and device?
+  - id: new_origin
+    ask: Did the user sign in from a country or ASN they have not used in the last 30 days?
+  - id: factor_change
+    ask: Who reset or enrolled factors, and was a new factor enrolled from a new address?
+  - id: after_access
+    ask: What did the session do after sign-in (admin changes, API tokens, app access, mail rules)?
+  - id: okta_signal
+    ask: What did Okta itself flag (threat suspected, risk level, new behaviours, a user report, a phishing block), and when?
+  - id: token_replay
+    ask: Was the session used from a different address or ASN than the sign-in that created it, and which app did a device-code grant target?
+  - id: persistence
+    ask: Was a device, an MFA method or an app registration added during the session?
+benign_when:
+  - A help-desk admin reset the factors and the user enrolled a new one from their usual address and device.
+  - The user was travelling and the new country matches their other sessions that day.
+  - The user denied a push by mistake and approved the next one from their usual device and address.
+example: |
+  claim (push_approved): "After 14 denied pushes, a push was approved at 03:12 UTC from 203.0.113.40 on a device never seen for this user", citing the approval and two of the denials.
+  checked and absent: "a factor reset by a help-desk admin in the 24h before (7d window)", which rules out the help-desk reset.
+  disposition: malicious, because the approval came from a new address and device right after the denials.
+trigger:
+  verdict: [malicious]
+  entity_kinds: [user]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: revoke the user's sessions in Okta
+    action: okta.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: revoke the user's sessions in Entra ID
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: account takeover on {{ entity.user }}: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  # The newest factor enrolled in the last week, read from the identity provider.
+  - name: remove the factor the attacker enrolled in Okta
+    action: okta.remove_factor
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: remove the factor the attacker enrolled in Entra ID
+    action: entra.remove_factor
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: make the password stop working in Okta
+    action: okta.reset_password
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: make the password stop working in Entra ID
+    action: entra.reset_password
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: suspend the account in Okta
+    action: okta.suspend_user
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: suspend the account in Entra ID
+    action: entra.suspend_user
+    optional: true
+    params:
+      user: "{{ entity.user }}"

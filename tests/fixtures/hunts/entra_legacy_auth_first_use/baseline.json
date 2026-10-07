@@ -1,0 +1,17 @@
+[
+  {
+    "id": "hunt-entra-imap-known",
+    "userPrincipalName": "jane@example.com",
+    "userId": "u-1",
+    "appDisplayName": "Office 365 Exchange Online",
+    "clientAppUsed": "IMAP4",
+    "ipAddress": "198.51.100.7",
+    "location": { "countryOrRegion": "FR" },
+    "status": { "errorCode": 0 },
+    "correlationId": "c-0",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["interactiveUser"],
+    "_stream": "signIns",
+    "_repeat": 2
+  }
+]

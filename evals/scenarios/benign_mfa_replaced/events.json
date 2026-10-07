@@ -1,0 +1,88 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "mfa-DeactivateMFADevice",
+    "eventName": "DeactivateMFADevice",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Darwin/23.4",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "accountId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEALICE0001"
+    },
+    "requestParameters": {
+      "userName": "bob",
+      "serialNumber": "arn:aws:iam::123456789012:mfa/bob"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "mfa-DeleteVirtualMFADevice",
+    "eventName": "DeleteVirtualMFADevice",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Darwin/23.4",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "accountId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEALICE0001"
+    },
+    "requestParameters": {
+      "serialNumber": "arn:aws:iam::123456789012:mfa/bob"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "mfa-CreateVirtualMFADevice",
+    "eventName": "CreateVirtualMFADevice",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Darwin/23.4",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "accountId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEALICE0001"
+    },
+    "requestParameters": {
+      "virtualMFADeviceName": "bob-2"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "mfa-EnableMFADevice",
+    "eventName": "EnableMFADevice",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Darwin/23.4",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "accountId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEALICE0001"
+    },
+    "requestParameters": {
+      "userName": "bob",
+      "serialNumber": "arn:aws:iam::123456789012:mfa/bob-2"
+    }
+  }
+]

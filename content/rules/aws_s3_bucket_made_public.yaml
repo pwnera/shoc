@@ -1,0 +1,54 @@
+id: aws_s3_bucket_made_public
+title: S3 bucket opened to the world
+description: >
+  A bucket ACL was made public, a bucket policy now allows anyone, or a bucket
+  or account public-access block was removed or loosened. This is how customer
+  data ends up indexed by a search engine. Turning the block on, a policy that
+  denies everyone (the TLS-only statement) and policies for a named principal
+  such as CloudFront are not a match.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: critical
+confidence: 0.75
+attack: [T1530]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_canned_acl:
+    api.operation: PutBucketAcl
+    raw.requestParameters.x-amz-acl|contains: [public-read, authenticated-read]
+  selection_grant:
+    api.operation: PutBucketAcl
+    raw.requestParameters.AccessControlPolicy|contains: [acs.amazonaws.com/groups/global/AllUsers, acs.amazonaws.com/groups/global/AuthenticatedUsers]
+  # Allow and Principal "*" in the same statement, either key order. A TLS-only Deny for "*" opens nothing.
+  selection_policy:
+    api.operation: PutBucketPolicy
+    raw.requestParameters.bucketPolicy|re: '"Effect"\s*:\s*"Allow"([^{}]|\{([^{}]|\{[^{}]*\})*\})*"Principal"\s*:\s*(\{\s*"AWS"\s*:\s*(\[\s*)?)?"\*"|"Principal"\s*:\s*("\*"|\{\s*"AWS"\s*:\s*(\[\s*)?"\*"\s*\]?\s*\})([^{}]|\{([^{}]|\{[^{}]*\})*\})*"Effect"\s*:\s*"Allow"'
+  selection_block_removed:
+    api.operation: [DeletePublicAccessBlock, DeleteAccountPublicAccessBlock]
+  selection_block_weakened:
+    api.operation: [PutBucketPublicAccessBlock, PutAccountPublicAccessBlock]
+    raw.requestParameters.PublicAccessBlockConfiguration|re: '"(BlockPublicAcls|IgnorePublicAcls|BlockPublicPolicy|RestrictPublicBuckets)"\s*:\s*false'
+  success:
+    status: Success
+  condition: success and selection_*
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, raw.requestParameters.bucketName, raw.requestParameters.x-amz-acl]
+sources:
+  - name: Elastic
+    title: AWS S3 Bucket Policy Added to Allow Public Access
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_s3_bucket_policy_added_for_public_access
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS S3 Bucket ACL Modified to Allow Public Access by New Identity
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/collection_s3_bucket_acl_public_access_new_identity
+    license: Elastic-2.0
+    relation: inspired
+  - name: AWS
+    title: Security Hub CSPM controls for Amazon S3 (S3.5, require requests to use TLS)
+    url: https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html
+    relation: inspired

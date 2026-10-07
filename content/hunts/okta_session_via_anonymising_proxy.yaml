@@ -1,0 +1,47 @@
+id: okta_session_via_anonymising_proxy
+title: A user signs in to Okta through an anonymising proxy for the first time
+hypothesis: >
+  Attackers replaying a stolen password or session come through Tor, open
+  proxies and residential proxy networks, which Okta marks as a proxy. Some
+  employees use a consumer VPN every day; the change worth a look is a user who
+  never came through a proxy and now does.
+attack: [T1078.004, T1090.003]
+logsource:
+  product: okta
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: [user.session.start, user.authentication.sso, user.authentication.auth_via_mfa, user.authentication.verify]
+    status: Success
+    raw.securityContext.isProxy: "true"
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, raw.securityContext.isProxy]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.ip, src_endpoint.asn, http_request.user_agent]
+triage: >
+  Does this person use a VPN or privacy relay they can name? A VPN installed
+  this week explains it; a proxy sign-in alongside a normal one from the office
+  the same hour does not.
+follow_up:
+  - Did the same user also sign in from their usual address within the hour?
+  - Did the proxied session change factors, mail rules or admin settings?
+sources:
+  - name: Elastic
+    title: First Occurrence of Okta User Session Started via Proxy
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/initial_access_first_occurrence_user_session_started_via_proxy
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Okta User Session Start Via An Anonymising Proxy Service
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_user_session_start_via_anonymised_proxy.yml
+    author: kelnage
+    license: DRL-1.1
+    relation: inspired
+  - name: Sigma
+    title: Okta Admin Functions Access Through Proxy
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_admin_activity_from_proxy_query.yml
+    author: Muhammad Faisal @faisalusuf
+    license: DRL-1.1
+    relation: inspired

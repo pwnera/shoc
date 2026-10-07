@@ -1,0 +1,51 @@
+id: azure_privileged_access_granted
+title: Owner or access-admin role granted in Azure, or a Key Vault opened up
+description: >
+  Someone was granted Owner, User Access Administrator or Role Based Access
+  Control Administrator on Azure resources, or a Key Vault access policy was
+  changed. Either hands out control of the subscription or its secrets.
+  Contributor grants are left out: DevOps hands them out every week.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.65
+attack: [T1098.003]
+logsource:
+  product: azure
+  service: activity
+detection:
+  # The request body rides on the event that starts the write, the response
+  # body on the one that ends it, so both are read and neither needs Success.
+  selection_role_op:
+    api.operation: Microsoft.Authorization/roleAssignments/write
+  selection_admin_role:
+    - raw.properties.requestbody|contains: [8e3af657-a8ff-443c-a75c-2fe8c4bcb635, 18d7d88d-d35e-4fb5-a5c3-7773c20a72d9, f58310d9-a9f6-439a-9e8d-f62e7b41a168]
+    - raw.properties.responseBody|contains: [8e3af657-a8ff-443c-a75c-2fe8c4bcb635, 18d7d88d-d35e-4fb5-a5c3-7773c20a72d9, f58310d9-a9f6-439a-9e8d-f62e7b41a168]
+  selection_vault:
+    api.operation: Microsoft.KeyVault/vaults/accessPolicies/write
+    status: Success
+  filter_failed:
+    status: Failure
+  condition: ((selection_role_op and selection_admin_role) or selection_vault) and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, cloud.account.uid]
+sources:
+  - name: Elastic
+    title: Azure RBAC Built-In Administrator Roles Assigned
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/privilege_escalation_azure_rbac_administrator_roles_assigned
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Granting Of Permissions To An Account
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/activity_logs/azure_granting_permission_detection.yml
+    author: sawwinnnaung
+    license: DRL-1.1
+    relation: inspired
+  - name: Sigma
+    title: Azure Key Vault Modified or Deleted
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/activity_logs/azure_keyvault_modified_or_deleted.yml
+    author: Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: adapted

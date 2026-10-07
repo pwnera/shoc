@@ -1,0 +1,32 @@
+id: gcp_bucket_made_public
+title: Cloud Storage bucket readable by anyone
+description: >
+  allUsers or allAuthenticatedUsers was added to a bucket's permissions. It is
+  the GCP version of a public S3 bucket: every object in it can be listed or
+  read by anyone with the name.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: critical
+confidence: 0.7
+attack: [T1530]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection:
+    api.operation|endswith: setIamPermissions
+    status: Success
+  public:
+    - unmapped.members.ADD.allUsers.role|exists: true
+    - unmapped.members.ADD.allAuthenticatedUsers.role|exists: true
+  condition: selection and public
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, src_endpoint.ip, resource.uid, raw.protoPayload.serviceData.policyDelta.bindingDeltas]
+sources:
+  - name: Elastic
+    title: GCP Storage Bucket Permissions Modification
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/defense_evasion_gcp_storage_bucket_permissions_modified
+    license: Elastic-2.0
+    relation: inspired

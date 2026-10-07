@@ -1,0 +1,24 @@
+id: google_drive_mass_download
+title: Bulk download from Google Drive
+description: >
+  One account downloaded a large number of files in a short window, an
+  employee leaving with the customer list, or an attacker in their session.
+status: stable
+date: 2026-09-24
+modified: 2026-09-25
+severity: high
+confidence: 0.65
+attack: [T1530]
+logsource:
+  product: google
+  service: reports
+detection:
+  selection:
+    api.operation: [download, copy]
+    metadata.product.name: Google Workspace
+  condition: selection
+  timeframe: 30m
+  group_by: [actor.user.name]
+  count: ">= 50"
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip]

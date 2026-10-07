@@ -1,0 +1,42 @@
+id: gws_user_two_countries_in_a_day
+title: Somebody signs in to Google from two countries on the same day
+hypothesis: >
+  A stolen Google password or session is used from the attacker's country
+  while the owner keeps signing in from home, so one account shows two
+  countries the same day. A rule over an hour would page on every trip: a phone
+  on roaming data exits in the home country while the laptop on hotel Wi-Fi is
+  abroad. Most companies on Google Workspace have no other identity provider,
+  so this is where it shows.
+attack: [T1078.004]
+logsource:
+  product: google
+  service: reports
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.service.name: login
+    api.operation: login_success
+    src_endpoint.location.country|exists: true
+  condition: selection
+baseline:
+  rare:
+    by: [actor.user.name]
+    among: src_endpoint.location.country
+    seen_by_at_least: 2
+  lookback: 1d
+pivot: [actor.user.name, src_endpoint.location.country, src_endpoint.ip, src_endpoint.asn]
+triage: >
+  Is the person travelling, and do the two countries alternate through the
+  day, or does the second country appear once, from a hosting network, while
+  the usual one carries on?
+follow_up:
+  - Did the second country's session change two-step settings, forwarding or app grants?
+  - Did Google flag any of the sign-ins as suspicious?
+sensitive: true
+sources:
+  - name: Elastic
+    title: Google Workspace Impossible Travel Login
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/initial_access_google_workspace_login_impossible_travel
+    license: Elastic-2.0
+    relation: inspired

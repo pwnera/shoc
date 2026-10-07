@@ -1,0 +1,32 @@
+[
+  {
+    "id": {
+      "uniqueQualifier": "gw-REMOVE_API_CLIENT_ACCESS",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "admin@acme.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "DOMAIN_SETTINGS",
+        "name": "REMOVE_API_CLIENT_ACCESS",
+        "parameters": [
+          {
+            "name": "API_CLIENT_NAME",
+            "value": "100000000000000000009"
+          },
+          {
+            "name": "DOMAIN_NAME",
+            "value": "acme.com"
+          }
+        ]
+      }
+    ]
+  }
+]

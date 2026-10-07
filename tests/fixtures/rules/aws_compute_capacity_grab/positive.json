@@ -1,0 +1,165 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-RunInstances",
+    "eventName": "RunInstances",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "errorCode": "Client.VcpuLimitExceeded",
+    "errorMessage": "You have requested more vCPU capacity than your current vCPU limit allows",
+    "requestParameters": {
+      "instanceType": "p4d.24xlarge",
+      "instancesSet": {
+        "items": [
+          {
+            "imageId": "ami-0123456789abcdef0",
+            "minCount": 1,
+            "maxCount": 20
+          }
+        ]
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-RequestSpotInstances",
+    "eventName": "RequestSpotInstances",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "instanceCount": 10,
+      "launchSpecification": {
+        "imageId": "ami-0123456789abcdef0",
+        "instanceType": "g5.12xlarge"
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-RequestServiceQuotaIncrease",
+    "eventName": "RequestServiceQuotaIncrease",
+    "eventSource": "servicequotas.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "serviceCode": "ec2",
+      "quotaCode": "L-DB2E81BA",
+      "desiredValue": 256
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-EnableRegion",
+    "eventName": "EnableRegion",
+    "eventSource": "account.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "RegionName": "ap-southeast-3"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-RunInstances-c5a",
+    "eventName": "RunInstances",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "ap-south-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "instanceType": "c5a.24xlarge",
+      "instancesSet": {
+        "items": [
+          {
+            "imageId": "ami-0123456789abcdef0",
+            "minCount": 1,
+            "maxCount": 20
+          }
+        ]
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-RunInstances-vcpu",
+    "eventName": "RunInstances",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "errorCode": "Client.VcpuLimitExceeded",
+    "errorMessage": "You have requested more vCPU capacity than your current vCPU limit allows",
+    "requestParameters": {
+      "instanceType": "m5.2xlarge",
+      "instancesSet": {
+        "items": [
+          {
+            "imageId": "ami-0123456789abcdef0",
+            "minCount": 1,
+            "maxCount": 20
+          }
+        ]
+      }
+    }
+  }
+]

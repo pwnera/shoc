@@ -1,0 +1,29 @@
+id: gcp_instance_creation_burst
+title: One principal created ten or more VMs in an hour
+description: >
+  A leaked GCP credential is used to start mining VMs within hours, and the
+  bill is the incident. Failed inserts count too: hitting the quota is part of
+  the pattern. Managed instance groups and GKE node pools create VMs as Google's
+  own agents and are left out.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.5
+attack: [T1496.001, T1578.002]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection:
+    api.operation|endswith: [compute.instances.insert, compute.instances.bulkInsert]
+    # Each VM is logged at the start and the end of its operation; count one.
+    raw.operation.first: "true"
+  filter_google_agent:
+    actor.user.name|endswith: [cloudservices.gserviceaccount.com, compute-system.iam.gserviceaccount.com, container-engine-robot.iam.gserviceaccount.com]
+  condition: selection and not filter_google_agent
+  timeframe: 1h
+  group_by: [actor.user.name]
+  count: ">= 10"
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, actor.session.uid, cloud.region]

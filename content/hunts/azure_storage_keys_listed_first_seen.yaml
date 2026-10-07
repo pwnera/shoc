@@ -1,0 +1,48 @@
+id: azure_storage_keys_listed_first_seen
+title: An identity reads or regenerates a storage account's keys for the first time
+hypothesis: >
+  A storage account key opens every blob, file and queue in the account and is
+  not tied to anyone's sign-in. Reading the keys is how an attacker with an
+  Azure role takes the data out quietly. The portal's Access keys page and
+  restarting function apps read them too, so this is a hunt: the question is
+  whether this identity has ever needed this account's keys before.
+attack: [T1552.005, T1078.004]
+logsource:
+  product: azure
+  service: activity
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: [Microsoft.Storage/storageAccounts/listKeys/action, Microsoft.Storage/storageAccounts/regenerateKey/action]
+    status: Success
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, resource.uid]
+  lookback: 30d
+pivot: [actor.user.name, resource.uid, src_endpoint.ip, actor.user.type]
+triage: >
+  Is this a person in the portal or an app that started using this account this
+  week? A person reading the keys of an account they never work on, from an
+  address they do not use, is the one to follow up.
+follow_up:
+  - What does the storage account hold, and is public network access on?
+  - Were the keys rotated since?
+sensitive: true
+sources:
+  - name: Elastic
+    title: Azure Storage Account Keys Accessed by Privileged User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/credential_access_azure_storage_account_keys_accessed
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Azure Storage Account Key Regenerated
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/credential_access_storage_account_key_regenerated
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: Rare Subscription-level Operations In Azure
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/activity_logs/azure_rare_operations.yml
+    author: sawwinnnaung
+    license: DRL-1.1
+    relation: inspired

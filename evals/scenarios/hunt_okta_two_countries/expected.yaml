@@ -1,0 +1,16 @@
+# The Hunter raising a first-seen country that nothing explains (RFC 0022).
+id: hunt_okta_two_countries
+title: A first sign-in from abroad while the usual country carries on
+description: >
+  Jane has signed in from Paris for three weeks and does so again today. Minutes
+  later a new session for her starts from Sao Paulo, on another network. Nobody
+  wrote down any travel, and the old country did not stop when the new one
+  started. The Hunter should raise the tuple, citing its events, so it reaches
+  Sentinel as a low finding.
+source: okta
+entity: jane@example.com
+connected: [okta]
+history_days: 60
+expected_rules: []
+expected_hunts:
+  okta_first_login_country: suspicious

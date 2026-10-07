@@ -1,0 +1,131 @@
+[
+  {
+    "_document_id": "gh-repo.add_member",
+    "action": "repo.add_member",
+    "actor": "alice",
+    "actor_id": 4243,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "Mozilla/5.0",
+    "operation_type": "modify",
+    "_repeat": 3
+  },
+  {
+    "_document_id": "gh-oauth_application.create",
+    "action": "oauth_application.create",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "python-requests/2.31.0",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-oauth_application.generate_client_secret",
+    "action": "oauth_application.generate_client_secret",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "python-requests/2.31.0",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-protected_branch.destroy",
+    "action": "protected_branch.destroy",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "python-requests/2.31.0",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-repo.access",
+    "action": "repo.access",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "python-requests/2.31.0",
+    "operation_type": "modify",
+    "visibility": "public"
+  },
+  {
+    "_document_id": "gh-mallory-push-2",
+    "action": "git.push",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "198.51.100.40",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "git/2.43.0",
+    "operation_type": "modify",
+    "_day_offset": 2
+  },
+  {
+    "_document_id": "gh-mallory-push-5",
+    "action": "git.push",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "198.51.100.40",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "git/2.43.0",
+    "operation_type": "modify",
+    "_day_offset": 5
+  },
+  {
+    "_document_id": "gh-mallory-push-9",
+    "action": "git.push",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "198.51.100.40",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "git/2.43.0",
+    "operation_type": "modify",
+    "_day_offset": 9
+  },
+  {
+    "_document_id": "gh-mallory-push-13",
+    "action": "git.push",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "198.51.100.40",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "git/2.43.0",
+    "operation_type": "modify",
+    "_day_offset": 13
+  },
+  {
+    "_document_id": "gh-mallory-push-16",
+    "action": "git.push",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "198.51.100.40",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "git/2.43.0",
+    "operation_type": "modify",
+    "_day_offset": 16
+  },
+  {
+    "_document_id": "gh-mallory-push-20",
+    "action": "git.push",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "198.51.100.40",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "git/2.43.0",
+    "operation_type": "modify",
+    "_day_offset": 20
+  }
+]

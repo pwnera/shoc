@@ -1,0 +1,17 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "3333333333333333333333333333333333333333",
+      "DeviceName": "it-01.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "AnyDesk.exe",
+      "FolderPath": "C:/Users/jdoe/Downloads/AnyDesk.exe",
+      "ProcessCommandLine": "\"AnyDesk.exe\"",
+      "InitiatingProcessFileName": "msedge.exe",
+      "AccountName": "jdoe"
+    }
+  }
+]

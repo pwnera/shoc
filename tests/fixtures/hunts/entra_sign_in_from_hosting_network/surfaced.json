@@ -1,0 +1,19 @@
+[
+  {
+    "id": "hunt-entra-vultr",
+    "userPrincipalName": "jane@example.com",
+    "userId": "u-1",
+    "userType": "Member",
+    "appId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "203.0.113.220",
+    "autonomousSystemNumber": 20473,
+    "userAgent": "axios/1.7.7",
+    "location": { "countryOrRegion": "US" },
+    "status": { "errorCode": 0 },
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["interactiveUser"],
+    "_stream": "signIns"
+  }
+]

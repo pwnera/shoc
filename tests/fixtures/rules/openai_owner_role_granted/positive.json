@@ -1,0 +1,72 @@
+[
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-invite-owner",
+    "type": "invite.sent",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-9",
+          "email": "mallory@example.com"
+        },
+        "ip_address": "203.0.113.44",
+        "user_agent": "Mozilla/5.0",
+        "ip_address_details": {
+          "country": "US",
+          "asn": "64500"
+        }
+      }
+    },
+    "invite.sent": {
+      "id": "invite-1",
+      "data": {
+        "email": "backup@example.net",
+        "role": "owner"
+      }
+    },
+    "details": {
+      "id": "invite-1",
+      "data": {
+        "email": "backup@example.net",
+        "role": "owner"
+      }
+    },
+    "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-assign-owner",
+    "type": "role.assignment.created",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-9",
+          "email": "mallory@example.com"
+        },
+        "ip_address": "203.0.113.44",
+        "user_agent": "Mozilla/5.0",
+        "ip_address_details": {
+          "country": "US",
+          "asn": "64500"
+        }
+      }
+    },
+    "role.assignment.created": {
+      "id": "role_assignment_role-api-organization-owner__api-organization__org-abc123_user-backup456",
+      "principal_id": "user-backup456",
+      "principal_type": "user",
+      "resource_id": "org-abc123",
+      "resource_type": "api.organization"
+    },
+    "details": {
+      "id": "role_assignment_role-api-organization-owner__api-organization__org-abc123_user-backup456",
+      "principal_id": "user-backup456",
+      "principal_type": "user",
+      "resource_id": "org-abc123",
+      "resource_type": "api.organization"
+    },
+    "key_id": null
+  }
+]

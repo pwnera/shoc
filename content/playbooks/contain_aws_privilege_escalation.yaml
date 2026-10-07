@@ -1,0 +1,63 @@
+id: contain_aws_privilege_escalation
+title: Contain a privilege escalation in AWS
+description: >
+  Someone gained or used more power in the AWS account than they had: an admin
+  policy, a wider role trust, a new organisation member, the root user, a
+  console login without MFA, an MFA device or identity provider of their own,
+  a replaced instance start-up script, or control of the company's domain.
+  Disabling the actor's key is reversible and cuts the
+  API access it came through. The Commander can detach the attached policy
+  (`aws.detach_user_policy` runs alone, `aws.detach_role_policy` waits for a
+  human). Restoring a role trust needs an action shoc does not have yet, so a
+  human is paged for it. Revoking the sessions the actor's key minted, or the
+  role behind its session key, waits for a human after the page.
+rules:
+  - aws_admin_policy_attached
+  - aws_role_trust_policy_changed
+  - aws_organization_changed
+  - aws_root_account_activity
+  - aws_console_login_without_mfa
+  - aws_mfa_device_changed
+  - aws_identity_provider_changed
+  - aws_domain_transfer_unlocked
+  - aws_ec2_user_data_modified
+  - hunt:aws_role_first_assumed
+questions:
+  - id: grantee
+    ask: Which principal received the privilege or the trust, and has it used it since?
+  - id: outside_account
+    ask: Does the trust policy or organisation change add an account ID that is not ours?
+  - id: origin
+    ask: Did the actor act from an address and user agent it has used in the last 30 days?
+  - id: root_operations
+    ask: If root was used, for which operations, and can only root perform them?
+  - id: domain_state
+    ask: If a Route 53 domain changed, is its transfer lock on now, which name servers does it point to, and was a transfer started?
+benign_when:
+  - The change was made by the infrastructure pipeline role from its usual address.
+  - Root was used only for billing, support-plan or account-closure operations that require it.
+example: |
+  claim (grantee): "The deploy role's trust policy now allows account 999988887777, which assumed it twice since", citing the UpdateAssumeRolePolicy and one AssumeRole.
+  checked and absent: "the change coming from the infrastructure pipeline role or its usual address (30d)", which rules out a pipeline change.
+  disposition: malicious, because an outside account now holds a role it has used.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: disable the actor's access key
+    action: aws.disable_access_key
+    optional: true
+    params:
+      access_key_id: "{{ entity.key }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: AWS privilege escalation by {{ entity.user }}, detach the grant: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: revoke the sessions minted from the actor's key
+    action: aws.revoke_sessions
+    optional: true
+    params:
+      access_key_id: "{{ entity.key }}"

@@ -1,0 +1,114 @@
+[
+  {
+    "id": "en-Add member to role helpdesk",
+    "activityDisplayName": "Add member to role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Assign",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "userPrincipalName": "it@example.com",
+        "id": "u-9",
+        "modifiedProperties": [
+          { "displayName": "Role.DisplayName", "newValue": "\"Helpdesk Administrator\"" },
+          { "displayName": "Role.TemplateId", "newValue": "\"729827e3-9c14-49f7-bb1b-9608f156bbb8\"" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-GA PIM activation",
+    "activityDisplayName": "Add member to role completed (PIM activation)",
+    "category": "RoleManagement",
+    "loggedByService": "PIM",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      { "type": "Role", "displayName": "Global Administrator", "id": "62e90394-69f5-4237-9190-012177145e10" },
+      { "type": "User", "userPrincipalName": "admin@example.com", "id": "u-2" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-GA PIM activation core copy",
+    "activityDisplayName": "Add member to role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Assign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "app": {
+        "displayName": "MS-PIM",
+        "servicePrincipalId": "sp-pim-1"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "modifiedProperties": [
+          { "displayName": "Role.ObjectID", "oldValue": null, "newValue": "\"f2ef992c-3afb-46b9-b7cf-a126ee74c451\"" },
+          { "displayName": "Role.DisplayName", "oldValue": null, "newValue": "\"Global Administrator\"" },
+          { "displayName": "Role.TemplateId", "oldValue": null, "newValue": "\"62e90394-69f5-4237-9190-012177145e10\"" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "PIM_tid-1_en-eligible-helpdesk",
+    "activityDisplayName": "Add eligible member to role in PIM completed (permanent)",
+    "category": "RoleManagement",
+    "loggedByService": "PIM",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "729827e3-9c14-49f7-bb1b-9608f156bbb8",
+        "displayName": "Helpdesk Administrator",
+        "type": "Role",
+        "modifiedProperties": [
+          { "displayName": "RoleDefinitionOriginType", "oldValue": "\"\"", "newValue": "\"BuiltInRole\"" },
+          { "displayName": "TemplateId", "oldValue": "\"\"", "newValue": "\"729827e3-9c14-49f7-bb1b-9608f156bbb8\"" }
+        ]
+      },
+      {
+        "id": "u-9",
+        "displayName": "IT",
+        "type": "User",
+        "userPrincipalName": "it@example.com",
+        "modifiedProperties": []
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

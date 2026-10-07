@@ -1,0 +1,39 @@
+id: restore_github_security
+title: Turn GitHub security features back on
+description: >
+  Secret scanning, push protection, the 2FA requirement or the OAuth app
+  restrictions were switched off. Turning secret scanning back on for the
+  repository is undone by switching it off, but changes what developers see on
+  push, so it waits for a human, who is paged first. The organisation settings
+  need a person in the GitHub console.
+rules:
+  - github_security_feature_disabled
+questions:
+  - id: actor
+    ask: Who switched the feature off, from which address, and are they an owner or a repository admin?
+  - id: while_off
+    ask: What was pushed, or which secrets were read, while the feature was off?
+  - id: restored
+    ask: Was the feature switched back on, and how long was it off?
+benign_when:
+  - A repository admin paused push protection for a planned history rewrite and turned it back on within the hour.
+example: |
+  claim (while_off): "Push protection on payments-api was switched off by k.ito and a commit with an AWS key was pushed 4 minutes later", citing both events.
+  checked and absent: "push protection turned back on in the 2 hours after (2h)", which rules out a short planned pause.
+  disposition: malicious, because the protection was removed just before a secret went in and stayed off.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: GitHub security feature turned off by {{ entity.user }} on {{ entity.resource }}: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: turn secret scanning back on for the repository
+    action: github.enable_secret_scanning
+    optional: true
+    params:
+      repo: "{{ entity.resource }}"

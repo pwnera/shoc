@@ -1,0 +1,30 @@
+[
+  {
+    "id": "hunt-entra-new-country",
+    "userPrincipalName": "jane@example.com",
+    "userId": "u-1",
+    "userType": "Member",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "203.0.113.77",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "location": { "city": "Chisinau", "countryOrRegion": "MD" },
+    "status": { "errorCode": 0 },
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["interactiveUser"],
+    "_stream": "signIns"
+  },
+  {
+    "id": "hunt-entra-app-new-country",
+    "servicePrincipalName": "backup-job",
+    "servicePrincipalId": "sp-1",
+    "appDisplayName": "backup-job",
+    "ipAddress": "203.0.113.78",
+    "location": { "countryOrRegion": "SG" },
+    "status": { "errorCode": 0 },
+    "correlationId": "c-2",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["servicePrincipal"],
+    "_stream": "servicePrincipalSignIns"
+  }
+]

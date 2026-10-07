@@ -1,0 +1,283 @@
+[
+  {
+    "id": "en-Teams-50126",
+    "userPrincipalName": "jane@acme.com",
+    "userId": "u-1",
+    "appDisplayName": "Teams",
+    "ipAddress": "203.0.113.81",
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "invalid password"
+    },
+    "_stream": "signIns",
+    "_repeat": 5
+  },
+  {
+    "id": "en-Teams-50126-bob",
+    "userPrincipalName": "bob@acme.com",
+    "userId": "u-bob",
+    "appDisplayName": "Teams",
+    "ipAddress": "203.0.113.81",
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "invalid password"
+    },
+    "_stream": "signIns",
+    "_repeat": 1
+  },
+  {
+    "id": "en-Teams-50126-carol",
+    "userPrincipalName": "carol@acme.com",
+    "userId": "u-carol",
+    "appDisplayName": "Teams",
+    "ipAddress": "203.0.113.81",
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "invalid password"
+    },
+    "_stream": "signIns",
+    "_repeat": 1
+  },
+  {
+    "id": "en-Teams-50126-dave",
+    "userPrincipalName": "dave@acme.com",
+    "userId": "u-dave",
+    "appDisplayName": "Teams",
+    "ipAddress": "203.0.113.81",
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "invalid password"
+    },
+    "_stream": "signIns",
+    "_repeat": 1
+  },
+  {
+    "id": "en-Teams-50126-erin",
+    "userPrincipalName": "erin@acme.com",
+    "userId": "u-erin",
+    "appDisplayName": "Teams",
+    "ipAddress": "203.0.113.81",
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "invalid password"
+    },
+    "_stream": "signIns",
+    "_repeat": 1
+  },
+  {
+    "id": "en-Teams-50126-frank",
+    "userPrincipalName": "frank@acme.com",
+    "userId": "u-frank",
+    "appDisplayName": "Teams",
+    "ipAddress": "203.0.113.81",
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "invalid password"
+    },
+    "_stream": "signIns",
+    "_repeat": 1
+  },
+  {
+    "id": "en-Teams-50126-grace",
+    "userPrincipalName": "grace@acme.com",
+    "userId": "u-grace",
+    "appDisplayName": "Teams",
+    "ipAddress": "203.0.113.81",
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "invalid password"
+    },
+    "_stream": "signIns",
+    "_repeat": 1
+  },
+  {
+    "id": "en-Teams-50126-heidi",
+    "userPrincipalName": "heidi@acme.com",
+    "userId": "u-heidi",
+    "appDisplayName": "Teams",
+    "ipAddress": "203.0.113.81",
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "invalid password"
+    },
+    "_stream": "signIns",
+    "_repeat": 1
+  },
+  {
+    "id": "en-Teams-50126-ivan",
+    "userPrincipalName": "ivan@acme.com",
+    "userId": "u-ivan",
+    "appDisplayName": "Teams",
+    "ipAddress": "203.0.113.81",
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "invalid password"
+    },
+    "_stream": "signIns",
+    "_repeat": 1
+  },
+  {
+    "id": "en-Teams-50126-judy",
+    "userPrincipalName": "judy@acme.com",
+    "userId": "u-judy",
+    "appDisplayName": "Teams",
+    "ipAddress": "203.0.113.81",
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "invalid password"
+    },
+    "_stream": "signIns",
+    "_repeat": 1
+  },
+  {
+    "id": "en-Teams-None",
+    "userPrincipalName": "jane@acme.com",
+    "userId": "u-1",
+    "appDisplayName": "Teams",
+    "ipAddress": "203.0.113.81",
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 0,
+      "failureReason": ""
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-Reset user password",
+    "activityDisplayName": "Reset user password",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "attacker@acme.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.81"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "displayName": "jane@acme.com",
+        "id": "u-1"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Add member to role",
+    "activityDisplayName": "Add member to role",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "attacker@acme.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.81"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "displayName": "jane@acme.com",
+        "id": "u-1"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Update conditional access policy",
+    "activityDisplayName": "Update conditional access policy",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "attacker@acme.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.81"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "displayName": "jane@acme.com",
+        "id": "u-1"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Consent to application",
+    "activityDisplayName": "Consent to application",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "attacker@acme.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.81"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "displayName": "jane@acme.com",
+        "id": "u-1"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

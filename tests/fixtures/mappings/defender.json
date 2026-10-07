@@ -1,0 +1,347 @@
+[
+  {
+    "id": "df-1",
+    "createdDateTime": "2026-09-20T10:00:00Z",
+    "title": "Suspicious PowerShell",
+    "category": "Execution",
+    "severity": "High",
+    "status": "new",
+    "tenantId": "tid-1",
+    "description": "Encoded command executed",
+    "machineId": "mach-1",
+    "computerDnsName": "laptop-19",
+    "evidence": [
+      {
+        "userPrincipalName": "jane@acme.com",
+        "ipAddress": "198.51.100.12",
+        "deviceId": "mach-1",
+        "deviceDnsName": "laptop-19"
+      }
+    ]
+  },
+  {
+    "id": "da637_1",
+    "createdDateTime": "2026-09-20T11:00:00.1234567Z",
+    "lastUpdateDateTime": "2026-09-20T11:05:00Z",
+    "title": "Suspicious sign-in followed by mailbox rule creation",
+    "category": "InitialAccess",
+    "severity": "high",
+    "status": "new",
+    "determination": "multiStagedAttack",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "detectionSource": "microsoftDefenderForEndpoint",
+    "tenantId": "00000000-1111-2222-3333-444444444444",
+    "description": "A sign-in from an unfamiliar location was followed by an inbox rule",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.deviceEvidence",
+        "mdeDeviceId": "8a1c7b6e5d40aa",
+        "deviceDnsName": "laptop-21.acme.internal",
+        "ipInterfaces": [
+          "10.1.2.9"
+        ]
+      },
+      {
+        "@odata.type": "#microsoft.graph.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "marc@example.com",
+          "accountName": "marc"
+        },
+        "ipAddress": "203.0.113.90"
+      }
+    ]
+  },
+  {
+    "id": "da637551227677560813_-961444813",
+    "providerAlertId": "1111111111111111111111111111111",
+    "incidentId": "22222",
+    "status": "new",
+    "severity": "low",
+    "classification": "unknown",
+    "determination": "unknown",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "detectionSource": "antivirus",
+    "detectorId": "00000000-0000-0000-0000-000000000000",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "title": "Suspicious execution of hidden file",
+    "description": "A hidden file has been launched. This activity could indicate a compromised host. Attackers often hide files associated with malicious tools to evade file system inspection and defenses.",
+    "recommendedActions": "Collect artifacts and determine scope\n�\tReview the machine timeline for suspicious activities that may have occurred before and after the time of the alert, and record additional related artifacts (files, IPs/URLs) \n�\tLook for the presence of relevant artifacts on other systems. Identify commonalities and differences between potentially compromised systems.\n�\tSubmit relevant files for deep analysis and review resulting detailed behavioral information.\n�\tSubmit undetected files to the MMPC malware portal\n\nInitiate containment & mitigation \n�\tContact the user to verify intent and initiate local remediation actions as needed.\n�\tUpdate AV signatures and run a full scan. The scan might reveal and remove previously-undetected malware components.\n�\tEnsure that the machine has the latest security updates. In particular, ensure that you have installed the latest software, web browser, and Operating System versions.\n�\tIf credential theft is suspected, reset all relevant users passwords.\n�\tBlock communication with relevant URLs or IPs at the organization�s perimeter.",
+    "category": "DefenseEvasion",
+    "assignedTo": null,
+    "alertWebUrl": "https://security.microsoft.com/alerts/1111111111111111111111111111111?tid=11111111-1111-1111-1111-111111111111",
+    "incidentWebUrl": "https://security.microsoft.com/incidents/22222?tid=11111111-1111-1111-1111-111111111111",
+    "actorDisplayName": null,
+    "threatDisplayName": null,
+    "threatFamilyName": null,
+    "mitreTechniques": [
+      "T1564.001"
+    ],
+    "createdDateTime": "2021-04-27T12:19:27.7211305Z",
+    "lastUpdateDateTime": "2021-05-02T14:19:01.3266667Z",
+    "resolvedDateTime": null,
+    "firstActivityDateTime": "2021-04-26T07:45:50.116Z",
+    "lastActivityDateTime": "2021-05-02T07:56:58.222Z",
+    "comments": [],
+    "systemTags": [
+      "Defender Experts"
+    ],
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "createdDateTime": "2021-04-27T12:19:27.7211305Z",
+        "verdict": "unknown",
+        "remediationStatus": "none",
+        "remediationStatusDetails": null,
+        "firstSeenDateTime": "2020-09-12T07:28:32.4321753Z",
+        "mdeDeviceId": "1111111111111111111111111111111111111111",
+        "azureAdDeviceId": null,
+        "deviceDnsName": "hostname.local.test",
+        "hostName": "hostname",
+        "ntDomain": null,
+        "dnsDomain": "local.test",
+        "osPlatform": "Windows10",
+        "osBuild": 22424,
+        "version": "Other",
+        "healthStatus": "active",
+        "riskScore": "medium",
+        "rbacGroupId": 75,
+        "rbacGroupName": "UnassignedGroup",
+        "onboardingStatus": "onboarded",
+        "defenderAvStatus": "unknown",
+        "ipInterfaces": [
+          "203.0.113.11"
+        ],
+        "loggedOnUsers": [],
+        "roles": [
+          "compromised"
+        ],
+        "detailedRoles": [
+          "Main device"
+        ],
+        "tags": [
+          "Test Machine"
+        ],
+        "vmMetadata": {
+          "vmId": "00000000-0000-0000-0000-000000000000",
+          "cloudProvider": "azure",
+          "resourceId": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/MyResourceGroup/providers/Microsoft.Compute/virtualMachines/vm-01",
+          "subscriptionId": "11111111-1111-1111-1111-111111111111"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.processEvidence",
+        "createdDateTime": "2021-04-27T12:19:27.7211305Z",
+        "verdict": "unknown",
+        "remediationStatus": "none",
+        "remediationStatusDetails": null,
+        "processId": 4780,
+        "parentProcessId": 668,
+        "processCommandLine": "\"MsSense.exe\"",
+        "processCreationDateTime": "2021-08-12T12:43:19.0772577Z",
+        "parentProcessCreationDateTime": "2021-08-12T07:39:09.0909239Z",
+        "detectionStatus": "detected",
+        "mdeDeviceId": "1111111111111111111111111111111111111111",
+        "roles": [],
+        "detailedRoles": [],
+        "tags": [],
+        "imageFile": {
+          "sha1": "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+          "fileName": "MsSense.exe",
+          "filePath": "C:\\Program Files\\temp",
+          "fileSize": 6136392,
+          "filePublisher": "Microsoft Corporation",
+          "signer": null,
+          "issuer": null
+        },
+        "parentProcessImageFile": {
+          "sha1": null,
+          "sha256": null,
+          "fileName": "services.exe",
+          "filePath": "C:\\Windows\\System32",
+          "fileSize": 731744,
+          "filePublisher": "Microsoft Corporation",
+          "signer": null,
+          "issuer": null
+        },
+        "userAccount": {
+          "accountName": "SYSTEM",
+          "domainName": "NT AUTHORITY",
+          "userSid": "S-1-5-18",
+          "azureAdUserId": null,
+          "userPrincipalName": null,
+          "displayName": "System"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.fileEvidence",
+        "createdDateTime": "2021-04-27T12:19:27.7211305Z",
+        "verdict": "unknown",
+        "remediationStatus": "none",
+        "remediationStatusDetails": null,
+        "detectionStatus": "detected",
+        "mdeDeviceId": "1111111111111111111111111111111111111111",
+        "roles": [],
+        "detailedRoles": [
+          "Referred in command line"
+        ],
+        "tags": [],
+        "fileDetails": {
+          "sha1": "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+          "fileName": "MsSense.exe",
+          "filePath": "C:\\Program Files\\temp",
+          "fileSize": 6136392,
+          "filePublisher": "Microsoft Corporation",
+          "signer": null,
+          "issuer": null
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.registryKeyEvidence",
+        "createdDateTime": "2021-04-27T12:19:27.7211305Z",
+        "verdict": "unknown",
+        "remediationStatus": "none",
+        "remediationStatusDetails": null,
+        "registryKey": "SYSTEM\\CONTROLSET001\\CONTROL\\WMI\\AUTOLOGGER\\SENSEAUDITLOGGER",
+        "registryHive": "HKEY_LOCAL_MACHINE",
+        "roles": [],
+        "detailedRoles": [],
+        "tags": []
+      }
+    ]
+  },
+  {
+    "id": "da637551227677560813_123456789",
+    "providerAlertId": "da637551227677560813_123456789",
+    "incidentId": "22223",
+    "status": "inProgress",
+    "severity": "high",
+    "classification": "truePositive",
+    "determination": "malware",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "detectionSource": "microsoftDefenderForEndpoint",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "title": "Ransomware behavior detected in the file system",
+    "description": "A process encrypted many files and dropped ransom notes.",
+    "category": "Impact",
+    "mitreTechniques": [
+      "T1486"
+    ],
+    "createdDateTime": "2026-09-20T08:12:41.1234567Z",
+    "lastUpdateDateTime": "2026-09-20T08:20:00.0000000Z",
+    "firstActivityDateTime": "2026-09-20T08:10:02.000Z",
+    "lastActivityDateTime": "2026-09-20T08:12:30.000Z",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "createdDateTime": "2026-09-20T08:12:41.1234567Z",
+        "verdict": "suspicious",
+        "remediationStatus": "none",
+        "roles": [],
+        "tags": [],
+        "userAccount": {
+          "accountName": "jdoe",
+          "domainName": "EXAMPLE",
+          "userSid": "S-1-5-21-1111111111-2222222222-3333333333-1104",
+          "azureAdUserId": "44444444-4444-4444-4444-444444444444",
+          "userPrincipalName": "jdoe@example.com",
+          "displayName": "Jane Doe"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "createdDateTime": "2026-09-20T08:12:41.1234567Z",
+        "verdict": "malicious",
+        "remediationStatus": "none",
+        "mdeDeviceId": "2222222222222222222222222222222222222222",
+        "azureAdDeviceId": "55555555-5555-5555-5555-555555555555",
+        "deviceDnsName": "laptop-21.example.org",
+        "hostName": "laptop-21",
+        "osPlatform": "Windows11",
+        "healthStatus": "active",
+        "riskScore": "high",
+        "onboardingStatus": "onboarded",
+        "ipInterfaces": [
+          "10.1.2.9"
+        ],
+        "loggedOnUsers": [
+          {
+            "accountName": "jdoe",
+            "domainName": "EXAMPLE"
+          }
+        ],
+        "roles": [
+          "compromised"
+        ],
+        "tags": []
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.processEvidence",
+        "createdDateTime": "2026-09-20T08:12:41.1234567Z",
+        "verdict": "malicious",
+        "remediationStatus": "remediated",
+        "processId": 7311,
+        "parentProcessId": 5120,
+        "processCommandLine": "invoice.pdf.exe --encrypt C:\\Users\\jdoe\\Documents",
+        "processCreationDateTime": "2026-09-20T08:10:02.0000000Z",
+        "mdeDeviceId": "2222222222222222222222222222222222222222",
+        "detectionStatus": "detected",
+        "roles": [],
+        "tags": [],
+        "imageFile": {
+          "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "fileName": "invoice.pdf.exe",
+          "filePath": "C:\\Users\\jdoe\\Downloads",
+          "fileSize": 482304
+        },
+        "parentProcessImageFile": {
+          "fileName": "explorer.exe",
+          "filePath": "C:\\Windows"
+        },
+        "userAccount": {
+          "accountName": "jdoe",
+          "domainName": "EXAMPLE",
+          "userPrincipalName": "jdoe@example.com"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.fileEvidence",
+        "createdDateTime": "2026-09-20T08:12:41.1234567Z",
+        "verdict": "malicious",
+        "remediationStatus": "none",
+        "detectionStatus": "detected",
+        "mdeDeviceId": "2222222222222222222222222222222222222222",
+        "roles": [],
+        "tags": [],
+        "fileDetails": {
+          "sha1": "356a192b7913b04c54574d18c28d46e6395428ab",
+          "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+          "fileName": "README_RESTORE.txt",
+          "filePath": "C:\\Users\\jdoe\\Documents",
+          "fileSize": 1024
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.ipEvidence",
+        "createdDateTime": "2026-09-20T08:12:41.1234567Z",
+        "verdict": "suspicious",
+        "remediationStatus": "none",
+        "ipAddress": "203.0.113.66",
+        "countryLetterCode": "NL",
+        "roles": [],
+        "tags": []
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.urlEvidence",
+        "createdDateTime": "2026-09-20T08:12:41.1234567Z",
+        "verdict": "malicious",
+        "remediationStatus": "none",
+        "url": "https://files.example.net/payload/invoice.pdf.exe",
+        "roles": [],
+        "tags": []
+      }
+    ]
+  }
+]

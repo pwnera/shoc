@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.env
+
+# Datasets fetched by scripts/fetch_dataset.py; never committed.
+var/
+
+# The documentation site and its build cache (zensical build).
+site/
+.cache/
+.DS_Store

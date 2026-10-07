@@ -1,0 +1,51 @@
+[
+  {
+    "id": "en-Update application certificates",
+    "activityDisplayName": "Update application – Certificates and secrets management ",
+    "additionalDetails": [
+      { "key": "User-Agent", "value": "Mozilla/5.0" },
+      { "key": "AppId", "value": "app-1" }
+    ],
+    "category": "ApplicationManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "id": "u-2",
+        "ipAddress": "203.0.113.61",
+        "userPrincipalName": "dev@example.com"
+      }
+    },
+    "targetResources": [
+      {
+        "displayName": "Mail Sync",
+        "id": "app-obj-1",
+        "type": "Application",
+        "modifiedProperties": [
+          { "displayName": "KeyDescription", "newValue": "[\"[KeyIdentifier=0000,KeyType=Password,KeyUsage=Verify,DisplayName=backup]\"]", "oldValue": "[]" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Add service principal credentials",
+    "activityDisplayName": "Add service principal credentials",
+    "category": "ApplicationManagement",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "id": "u-2",
+        "ipAddress": "203.0.113.61",
+        "userPrincipalName": "dev@example.com"
+      }
+    },
+    "targetResources": [
+      { "displayName": "Mail Sync", "id": "sp-1", "type": "ServicePrincipal" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

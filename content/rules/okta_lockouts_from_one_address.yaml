@@ -1,0 +1,46 @@
+id: okta_lockouts_from_one_address
+title: Several Okta accounts locked out from one address
+description: >
+  Three or more accounts were locked out from one address within an hour. One
+  person who forgot a password, or a mail client still sending an old one,
+  locks the same account again and again; an address that locks several is
+  guessing passwords.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: medium
+confidence: 0.65
+attack: [T1110.001, T1110.003]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation: user.account.lock
+  condition: selection
+  timeframe: 1h
+  group_by: [src_endpoint.ip]
+  count_distinct: actor.user.name
+  count: ">= 3"
+entity: src_endpoint.ip
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.location.country]
+sources:
+  - name: Elastic
+    title: Attempts to Brute Force an Okta User Account
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_attempts_to_brute_force_okta_user_account
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: Okta User Account Locked Out
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_user_account_locked_out.yml
+    author: Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: inspired
+  - name: Okta
+    title: Okta Users Experience Lockouts Due to Multiple Failed Login Attempts via a Rich Client
+    url: https://support.okta.com/help/s/article/Users-getting-locked-out-with-multiple-failed-login-attempts-via-a-Rich-Client?language=en_US
+    relation: inspired
+  - name: Okta
+    title: Event types catalogue (user.account.lock.limit)
+    url: https://github.com/okta/okta-developer-docs/blob/master/packages/@okta/vuepress-site/data/event-types.json
+    relation: inspired

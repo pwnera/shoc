@@ -1,0 +1,55 @@
+id: contain_admin_account_misuse
+title: Contain a misused identity admin account
+description: >
+  An Okta administrator minted or revoked an API token, removed a user, let
+  Okta support in, or signed in to the admin console from somewhere new. The
+  admin is the account to contain: revoking their sessions is reversible and
+  stops further changes. Suspending an admin locks the company out of its own
+  identity provider, so it waits for a human. Revoking an API token needs an
+  action shoc does not have yet. Admin rights given to someone are answered on
+  the grantee in contain_privilege_grant; a reset of someone else's password or
+  MFA, on the reset account in contain_account_recovery_abuse.
+rules:
+  - okta_api_token_created
+  - okta_admin_console_sign_in
+  - okta_user_deactivated_or_deleted
+  - okta_support_impersonation
+  - okta_api_token_revoked
+  - hunt:okta_admin_console_new_network
+questions:
+  - id: origin
+    ask: Did the admin act from an address and device they have used in the last 30 days?
+  - id: breadth
+    ask: How many accounts did this admin change or remove in the same hour?
+  - id: token_use
+    ask: If an API token was created, has it been used, and from where?
+  - id: support_ticket
+    ask: If Okta support was let in or a token was revoked, does an open support ticket or a planned token rotation explain it?
+benign_when:
+  - A named IT admin made the change from the office egress and the target used the account normally afterwards.
+  - The deactivation matches an employee leaving that day.
+example: |
+  claim (token_use): "An API token created at 01:40 UTC by admin j.doe was used 12 minutes later from 203.0.113.77 to list every user", citing the token creation and the first call.
+  checked and absent: "a sign-in by j.doe from 203.0.113.77 in the 30 days before (30d)", which rules out the admin's own automation from a known address.
+  disposition: malicious, because a token minted at night was used at once from an address the admin never used.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: revoke the admin's sessions
+    action: okta.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: identity admin {{ entity.user }} may be compromised: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: suspend the admin
+    action: okta.suspend_user
+    optional: true
+    params:
+      user: "{{ entity.user }}"

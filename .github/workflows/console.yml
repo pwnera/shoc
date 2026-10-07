@@ -1,0 +1,48 @@
+name: console
+
+on:
+  pull_request:
+    paths: ["console/**", ".github/workflows/console.yml"]
+  push:
+    branches: [main]
+    paths: ["console/**", ".github/workflows/console.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: console-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: console
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: console/package-lock.json
+      - run: npm ci || npm install --no-audit --no-fund
+      - name: lint
+        run: npm run lint
+      - name: types and build
+        run: npm run build
+      - name: tests
+        run: npm run test
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: the image builds and serves
+        run: |
+          docker build -t shoc-console:ci .
+          docker run -d --name console -p 8089:8080 shoc-console:ci
+          sleep 3
+          curl -fsS http://127.0.0.1:8089/ | grep -q "<div id=\"root\">"

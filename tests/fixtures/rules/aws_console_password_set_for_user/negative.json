@@ -1,0 +1,82 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "readOnly": true,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "eventID": "ct-GetLoginProfile",
+    "eventName": "GetLoginProfile",
+    "requestParameters": {
+      "userName": "alice"
+    },
+    "responseElements": null
+  },
+  {
+    "eventVersion": "1.09",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "readOnly": false,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "eventID": "ct-CreateLoginProfile-denied",
+    "eventName": "CreateLoginProfile",
+    "requestParameters": {
+      "userName": "support",
+      "passwordResetRequired": false
+    },
+    "responseElements": null,
+    "errorCode": "AccessDenied",
+    "errorMessage": "User: arn:aws:iam::123456789012:user/deploy-ci is not authorized to perform: iam:CreateLoginProfile on resource: user support"
+  },
+  {
+    "eventVersion": "1.09",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "AWS Internal",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice",
+      "accessKeyId": "ASIAEXAMPLEALICECON1"
+    },
+    "readOnly": false,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "eventID": "ct-ChangePassword",
+    "eventName": "ChangePassword",
+    "requestParameters": null,
+    "responseElements": null,
+    "sessionCredentialFromConsole": "true"
+  }
+]

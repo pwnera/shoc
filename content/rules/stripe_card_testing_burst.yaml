@@ -1,0 +1,24 @@
+id: stripe_card_testing_burst
+title: Burst of failed charges (card testing)
+description: >
+  Stolen card numbers are checked against a small merchant's checkout in
+  bulk. Each attempt can cost a fee, and enough of them get the account
+  flagged by the card networks.
+status: stable
+date: 2026-09-30
+modified: 2026-09-30
+severity: high
+confidence: 0.6
+attack: [T1657]
+logsource:
+  product: stripe
+  service: events
+detection:
+  selection:
+    api.operation: charge.failed
+  condition: selection
+  timeframe: 15m
+  group_by: [cloud.account.uid]
+  count: ">= 20"
+entity: cloud.account.uid
+fields: [cloud.account.uid, actor.user.name, status_code]

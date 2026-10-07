@@ -1,0 +1,37 @@
+id: azure_principal_first_operation
+title: An identity makes an Azure change it has never made before
+hypothesis: >
+  Someone using a stolen Azure sign-in or app secret does things its owner
+  never does: creates role assignments, lists keys, deploys VMs in a new
+  region. The first time an identity performs a given write or action in the
+  subscription is worth a look, even when every call succeeds and no rule
+  fires. Reads are left out; there are too many.
+attack: [T1078.004, T1580]
+logsource:
+  product: azure
+  service: activity
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    status: Success
+  filter_read:
+    api.operation|endswith: /read
+  condition: selection and not filter_read
+baseline:
+  first_seen: [actor.user.name, api.operation]
+  lookback: 30d
+pivot: [actor.user.name, api.operation, src_endpoint.ip, resource.uid, cloud.account.uid]
+triage: >
+  Is there a change (a new project, a new pipeline, somebody's first week) that
+  explains this identity doing this for the first time today? For a pipeline's
+  service principal, "it decided to try something new" is not an explanation.
+follow_up:
+  - Did the identity sign in to Entra ID from a new address or network before this?
+sources:
+  - name: Sigma
+    title: Rare Subscription-level Operations In Azure
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/activity_logs/azure_rare_operations.yml
+    author: sawwinnnaung
+    license: DRL-1.1
+    relation: inspired

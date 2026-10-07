@@ -1,0 +1,44 @@
+id: aws_s3_mass_object_read
+title: Mass S3 object reads by one credential
+description: >
+  One access key read a large number of S3 objects in minutes. Paired with a
+  discovery burst from the same key, this is data collection, not a backup job.
+  Reads without a key, such as CloudFront's and anonymous ones, and downloads
+  through presigned links are left out. Object reads are S3 data events: the
+  rule sees them only when the source reads a trail's bucket (`bucket`) and
+  that trail records S3 data events. LookupEvents never returns them.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: critical
+confidence: 0.75
+attack: [T1530]
+logsource:
+  product: aws
+  service: cloudtrail
+  definition: S3 data events, read from the trail's bucket
+detection:
+  selection:
+    api.operation: [GetObject, CopyObject, SelectObjectContent]
+    api.service.name|contains: s3
+    actor.session.uid|exists: true
+  # End users downloading through presigned links the app signed with its key.
+  filter_presigned:
+    raw.additionalEventData.AuthenticationMethod: QueryString
+  filter_aws:
+    actor.invoked_by|exists: true
+  condition: selection and not filter_presigned and not filter_aws
+  timeframe: 15m
+  group_by: [actor.session.uid]
+  count: ">= 50"
+entity: actor.session.uid
+fields: [actor.user.name, api.operation, src_endpoint.ip, resource.uid]
+sources:
+  - name: AWS
+    title: Amazon S3 server access log format (Authentication type)
+    url: https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html
+    relation: inspired
+  - name: Aidan Steele
+    title: CloudFront-triggered S3 data event formats
+    url: https://awsteele.com/blog/2025/02/10/cloudfront-triggered-s3-data-event-formats.html
+    relation: inspired

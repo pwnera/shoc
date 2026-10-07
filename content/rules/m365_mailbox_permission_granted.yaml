@@ -1,0 +1,35 @@
+id: m365_mailbox_permission_granted
+title: Mailbox permission granted to another account
+description: >
+  Someone was given access to another person's mailbox, or the right to send
+  on their behalf. It is a normal delegation and a normal exfiltration path.
+  Grants Exchange makes itself when it provisions a shared mailbox are left out.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: high
+confidence: 0.6
+attack: [T1098.002]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation: [Add-MailboxPermission, Add-RecipientPermission, Add-MailboxFolderPermission, Add-ADPermission]
+  selection_send_on_behalf:
+    api.operation: Set-Mailbox
+    unmapped.params.GrantSendOnBehalfTo|exists: true
+  filter_system:
+    actor.user.name|startswith: NT AUTHORITY
+  filter_failed:
+    status: Failure
+  condition: (selection or selection_send_on_behalf) and not filter_system and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid]
+sources:
+  - name: Elastic
+    title: M365 Exchange Mailbox High-Risk Permission Delegated
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/persistence_exchange_suspicious_mailbox_permission_delegation
+    license: Elastic-2.0
+    relation: inspired

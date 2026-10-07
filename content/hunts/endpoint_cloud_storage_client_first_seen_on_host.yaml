@@ -1,0 +1,51 @@
+id: endpoint_cloud_storage_client_first_seen_on_host
+title: A bulk-upload tool runs on a machine for the first time
+hypothesis: >
+  Data theft before extortion, and an employee leaving with the customer list,
+  both start with a bulk-upload tool (rclone, restic, MEGAsync, azcopy) on a
+  machine that never ran one. A backup job IT set up runs from a service with
+  a config file and is in the baseline.
+attack: [T1567.002, T1537]
+sources:
+  - name: Elastic
+    title: "Potential Third-Party Cloud Storage Client Execution"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/cross-platform/exfiltration_third_party_cloud_storage_client_execution.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: "AzCopy or Azure Storage Explorer Usage on Unusual Host"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/exfiltration_azcopy_storageexplorer.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: "PUA - Restic Backup Tool Execution"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_pua_restic.yml
+    author: "Nounou Mbeiri, Swachchhanda Shrawan Poudel (Nextron Systems)"
+    license: DRL-1.1
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    class_uid: 1007
+    activity_id: 1
+    process.name: [rclone, rclone.exe, restic, restic.exe, s3cmd, s5cmd, s5cmd.exe, cyberduck,
+                   duck, duck.exe, s3browser.exe, s3browser-con.exe, MEGAsync.exe, MEGAsync,
+                   MEGAcmdServer.exe, mega-cmd-server, megatools, azcopy, azcopy.exe]
+  condition: selection
+baseline:
+  first_seen: [device.uid, process.name]
+  lookback: 30d
+pivot: [device.hostname, device.uid, process.name, process.cmd_line, actor.user.name,
+        process.parent_process.name]
+triage: >
+  A backup job set up by IT runs from a service or cron with a config file. A
+  first run from an interactive shell, on a file server or a finance laptop, in
+  the week someone resigned, is the case.
+follow_up:
+  - Where does the command line send the files, and how much left the machine?
+  - Is the person who ran it leaving the company?
+sensitive: true

@@ -1,0 +1,46 @@
+id: azure_logging_disabled
+title: Azure logging or Defender alerts switched off
+description: >
+  A diagnostic setting, a log profile or an Event Hub was deleted, or a
+  Defender for Cloud suppression rule was written. Any of these can stop the
+  logs or alerts shoc reads, which is what an attacker does before the part
+  they do not want seen.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1562.008]
+logsource:
+  product: azure
+  service: activity
+detection:
+  selection:
+    api.operation:
+      - microsoft.insights/diagnosticSettings/delete
+      - microsoft.insights/logProfiles/delete
+      - Microsoft.EventHub/namespaces/eventhubs/delete
+      - Microsoft.Security/alertsSuppressionRules/write
+  selection_ok:
+    status: Success
+  condition: selection and selection_ok
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, cloud.account.uid]
+sources:
+  - name: Elastic
+    title: Azure Diagnostic Settings Deleted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/defense_evasion_insights_diagnostic_settings_deletion
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Azure Event Hub Deleted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/defense_evasion_event_hub_deletion
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Azure Suppression Rule Created
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/activity_logs/azure_suppression_rule_created.yml
+    author: Austin Songer
+    license: DRL-1.1
+    relation: adapted

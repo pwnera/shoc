@@ -1,0 +1,17 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "powershell.exe",
+      "FolderPath": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+      "ProcessCommandLine": "powershell.exe -c Add-MpPreference -ExclusionPath C:\\Users\\Public",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "jdoe"
+    }
+  }
+]

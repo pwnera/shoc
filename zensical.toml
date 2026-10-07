@@ -1,0 +1,73 @@
+# The documentation site, built from docs/ (D68). Preview: pip install -e ".[docs]" && zensical serve
+[project]
+site_name = "shoc"
+site_description = "Security Headless Operation Center: a headless, AI-first 24/7 SOC for companies with no security team."
+repo_url = "https://github.com/pwnera/shoc"
+repo_name = "pwnera/shoc"
+edit_uri = "edit/main/docs/"
+copyright = "Apache 2.0"
+nav = [
+  { "Home" = "index.md" },
+  { "Quick start" = "quickstart.md" },
+  { "Guides" = [
+    { "Sources" = "connectors.md" },
+    { "Public datasets" = "datasets.md" },
+    { "Response" = "response.md" },
+    { "Slack" = "slack.md" },
+    { "Running it" = "operations.md" },
+    { "Deploying it" = "deploy.md" },
+  ] },
+  { "Concepts" = [
+    { "Architecture" = "architecture.md" },
+    { "The crew" = "agents.md" },
+    { "Evaluating the crew" = "evals.md" },
+    { "Agent specifications" = "agent-specs.md" },
+    { "Security model" = "security-model.md" },
+    { "Ontology" = "ontology.md" },
+  ] },
+  { "Reference" = [
+    { "Capabilities" = "reference.md" },
+    { "Public contract" = "contract.md" },
+    { "OCSF model" = "ocsf.md" },
+  ] },
+  { "Project" = [
+    { "Requirements and roadmap" = "prd.md" },
+    { "Decisions" = "decisions.md" },
+    { "Console prototype" = "ui-prototype.md" },
+    { "Good first issues" = "good-first-issues.md" },
+  ] },
+]
+
+[project.theme]
+features = [
+  "content.action.edit",
+  "content.code.copy",
+  "navigation.sections",
+  "navigation.top",
+  "search.highlight",
+  "toc.follow",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+toggle.icon = "lucide/moon"
+toggle.name = "Dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+toggle.icon = "lucide/sun"
+toggle.name = "Light mode"
+
+# What the pages in docs/ use, and nothing else: tables, footnotes, the PRD's
+# task lists and the Mermaid diagrams in prd.md and ontology.md.
+[project.markdown_extensions]
+tables = {}
+footnotes = {}
+toc.permalink = true
+pymdownx.highlight = {}
+pymdownx.superfences.custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+pymdownx.tasklist.custom_checkbox = true

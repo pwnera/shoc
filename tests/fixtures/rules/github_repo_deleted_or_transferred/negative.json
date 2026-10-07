@@ -1,0 +1,64 @@
+[
+  {
+    "_document_id": "github-webhook-repo-archived",
+    "action": "repo.archived",
+    "actor": "mallory",
+    "org": "acme",
+    "webhook": {
+      "event": "repository",
+      "action": "archived"
+    },
+    "repo": "acme/old-site"
+  },
+  {
+    "_document_id": "gh-repo.create",
+    "action": "repo.create",
+    "actor": "dana",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/new-service",
+    "operation_type": "create"
+  },
+  {
+    "_document_id": "gh-repo.transfer-incoming",
+    "action": "repo.transfer",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "org": "acme",
+    "repo": "acme/cli-tool",
+    "repo_was": "dana-example/cli-tool",
+    "old_user": "dana-example",
+    "owner": "acme",
+    "public_repo": false,
+    "visibility": "private",
+    "operation_type": "transfer"
+  },
+  {
+    "_document_id": "github-webhook-repo-transferred-in",
+    "action": "repo.transfer",
+    "actor": "dana",
+    "actor_id": 7,
+    "org": "acme",
+    "repo": "acme/cli-tool",
+    "repository": {
+      "full_name": "acme/cli-tool",
+      "private": true
+    },
+    "changes": {
+      "owner": {
+        "from": {
+          "user": {
+            "login": "dana-example",
+            "type": "User"
+          }
+        }
+      }
+    },
+    "webhook": {
+      "event": "repository",
+      "action": "transferred"
+    }
+  }
+]

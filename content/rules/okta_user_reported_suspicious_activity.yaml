@@ -1,0 +1,35 @@
+id: okta_user_reported_suspicious_activity
+title: Okta user reported activity as not theirs, or their password leaked
+description: >
+  The user answered "this wasn't me" to an Okta notice about a sign-in or a new
+  factor, or Okta found the user's password in a breach. The person whose
+  account it is says something is wrong, which is better evidence than any log.
+status: experimental
+date: 2026-10-02
+severity: high
+confidence: 0.8
+attack: [T1078.004, T1586.003]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation:
+      - user.account.report_suspicious_activity_by_enduser
+      - security.breached_credential.detected
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip, resource.uid, message]
+sources:
+  - name: Elastic
+    title: Suspicious Activity Reported by Okta User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/initial_access_suspicious_activity_reported_by_okta_user
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Okta Suspicious Activity Reported by End-user
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_suspicious_activity_enduser_report.yml
+    author: kelnage
+    license: DRL-1.1
+    relation: adapted

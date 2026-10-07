@@ -1,0 +1,165 @@
+[
+  {
+    "insertId": "gcp-fw-office",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_firewall_rule",
+      "labels": {
+        "project_id": "example-prod",
+        "firewall_rule_id": "8812094417302618410"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.firewalls.insert",
+      "resourceName": "projects/example-prod/global/firewalls/allow-ssh-office",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.81",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.firewalls.insert",
+        "name": "allow-ssh-office",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-prod/global/networks/default",
+        "direction": "INGRESS",
+        "priority": 1000,
+        "sourceRanges": [
+          "198.51.100.0/24"
+        ],
+        "alloweds": [
+          {
+            "IPProtocol": "tcp",
+            "ports": [
+              "22"
+            ]
+          }
+        ]
+      },
+      "response": {
+        "@type": "type.googleapis.com/operation",
+        "operationType": "insert",
+        "status": "RUNNING",
+        "targetLink": "https://www.googleapis.com/compute/v1/projects/example-prod/global/firewalls/allow-ssh-office"
+      }
+    },
+    "operation": {
+      "id": "operation-gcp-fw-office",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "gcp-fw-egress",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_firewall_rule",
+      "labels": {
+        "project_id": "example-prod",
+        "firewall_rule_id": "8812094417302618410"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.firewalls.insert",
+      "resourceName": "projects/example-prod/global/firewalls/allow-egress-any",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.81",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.firewalls.insert",
+        "name": "allow-egress-any",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-prod/global/networks/default",
+        "direction": "EGRESS",
+        "priority": 1000,
+        "destinationRanges": [
+          "0.0.0.0/0"
+        ],
+        "alloweds": [
+          {
+            "IPProtocol": "tcp",
+            "ports": [
+              "443"
+            ]
+          }
+        ]
+      },
+      "response": {
+        "@type": "type.googleapis.com/operation",
+        "operationType": "insert",
+        "status": "RUNNING",
+        "targetLink": "https://www.googleapis.com/compute/v1/projects/example-prod/global/firewalls/allow-egress-any"
+      }
+    },
+    "operation": {
+      "id": "operation-gcp-fw-egress",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "gcp-fw-gke",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_firewall_rule",
+      "labels": {
+        "project_id": "example-prod",
+        "firewall_rule_id": "8812094417302618410"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.firewalls.insert",
+      "resourceName": "projects/example-prod/global/firewalls/k8s-fw-a1b2c3",
+      "authenticationInfo": {
+        "principalEmail": "service-123456789012@container-engine-robot.iam.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.81",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.firewalls.insert",
+        "name": "k8s-fw-a1b2c3",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-prod/global/networks/default",
+        "direction": "INGRESS",
+        "priority": 1000,
+        "sourceRanges": [
+          "0.0.0.0/0"
+        ],
+        "alloweds": [
+          {
+            "IPProtocol": "tcp",
+            "ports": [
+              "80",
+              "443"
+            ]
+          }
+        ]
+      },
+      "response": {
+        "@type": "type.googleapis.com/operation",
+        "operationType": "insert",
+        "status": "RUNNING",
+        "targetLink": "https://www.googleapis.com/compute/v1/projects/example-prod/global/firewalls/k8s-fw-a1b2c3"
+      }
+    },
+    "operation": {
+      "id": "operation-gcp-fw-gke",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  }
+]

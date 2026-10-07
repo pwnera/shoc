@@ -1,0 +1,14 @@
+[
+  {
+    "Id": "hunt-m365-rule-known-ip",
+    "Operation": "UserLoggedIn",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Success",
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "203.0.113.45"
+  }
+]

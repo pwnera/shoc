@@ -1,0 +1,115 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateInstanceExportTask",
+    "eventName": "CreateInstanceExportTask",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "instanceId": "i-0abc123def4567890",
+      "exportToS3": {
+        "s3Bucket": "outside-bucket",
+        "diskImageFormat": "VMDK"
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-StartExportTask",
+    "eventName": "StartExportTask",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "exportTaskIdentifier": "dump",
+      "sourceArn": "arn:aws:rds:us-east-1:123456789012:snapshot:prod-db-2026-10-01",
+      "s3BucketName": "outside-bucket"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-PutBucketReplication",
+    "eventName": "PutBucketReplication",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-data"
+      }
+    ],
+    "requestParameters": {
+      "bucketName": "acme-data",
+      "replication": [
+        ""
+      ],
+      "ReplicationConfiguration": {
+        "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+        "Role": "arn:aws:iam::123456789012:role/replication",
+        "Rule": {
+          "Status": "Enabled",
+          "Destination": {
+            "Bucket": "arn:aws:s3:::outside-bucket",
+            "Account": "999988887777"
+          }
+        }
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateTrafficMirrorSession",
+    "eventName": "CreateTrafficMirrorSession",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "CreateTrafficMirrorSessionRequest": {
+        "NetworkInterfaceId": "eni-0123456789abcdef0",
+        "TrafficMirrorTargetId": "tmt-0123456789abcdef0"
+      }
+    }
+  }
+]

@@ -1,0 +1,41 @@
+id: entra_service_principal_new_network
+title: An app signs in to Entra ID from a network it has never used
+hypothesis: >
+  An app's secret or certificate works from anywhere. When it leaks, from a
+  repository, a laptop or a CI log, the first sign of it is the app signing in
+  from a network it never used before. Apps run from a fixed place, so a new
+  network is rarer for them than for people.
+attack: [T1078.004, T1550.001]
+logsource:
+  product: entra
+  service: sign_ins
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    actor.user.type: ServicePrincipal
+    status: Success
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, src_endpoint.asn]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.asn, src_endpoint.ip, src_endpoint.location.country]
+triage: >
+  Did the team move this app to a new host, cloud region or CI runner? A move
+  explains a new network; a residential or hosting network nobody deploys to
+  does not.
+follow_up:
+  - Was a secret or certificate added to this app in the last 30 days, and by whom?
+  - What did the app do after this sign-in?
+sensitive: true
+sources:
+  - name: Elastic
+    title: Entra ID Service Principal with Unusual Source ASN
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_service_principal_signin_unusual_source_asn
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic hunting
+    title: Microsoft Entra ID Rare Service Principal Activity from Multiple IPs
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/azure/queries/entra_rare_actions_by_service_principal.toml
+    license: Elastic-2.0
+    relation: inspired

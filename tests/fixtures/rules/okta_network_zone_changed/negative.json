@@ -1,0 +1,86 @@
+[
+  {
+    "uuid": "okta-zone.create",
+    "eventType": "zone.create",
+    "displayMessage": "Network zone create",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "nzo3",
+        "type": "NetworkZoneEntity",
+        "alternateId": "unknown",
+        "displayName": "New office"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-security.zone.make_blacklist",
+    "eventType": "security.zone.make_blacklist",
+    "displayMessage": "Added IPs to blacklist zone",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "nzo2",
+        "type": "NetworkZoneEntity",
+        "alternateId": "unknown",
+        "displayName": "BlockedIpZone"
+      }
+    ]
+  }
+]

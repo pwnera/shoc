@@ -1,0 +1,122 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "shoc-token-0",
+      "applicationName": "token",
+      "customerId": "C0EXAMPLE"
+    },
+    "actor": {
+      "email": "operator@example.com",
+      "profileId": "100000000000000000099"
+    },
+    "ipAddress": "203.0.113.10",
+    "_application": "token",
+    "events": [
+      {
+        "type": "auth",
+        "name": "authorize",
+        "parameters": [
+          {
+            "name": "client_id",
+            "value": "100000000000000000001"
+          },
+          {
+            "name": "app_name",
+            "value": "shoc"
+          },
+          {
+            "name": "client_type",
+            "value": "WEB"
+          },
+          {
+            "name": "scope",
+            "multiValue": [
+              "https://www.googleapis.com/auth/admin.reports.audit.readonly"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "shoc-token-1",
+      "applicationName": "token",
+      "customerId": "C0EXAMPLE"
+    },
+    "actor": {
+      "email": "operator@example.com",
+      "profileId": "100000000000000000099"
+    },
+    "ipAddress": "203.0.113.10",
+    "_application": "token",
+    "events": [
+      {
+        "type": "auth",
+        "name": "authorize",
+        "parameters": [
+          {
+            "name": "client_id",
+            "value": "100000000000000000001"
+          },
+          {
+            "name": "app_name",
+            "value": "shoc"
+          },
+          {
+            "name": "client_type",
+            "value": "WEB"
+          },
+          {
+            "name": "scope",
+            "multiValue": [
+              "https://www.googleapis.com/auth/admin.reports.audit.readonly"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "shoc-token-2",
+      "applicationName": "token",
+      "customerId": "C0EXAMPLE"
+    },
+    "actor": {
+      "email": "operator@example.com",
+      "profileId": "100000000000000000099"
+    },
+    "ipAddress": "203.0.113.10",
+    "_application": "token",
+    "events": [
+      {
+        "type": "auth",
+        "name": "authorize",
+        "parameters": [
+          {
+            "name": "client_id",
+            "value": "100000000000000000001"
+          },
+          {
+            "name": "app_name",
+            "value": "shoc"
+          },
+          {
+            "name": "client_type",
+            "value": "WEB"
+          },
+          {
+            "name": "scope",
+            "multiValue": [
+              "https://www.googleapis.com/auth/admin.reports.audit.readonly"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

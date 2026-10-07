@@ -1,0 +1,12 @@
+apiVersion: v2
+name: shoc
+description: Headless, AI-first, 24/7 agentic SOC
+type: application
+version: 0.1.0
+appVersion: "0.0.1"
+home: https://github.com/pwnera/shoc
+sources:
+  - https://github.com/pwnera/shoc
+maintainers:
+  - name: shoc maintainers
+keywords: [security, soc, ocsf, detection, mcp]

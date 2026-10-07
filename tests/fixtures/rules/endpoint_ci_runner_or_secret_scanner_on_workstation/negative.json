@@ -1,0 +1,43 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Lin",
+    "ImageFileName": "/opt/actions-runner/bin/Runner.Listener",
+    "CommandLine": "/opt/actions-runner/bin/Runner.Listener run",
+    "ParentBaseFileName": "runsvc.sh",
+    "RawProcessId": "4242",
+    "UserSid": "S-1-5-21-1111111111-2222222222-3333333333-1104"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "host05.example.com",
+      "os": "osx"
+    },
+    "tgt": {
+      "process": {
+        "name": "trufflehog",
+        "cmdline": "trufflehog git https://github.com/example-org/app --only-verified",
+        "image": {
+          "path": "/usr/local/bin/trufflehog"
+        },
+        "user": "jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "zsh"
+      }
+    }
+  }
+]

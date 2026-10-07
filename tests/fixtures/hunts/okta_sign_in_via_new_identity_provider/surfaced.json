@@ -1,0 +1,48 @@
+[
+  {
+    "uuid": "hunt-okta-idp",
+    "eventType": "user.authentication.auth_via_IDP",
+    "displayMessage": "user authentication auth_via_IDP",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "SystemPrincipal",
+      "alternateId": "system@example.com",
+      "displayName": "system"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "0oi1",
+        "type": "AppInstance",
+        "alternateId": "Partner SAML"
+      },
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ]
+  }
+]

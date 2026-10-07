@@ -1,0 +1,28 @@
+[
+  {
+    "_document_id": "gh-hook.destroy",
+    "action": "hook.destroy",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "org": "acme",
+    "hook_id": 120034,
+    "name": "webhook",
+    "active": true,
+    "events": ["*"],
+    "operation_type": "remove"
+  },
+  {
+    "_document_id": "gh-hook.active_changed",
+    "action": "hook.active_changed",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "hook_id": 120035,
+    "name": "webhook",
+    "active": false,
+    "active_was": true,
+    "events": ["*"],
+    "operation_type": "modify"
+  }
+]

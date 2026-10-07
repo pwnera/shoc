@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/pwnera/shoc/discussions
+    about: Ask in Discussions; issues are for confirmed bugs and planned work.
+  - name: Report a vulnerability
+    url: https://github.com/pwnera/shoc/security/advisories/new
+    about: Never open a public issue for a security problem.

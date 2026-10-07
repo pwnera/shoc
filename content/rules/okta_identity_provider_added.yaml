@@ -1,0 +1,37 @@
+id: okta_identity_provider_added
+title: External identity provider added to Okta
+description: >
+  A federated identity provider was created, changed or turned on. Each is
+  another way to become a user here, and a quiet, durable backdoor.
+  Deactivating or deleting one closes a way in and is left out.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: critical
+confidence: 0.75
+attack: [T1556.007, T1484.002]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation:
+      - system.idp.lifecycle.create
+      - system.idp.lifecycle.update
+      - system.idp.lifecycle.activate
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid]
+sources:
+  - name: Elastic
+    title: New Okta Identity Provider (IdP) Added by Admin
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/persistence_new_idp_successfully_added_by_admin
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Okta Identity Provider Created
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_identity_provider_created.yml
+    author: kelnage
+    license: DRL-1.1
+    relation: adapted

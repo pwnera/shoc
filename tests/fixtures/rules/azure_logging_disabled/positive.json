@@ -1,0 +1,20 @@
+[
+  {
+    "resourceId": "/SUBSCRIPTIONS/00000000-1111-2222-3333-444444444444/PROVIDERS/MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/TO-SHOC",
+    "operationName": "MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/DELETE",
+    "category": "Administrative",
+    "resultType": "Success",
+    "resultSignature": "Succeeded.OK",
+    "callerIpAddress": "203.0.113.24",
+    "correlationId": "88888888-aaaa-4aaa-8aaa-888888888888",
+    "identity": {
+      "authorization": {
+        "action": "microsoft.insights/diagnosticSettings/delete",
+        "evidence": { "role": "Owner", "principalType": "User" }
+      },
+      "claims": { "upn": "dana@example.com", "ipaddr": "203.0.113.24" }
+    },
+    "level": "Information",
+    "properties": { "statusCode": "OK", "eventCategory": "Administrative" }
+  }
+]

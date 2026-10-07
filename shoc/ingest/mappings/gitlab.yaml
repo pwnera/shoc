@@ -1,0 +1,76 @@
+# GitLab audit events -> OCSF API Activity (6003). ING-1, ING-3.
+# The operation is the audit event type (`event_name` in the REST API,
+# `event_type` in a streamed event), one of the names in
+# https://docs.gitlab.com/user/compliance/audit_event_types/. Older records
+# carry only free text in `details`, read after it.
+source: gitlab
+ocsf_version: "1.3.0"
+
+constants:
+  category_uid: 6
+  class_uid: 6003
+  class_name: API Activity
+  type_uid: 600399
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  status: Success
+  cloud_provider: GitLab
+  metadata_product: GitLab Audit Events
+  api_service_name: gitlab
+
+fields:
+  event_uid: { path: id, transform: str }
+  time: { paths: [created_at], transform: iso8601 }
+  api_operation:
+    paths:
+      - event_name
+      - event_type
+      - "details.event_name"
+      - "details.custom_message"
+      - "details.change"
+      - "details.add"
+      - "details.remove"
+      - "details.with.action"
+      - "details.with"
+  message: { paths: ["details.custom_message", "details.change", "details.with.action"] }
+  # The email first: it is what the IdP knows the person by, and what
+  # gitlab.block_user can look up.
+  actor_user_name: { paths: ["details.author_email", "details.author_name", author_name] }
+  actor_user_uid: { paths: [author_id], transform: str }
+  src_endpoint_ip: { paths: ["details.ip_address", ip_address] }
+  resource_type: { paths: [entity_type, "details.entity_type"] }
+  resource_uid: { paths: ["details.entity_path", entity_path, entity_id], transform: str }
+  actor_invoked_by: { path: "details.target_details" }
+
+derive:
+  - when: { "details.change": { exists: true } }
+    set: { activity_id: 3, activity_name: Update }
+  - when: { "details.add": { exists: true } }
+    set: { activity_id: 1, activity_name: Create }
+  - when: { "details.remove": { exists: true } }
+    set: { activity_id: 4, activity_name: Delete, severity_id: 3 }
+  - when: { "details.custom_message": { contains: "failed" } }
+    set: { status: Failure, severity_id: 2 }
+  - when: { "details.change": { contains: access_level } }
+    set: { severity_id: 3 }
+  - when: { "details.custom_message": { contains: "access token" } }
+    set: { severity_id: 3 }
+  - when: { "details.custom_message": { contains: "deploy key" } }
+    set: { severity_id: 3 }
+  - when: { "details.custom_message": { contains: "two-factor" } }
+    set: { severity_id: 3 }
+  # The same, by audit event type.
+  - when: { api_operation: { contains: "_failed" } }
+    set: { status: Failure, severity_id: 2 }
+  - when: { api_operation: { in: [member_created, deploy_key_added, deploy_token_created, group_deploy_token_created, project_access_token_created, group_access_token_created, personal_access_token_created] } }
+    set: { activity_id: 1, activity_name: Create }
+  - when: { api_operation: { in: [member_destroyed, deploy_key_removed, protected_branch_removed] } }
+    set: { activity_id: 4, activity_name: Delete, severity_id: 3 }
+  - when: { api_operation: { in: [member_updated, deploy_key_added, deploy_token_created, group_deploy_token_created, project_access_token_created, group_access_token_created, project_visibility_level_updated, group_require_two_factor_authentication_updated, user_disable_two_factor] } }
+    set: { severity_id: 3 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: resource_uid, name: resource.uid, type: Resource }

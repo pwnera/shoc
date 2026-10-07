@@ -1,0 +1,23 @@
+[
+  {
+    "id": "en-Admin registered TAP",
+    "activityDisplayName": "Admin registered security info",
+    "category": "UserManagement",
+    "loggedByService": "Authentication Methods",
+    "operationType": "Add",
+    "result": "success",
+    "resultReason": "Admin registered temporary access pass method for user",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      { "type": "User", "userPrincipalName": "ceo@example.com", "id": "u-1" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

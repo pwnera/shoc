@@ -1,0 +1,31 @@
+[
+  {
+    "_document_id": "gh-repo.add_member",
+    "action": "repo.add_member",
+    "actor": "mallory",
+    "actor_id": 42,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "Mozilla/5.0"
+  },
+  {
+    "_document_id": "gh-org.update_member-demotion",
+    "action": "org.update_member",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "org": "acme",
+    "user": "former-owner",
+    "permission": "read",
+    "user_agent": "Mozilla/5.0"
+  },
+  {
+    "_document_id": "github-webhook-member-added",
+    "action": "org.add_member",
+    "actor": "dana",
+    "org": "acme",
+    "membership": {"role": "member", "state": "active", "user": {"login": "new-hire"}},
+    "webhook": {"event": "organization", "action": "member_added"}
+  }
+]

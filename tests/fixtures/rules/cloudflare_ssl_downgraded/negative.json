@@ -1,0 +1,11 @@
+[
+  {
+    "id": "cf-ssl-2",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Edit zone setting", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"method": "PATCH", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/settings/ssl", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "r-1", "request": {"value": "strict"}, "response": {}},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  }
+]

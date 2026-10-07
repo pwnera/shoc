@@ -1,0 +1,39 @@
+id: tailscale_key_created
+title: Tailscale auth key, API token or OAuth client created
+description: >
+  An auth key adds devices without a sign-in, and a reusable, pre-approved one
+  keeps adding them after the person who made it has left. A single-use key an
+  OAuth client mints for a tagged server, as the Kubernetes operator does, is
+  left out; a reusable one from the same client still fires.
+status: stable
+date: 2026-09-30
+modified: 2026-10-03
+severity: high
+confidence: 0.5
+attack: [T1098.001]
+sources:
+  - name: SpecterOps
+    title: Leveraging Tailscale Keys
+    url: https://specterops.io/blog/2026/03/12/leveraging-tailscale-keys/
+    relation: inspired
+  - name: Tailscale
+    title: Configuration audit logging
+    url: https://tailscale.com/docs/features/logging/audit-logging
+    relation: inspired
+logsource:
+  product: tailscale
+  service: configuration_log
+detection:
+  selection:
+    api.operation: API_KEY.CREATE
+  # NODE_AUTH is an auth key and NO_MACHINE_AUTH its pre-approval. Any other
+  # capability, or the word reusable anywhere in `new`, keeps the event.
+  minted:
+    actor.user.type: OAUTH_CLIENT
+    raw.new.capabilities|re: '^\[\s*"NODE_AUTH"(\s*,\s*"NO_MACHINE_AUTH")?\s*\]$'
+  reusable:
+    raw.new|contains: reusable
+  condition: selection and not (minted and not reusable)
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, cloud.account.uid]

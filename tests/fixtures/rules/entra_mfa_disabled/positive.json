@@ -1,0 +1,86 @@
+[
+  {
+    "id": "en-Update per-user MFA off",
+    "activityDisplayName": "Update per-user multifactor authentication state",
+    "category": "UserManagement",
+    "loggedByService": "Authentication Methods",
+    "operationType": "Update",
+    "result": "success",
+    "resultReason": "Admin successfully updated per-user multifactor authentication state.",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "displayName": "CEO",
+        "userPrincipalName": "ceo@example.com",
+        "id": "u-1",
+        "modifiedProperties": [
+          {
+            "displayName": "StrongAuthenticationRequirements",
+            "oldValue": "\"[{\\\"relyingParty\\\":\\\"*\\\",\\\"state\\\":\\\"enforced\\\",\\\"rememberDevicesNotIssuedBefore\\\":\\\"2026-04-15T02:28:10.9233413Z\\\"}]\"",
+            "newValue": "\"[]\""
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Disable Strong Authentication",
+    "activityDisplayName": "Disable Strong Authentication",
+    "category": "UserManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "app": {
+        "displayName": "Azure Credential Configuration Endpoint Service",
+        "servicePrincipalId": "sp-ccs-1"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "userPrincipalName": "ceo@example.com",
+        "id": "u-1",
+        "modifiedProperties": [
+          {
+            "displayName": "StrongAuthenticationRequirement",
+            "oldValue": "[{\"RelyingParty\":\"*\",\"State\":1,\"RememberDevicesNotIssuedBefore\":\"2026-04-15T02:28:10.9233413Z\"}]",
+            "newValue": "[]"
+          },
+          { "displayName": "Included Updated Properties", "oldValue": "", "newValue": "\"StrongAuthenticationRequirement\"" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Admin deleted security info",
+    "activityDisplayName": "Admin deleted security info",
+    "category": "UserManagement",
+    "loggedByService": "Authentication Methods",
+    "result": "success",
+    "resultReason": "Admin deleted Authenticator App with Notification and Code for user",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      { "type": "User", "userPrincipalName": "cfo@example.com", "id": "u-3" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

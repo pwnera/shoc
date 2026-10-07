@@ -1,0 +1,77 @@
+id: entra_global_admin_assigned
+title: Global Administrator granted, or Azure access elevated from Entra
+description: >
+  Someone was made Global Administrator, or eligible for it, or a Global Admin
+  elevated themselves to User Access Administrator over every Azure
+  subscription. A small tenant has two or three Global Admins; a new one is
+  how an attacker keeps the tenant. An eligible Global Admin activating the
+  role in PIM is left out.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: critical
+confidence: 0.75
+attack: [T1098.003]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection_role_op:
+    api.operation|contains: [add member to role, add eligible member to role]
+  # Graph writes each value as JSON text, quotes included. A PIM record puts
+  # the role first among its targets, with a TemplateId.
+  selection_ga:
+    - unmapped.modified.Role_TemplateId.newValue: '"62e90394-69f5-4237-9190-012177145e10"'
+    - unmapped.modified.Role_DisplayName.newValue: ['"Global Administrator"', '"Company Administrator"']
+    - unmapped.modified.TemplateId.newValue: '"62e90394-69f5-4237-9190-012177145e10"'
+  selection_elevate:
+    api.operation|contains: elevated their access to user access administrator
+  filter_activation:
+    api.operation|contains: pim activation
+  # PIM's own record of the same change names the person who made it.
+  filter_pim_service:
+    - raw.initiatedBy.app.displayName: MS-PIM
+    - raw.properties.initiatedBy.app.displayName: MS-PIM
+  filter_failed:
+    status: Failure
+  condition: ((selection_role_op and selection_ga) or selection_elevate) and not filter_activation and not filter_pim_service and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Entra ID Global Administrator Role Assigned
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_global_administrator_role_assigned
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Entra ID Elevated Access to User Access Administrator
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/privilege_escalation_entra_id_elevate_to_user_administrator_access
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: Users Added to Global or Device Admin Roles
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_ad_users_added_to_device_admin_roles.yml
+    author: Michael Epping, '@mepples21'
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: Azure Subscription Permission Elevation Via AuditLogs
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_subscription_permissions_elevation_via_auditlogs.yml
+    author: Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: inspired
+  - name: Elastic
+    title: Entra ID Global Administrator Role Assigned (PIM User)
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_pim_user_added_global_admin
+    license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft Sentinel
+    title: Privileged Role Assigned Outside PIM
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Microsoft%20Entra%20ID/Analytic%20Rules/PrivlegedRoleAssignedOutsidePIM.yaml
+    license: MIT
+    relation: adapted
+  - name: Kustonomicon
+    title: Privileged Role Assigned via PIM
+    url: https://github.com/nimbusmancer/Kustonomicon/blob/main/queries/azure/entra-id/privileged-role-assigned-via-pim.md
+    relation: inspired

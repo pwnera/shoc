@@ -1,0 +1,28 @@
+id: google_gmail_forwarding_out_of_domain
+title: A mailbox started forwarding outside the company
+description: >
+  Automatic forwarding to an outside address was turned on for a Gmail
+  mailbox. It is how a business email compromise keeps reading the mail after
+  the password is reset.
+status: experimental
+date: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1114.003]
+logsource:
+  product: google
+  service: reports
+detection:
+  selection:
+    api.operation: email_forwarding_out_of_domain
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip]
+sources:
+  - name: Sigma
+    title: Google Workspace Out Of Domain Email Forwarding
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/gcp/gworkspace/login/gcp_gworkspace_out_of_domain_email_forwarding.yml
+    author: Tom kluter
+    license: DRL-1.1
+    relation: adapted

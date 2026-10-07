@@ -1,0 +1,85 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-InvokeModel-probe",
+    "eventName": "InvokeModel",
+    "eventSource": "bedrock.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.77",
+    "userAgent": "Boto3/1.29.7 md/Botocore#1.32.7 ua/2.0 os/windows#10 md/arch#amd64 lang/python#3.12.1 md/pyimpl#CPython cfg/retry-mode#legacy Botocore/1.32.7",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/svc-reports",
+      "accountId": "123456789012",
+      "userName": "svc-reports",
+      "accessKeyId": "AKIAEXAMPLECHECKER01"
+    },
+    "requestParameters": {
+      "modelId": "anthropic.claude-v2"
+    },
+    "errorCode": "ValidationException",
+    "errorMessage": "max_tokens_to_sample: range: 1..1,000,000"
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-GetFoundationModelAvailability",
+    "eventName": "GetFoundationModelAvailability",
+    "eventSource": "bedrock.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.77",
+    "userAgent": "Boto3/1.29.7 md/Botocore#1.32.7 ua/2.0 os/windows#10 md/arch#amd64 lang/python#3.12.1 md/pyimpl#CPython cfg/retry-mode#legacy Botocore/1.32.7",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/svc-reports",
+      "accountId": "123456789012",
+      "userName": "svc-reports",
+      "accessKeyId": "AKIAEXAMPLECHECKER01"
+    },
+    "requestParameters": {
+      "modelId": "anthropic.claude-v2"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-InvokeModel",
+    "eventName": "InvokeModel",
+    "eventSource": "bedrock.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "modelId": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ListFoundationModels",
+    "eventName": "ListFoundationModels",
+    "eventSource": "bedrock.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  }
+]

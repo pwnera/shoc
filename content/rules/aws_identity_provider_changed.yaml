@@ -1,0 +1,82 @@
+id: aws_identity_provider_changed
+title: SAML, OIDC or Roles Anywhere trust created or changed in AWS
+description: >
+  An IAM SAML or OIDC provider was created, changed or deleted, Identity
+  Center's external identity provider was switched, or a Roles Anywhere trust
+  anchor or profile was set up. An identity provider the attacker controls
+  signs them in again after every key rotation.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1484.002, T1098]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_iam:
+    api.service.name: iam.amazonaws.com
+    api.operation: [CreateOpenIDConnectProvider, UpdateOpenIDConnectProviderThumbprint, AddClientIDToOpenIDConnectProvider, CreateSAMLProvider, UpdateSAMLProvider, DeleteSAMLProvider]
+  selection_identity_center:
+    api.operation: [EnableExternalIdPConfigurationForDirectory, DisableExternalIdPConfigurationForDirectory, AssociateDirectory, DisassociateDirectory]
+  selection_roles_anywhere:
+    api.service.name: rolesanywhere.amazonaws.com
+    api.operation: [CreateTrustAnchor, UpdateTrustAnchor, CreateProfile]
+  filter_identity_center_managed:
+    actor.invoked_by: sso.amazonaws.com
+  # The agent string alone can be typed by anyone; Identity Center's own call
+  # also names the service, not an address, as its source.
+  filter_identity_center_agent:
+    http_request.user_agent: sso.amazonaws.com
+    src_endpoint.ip|exists: false
+  success:
+    status: Success
+  condition: success and selection_* and not filter_identity_center_managed and not filter_identity_center_agent
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, resource.uid]
+sources:
+  - name: Elastic
+    title: AWS IAM SAML Provider Created
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_saml_provider_created
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS IAM OIDC Provider Created by Rare User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_oidc_provider_created
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS IAM SAML Provider Updated
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_saml_provider_updated
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS IAM Roles Anywhere Trust Anchor Created with External CA
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_roles_anywhere_trusted_anchor_created_with_external_ca
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS IAM Roles Anywhere Profile Creation
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_roles_anywhere_profile_created
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: AWS Identity Center Identity Provider Change
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_sso_idp_change.yml
+    author: Michael McIntyre @wtfender
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: AWS SAML Provider Deletion Activity
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_delete_saml_provider.yml
+    author: Ivan Saakov
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: AWS Suspicious SAML Activity
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_susp_saml_activity.yml
+    author: Austin Songer
+    license: DRL-1.1
+    relation: inspired

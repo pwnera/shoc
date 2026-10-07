@@ -1,0 +1,35 @@
+id: openai_login_failure_burst
+title: Five failed OpenAI sign-ins for one account in an hour
+description: >
+  Someone is guessing an account's password, or replaying a leaked one, on the
+  OpenAI dashboard. The account that owns the organisation's keys is the target
+  that matters.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: medium
+confidence: 0.45
+attack: [T1110]
+logsource:
+  product: openai
+  service: audit_log
+detection:
+  selection:
+    api.operation: login.failed
+  condition: selection
+  timeframe: 1h
+  group_by: [actor.user.name]
+  count: ">= 5"
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.location.country]
+sources:
+  - name: Elastic
+    title: Anthropic Multiple Authentication Failures
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/credential_access_anthropic_multiple_authentication_failures.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Panther
+    title: OpenAI Credential Stuffing
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/openai_rules/openai_credential_stuffing.yml
+    license: Apache-2.0
+    relation: inspired

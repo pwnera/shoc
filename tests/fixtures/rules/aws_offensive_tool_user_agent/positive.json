@@ -1,0 +1,85 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-GetCallerIdentity",
+    "eventName": "GetCallerIdentity",
+    "eventSource": "sts.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "TruffleHog",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ListBuckets",
+    "eventName": "ListBuckets",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.13.0 md/awscrt#0.16.16 ua/2.0 os/linux#6.5.0-kali3-amd64 md/arch#x86_64 lang/python#3.11.4 md/pyimpl#CPython cfg/retry-mode#standard md/installer#source md/distrib#kali.2023 md/prompt#off md/command#sts.get-caller-identity",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateUser",
+    "eventName": "CreateUser",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "S3 Browser 11.5.7 https://s3browser.com",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "userName": "s3-backup"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-GetSendQuota-kali-kernel",
+    "eventName": "GetSendQuota",
+    "eventSource": "ses.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.80",
+    "userAgent": "aws-cli/1.22.34 Python/3.9.11 Linux/5.15.0-kali3-amd64 botocore/1.27.84",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": null,
+    "responseElements": null,
+    "errorCode": "AccessDenied",
+    "errorMessage": "User: arn:aws:iam::123456789012:user/deploy-ci is not authorized to perform: ses:GetSendQuota because no identity-based policy allows the ses:GetSendQuota action",
+    "readOnly": true,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  }
+]

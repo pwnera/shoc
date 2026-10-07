@@ -1,0 +1,42 @@
+[
+  {
+    "action": "DISABLE",
+    "actor": {
+      "displayName": "OAuth client",
+      "id": "kq7Rk2mNb11CNTRL",
+      "loginName": "",
+      "type": "OAUTH_CLIENT"
+    },
+    "eventGroupID": "d1e2f30415263748596a7b8c9d0e1f01",
+    "origin": "NODE",
+    "target": {
+      "id": "n111222CNTRL",
+      "name": "build-edge.example-tailnet.ts.net",
+      "type": "NODE",
+      "property": "KEY_EXPIRY"
+    },
+    "type": "CONFIG",
+    "event": "NODE.DISABLE.KEY_EXPIRY",
+    "tailnet": "example.com"
+  },
+  {
+    "action": "ENABLE",
+    "actor": {
+      "displayName": "Mallory",
+      "id": "u999CNTRL",
+      "loginName": "mallory@example.com",
+      "type": "USER"
+    },
+    "eventGroupID": "6dae044c7a8998599e94657b511d0c03",
+    "origin": "ADMIN_CONSOLE",
+    "target": {
+      "id": "n654321CNTRL",
+      "name": "alice-laptop.example-tailnet.ts.net",
+      "type": "NODE",
+      "property": "KEY_EXPIRY"
+    },
+    "type": "CONFIG",
+    "event": "NODE.ENABLE.KEY_EXPIRY",
+    "tailnet": "example.com"
+  }
+]

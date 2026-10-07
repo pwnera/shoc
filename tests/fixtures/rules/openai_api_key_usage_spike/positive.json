@@ -1,0 +1,18 @@
+[
+  {
+    "id": "audit_log-history",
+    "type": "project.created",
+    "effective_at": "2026-08-01T00:00:00Z",
+    "project": {"id": "proj_abc", "name": "Default project"},
+    "actor": {"type": "session", "session": {"user": {"id": "user-xxx", "email": "owner@example.com"}, "ip_address": "198.51.100.20"}}
+  },
+  {
+    "api_key_id": "key_leaked",
+    "project_id": "proj_abc",
+    "workspace_id": null,
+    "output_tokens": 6400000,
+    "id": "openai-usage-key_leaked-6400000",
+    "event": "usage",
+    "key_id": "key_leaked"
+  }
+]

@@ -1,0 +1,73 @@
+id: contain_account_recovery_abuse
+title: Contain a reset of someone else's sign-in
+description: >
+  An admin or the help desk reset another person's password or MFA, turned
+  MFA off, or issued a temporary access pass. Whoever asked for the reset now
+  controls that account, so the reset account is the one to sign out: its
+  sessions are revoked, which is reversible, and suspending it, or removing
+  the newest factor enrolled in the last week, waits for a human. The admin who made the reset is a question for the crew, and for
+  contain_admin_account_misuse if their own account is misused.
+rules:
+  - okta_mfa_factors_reset
+  - okta_password_reset_by_admin
+  - entra_password_reset_by_admin
+  - entra_mfa_disabled
+  - m365_mfa_disabled
+  - entra_temporary_access_pass_created
+questions:
+  - id: verified
+    ask: Was the person's identity checked before the reset (a ticket, a call-back), and who asked for it?
+  - id: target_after
+    ask: Did the reset account sign in, enrol a factor or use a temporary access pass from a new address or device afterwards?
+  - id: breadth
+    ask: How many accounts did the same admin reset in the same hour?
+benign_when:
+  - A ticket from the user's manager asked for the reset, and the user enrolled a new factor from their usual address and device.
+  - The account belongs to an employee starting that day, and IT issued the pass from the office egress.
+example: |
+  claim (target_after): "Twenty minutes after the help desk reset j.smith's factors, a new factor was enrolled from 203.0.113.61, an address j.smith never used", citing the reset and the enrolment.
+  checked and absent: "a ticket or a call-back note for j.smith in the day before (1d)", which rules out a reset the user asked for.
+  disposition: malicious, because someone other than the user enrolled the factor right after an unrequested reset.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  # The reset account is the event's target, which the mappings put in `resource`.
+  - name: revoke the reset account's sessions in Okta
+    action: okta.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.resource }}"
+  - name: revoke the reset account's sessions in Entra ID
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.resource }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: sign-in of {{ entity.resource }} reset by {{ entity.user }}: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  # The newest factor enrolled in the last week, read from the identity provider.
+  - name: remove the factor enrolled after the reset in Okta
+    action: okta.remove_factor
+    optional: true
+    params:
+      user: "{{ entity.resource }}"
+  - name: remove the factor enrolled after the reset in Entra ID
+    action: entra.remove_factor
+    optional: true
+    params:
+      user: "{{ entity.resource }}"
+  - name: suspend the reset account in Okta
+    action: okta.suspend_user
+    optional: true
+    params:
+      user: "{{ entity.resource }}"
+  - name: suspend the reset account in Entra ID
+    action: entra.suspend_user
+    optional: true
+    params:
+      user: "{{ entity.resource }}"

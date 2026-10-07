@@ -1,0 +1,17 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "AnyDesk.exe",
+      "FolderPath": "C:/Program Files (x86)/AnyDesk/AnyDesk.exe",
+      "ProcessCommandLine": "\"C:\\Program Files (x86)\\AnyDesk\\AnyDesk.exe\" --get-id",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "jdoe"
+    }
+  }
+]

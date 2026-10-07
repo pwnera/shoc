@@ -1,0 +1,22 @@
+id: cloudflare_member_added_or_changed
+title: Cloudflare account member added or their role changed
+description: >
+  Membership is the lasting way into the account: a new member, or a new role
+  for an existing one, keeps working after a password reset.
+status: stable
+date: 2026-09-30
+modified: 2026-09-30
+severity: high
+confidence: 0.5
+attack: [T1098]
+logsource:
+  product: cloudflare
+  service: audit_log
+detection:
+  selection:
+    raw.raw.method: [POST, PUT]
+    raw.raw.uri|contains: /members
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, resource.uid]

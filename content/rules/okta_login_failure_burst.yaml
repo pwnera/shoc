@@ -1,0 +1,55 @@
+id: okta_login_failure_burst
+title: Password spray against Okta from one address
+description: >
+  One address failed the password of five or more different accounts within
+  an hour: somebody is trying one or two common passwords against the whole
+  company. On Identity Engine the password check is logged as an
+  authenticator failure rather than a failed session, so both are counted. A
+  rejected push or a wrong one-time code is logged the same way and is left
+  out: whoever got that far had the password. One person retrying their own
+  password is one account and stays quiet.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: medium
+confidence: 0.6
+attack: [T1110.003]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation|startswith: [user.session.start, user.authentication.]
+    status: Failure
+    status_code: [INVALID_CREDENTIALS, LOCKED_OUT]
+  filter_factor:
+    raw.debugContext.debugData.factor|exists: true
+  password_factor:
+    raw.debugContext.debugData.factor: PASSWORD_AS_FACTOR
+  condition: selection and not (filter_factor and not password_factor)
+  timeframe: 1h
+  group_by: [src_endpoint.ip]
+  count_distinct: actor.user.name
+  count: ">= 5"
+entity: src_endpoint.ip
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.location.country]
+sources:
+  - name: Elastic
+    title: Potential Okta Password Spray (Single Source)
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_password_spray_single_source
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Potential Okta Credential Stuffing (Single Source)
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_credential_stuffing_single_source
+    license: Elastic-2.0
+    relation: inspired
+  - name: Okta
+    title: Event types catalogue (user.authentication.auth_via_mfa, user.mfa.okta_verify.deny_push)
+    url: https://github.com/okta/okta-developer-docs/blob/master/packages/@okta/vuepress-site/data/event-types.json
+    relation: inspired
+  - name: Splunk
+    title: Okta Multiple Failed MFA Requests For User
+    url: https://github.com/splunk/security_content/blob/develop/detections/application/okta_multiple_failed_mfa_requests_for_user.yml
+    license: Apache-2.0
+    relation: inspired

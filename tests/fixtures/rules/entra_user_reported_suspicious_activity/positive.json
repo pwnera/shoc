@@ -1,0 +1,26 @@
+[
+  {
+    "id": "en-Suspicious activity reported",
+    "activityDisplayName": "Suspicious activity reported",
+    "category": "UserManagement",
+    "loggedByService": "Authentication Methods",
+    "operationType": "Update",
+    "result": "success",
+    "resultReason": "Successfully reported suspicious activity",
+    "additionalDetails": [
+      { "key": "AuthenticationMethod", "value": "PhoneAppNotification" }
+    ],
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "jane@example.com",
+        "id": "u-1",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      { "type": "User", "userPrincipalName": "jane@example.com", "id": "u-1" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

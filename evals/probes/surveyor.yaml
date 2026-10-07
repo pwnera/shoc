@@ -1,0 +1,37 @@
+# The Surveyor answering what a target is to this company (D45). Every role
+# calls it before treating an address or a credential as the attacker's, so a
+# wrong "ours" clears an attack and a wrong "not ours" blocks the office.
+role: surveyor
+probes:
+  - id: office_egress_written_down
+    memory:
+      - "198.51.100.7 is the Paris office's internet address. Everybody in the office signs in from it."
+    question: What is 198.51.100.7 to this company?
+    expect:
+      is_ours: true
+      source: declared
+
+  - id: shoc_own_key
+    own:
+      - {kind: credential, value: AKIAEXAMPLESHOC0001, source: aws_cloudtrail}
+    question: Is the access key AKIAEXAMPLESHOC0001 one of ours, or somebody else's?
+    expect:
+      is_ours: true
+
+  - id: address_seen_only_in_the_attack
+    events:
+      aws_cloudtrail:
+        - eventVersion: "1.08"
+          eventID: sv-1
+          eventSource: iam.amazonaws.com
+          eventName: ListUsers
+          awsRegion: us-east-1
+          sourceIPAddress: 203.0.113.55
+          recipientAccountId: "123456789012"
+          userIdentity: {type: IAMUser, userName: deploy-ci, arn: "arn:aws:iam::123456789012:user/deploy-ci", accountId: "123456789012", accessKeyId: AKIAIOSFODNN7EXAMPLE}
+          _repeat: 5
+    question: >-
+      What is 203.0.113.55 to this company? It used the deploy-ci key for IAM
+      discovery a few minutes ago.
+    expect:
+      is_ours: false

@@ -1,0 +1,38 @@
+id: contain_gcp_open_firewall
+title: Close a GCP firewall rule opened to the internet
+description: >
+  A VPC firewall rule now accepts traffic from anywhere. Switching it off is
+  undone by switching it on, but may cut off a service that needs the port, so
+  a human approves it. The page goes first so the approval reaches someone.
+rules:
+  - gcp_firewall_opened_to_internet
+questions:
+  - id: change
+    ask: Which ports and protocols does the rule open, and to which instances or network tags?
+  - id: actor
+    ask: Who made the change, from which address, and with a person's session or a service account key?
+  - id: reached
+    ask: Did connections from outside reach the opened ports after the change, and from which addresses?
+benign_when:
+  - The rule opens 80 or 443 to a web server, and it came from the Terraform service account with a merged infrastructure change.
+example: |
+  claim (change): "Rule allow-ssh-all opens tcp:22 from 0.0.0.0/0 to every instance tagged db", citing the firewall insert event.
+  checked and absent: "a merged infrastructure change touching firewalls (24h)", which rules out the usual pipeline.
+  disposition: malicious, because SSH to the database hosts was opened to the internet with nothing to explain it.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: GCP firewall rule {{ entity.resource }} open to the internet: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: switch off the firewall rule
+    action: gcp.disable_firewall_rule
+    optional: true
+    params:
+      firewall: "{{ entity.resource }}"
+      project: "{{ entity.account }}"

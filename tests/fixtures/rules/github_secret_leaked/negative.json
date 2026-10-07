@@ -1,0 +1,22 @@
+[
+  {
+    "_document_id": "gh-secret_scanning_alert.resolve",
+    "action": "secret_scanning_alert.resolve",
+    "actor": "alice",
+    "org": "acme",
+    "repo": "acme/landing-page",
+    "number": 3,
+    "resolution": "revoked",
+    "secret_type": "aws_access_key_id",
+    "secret_type_display_name": "Amazon AWS Access Key ID"
+  },
+  {
+    "_document_id": "gh-secret_scanning_push_protection_request.deny",
+    "action": "secret_scanning_push_protection_request.deny",
+    "actor": "alice",
+    "org": "acme",
+    "repo": "acme/payments",
+    "number": 5,
+    "operation_type": "modify"
+  }
+]

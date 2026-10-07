@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shoc.fullname" . }}-worker
+  labels:
+    {{- include "shoc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "shoc.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "shoc.labels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name | default (include "shoc.fullname" .) }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: worker
+          image: {{ include "shoc.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["worker"]
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            {{- include "shoc.env" . | nindent 12 }}
+            {{- include "shoc.runtimeEnv" . | nindent 12 }}
+          envFrom:
+            - secretRef:
+                name: {{ include "shoc.secretName" . }}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

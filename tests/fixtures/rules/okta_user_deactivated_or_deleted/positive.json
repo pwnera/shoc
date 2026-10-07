@@ -1,0 +1,38 @@
+[
+  {
+    "uuid": "okta-user.lifecycle.deactivate",
+    "eventType": "user.lifecycle.deactivate",
+    "displayMessage": "user lifecycle deactivate",
+    "actor": {
+      "id": "00u1",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0"
+      },
+      "geographicalContext": {
+        "country": "France"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-1"
+    },
+    "securityContext": {
+      "asNumber": 64500
+    },
+    "target": [
+      {
+        "id": "0oa1",
+        "type": "AppInstance",
+        "alternateId": "Okta Dashboard"
+      }
+    ]
+  }
+]

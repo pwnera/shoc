@@ -1,0 +1,54 @@
+[
+  {
+    "insertId": "gcp-key-create-denied",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "service_account",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.admin.v1.CreateServiceAccountKey",
+      "resourceName": "projects/-/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com",
+      "authenticationInfo": {
+        "principalEmail": "intern@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.12",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission 'iam.serviceAccountKeys.create' denied"
+      }
+    }
+  },
+  {
+    "insertId": "gcp-key-delete",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "service_account",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.admin.v1.DeleteServiceAccountKey",
+      "resourceName": "projects/-/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com/keys/3f1c0a9b8e7d6c5b4a39281706f5e4d3c2b1a090",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.12",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      }
+    }
+  }
+]

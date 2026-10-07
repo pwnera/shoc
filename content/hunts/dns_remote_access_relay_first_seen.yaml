@@ -1,0 +1,49 @@
+id: dns_remote_access_relay_first_seen
+title: A remote-access relay is looked up for the first time
+hypothesis: >
+  A remote-access session reaches its vendor's relay by name, and a
+  ScreenConnect instance has a relay name of its own. A relay this company
+  never looked up before is a tool, or a ScreenConnect server, that is not the
+  company's. Gateway sees it from Macs and unmanaged laptops too.
+attack: [T1219]
+sources:
+  - name: Sigma
+    title: "DNS Query To Remote Access Software Domain From Non-Browser App"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_remote_access_software_domains_non_browsers.yml
+    author: "frack113, Connor Martin"
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: "Newly Observed ScreenConnect Host Server"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/command_and_control_newly_observed_screenconnect_host_server.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: "First Time Seen DNS Query to RMM Domain"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/command_and_control_dns_rmm_domains_non_browser.toml
+    license: Elastic-2.0
+    relation: inspired
+logsource:
+  product: dns
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    query.hostname|endswith: [screenconnect.com, anydesk.com, teamviewer.com, rustdesk.com,
+                              atera.com, splashtop.com, getscreen.me, logmein.com, logmeininc.com,
+                              gotoassist.com, remoteutilities.com, netsupportsoftware.com,
+                              dwservice.net, tmate.io, zohoassist.com, beyondtrustcloud.com,
+                              parsec.app, helpwire.app]
+  condition: selection
+baseline:
+  first_seen: [query.hostname]
+  lookback: 30d
+pivot: [query.hostname, device.hostname, device.uid, actor.user.name, process.name]
+triage: >
+  Does the company use this vendor, and is this its own instance? A relay
+  looked up by one laptop, right after a call from "IT support", is the case
+  to escalate.
+follow_up:
+  - Which process asked for the name, and when was it installed?
+  - Did the person get a call or a message from someone claiming to be IT?
+sensitive: true

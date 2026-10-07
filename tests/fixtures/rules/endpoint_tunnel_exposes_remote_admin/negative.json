@@ -1,0 +1,61 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "ngrok.exe",
+      "FolderPath": "C:/Users/dev/Downloads/ngrok.exe",
+      "ProcessCommandLine": "ngrok.exe http 3000",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "jdoe"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "host05.example.com",
+      "os": "osx"
+    },
+    "tgt": {
+      "process": {
+        "name": "ssh",
+        "cmdline": "ssh -L 8080:localhost:80 dev@203.0.113.4",
+        "image": {
+          "path": "/usr/bin/ssh"
+        },
+        "user": "jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "zsh"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "cloudflared.exe",
+      "FolderPath": "C:\\Program Files (x86)\\cloudflared\\cloudflared.exe",
+      "ProcessCommandLine": "cloudflared.exe access rdp --hostname rdp.example.com --url rdp://localhost:3389",
+      "InitiatingProcessFileName": "powershell.exe",
+      "AccountName": "jdoe"
+    }
+  }
+]

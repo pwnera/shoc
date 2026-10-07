@@ -1,0 +1,379 @@
+[
+  {
+    "uuid": "okta-home-2",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh)",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "FR",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-jane"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "_day_offset": 2
+  },
+  {
+    "uuid": "okta-home-4",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh)",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "FR",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-jane"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "_day_offset": 4
+  },
+  {
+    "uuid": "okta-home-6",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh)",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "FR",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-jane"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "_day_offset": 6
+  },
+  {
+    "uuid": "okta-home-9",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh)",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "FR",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-jane"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "_day_offset": 9
+  },
+  {
+    "uuid": "okta-home-12",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh)",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "FR",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-jane"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "_day_offset": 12
+  },
+  {
+    "uuid": "okta-home-15",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh)",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "FR",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-jane"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "_day_offset": 15
+  },
+  {
+    "uuid": "okta-home-18",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh)",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "FR",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-jane"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "_day_offset": 18
+  },
+  {
+    "uuid": "okta-home-21",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh)",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "FR",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-jane"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "_day_offset": 21
+  },
+  {
+    "uuid": "okta-travel-1",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "203.0.113.140",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh)",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "BR",
+        "city": "Sao Paulo"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-travel"
+    },
+    "securityContext": {
+      "asNumber": 64501,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ]
+  }
+]

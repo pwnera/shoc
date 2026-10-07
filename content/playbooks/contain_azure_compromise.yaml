@@ -1,0 +1,48 @@
+id: contain_azure_compromise
+title: Contain a compromised Azure subscription
+description: >
+  Someone granted Owner or opened a Key Vault, turned off logging, deleted
+  backups and resources in bulk, or Defender for Cloud raised a high alert.
+  Revoking the caller's Entra sessions stops further changes from that sign-in
+  and is reversible. Removing a role assignment or restoring a diagnostic
+  setting needs actions shoc does not have yet, so a human is paged. Commands
+  run on a VM are answered in contain_azure_vm_command, which can power it off.
+rules:
+  - azure_privileged_access_granted
+  - azure_logging_disabled
+  - azure_mass_deletion
+  - azure_vendor_alert
+  - hunt:azure_principal_first_operation
+  - hunt:azure_storage_keys_listed_first_seen
+questions:
+  - id: caller
+    ask: Is the caller a person or an app, and did it sign in from an address, country or device it has used in the last 30 days?
+  - id: around
+    ask: What else did the same caller do in the subscription in the hour before and after?
+  - id: target
+    ask: Which vault, role assignment or resources were touched, and what do they hold or serve?
+  - id: still_off
+    ask: If logging was deleted, is it still off, and what happened while it was?
+benign_when:
+  - A named engineer ran a documented maintenance command from the office egress, and the pipeline's usual service principal made the change.
+  - A test environment was torn down with terraform destroy by its owner.
+example: |
+  claim (caller): "Owner on the production subscription was granted to an outside account by dana@example.com from 203.0.113.24, an address never seen for this user", citing the role assignment event.
+  checked and absent: "a change ticket or access review for the subscription in memory (30d)", which rules out a planned grant.
+  disposition: malicious, because full control went to an outside account from a new address with nothing to explain it.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: revoke the caller's sessions
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: Azure subscription change by {{ entity.user }} needs a look: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"

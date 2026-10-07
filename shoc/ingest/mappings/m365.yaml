@@ -1,0 +1,260 @@
+# Office 365 Management Activity API -> OCSF. ING-1, ING-3.
+# One feed, many record types; `RecordType` picks the class:
+#   15, 9           sign-ins                        Authentication (3002)
+#   8               directory changes               Entity Management (3004),
+#                                                   Account Change (3001), User
+#                                                   Access Management (3005) or
+#                                                   Group Management (3006)
+#   2, 3, 50 sends  mail sent from a mailbox        Email Activity (4009)
+#   28              Defender for Office mail data   Email Activity (4009)
+#   41              Safe Links clicks               HTTP Activity (4002)
+#   4, 6, 14, 20,
+#   22, 36, 84, 102 files, lists, sharing, reports  Web Resources Activity (6001)
+#   40, 47, 64, 98  alerts, malware, investigations Detection Finding (2004)
+#   everything else (admin cmdlets, mailbox items, Teams, Forms, Copilot)
+#                                                   API Activity (6003)
+source: m365
+ocsf_version: "1.3.0"
+
+# Lists of named items, read by name from a rule (RFC 0023): a cmdlet's
+# parameters (`unmapped.params.ForwardingSmtpAddress`), an Outlook rule's
+# properties (`unmapped.opprops.RuleActions`), a sign-in's extended properties
+# (`unmapped.props.RequestType`) and a directory change's old and new values
+# (`unmapped.modified.Role_DisplayName.NewValue`).
+keyed:
+  params: { path: Parameters, key: Name, value: Value }
+  opprops: { path: OperationProperties, key: Name, value: Value }
+  props: { path: ExtendedProperties, key: Name, value: Value }
+  modified: { path: ModifiedProperties, key: Name }
+
+constants:
+  category_uid: 6
+  class_uid: 6003
+  class_name: API Activity
+  type_uid: 600399
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  status: Success
+  cloud_provider: Microsoft
+  metadata_product: Microsoft 365
+  api_service_name: m365
+
+fields:
+  event_uid: { path: Id }
+  time: { path: CreationTime, transform: iso8601 }
+  api_operation: { path: Operation }
+  message:
+    paths:
+      - Name
+      - AlertDisplayName
+      - InvestigationName
+      - "FileData.MalwareFamily"
+      - VirusInfo
+      - Verdict
+      - LogonError
+      - Workload
+  actor_user_name: { paths: [UserId, UserKey] }
+  actor_user_uid: { path: UserKey }
+  actor_user_type: { path: UserType, transform: str }
+  actor_session_uid: { paths: [SessionId, "AppAccessContext.AADSessionId", UserSessionId] }
+  # Exchange admin records carry the port in ClientIP and Teams a v4-mapped
+  # prefix; `ip` strips both and drops a `<null>`.
+  src_endpoint_ip:
+    paths: [ClientIPAddress, ClientIP, ActorIpAddress, UserIp, SenderIp, "ClientIPs[*]"]
+    transform: ip
+  # Sign-ins (record type 15) carry the user agent in ExtendedProperties.
+  http_user_agent: { paths: [UserAgent, "ExtendedProperties[Name=UserAgent].Value"] }
+  # The application a sign-in was for, so a rule need not read raw.
+  actor_invoked_by: { path: ApplicationId }
+  http_request_url: { paths: [Url, "MessageURLs[*]"] }
+  device_hostname: { path: DeviceName }
+  device_uid: { paths: [DeviceId, MachineId] }
+  # SharePoint, Yammer and Defender name the file apart from its folder; the
+  # full URL stays in resource_uid.
+  file_path: { paths: [SourceFileName, FileName, "FileData.FileName", "AttachmentData[*].FileName"] }
+  file_hash_sha256: { paths: ["FileData.SHA256", "AttachmentData[*].SHA256"] }
+  cloud_account_uid: { path: OrganizationId }
+  resource_type: { path: Workload }
+  resource_uid: { paths: [ObjectId, SiteUrl, AlertId, InvestigationId, ItemName] }
+  status_code: { paths: [ErrorNumber, ResultStatus], transform: str }
+  api_response_error: { path: LogonError }
+
+derive:
+  - when: { ResultStatus: { in: [Failed, Failure, "False", "FALSE"] } }
+    set: { status: Failure, severity_id: 2 }
+
+  # Class by record type.
+  - when: { RecordType: { in: [9, 15] } }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, type_uid: 300201, activity_id: 1, activity_name: Logon }
+  - when: { Operation: { in: [UserLoggedIn, UserLoginFailed] } }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, type_uid: 300201, activity_id: 1, activity_name: Logon }
+  - when: { Operation: UserLoginFailed }
+    set: { status: Failure, severity_id: 2 }
+  - when: { RecordType: 8 }
+    set: { category_uid: 3, class_uid: 3004, class_name: Entity Management, type_uid: 300499, activity_id: 99, activity_name: Other }
+  - when: { RecordType: { in: [4, 6, 14, 20, 22, 36, 84, 102] } }
+    set: { category_uid: 6, class_uid: 6001, class_name: Web Resources Activity, type_uid: 600199, activity_id: 99, activity_name: Other }
+  - when: { Operation: { in: [Send, SendAs, SendOnBehalf] } }
+    set: { category_uid: 4, class_uid: 4009, class_name: Email Activity, type_uid: 400901, activity_id: 1, activity_name: Send }
+  - when: { RecordType: 28 }
+    set: { category_uid: 4, class_uid: 4009, class_name: Email Activity, type_uid: 400902, activity_id: 2, activity_name: Receive }
+  - when: { RecordType: 28, Directionality: Outbound }
+    set: { type_uid: 400901, activity_id: 1, activity_name: Send }
+  - when: { RecordType: 28, Verdict: { in: [Malware, Phish] } }
+    set: { severity_id: 3 }
+  - when: { RecordType: 41 }
+    set: { category_uid: 4, class_uid: 4002, class_name: HTTP Activity, type_uid: 400203, activity_id: 3, activity_name: Get }
+
+  # Directory changes (record type 8), by activity name. Microsoft ends these
+  # with a full stop ("Add member to role."), which `contains` ignores.
+  - when: { class_uid: 3004, Operation: { contains: "add " } }
+    set: { type_uid: 300401, activity_id: 1, activity_name: Create }
+  - when: { class_uid: 3004, Operation: { contains: "update " } }
+    set: { type_uid: 300403, activity_id: 3, activity_name: Update }
+  - when: { class_uid: 3004, Operation: { contains: "delete " } }
+    set: { type_uid: 300404, activity_id: 4, activity_name: Delete }
+  - when: { class_uid: 3004, Operation: { contains: "user." } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300199, activity_id: 99, activity_name: Other }
+  - when: { class_uid: 3004, Operation: { contains: "group." } }
+    set: { class_uid: 3006, class_name: Group Management, type_uid: 300699, activity_id: 99, activity_name: Other }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "add user" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300101, activity_id: 1, activity_name: Create }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "enable account" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300102, activity_id: 2, activity_name: Enable }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "passwordprofile" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300103, activity_id: 3, activity_name: Password Change }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "change user password" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300103, activity_id: 3, activity_name: Password Change }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "reset user password" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300104, activity_id: 4, activity_name: Password Reset }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "disable account" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300105, activity_id: 5, activity_name: Disable }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "delete user" } }
+    set: { class_uid: 3001, class_name: Account Change, type_uid: 300106, activity_id: 6, activity_name: Delete }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "add group" } }
+    set: { class_uid: 3006, class_name: Group Management, type_uid: 300606, activity_id: 6, activity_name: Create }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "delete group" } }
+    set: { class_uid: 3006, class_name: Group Management, type_uid: 300605, activity_id: 5, activity_name: Delete }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "add member to group" } }
+    set: { class_uid: 3006, class_name: Group Management, type_uid: 300603, activity_id: 3, activity_name: Add User }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "remove member from group" } }
+    set: { class_uid: 3006, class_name: Group Management, type_uid: 300604, activity_id: 4, activity_name: Remove User }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "member to role" } }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300501, activity_id: 1, activity_name: Assign Privileges, severity_id: 3 }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "member from role" } }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300502, activity_id: 2, activity_name: Revoke Privileges }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "add app role assignment" } }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300501, activity_id: 1, activity_name: Assign Privileges, severity_id: 3 }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "consent to application" } }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300501, activity_id: 1, activity_name: Assign Privileges, severity_id: 3 }
+  - when: { class_uid: { in: [3001, 3004, 3006] }, Operation: { contains: "add delegated permission grant" } }
+    set: { class_uid: 3005, class_name: User Access Management, type_uid: 300501, activity_id: 1, activity_name: Assign Privileges, severity_id: 3 }
+
+  # Mailbox permissions granted or taken away with an Exchange cmdlet.
+  - when: { Operation: { in: [Add-MailboxPermission, Add-RecipientPermission, Add-MailboxFolderPermission, Add-ADPermission] } }
+    set: { category_uid: 3, class_uid: 3005, class_name: User Access Management, type_uid: 300501, activity_id: 1, activity_name: Assign Privileges, severity_id: 3 }
+  - when: { Operation: { in: [Remove-MailboxPermission, Remove-RecipientPermission, Remove-MailboxFolderPermission, Remove-ADPermission] } }
+    set: { category_uid: 3, class_uid: 3005, class_name: User Access Management, type_uid: 300502, activity_id: 2, activity_name: Revoke Privileges }
+
+  # API Activity verbs: Exchange cmdlets (Verb-Noun), mailbox item actions,
+  # Teams and Forms events.
+  - when: { class_uid: 6003, Operation: { contains: create } }
+    set: { type_uid: 600301, activity_id: 1, activity_name: Create }
+  - when: { class_uid: 6003, Operation: { contains: "new-" } }
+    set: { type_uid: 600301, activity_id: 1, activity_name: Create }
+  - when: { class_uid: 6003, Operation: { contains: "add-" } }
+    set: { type_uid: 600301, activity_id: 1, activity_name: Create }
+  - when: { class_uid: 6003, Operation: { contains: accessed } }
+    set: { type_uid: 600302, activity_id: 2, activity_name: Read }
+  - when: { class_uid: 6003, Operation: { contains: "get-" } }
+    set: { type_uid: 600302, activity_id: 2, activity_name: Read }
+  - when: { class_uid: 6003, Operation: { contains: update } }
+    set: { type_uid: 600303, activity_id: 3, activity_name: Update }
+  - when: { class_uid: 6003, Operation: { contains: edit } }
+    set: { type_uid: 600303, activity_id: 3, activity_name: Update }
+  - when: { class_uid: 6003, Operation: { contains: "set-" } }
+    set: { type_uid: 600303, activity_id: 3, activity_name: Update }
+  - when: { class_uid: 6003, Operation: { contains: "enable-" } }
+    set: { type_uid: 600303, activity_id: 3, activity_name: Update }
+  - when: { class_uid: 6003, Operation: { contains: "disable-" } }
+    set: { type_uid: 600303, activity_id: 3, activity_name: Update }
+  - when: { class_uid: 6003, Operation: { contains: delete } }
+    set: { type_uid: 600304, activity_id: 4, activity_name: Delete }
+  - when: { class_uid: 6003, Operation: { contains: "remove-" } }
+    set: { type_uid: 600304, activity_id: 4, activity_name: Delete }
+
+  # Web Resources Activity verbs (SharePoint, OneDrive, Yammer, Power BI).
+  - when: { class_uid: 6001, Operation: { contains: accessed } }
+    set: { type_uid: 600102, activity_id: 2, activity_name: Read }
+  - when: { class_uid: 6001, Operation: { contains: downloaded } }
+    set: { type_uid: 600102, activity_id: 2, activity_name: Read }
+  - when: { class_uid: 6001, Operation: { contains: previewed } }
+    set: { type_uid: 600102, activity_id: 2, activity_name: Read }
+  - when: { class_uid: 6001, Operation: { contains: opened } }
+    set: { type_uid: 600102, activity_id: 2, activity_name: Read }
+  - when: { class_uid: 6001, Operation: { contains: view } }
+    set: { type_uid: 600102, activity_id: 2, activity_name: Read }
+  - when: { class_uid: 6001, Operation: { contains: visited } }
+    set: { type_uid: 600102, activity_id: 2, activity_name: Read }
+  - when: { class_uid: 6001, Operation: { contains: uploaded } }
+    set: { type_uid: 600101, activity_id: 1, activity_name: Create }
+  - when: { class_uid: 6001, Operation: { contains: modified } }
+    set: { type_uid: 600103, activity_id: 3, activity_name: Update }
+  - when: { class_uid: 6001, Operation: { contains: deleted } }
+    set: { type_uid: 600104, activity_id: 4, activity_name: Delete }
+  - when: { class_uid: 6001, Operation: { contains: recycled } }
+    set: { type_uid: 600104, activity_id: 4, activity_name: Delete }
+  - when: { class_uid: 6001, Operation: { contains: searchquery } }
+    set: { type_uid: 600105, activity_id: 5, activity_name: Search }
+  - when: { class_uid: 6001, RecordType: 14 }
+    set: { type_uid: 600108, activity_id: 8, activity_name: Share }
+  - when: { class_uid: 6001, Operation: { contains: link } }
+    set: { type_uid: 600108, activity_id: 8, activity_name: Share }
+
+  # Detections: compliance and Defender alerts, Defender for Cloud Apps
+  # alerts, malware found in stored files, automated investigations and DLP
+  # rule matches.
+  - when: { RecordType: { in: [40, 98] } }
+    set: { category_uid: 2, class_uid: 2004, class_name: Detection Finding, type_uid: 200401, activity_id: 1, activity_name: Create, severity_id: 3 }
+  - when: { RecordType: 40, Operation: { in: [AlertUpdated, AlertEntityGenerated] } }
+    set: { type_uid: 200402, activity_id: 2, activity_name: Update }
+  - when: { RecordType: 47 }
+    set: { category_uid: 2, class_uid: 2004, class_name: Detection Finding, type_uid: 200401, activity_id: 1, activity_name: Create, severity_id: 4 }
+  - when: { Operation: FileMalwareDetected }
+    set: { category_uid: 2, class_uid: 2004, class_name: Detection Finding, type_uid: 200401, activity_id: 1, activity_name: Create, severity_id: 4 }
+  - when: { RecordType: 64 }
+    set: { category_uid: 2, class_uid: 2004, class_name: Detection Finding, type_uid: 200402, activity_id: 2, activity_name: Update, severity_id: 3 }
+  - when: { Operation: DlpRuleMatch }
+    set: { category_uid: 2, class_uid: 2004, class_name: Detection Finding, type_uid: 200401, activity_id: 1, activity_name: Create, severity_id: 3 }
+  - when: { Severity: { in: [Informational, informational] } }
+    set: { severity_id: 1 }
+  - when: { Severity: { in: [Low, low] } }
+    set: { severity_id: 2 }
+  - when: { Severity: { in: [Medium, medium] } }
+    set: { severity_id: 3 }
+  - when: { Severity: { in: [High, high] } }
+    set: { severity_id: 4 }
+  - when: { AlertSeverity: Low }
+    set: { severity_id: 2 }
+  - when: { AlertSeverity: Medium }
+    set: { severity_id: 3 }
+  - when: { AlertSeverity: High }
+    set: { severity_id: 4 }
+  - when: { "PolicyDetails[*].Rules[*].Severity": Low }
+    set: { severity_id: 2 }
+  - when: { "PolicyDetails[*].Rules[*].Severity": High }
+    set: { severity_id: 4 }
+
+  # Mailbox and tenant changes worth a second look even when they succeed.
+  - when: { Operation: { in: [New-InboxRule, Set-InboxRule, UpdateInboxRules, Set-Mailbox, New-TransportRule, Set-TransportRule] } }
+    set: { severity_id: 3 }
+  - when: { Operation: { contains: "Add service principal" } }
+    set: { severity_id: 3 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: http_request_url, name: http_request.url.url_string, type: "URL String" }
+  - { column: file_path, name: file.name, type: "File Name" }
+  - { column: file_hash_sha256, name: file.hashes.sha256, type: "File Hash" }

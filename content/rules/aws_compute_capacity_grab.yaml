@@ -1,0 +1,70 @@
+id: aws_compute_capacity_grab
+title: GPU or very large instances launched, compute quota raised or a region enabled
+description: >
+  Someone launched or tried to launch GPU, accelerator, bare-metal or 24xlarge
+  and larger instances, hit the account's vCPU limit or a region's
+  verification hold on any launch, asked for a higher service quota, or
+  switched on a region. Stolen keys are used for crypto mining, which runs up
+  the bill in regions nobody watches; miners use CPU fleets as often as GPUs.
+  Failed launches count, because the vCPU limit is what a miner meets first.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1496.001, T1535]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_gpu:
+    api.operation: RunInstances
+    raw.requestParameters.instanceType|startswith: [p2., p3., p3dn., p4d., p4de., p5., p5e., p5en., p6, g3., g3s., g4dn., g4ad., g5., g5g., g6., g6e., gr6., dl1., dl2q., trn1., trn1n., trn2., inf1., inf2., f1., f2., vt1.]
+  selection_spot_gpu:
+    api.operation: RequestSpotInstances
+    raw.requestParameters.launchSpecification.instanceType|startswith: [p2., p3., p3dn., p4d., p4de., p5., p5e., p5en., p6, g3., g3s., g4dn., g4ad., g5., g5g., g6., g6e., gr6., dl1., dl2q., trn1., trn1n., trn2., inf1., inf2., f1., f2., vt1.]
+  selection_large:
+    api.operation: RunInstances
+    raw.requestParameters.instanceType|re: '\.(metal|24xlarge|48xlarge)'
+  selection_capacity_error:
+    api.operation: [RunInstances, RequestSpotInstances]
+    api.response.error: [Client.VcpuLimitExceeded, Client.PendingVerification]
+  selection_quota:
+    api.operation: RequestServiceQuotaIncrease
+  selection_region:
+    api.operation: EnableRegion
+  filter_aws:
+    actor.invoked_by|exists: true
+  condition: selection_* and not filter_aws
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, status, cloud.region, raw.requestParameters.instanceType, raw.requestParameters.quotaCode, raw.requestParameters.RegionName]
+sources:
+  - name: Elastic hunting
+    title: High EC2 Instance Deployment Count Attempts by Single User or Role
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/ec2_high_instance_deployment_count_attempts.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS Service Quota Increase Requested by Rare Identity
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/resource_development_service_quota_increase_by_rare_identity
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: AWS EnableRegion Command Monitoring
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_cloudtrail_region_enabled.yml
+    author: Ivan Saakov, Sergey Zelenskiy
+    license: DRL-1.1
+    relation: adapted
+  - name: Datadog Security Labs
+    title: "Tales from the cloud trenches: Amazon ECS is the new EC2 for crypto mining"
+    url: https://securitylabs.datadoghq.com/articles/tales-from-the-cloud-trenches-ecs-crypto-mining/
+    relation: inspired
+  - name: Unit 42
+    title: "CloudKeys in the Air: Tracking Malicious Operations of Exposed IAM Keys"
+    url: https://unit42.paloaltonetworks.com/malicious-operations-of-exposed-iam-keys-cryptojacking/
+    relation: inspired
+  - name: AWS
+    title: Error codes for the Amazon EC2 API
+    url: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/errors-overview.html
+    relation: inspired

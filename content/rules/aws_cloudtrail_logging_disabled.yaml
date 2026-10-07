@@ -1,0 +1,64 @@
+id: aws_cloudtrail_logging_disabled
+title: CloudTrail logging disabled or deleted
+description: >
+  Someone stopped or deleted a trail or a CloudTrail Lake event data store,
+  switched off management events with either kind of event selector, pointed
+  the trail at another bucket, or made it single-region or unvalidated. This
+  is the classic first move after a cloud credential is stolen, because it
+  blinds everything downstream, including shoc. Turning data events on is not
+  a match.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: critical
+confidence: 0.85
+attack: [T1562.008]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_stop:
+    api.operation: [StopLogging, DeleteTrail, StopEventDataStoreIngestion, DeleteEventDataStore]
+  selection_selectors:
+    api.operation: PutEventSelectors
+    raw.requestParameters|re: '"includeManagementEvents"\s*:\s*false|"excludeManagementEventSources"\s*:\s*\[\s*"'
+  advanced_selectors:
+    api.operation: PutEventSelectors
+    raw.requestParameters.advancedEventSelectors|exists: true
+  # Advanced selectors log management events only through a selector on eventCategory Management.
+  keeps_management:
+    raw.requestParameters.advancedEventSelectors|contains: '"Management"'
+  selection_redirect:
+    api.operation: UpdateTrail
+    raw.requestParameters.s3BucketName|exists: true
+  selection_narrowed:
+    api.operation: UpdateTrail
+    raw.requestParameters|re: '"(isMultiRegionTrail|includeGlobalServiceEvents|enableLogFileValidation)"\s*:\s*false'
+  success:
+    api.service.name: cloudtrail.amazonaws.com
+    status: Success
+  condition: success and (selection_* or (advanced_selectors and not keeps_management))
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip, resource.uid]
+sources:
+  - name: Elastic
+    title: AWS CloudTrail Management Events Disabled via PutEventSelectors
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_cloudtrail_management_events_disabled_via_eventselectors
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS CloudTrail Log Updated
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_cloudtrail_logging_updated
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: AWS CloudTrail Important Change
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_cloudtrail_disable_logging.yml
+    author: vitaliy0x1
+    license: DRL-1.1
+    relation: adapted
+  - name: AWS
+    title: PutEventSelectors, AWS CloudTrail API Reference
+    url: https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_PutEventSelectors.html
+    relation: inspired

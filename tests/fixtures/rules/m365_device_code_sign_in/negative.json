@@ -1,0 +1,70 @@
+[
+  {
+    "Id": "m365-UserLoggedIn-browser",
+    "Operation": "UserLoggedIn",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Success",
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.7",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "OAuth2:Authorize"
+      },
+      {
+        "Name": "ResultStatusDetail",
+        "Value": "Redirect"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-UserLoggedIn-intune-enrollment",
+    "Operation": "UserLoggedIn",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Success",
+    "UserKey": "u-2",
+    "UserType": 0,
+    "UserId": "bob@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.8",
+    "ObjectId": "0000000a-0000-0000-c000-000000000000",
+    "ExtendedProperties": [
+      {
+        "Name": "ResultStatusDetail",
+        "Value": "Success"
+      },
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP2A.240805.005; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/127.0.6533.103 Mobile Safari/537.36 PKeyAuth/1.0"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Cmsi:Cmsi"
+      }
+    ],
+    "DeviceProperties": [
+      {
+        "Name": "OS",
+        "Value": "Android"
+      },
+      {
+        "Name": "BrowserType",
+        "Value": "AndroidWebViewLollipopAndAbove"
+      }
+    ],
+    "ApplicationId": "9ba1a5c7-f17a-4de9-a1f1-6178c8d51223",
+    "_content_type": "Audit.AzureActiveDirectory"
+  }
+]

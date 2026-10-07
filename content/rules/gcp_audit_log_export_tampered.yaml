@@ -1,0 +1,48 @@
+id: gcp_audit_log_export_tampered
+title: GCP log sink, log bucket or audit-log configuration changed
+description: >
+  A log sink was deleted or edited, a log bucket deleted, an exclusion added or
+  changed, or a Data Access audit log switched off. shoc reads GCP through a
+  sink, so each of these can make it blind without any other sign.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.6
+attack: [T1562.008]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection_logging:
+    api.operation|endswith:
+      - ConfigServiceV2.DeleteSink
+      - ConfigServiceV2.UpdateSink
+      - ConfigServiceV2.DeleteBucket
+      - ConfigServiceV2.CreateExclusion
+      - ConfigServiceV2.UpdateExclusion
+    status: Success
+  selection_audit_config:
+    api.operation|endswith: SetIamPolicy
+    status: Success
+    raw.protoPayload.serviceData.policyDelta.auditConfigDeltas|contains: REMOVE
+  condition: selection_*
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, resource.uid, api.operation]
+sources:
+  - name: Elastic
+    title: GCP Logging Sink Deletion
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/defense_evasion_gcp_logging_sink_deletion
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: GCP Logging Bucket Deletion
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/defense_evasion_gcp_logging_bucket_deletion
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: GCP Logging Sink Modification
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/exfiltration_gcp_logging_sink_modification
+    license: Elastic-2.0
+    relation: adapted

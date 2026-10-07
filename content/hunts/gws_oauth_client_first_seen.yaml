@@ -1,0 +1,29 @@
+id: gws_oauth_client_first_seen
+title: An OAuth client is authorised that this domain has never authorised before
+hypothesis: >
+  A consent phish or a malicious integration shows up as a client id nobody in
+  the company has granted before. Most clients are the same handful of tools;
+  a new one with mail or drive scopes is how access outlives a password reset.
+attack: [T1528, T1550.001]
+logsource:
+  product: google
+  service: reports
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: authorize
+    api.service.name: token
+  condition: selection
+baseline:
+  first_seen: [resource.uid]
+  lookback: 30d
+pivot: [resource.uid, actor.user.name, src_endpoint.ip]
+triage: >
+  Which application is this client, who granted it, and with which scopes? A tool
+  the company adopted this week explains it; broad scopes for an app nobody
+  names do not.
+follow_up:
+  - How many users granted the same client, and when?
+  - Is the client id recorded as shoc's own in own.list?
+sensitive: true

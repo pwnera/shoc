@@ -1,0 +1,40 @@
+[
+  {
+    "_document_id": "github-webhook-force-main",
+    "action": "push",
+    "actor": "mallory",
+    "org": "acme",
+    "webhook": {
+      "event": "push",
+      "action": ""
+    },
+    "repo": "acme/payments",
+    "ref": "refs/heads/main",
+    "forced": true,
+    "created": false,
+    "deleted": false,
+    "before": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+    "after": "0d1a26e67d8f5eaf1f6ba5c57fc3c7d91ac0fd1c",
+    "compare": "https://github.com/acme/payments/compare/6dcb09b5b578...0d1a26e67d8f"
+  },
+  {
+    "_document_id": "gh-protected_branch.policy_override-force",
+    "action": "protected_branch.policy_override",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "public_repo": false,
+    "branch": "refs/heads/main",
+    "before": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+    "after": "0d1a26e67d8f5eaf1f6ba5c57fc3c7d91ac0fd1c",
+    "reasons": [
+      {
+        "code": "force_push",
+        "message": "Cannot force-push to this branch"
+      }
+    ],
+    "operation_type": "modify"
+  }
+]

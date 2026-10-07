@@ -1,0 +1,35 @@
+id: gws_first_login_country
+title: Somebody signs in to Google from a country they have never signed in from
+hypothesis: >
+  A stolen Google password or session shows up as a sign-in from somewhere the
+  account has never been, while everything else looks like the owner. Most
+  companies on Google Workspace have no other identity provider, so this is
+  where the geography shows.
+attack: [T1078.004]
+logsource:
+  product: google
+  service: reports
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.service.name: login
+    api.operation: login_success
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, src_endpoint.location.country]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.ip, src_endpoint.asn, src_endpoint.location.country]
+triage: >
+  Is this person travelling, and does anybody know? A trip explains a new
+  country; a sign-in from it while the user is also signing in from home does
+  not.
+follow_up:
+  - Did the account also sign in from its usual country the same day?
+  - Did it change two-step settings, forwarding or app grants after this sign-in?
+sources:
+  - name: Elastic
+    title: Google Workspace User Login with Unusual ASN
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/initial_access_google_workspace_login_from_atypical_asn
+    license: Elastic-2.0
+    relation: inspired

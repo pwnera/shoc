@@ -1,0 +1,34 @@
+[
+  {
+    "Id": "m365-Set domain authentication",
+    "Operation": "Set domain authentication.",
+    "OrganizationId": "org-1",
+    "RecordType": 8,
+    "ResultStatus": "Success",
+    "UserKey": "u-2",
+    "UserType": 0,
+    "UserId": "admin@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "203.0.113.61",
+    "ObjectId": "example.com",
+    "ModifiedProperties": [
+      { "Name": "LiveType", "NewValue": "Federated", "OldValue": "Managed" }
+    ]
+  },
+  {
+    "Id": "m365-Add-FederatedDomain",
+    "Operation": "Add-FederatedDomain",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "203.0.113.61:50100",
+    "ObjectId": "example.org",
+    "Parameters": [
+      { "Name": "DomainName", "Value": "example.org" }
+    ]
+  }
+]

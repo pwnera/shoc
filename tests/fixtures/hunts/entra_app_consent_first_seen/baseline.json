@@ -1,0 +1,22 @@
+[
+  {
+    "id": "hunt-entra-known-app",
+    "activityDisplayName": "Consent to application",
+    "category": "ApplicationManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Assign",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "bob@example.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.250"
+      }
+    },
+    "targetResources": [
+      { "type": "ServicePrincipal", "displayName": "PDF Viewer Pro", "id": "sp-new-1" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

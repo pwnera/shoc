@@ -1,0 +1,29 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-SUSPEND_USER",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "USER_SETTINGS",
+        "name": "SUSPEND_USER",
+        "parameters": [
+          {
+            "name": "USER_EMAIL",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  }
+]

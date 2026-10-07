@@ -1,0 +1,51 @@
+[
+  {
+    "_document_id": "gh-repo.add_member",
+    "action": "repo.add_member",
+    "actor": "mallory",
+    "actor_id": 42,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "Mozilla/5.0"
+  },
+  {
+    "_document_id": "gh-oauth_application.generate_client_secret",
+    "action": "oauth_application.generate_client_secret",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "org": "acme",
+    "oauth_application": "Release Notes Bot",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-repo.remove_actions_secret",
+    "action": "repo.remove_actions_secret",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "org": "acme",
+    "repo": "acme/payments",
+    "public_repo": false,
+    "key": "OLD_DEPLOY_TOKEN",
+    "operation_type": "remove"
+  },
+  {
+    "_document_id": "gh-org.secret_protection_metered_usage_lock",
+    "action": "org.secret_protection_metered_usage_lock",
+    "actor": "dana",
+    "actor_id": 7,
+    "org": "acme",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-repository_secret_scanning.enable",
+    "action": "repository_secret_scanning.enable",
+    "actor": "dana",
+    "actor_id": 7,
+    "org": "acme",
+    "repo": "acme/payments",
+    "operation_type": "modify"
+  }
+]

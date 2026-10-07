@@ -1,0 +1,73 @@
+id: aws_admin_policy_attached
+title: Administrator or IAM-wide permissions granted to a principal
+description: >
+  AdministratorAccess or IAMFullAccess was attached, a policy allowing every
+  action or every IAM action was written inline or as a new version, an older
+  policy version was made the default again, a permissions boundary was
+  removed, or an IAM policy call was padded until CloudTrail dropped its
+  parameters. Each one hands a principal the whole account.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1098.003, T1548.005, T1562.008]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_managed:
+    api.operation: [AttachUserPolicy, AttachRolePolicy, AttachGroupPolicy]
+    raw.requestParameters.policyArn|endswith: [/AdministratorAccess, /IAMFullAccess]
+  selection_inline:
+    api.operation: [PutUserPolicy, PutRolePolicy, PutGroupPolicy, CreatePolicyVersion]
+    raw.requestParameters.policyDocument|re: '"Action"\s*:\s*(\[[^\]]*)?"(\*|iam:\*)"'
+  selection_rollback:
+    api.operation: SetDefaultPolicyVersion
+  selection_boundary_removed:
+    api.operation: [DeleteUserPermissionsBoundary, DeleteRolePermissionsBoundary]
+  selection_hidden:
+    api.service.name: iam.amazonaws.com
+    raw.requestParameters.omitted: true
+  success:
+    status: Success
+  condition: success and selection_*
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, raw.requestParameters.policyArn, raw.requestParameters.userName, raw.requestParameters.roleName]
+sources:
+  - name: Elastic
+    title: AWS IAM AdministratorAccess Policy Attached to User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_administratoraccess_policy_attached_to_user
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS IAM AdministratorAccess Policy Attached to Role
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_administratoraccess_policy_attached_to_role
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS IAM AdministratorAccess Policy Attached to Group
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_administratoraccess_policy_attached_to_group
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS IAM Inline Policy Added to a Group
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_inline_policy_added_to_group
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS IAM Customer Managed Policy Version Created or Default Version Set
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_customer_managed_policy_version_created_or_set_default
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS IAM Permissions Boundary Modified or Removed
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_permissions_boundary_modified
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS CloudTrail Log Evasion
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_cloudtrail_logging_evasion
+    license: Elastic-2.0
+    relation: adapted

@@ -1,0 +1,87 @@
+[
+  {
+    "id": "activity_02Key",
+    "organization_id": "org_02",
+    "type": "admin_api_key_created",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "admin_api_key_id": "apikey_02"
+  },
+  {
+    "id": "activity_02Role",
+    "organization_id": "org_02",
+    "type": "claude_user_role_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "user_email": "backup@example.net",
+    "user_id": "user_02",
+    "previous_role": "admin",
+    "current_role": "user"
+  },
+  {
+    "id": "activity_03Key",
+    "organization_id": "org_03",
+    "type": "admin_api_key_created",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "admin_api_key_id": "apikey_03"
+  },
+  {
+    "id": "activity_04Role",
+    "organization_id": "org_04",
+    "type": "claude_user_role_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "user_email": "backup@example.net",
+    "user_id": "user_04",
+    "previous_role": "user",
+    "current_role": "admin"
+  },
+  {
+    "id": "activity_05Invite",
+    "organization_id": "org_05",
+    "type": "org_user_invite_sent",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "invited_email": "new@example.com",
+    "invited_role": "admin"
+  },
+  {
+    "id": "activity_05Key",
+    "organization_id": "org_05",
+    "type": "admin_api_key_created",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "admin_api_key_id": "apikey_05"
+  }
+]

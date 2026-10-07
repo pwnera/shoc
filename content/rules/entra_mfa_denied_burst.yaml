@@ -1,0 +1,42 @@
+id: entra_mfa_denied_burst
+title: Repeated MFA failures for one Entra user
+description: >
+  One user failed the MFA step five times in ten minutes after entering the
+  right password. Someone has the password and is either pushing prompts until
+  the user gives in or guessing one-time codes.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.65
+attack: [T1621, T1110.001]
+logsource:
+  product: entra
+  service: sign_ins
+detection:
+  selection:
+    status_code: "500121"
+  condition: selection
+  timeframe: 10m
+  group_by: [actor.user.name]
+  count: ">= 5"
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, message]
+sources:
+  - name: Sigma
+    title: Multifactor Authentication Denied
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_mfa_denies.yml
+    author: AlertIQ
+    license: DRL-1.1
+    relation: inspired
+  - name: Sigma
+    title: Multifactor Authentication Interrupted
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_mfa_interrupted.yml
+    author: AlertIQ
+    license: DRL-1.1
+    relation: inspired
+  - name: Elastic
+    title: Entra ID MFA TOTP Brute Force Attempted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/credential_access_entra_id_totp_brute_force_attempts
+    license: Elastic-2.0
+    relation: inspired

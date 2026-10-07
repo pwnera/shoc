@@ -1,0 +1,30 @@
+id: m365_file_download_by_script
+title: SharePoint or OneDrive files read by a script or sync tool
+description: >
+  Files were downloaded or opened from SharePoint or OneDrive by PowerShell,
+  the PnP libraries or rclone rather than a browser or the OneDrive client.
+  That is how a stolen token is used to copy a site, and rclone is how
+  ransomware crews move the copy out.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: medium
+confidence: 0.5
+attack: [T1530, T1059.001]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation: [FileDownloaded, FileAccessed]
+    http_request.user_agent|contains: [PowerShell, PnPPS, PnPCoreSDK, SharePointPnP, rclone]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, http_request.user_agent, resource.uid]
+sources:
+  - name: Elastic
+    title: M365 SharePoint/OneDrive File Access via PowerShell
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/collection_sharepoint_file_download_via_powershell
+    license: Elastic-2.0
+    relation: inspired

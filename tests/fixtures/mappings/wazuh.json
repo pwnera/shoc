@@ -1,0 +1,67 @@
+[
+  {
+    "id": "wz-1",
+    "timestamp": "2026-09-20T10:00:00.000+0000",
+    "rule": {
+      "id": "5710",
+      "level": 11,
+      "description": "Attempt to login using a non-existent user",
+      "groups": [
+        "syslog",
+        "sshd",
+        "authentication_failed"
+      ]
+    },
+    "agent": {
+      "id": "001",
+      "name": "web-01",
+      "ip": "10.1.2.5"
+    },
+    "decoder": {
+      "name": "sshd"
+    },
+    "data": {
+      "srcip": "203.0.113.77",
+      "srcuser": "admin"
+    }
+  },
+  {
+    "id": "wz-2",
+    "timestamp": "2026-09-20T10:05:00.000+0000",
+    "rule": {
+      "id": "5402",
+      "level": 3,
+      "description": "Successful sudo to ROOT executed.",
+      "groups": ["syslog", "sudo"]
+    },
+    "agent": {"id": "002", "name": "db-01", "ip": "10.1.2.6"},
+    "decoder": {"name": "sudo"},
+    "data": {"srcuser": "deploy", "dstuser": "root", "command": "/usr/bin/systemctl restart postgresql"}
+  },
+  {
+    "id": "wz-3",
+    "timestamp": "2026-09-20T10:06:00.000+0000",
+    "rule": {
+      "id": "550",
+      "level": 7,
+      "description": "Integrity checksum changed.",
+      "groups": ["ossec", "syscheck", "syscheck_entry_modified"]
+    },
+    "agent": {"id": "002", "name": "db-01", "ip": "10.1.2.6"},
+    "decoder": {"name": "syscheck_integrity_changed"},
+    "syscheck": {"path": "/etc/passwd", "event": "modified"}
+  },
+  {
+    "id": "wz-4",
+    "timestamp": "2026-09-20T10:07:00.000+0000",
+    "rule": {
+      "id": "100010",
+      "level": 13,
+      "description": "Ransomware note written to disk",
+      "groups": ["ransomware", "syscheck"]
+    },
+    "agent": {"id": "003", "name": "files-01", "ip": "10.1.2.7"},
+    "decoder": {"name": "syscheck_new_entry"},
+    "syscheck": {"path": "/srv/share/README_RESTORE.txt", "event": "added"}
+  }
+]

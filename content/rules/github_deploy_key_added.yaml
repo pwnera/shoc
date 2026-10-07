@@ -1,0 +1,35 @@
+id: github_deploy_key_added
+title: Deploy key added to a repository
+description: >
+  An SSH key was given access to one repository. A deploy key with write access
+  pushes without a user, survives offboarding and is not covered by SSO;
+  read_only in the record (in `key` from a webhook) says which kind it is.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: medium
+confidence: 0.5
+attack: [T1098.004]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  # The webhook's deploy_key.created is renamed to this; in the organisation's
+  # audit log public_key.create is a deploy key (a person's own SSH keys are in
+  # their user log).
+  selection:
+    api.operation: public_key.create
+  condition: selection
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, resource.uid, raw.read_only, raw.title, raw.key.read_only, raw.key.title]
+sources:
+  - name: Elastic
+    title: New GitHub Personal Access Token (PAT) Added
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/persistence_new_pat_created
+    license: Elastic-2.0
+    relation: inspired
+  - name: GitHub
+    title: Audit log events for your organization
+    url: https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization
+    relation: inspired

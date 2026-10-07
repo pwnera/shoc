@@ -1,0 +1,22 @@
+[
+  {
+    "Id": "m365-UserLoggedIn-tycoon",
+    "Operation": "UserLoggedIn",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Success",
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "203.0.113.120",
+    "ObjectId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "ExtendedProperties": [
+      { "Name": "UserAgent", "Value": "node" },
+      { "Name": "RequestType", "Value": "Login:login" },
+      { "Name": "ResultStatusDetail", "Value": "Success" }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  }
+]

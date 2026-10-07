@@ -1,0 +1,37 @@
+id: aws_role_first_assumed
+title: A principal assumes a role it has never assumed
+hypothesis: >
+  After discovery, a stolen identity tries the roles it found. A user or role
+  assuming a role for the first time is how lateral movement inside AWS looks.
+attack: [T1550.001, T1078.004, T1548.005]
+logsource:
+  product: aws
+  service: cloudtrail
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: [AssumeRole, AssumeRoot]
+    status: Success
+  filter_aws:
+    actor.user.type: AWSService
+  condition: selection and not filter_aws
+baseline:
+  first_seen: [actor.user.name, resource.uid]
+  lookback: 30d
+pivot: [actor.user.name, resource.uid, src_endpoint.ip]
+triage: >
+  Was the role created or its trust changed recently, which would explain a
+  first use? A role assumed for the first time right after a discovery burst
+  from the same key is not a new job.
+sources:
+  - name: Elastic
+    title: AWS STS Role Assumption by User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_role_assumption_by_user
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS STS Role Chaining
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_sts_role_chaining
+    license: Elastic-2.0
+    relation: adapted

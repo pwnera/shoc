@@ -1,0 +1,40 @@
+[
+  {
+    "insertId": "gcp-bucket-public",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gcs_bucket",
+      "labels": {
+        "project_id": "example-prod",
+        "bucket_name": "example-prod-backups",
+        "location": "eu"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "storage.googleapis.com",
+      "methodName": "storage.setIamPermissions",
+      "resourceName": "projects/_/buckets/example-prod-backups",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.81",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "serviceData": {
+        "@type": "type.googleapis.com/google.iam.v1.logging.AuditData",
+        "policyDelta": {
+          "bindingDeltas": [
+            {
+              "action": "ADD",
+              "role": "roles/storage.objectViewer",
+              "member": "allUsers"
+            }
+          ]
+        }
+      }
+    }
+  }
+]

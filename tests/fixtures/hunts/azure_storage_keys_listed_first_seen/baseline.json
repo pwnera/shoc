@@ -1,0 +1,20 @@
+[
+  {
+    "resourceId": "/SUBSCRIPTIONS/00000000-1111-2222-3333-444444444444/RESOURCEGROUPS/RG-PROD/PROVIDERS/MICROSOFT.STORAGE/STORAGEACCOUNTS/STPROD01",
+    "operationName": "MICROSOFT.STORAGE/STORAGEACCOUNTS/LISTKEYS/ACTION",
+    "category": "Administrative",
+    "resultType": "Success",
+    "resultSignature": "Succeeded.OK",
+    "callerIpAddress": "198.51.100.240",
+    "correlationId": "hunt-az-listkeys-known",
+    "identity": {
+      "authorization": {
+        "action": "Microsoft.Storage/storageAccounts/listKeys/action",
+        "evidence": { "role": "Contributor", "principalType": "User" }
+      },
+      "claims": { "upn": "dana@example.com", "ipaddr": "198.51.100.240" }
+    },
+    "level": "Information",
+    "_repeat": 2
+  }
+]

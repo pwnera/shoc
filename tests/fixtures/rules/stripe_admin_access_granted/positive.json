@@ -1,0 +1,50 @@
+[
+  {
+    "id": "accact_roles1",
+    "object": "v2.iam.activity_log",
+    "type": "user_roles_updated",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "mallory@example.com"
+      }
+    },
+    "details": {
+      "type": "user_roles",
+      "user_roles": {
+        "user_email": "backup@example.net",
+        "old_roles": [
+          "developer"
+        ],
+        "new_roles": [
+          "admin"
+        ],
+        "source": "dashboard"
+      }
+    }
+  },
+  {
+    "id": "accact_invite1",
+    "object": "v2.iam.activity_log",
+    "type": "user_invite_created",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "mallory@example.com"
+      }
+    },
+    "details": {
+      "type": "user_invite",
+      "user_invite": {
+        "invited_user_email": "backup2@example.net",
+        "roles": [
+          "super_admin"
+        ]
+      }
+    }
+  }
+]

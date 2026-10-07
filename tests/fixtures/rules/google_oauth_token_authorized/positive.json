@@ -1,0 +1,119 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-authorize",
+      "applicationName": "token",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "token",
+    "events": [
+      {
+        "type": "auth",
+        "name": "authorize",
+        "parameters": [
+          {
+            "name": "client_id",
+            "value": "100000000000-mailorganizer.apps.googleusercontent.com"
+          },
+          {
+            "name": "app_name",
+            "value": "Mail Organizer"
+          },
+          {
+            "name": "client_type",
+            "value": "WEB"
+          },
+          {
+            "name": "scope_data",
+            "multiMessageValue": [
+              {
+                "parameter": [
+                  {
+                    "name": "scope_name",
+                    "value": "openid"
+                  },
+                  {
+                    "name": "product_bucket",
+                    "multiValue": [
+                      "IDENTITY"
+                    ]
+                  }
+                ]
+              },
+              {
+                "parameter": [
+                  {
+                    "name": "scope_name",
+                    "value": "https://mail.google.com/"
+                  },
+                  {
+                    "name": "product_bucket",
+                    "multiValue": [
+                      "GMAIL"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "scope",
+            "multiValue": [
+              "openid",
+              "https://mail.google.com/"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-authorize-send",
+      "applicationName": "token",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "token",
+    "events": [
+      {
+        "type": "auth",
+        "name": "authorize",
+        "parameters": [
+          {
+            "name": "client_id",
+            "value": "100000000000-quickreply.apps.googleusercontent.com"
+          },
+          {
+            "name": "app_name",
+            "value": "Quick Reply"
+          },
+          {
+            "name": "client_type",
+            "value": "WEB"
+          },
+          {
+            "name": "scope",
+            "multiValue": [
+              "https://www.googleapis.com/auth/userinfo.email",
+              "https://www.googleapis.com/auth/gmail.send"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

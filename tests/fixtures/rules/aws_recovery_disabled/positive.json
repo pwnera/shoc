@@ -1,0 +1,114 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-PutBucketVersioning",
+    "eventName": "PutBucketVersioning",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-data"
+      }
+    ],
+    "requestParameters": {
+      "bucketName": "acme-data",
+      "versioning": [
+        ""
+      ],
+      "VersioningConfiguration": {
+        "Status": "Suspended",
+        "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/"
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-PutBucketVersioning-mfa",
+    "eventName": "PutBucketVersioning",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "Root",
+      "principalId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:root",
+      "accountId": "123456789012",
+      "accessKeyId": "AKIAEXAMPLEROOTKEY01"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-data"
+      }
+    ],
+    "requestParameters": {
+      "bucketName": "acme-data",
+      "versioning": [
+        ""
+      ],
+      "VersioningConfiguration": {
+        "Status": "Enabled",
+        "MfaDelete": "Disabled",
+        "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/"
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-DeleteBackupVault",
+    "eventName": "DeleteBackupVault",
+    "eventSource": "backup.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "backupVaultName": "prod-vault"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ModifyDBInstance",
+    "eventName": "ModifyDBInstance",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "dBInstanceIdentifier": "prod-db",
+      "backupRetentionPeriod": 0,
+      "applyImmediately": true
+    }
+  }
+]

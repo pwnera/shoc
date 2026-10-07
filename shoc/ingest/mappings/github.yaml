@@ -1,0 +1,195 @@
+# GitHub organisation audit log -> OCSF API Activity (6003); workflow runs and
+# jobs -> Scheduled Job Activity (1006); secret-scanning and Dependabot alerts
+# -> findings (2004, 2002). ING-1, ING-2, ING-3.
+# Webhook deliveries arrive already shaped as audit-log records (connectors/github.py).
+source: github
+ocsf_version: "1.3.0"
+# An organisation with SAML single sign-on names the IdP login of each member
+# who acted (RFC 0027).
+login: unmapped.external_identity_nameid
+
+constants:
+  category_uid: 6
+  class_uid: 6003
+  class_name: API Activity
+  type_uid: 600399
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  status: Success
+  cloud_provider: GitHub
+  metadata_product: GitHub Audit Log
+  api_service_name: github
+
+fields:
+  event_uid: { path: _document_id }
+  time: { paths: ["@timestamp", created_at], transform: iso8601 }
+  api_operation: { path: action }
+  actor_user_name: { path: actor }
+  actor_user_uid: { path: actor_id, transform: str }
+  # A personal access token or OAuth token, hashed by GitHub.
+  actor_session_uid: { path: hashed_token }
+  src_endpoint_ip: { path: actor_ip }
+  src_endpoint_location_country: { path: actor_location.country_code }
+  http_user_agent: { path: user_agent }
+  # What the action touched: the repository, else the member or blocked user.
+  # A webhook payload holds objects where the audit log holds names.
+  resource_uid:
+    paths: [repo, repository.full_name, repository, user.login, user, blocked_user.login, blocked_user]
+  cloud_account_uid: { paths: [org, business] }
+  message: { path: action }
+
+derive:
+  - when: { repository: { exists: true } }
+    set: { resource_type: repository }
+  - when: { repo: { exists: true } }
+    set: { resource_type: repository }
+  - when: { repo: { exists: false }, repository: { exists: false }, user: { exists: true } }
+    set: { resource_type: user }
+  - when: { repo: { exists: false }, repository: { exists: false }, blocked_user: { exists: true } }
+    set: { resource_type: user }
+  # Webhook deliveries carry no operation_type; read the verb off the action.
+  - when: { action: { contains: ".create" } }
+    set: { activity_id: 1, activity_name: Create, type_uid: 600301 }
+  - when: { action: { contains: ".add" } }
+    set: { activity_id: 1, activity_name: Create, type_uid: 600301 }
+  - when: { action: { contains: ".update" } }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303 }
+  - when: { action: { contains: ".destroy" } }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 600304, severity_id: 3 }
+  - when: { action: { contains: ".remove" } }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 600304 }
+  - when: { action: { contains: ".edit" } }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303 }
+  - when: { action: { contains: ".delete" } }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 600304 }
+  # The audit log states the verb itself.
+  - when: { operation_type: create }
+    set: { activity_id: 1, activity_name: Create, type_uid: 600301 }
+  - when: { operation_type: access }
+    set: { activity_id: 2, activity_name: Read, type_uid: 600302 }
+  - when: { operation_type: { in: [modify, transfer] } }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303 }
+  - when: { operation_type: remove }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 600304 }
+  - when: { operation_type: authentication }
+    set: { activity_id: 99, activity_name: Other, type_uid: 600399 }
+  - when: { action: { contains: "repo.access" } }
+    set: { severity_id: 3 }
+  - when: { action: { contains: "oauth_application" } }
+    set: { severity_id: 3 }
+  - when: { action: org.update_member }
+    set: { severity_id: 3 }
+  - when: { action: { contains: "protected_branch" } }
+    set: { severity_id: 3 }
+  # A secret-scanning alert is GitHub's own detection of a leaked credential.
+  - when: { action: { contains: "secret_scanning_alert." } }
+    set: { category_uid: 2, class_uid: 2004, class_name: "Detection Finding", activity_id: 2, activity_name: Update, type_uid: 200402, severity_id: 3 }
+  - when: { action: secret_scanning_alert.create }
+    set: { activity_id: 1, activity_name: Create, type_uid: 200401 }
+  - when: { action: secret_scanning_alert.public_leak }
+    set: { activity_id: 1, activity_name: Create, type_uid: 200401, severity_id: 4 }
+  - when: { action: { contains: "secret_scanning_alert.resolve" } }
+    set: { activity_id: 3, activity_name: Close, type_uid: 200403, severity_id: 1 }
+
+
+  # -- webhook events with no audit-log twin ---------------------------------
+  # A push names the ref it moved and links the compare view. Creating or
+  # deleting a branch arrives as a push too, with `created` or `deleted` set.
+  - when: { webhook.event: push }
+    set:
+      activity_id: 3
+      activity_name: Update
+      type_uid: 600303
+      message: { path: ref }
+      http_request_url: { path: compare }
+  - when: { webhook.event: push, created: true }
+    set: { activity_id: 1, activity_name: Create, type_uid: 600301 }
+  - when: { webhook.event: push, deleted: true }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 600304, severity_id: 2 }
+  # A force push rewrites the branch's history.
+  - when: { webhook.event: push, forced: true }
+    set: { severity_id: 3 }
+  - when: { webhook.event: { in: [create, delete] } }
+    set: { message: { path: ref } }
+  - when: { webhook.event: create }
+    set: { activity_id: 1, activity_name: Create, type_uid: 600301 }
+  - when: { webhook.event: delete }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 600304, severity_id: 2 }
+
+  # A workflow run or job is a job the repository schedules: Scheduled Job
+  # Activity, created when queued, started, ended with its conclusion.
+  - when: { webhook.event: { in: [workflow_run, workflow_job] } }
+    set:
+      category_uid: 1
+      class_uid: 1006
+      class_name: Scheduled Job Activity
+      activity_id: 99
+      activity_name: Other
+      type_uid: 100699
+      status: Unknown
+  - when: { webhook.event: workflow_run }
+    set:
+      message: { paths: [workflow_run.name, workflow.name] }
+      file_path: { paths: [workflow_run.path, workflow.path] }
+      http_request_url: { path: workflow_run.html_url }
+      status_code: { paths: [workflow_run.conclusion, workflow_run.status] }
+  - when: { webhook.event: workflow_job }
+    set:
+      message: { paths: [workflow_job.workflow_name, workflow_job.name] }
+      http_request_url: { path: workflow_job.html_url }
+      status_code: { paths: [workflow_job.conclusion, workflow_job.status] }
+  - when: { webhook.event: { in: [workflow_run, workflow_job] }, webhook.action: { in: [requested, queued] } }
+    set: { activity_id: 1, activity_name: Create, type_uid: 100601 }
+  - when: { webhook.event: { in: [workflow_run, workflow_job] }, webhook.action: in_progress }
+    set: { activity_id: 6, activity_name: Start, type_uid: 100606 }
+  - when: { webhook.event: { in: [workflow_run, workflow_job] }, webhook.action: completed }
+    set: { activity_id: 7, activity_name: End, type_uid: 100607 }
+  - when: { webhook.event: { in: [workflow_run, workflow_job] }, status_code: success }
+    set: { status: Success }
+  - when: { webhook.event: { in: [workflow_run, workflow_job] }, status_code: { in: [failure, timed_out, startup_failure, action_required] } }
+    set: { status: Failure }
+  - when: { webhook.event: { in: [workflow_run, workflow_job] }, status_code: { in: [cancelled, skipped, neutral, stale] } }
+    set: { status: Other }
+  # A self-hosted runner is a machine the company owns; GitHub's hosted
+  # runners are throwaway VMs whose names would only clutter the host entities.
+  - when: { webhook.event: workflow_job, workflow_job.labels: { contains: self-hosted } }
+    set: { device_hostname: { path: workflow_job.runner_name } }
+
+  # A Dependabot alert is GitHub's finding of a vulnerable dependency.
+  - when: { webhook.event: dependabot_alert }
+    set:
+      category_uid: 2
+      class_uid: 2002
+      class_name: Vulnerability Finding
+      activity_id: 2
+      activity_name: Update
+      type_uid: 200202
+      severity_id: 2
+      message: { paths: [alert.security_advisory.summary, alert.security_advisory.ghsa_id] }
+      file_path: { path: alert.dependency.manifest_path }
+      http_request_url: { path: alert.html_url }
+      status_code: { path: alert.state }
+  - when: { webhook.event: dependabot_alert, webhook.action: created }
+    set: { activity_id: 1, activity_name: Create, type_uid: 200201 }
+  - when: { webhook.event: dependabot_alert, webhook.action: { in: [fixed, dismissed, auto_dismissed] } }
+    set: { activity_id: 3, activity_name: Close, type_uid: 200203 }
+  - when: { webhook.event: dependabot_alert, alert.security_advisory.severity: medium }
+    set: { severity_id: 3 }
+  - when: { webhook.event: dependabot_alert, alert.security_advisory.severity: high }
+    set: { severity_id: 4 }
+  - when: { webhook.event: dependabot_alert, alert.security_advisory.severity: critical }
+    set: { severity_id: 5 }
+  - when: { webhook.event: dependabot_alert, webhook.action: { in: [fixed, dismissed, auto_dismissed] } }
+    set: { severity_id: 1 }
+
+  - when: { action: { contains: "secret_scanning_alert." } }
+    set:
+      message: { paths: [alert.secret_type_display_name, alert.secret_type, action] }
+      http_request_url: { path: alert.html_url }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: resource_uid, name: resource.uid, type: Resource }
+  - { column: http_request_url, name: http_request.url.url_string, type: "URL String" }

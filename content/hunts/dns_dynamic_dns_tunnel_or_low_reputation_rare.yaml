@@ -1,0 +1,57 @@
+id: dns_dynamic_dns_tunnel_or_low_reputation_rare
+title: A dynamic-DNS, tunnel or cheap-TLD name only one device looks up
+hypothesis: >
+  Remote-access trojans (AsyncRAT, Remcos, njRAT) call home to dynamic DNS and
+  tunnel names, and phishing kits live on cheap TLDs. Shared ad and CDN names
+  under the same suffixes are looked up by many devices; a name only one
+  device asks for is the one to read.
+attack: [T1568, T1572, T1071.004]
+sources:
+  - name: Sigma
+    title: "Low Reputation Effective Top-Level Domain (eTLD)"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/network/net_dns_low_reputation_etld.yml
+    author: "Norbert Jaśniewicz (AlphaSOC)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Cloudflared Tunnels Related DNS Requests"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_cloudflared_communication.yml
+    author: "Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "DNS Query To Devtunnels Domain"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_devtunnels_communication.yml
+    author: "citron_ninja"
+    license: DRL-1.1
+    relation: adapted
+logsource:
+  product: dns
+window: 1d
+cadence_days: 1
+detection:
+  # A Gateway row with no WARP device counts no device and would look rare.
+  selection:
+    device.uid|exists: true
+    query.hostname|endswith: [.duckdns.org, .ddns.net, .no-ip.org, .no-ip.biz, .hopto.org,
+                              .zapto.org, .sytes.net, .ydns.eu, .kozow.com, .portmap.io,
+                              .portmap.host, .gl.at.ply.gg, .trycloudflare.com, .ngrok.io,
+                              .ngrok-free.app, .ngrok.app, .loca.lt, .localto.net, .serveo.net,
+                              .pinggy.link, .devtunnels.ms, .top, .icu, .sbs, .lat, .click, .live,
+                              .site, .cloud, .pro]
+  condition: selection
+baseline:
+  rare:
+    by: [query.hostname]
+    among: device.uid
+    seen_by_fewer_than: 2
+  lookback: 30d
+pivot: [query.hostname, device.hostname, device.uid, actor.user.name]
+triage: >
+  Is this a developer's own tunnel or a service the person signed up for? A
+  name with a random label, asked for at regular intervals by one machine, is
+  a beacon.
+follow_up:
+  - Which process asked for the name, and how often?
+  - What address did it resolve to, and did the machine connect to it?
+sensitive: false

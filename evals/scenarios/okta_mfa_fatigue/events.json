@@ -1,0 +1,424 @@
+[
+  {
+    "uuid": "okta-user.session.start-198.51.100.5",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "FR",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "_repeat": 3
+  },
+  {
+    "uuid": "okta-user.session.start-203.0.113.200",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "203.0.113.200",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "RU",
+        "city": "Moscow"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "_repeat": 4
+  },
+  {
+    "uuid": "okta-user.session.start-203.0.113.200-bob",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00ubob",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob"
+    },
+    "client": {
+      "ipAddress": "203.0.113.200",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "RU",
+        "city": "Moscow"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00ubob",
+        "type": "User",
+        "alternateId": "bob@example.com"
+      }
+    ],
+    "_repeat": 2
+  },
+  {
+    "uuid": "okta-user.session.start-203.0.113.200-carol",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00ucarol",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "Carol"
+    },
+    "client": {
+      "ipAddress": "203.0.113.200",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "RU",
+        "city": "Moscow"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00ucarol",
+        "type": "User",
+        "alternateId": "carol@example.com"
+      }
+    ],
+    "_repeat": 2
+  },
+  {
+    "uuid": "okta-user.session.start-203.0.113.200-dave",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00udave",
+      "type": "User",
+      "alternateId": "dave@example.com",
+      "displayName": "Dave"
+    },
+    "client": {
+      "ipAddress": "203.0.113.200",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "RU",
+        "city": "Moscow"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00udave",
+        "type": "User",
+        "alternateId": "dave@example.com"
+      }
+    ],
+    "_repeat": 2
+  },
+  {
+    "uuid": "okta-user.session.start-203.0.113.200-erin",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00uerin",
+      "type": "User",
+      "alternateId": "erin@example.com",
+      "displayName": "Erin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.200",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "RU",
+        "city": "Moscow"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00uerin",
+        "type": "User",
+        "alternateId": "erin@example.com"
+      }
+    ],
+    "_repeat": 2
+  },
+  {
+    "uuid": "okta-user.authentication.auth_via_mfa-203.0.113.200",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "203.0.113.200",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "RU",
+        "city": "Moscow"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "debugContext": {
+      "debugData": {
+        "factor": "OKTA_VERIFY_PUSH"
+      }
+    },
+    "_repeat": 7
+  },
+  {
+    "uuid": "okta-user.session.start-203.0.113.200",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "203.0.113.200",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "RU",
+        "city": "Moscow"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-evil"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-user.mfa.factor.reset_all-203.0.113.200",
+    "eventType": "user.mfa.factor.reset_all",
+    "displayMessage": "user mfa factor reset_all",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "203.0.113.200",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "RU",
+        "city": "Moscow"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-evil"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-system.api_token.create-203.0.113.200",
+    "eventType": "system.api_token.create",
+    "displayMessage": "system api_token create",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "203.0.113.200",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "RU",
+        "city": "Moscow"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": ""
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-evil"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ]
+  }
+]

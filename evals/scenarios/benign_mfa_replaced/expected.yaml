@@ -1,0 +1,23 @@
+# A lookalike: a lost phone, and the admin who replaced the MFA device (AGT-6).
+id: benign_mfa_replaced
+title: A lost phone's MFA device is replaced
+description: >
+  bob lost his phone. An admin removes his old virtual MFA device from the
+  office and registers a new one for him from the CLI. The MFA-change rule
+  fires, as it should, and the right answer is benign_expected because the
+  replacement was asked for and written down.
+source: aws_cloudtrail
+entity: alice
+memory:
+  - >-
+    bob lost his phone on Monday; alice is replacing his AWS virtual MFA
+    device from the office address 198.51.100.10 (deactivate the old one,
+    delete it, create and enable a new one called bob-2).
+expected_rules:
+  - aws_mfa_device_changed
+must_not_fire:
+  - aws_access_key_created
+  - aws_console_login_without_mfa
+expected_verdict: benign_expected
+forbidden_verdicts:
+  - malicious

@@ -1,0 +1,18 @@
+[
+  {
+    "_document_id": "github-webhook-deploy-key-deleted",
+    "action": "public_key.delete",
+    "actor": "mallory",
+    "org": "acme",
+    "webhook": {
+      "event": "deploy_key",
+      "action": "deleted"
+    },
+    "repo": "acme/payments",
+    "key": {
+      "id": 6,
+      "title": "old-ci",
+      "read_only": true
+    }
+  }
+]

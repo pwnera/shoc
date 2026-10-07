@@ -1,0 +1,35 @@
+[
+  {
+    "_document_id": "gh-pat.access_granted",
+    "action": "personal_access_token.access_granted",
+    "actor": "dana",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "user": "eve",
+    "user_programmatic_access_id": 3301,
+    "user_programmatic_access_name": "repo-sync",
+    "repository_selection": "all",
+    "operation_type": "create"
+  },
+  {
+    "_document_id": "github-webhook-pat-request-approved",
+    "action": "personal_access_token.access_granted",
+    "actor": "dana",
+    "actor_id": 4242,
+    "org": "acme",
+    "personal_access_token_request": {
+      "id": 77,
+      "token_id": 3302,
+      "token_name": "ci-mirror",
+      "repository_selection": "all",
+      "owner": {
+        "login": "eve"
+      }
+    },
+    "webhook": {
+      "event": "personal_access_token_request",
+      "action": "approved"
+    }
+  }
+]

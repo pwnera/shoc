@@ -1,0 +1,92 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-DisableDomainTransferLock",
+    "eventName": "DisableDomainTransferLock",
+    "eventSource": "route53domains.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "domainName": "example.com"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-RetrieveDomainAuthCode",
+    "eventName": "RetrieveDomainAuthCode",
+    "eventSource": "route53domains.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "domainName": "example.com"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-UpdateDomainNameservers",
+    "eventName": "UpdateDomainNameservers",
+    "eventSource": "route53domains.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "domainName": "example.com",
+      "nameservers": [
+        {
+          "name": "ns1.example.org"
+        }
+      ]
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-TransferDomainToAnotherAwsAccount",
+    "eventName": "TransferDomainToAnotherAwsAccount",
+    "eventSource": "route53domains.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "domainName": "example.com",
+      "accountId": "999988887777"
+    }
+  }
+]

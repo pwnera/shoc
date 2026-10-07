@@ -1,0 +1,179 @@
+[
+  {
+    "uuid": "okta-lock-0",
+    "eventType": "user.account.lock",
+    "displayMessage": "Max sign in attempts exceeded",
+    "legacyEventType": "core.user_auth.account_locked",
+    "severity": "DEBUG",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe",
+      "detailEntry": null
+    },
+    "client": {
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "zone": "null",
+      "device": "Computer",
+      "ipAddress": "203.0.113.77",
+      "geographicalContext": {
+        "city": "Frankfurt am Main",
+        "state": "Hesse",
+        "country": "Germany"
+      }
+    },
+    "authenticationContext": {
+      "authenticationStep": 0,
+      "externalSessionId": "unknown"
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "LOCKED_OUT"
+    },
+    "securityContext": {
+      "asNumber": 64496,
+      "asOrg": "example hosting",
+      "isp": "example hosting",
+      "domain": "example.net",
+      "isProxy": true
+    },
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/idp/idx/challenge/answer",
+        "threatSuspected": "false"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com",
+        "displayName": "Jane Doe",
+        "detailEntry": null
+      }
+    ]
+  },
+  {
+    "uuid": "okta-lock-1",
+    "eventType": "user.account.lock",
+    "displayMessage": "Max sign in attempts exceeded",
+    "legacyEventType": "core.user_auth.account_locked",
+    "severity": "DEBUG",
+    "actor": {
+      "id": "00u2efgh",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob Martin",
+      "detailEntry": null
+    },
+    "client": {
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "zone": "null",
+      "device": "Computer",
+      "ipAddress": "203.0.113.77",
+      "geographicalContext": {
+        "city": "Frankfurt am Main",
+        "state": "Hesse",
+        "country": "Germany"
+      }
+    },
+    "authenticationContext": {
+      "authenticationStep": 0,
+      "externalSessionId": "unknown"
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "LOCKED_OUT"
+    },
+    "securityContext": {
+      "asNumber": 64496,
+      "asOrg": "example hosting",
+      "isp": "example hosting",
+      "domain": "example.net",
+      "isProxy": true
+    },
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/idp/idx/challenge/answer",
+        "threatSuspected": "false"
+      }
+    },
+    "target": [
+      {
+        "id": "00u2efgh",
+        "type": "User",
+        "alternateId": "bob@example.com",
+        "displayName": "Bob Martin",
+        "detailEntry": null
+      }
+    ]
+  },
+  {
+    "uuid": "okta-lock-2",
+    "eventType": "user.account.lock",
+    "displayMessage": "Max sign in attempts exceeded",
+    "legacyEventType": "core.user_auth.account_locked",
+    "severity": "DEBUG",
+    "actor": {
+      "id": "00u3ijkl",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "Carol Diaz",
+      "detailEntry": null
+    },
+    "client": {
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "zone": "null",
+      "device": "Computer",
+      "ipAddress": "203.0.113.77",
+      "geographicalContext": {
+        "city": "Frankfurt am Main",
+        "state": "Hesse",
+        "country": "Germany"
+      }
+    },
+    "authenticationContext": {
+      "authenticationStep": 0,
+      "externalSessionId": "unknown"
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "LOCKED_OUT"
+    },
+    "securityContext": {
+      "asNumber": 64496,
+      "asOrg": "example hosting",
+      "isp": "example hosting",
+      "domain": "example.net",
+      "isProxy": true
+    },
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/idp/idx/challenge/answer",
+        "threatSuspected": "false"
+      }
+    },
+    "target": [
+      {
+        "id": "00u3ijkl",
+        "type": "User",
+        "alternateId": "carol@example.com",
+        "displayName": "Carol Diaz",
+        "detailEntry": null
+      }
+    ]
+  }
+]

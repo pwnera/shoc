@@ -1,0 +1,20 @@
+# Installing shoc, and a colleague's server on the same day (triage replay case B).
+# The operator creates the Tailscale OAuth client and the Cloudflare read token
+# shoc is then configured with; both are shoc's own setup. A colleague minting a
+# tagged key for a new server is not shoc and opens its own case, which is
+# ordinary: the tailnet name no longer joins it to the operator's.
+id: shoc_own_setup_tailnet_cloudflare
+title: shoc being installed, and a colleague's server
+source: tailscale
+entity: amine@example.com
+expected_rules: [tailscale_key_created, cloudflare_api_token_created]
+configured_hours_ago: -1
+own:
+  - {kind: credential, value: kSHOCCLIENT, source: tailscale}
+  - {kind: credential, value: cf-token-shoc, source: cloudflare}
+  - {kind: operator, value: operator@example.com}
+max_cases: 1
+min_cases: 1
+no_page: true
+forbidden_verdicts: [malicious]
+forbidden_targets: [kSHOCCLIENT, cf-token-shoc, operator@example.com]

@@ -1,0 +1,23 @@
+[
+  {
+    "eventDataId": "az-defender-alert-medium",
+    "category": { "value": "Security" },
+    "level": "Informational",
+    "operationName": { "value": "Microsoft.Security/locations/alerts/activate/action" },
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/providers/Microsoft.Security/locations/westeurope/alerts/2517_bbbb",
+    "status": { "value": "Active" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "description": "Anomalous login to a storage account",
+    "properties": { "Severity": "Medium" }
+  },
+  {
+    "eventDataId": "az-monitor-resolved",
+    "category": { "value": "Alert" },
+    "level": "Critical",
+    "operationName": { "value": "Microsoft.Insights/AlertRules/Resolved/Action" },
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/virtualMachines/vm-01",
+    "status": { "value": "Resolved" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "description": "CPU above 95% has been resolved"
+  }
+]

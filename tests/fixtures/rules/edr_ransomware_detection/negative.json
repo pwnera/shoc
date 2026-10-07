@@ -1,0 +1,83 @@
+[
+  {
+    "_source": "crowdstrike",
+    "detection_id": "cs-Execution-High",
+    "max_severity_displayname": "High",
+    "tactic": "Execution",
+    "description": "Suspicious script",
+    "name": "Execution",
+    "user_name": "jdoe",
+    "local_ip": "10.1.2.3",
+    "hostname": "laptop-17",
+    "device_id": "dev-1",
+    "status": "new"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-AlertInfo",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "AlertId": "da638002",
+      "Title": "Ransomware behavior detected in the file system",
+      "Category": "Ransomware",
+      "Severity": "High",
+      "ServiceSource": "Microsoft Defender for Endpoint",
+      "DetectionSource": "EDR"
+    }
+  },
+  {
+    "_source": "defender",
+    "id": "da-office-2",
+    "severity": "high",
+    "title": "Email reported by user as ransomware lure",
+    "category": "InitialAccess",
+    "serviceSource": "microsoftDefenderForOffice365",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "jdoe@example.com"
+        }
+      }
+    ]
+  },
+  {
+    "_source": "defender",
+    "id": "da638003",
+    "severity": "high",
+    "title": "Ransomware behavior detected in the file system",
+    "category": "Ransomware",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "status": "resolved",
+    "classification": "informationalExpectedActivity",
+    "determination": "securityTesting",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-21.example.org",
+        "mdeDeviceId": "2222222222222222222222222222222222222222"
+      }
+    ],
+    "mitreTechniques": [
+      "T1486"
+    ]
+  },
+  {
+    "_source": "sentinelone",
+    "id": "1373834705420286901",
+    "threatInfo": {
+      "threatId": "1373834705420286901",
+      "threatName": "backup-agent.exe",
+      "confidenceLevel": "suspicious",
+      "mitigationStatus": "mitigated",
+      "classification": "Ransomware",
+      "analystVerdict": "false_positive"
+    },
+    "agentRealtimeInfo": {
+      "agentComputerName": "host05.example.com",
+      "agentId": "1000000000000000001",
+      "agentUuid": "11112222333344445555666677778888"
+    }
+  }
+]

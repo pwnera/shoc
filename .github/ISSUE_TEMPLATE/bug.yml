@@ -1,0 +1,52 @@
+name: Bug report
+description: Something behaves differently from how it is documented.
+labels: ["kind/bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: "If this is a security issue, stop and follow [SECURITY.md](../blob/main/SECURITY.md) instead."
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: Exact commands or capability calls, smallest case you can manage.
+      placeholder: |
+        1. shoc migrate
+        2. shoc replay aws_cloudtrail ./events.json
+        3. shoc detect run
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: shoc version
+      description: Output of `shoc --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Event store backend
+      options: [Postgres, Databricks SQL, Snowflake, Amazon Redshift, Google BigQuery]
+    validations:
+      required: true
+  - type: textarea
+    id: health
+    attributes:
+      label: Pipeline health
+      description: "`shoc health status --json`, with anything sensitive removed."
+      render: json
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Before you submit
+      options:
+        - label: This contains no real log data, customer names, credentials or private IOCs.
+          required: true

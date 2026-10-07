@@ -1,0 +1,58 @@
+id: edr_ransomware_detection
+title: Ransomware detected on an endpoint
+description: >
+  The endpoint agent named ransomware, by name or by the technique it tagged
+  (T1486, data encrypted for impact). Treat this as an incident until somebody
+  proves otherwise, and look immediately at what that host could reach.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: critical
+confidence: 0.85
+attack: [T1486]
+sources:
+  - name: Elastic
+    title: "Ransomware - Detected - Elastic Defend"
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/endpoint/impact_elastic_ransomware_detected
+    license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft
+    title: "Microsoft Graph security enum values (serviceSource)"
+    url: https://learn.microsoft.com/en-us/graph/api/resources/enums-security?view=graph-rest-1.0
+    relation: inspired
+  - name: Microsoft
+    title: "Handling future members in evolvable enumerations"
+    url: https://learn.microsoft.com/en-us/graph/best-practices-concept#handling-future-members-in-evolvable-enumerations
+    relation: inspired
+logsource:
+  product: edr
+  service: alerts
+detection:
+  selection:
+    class_uid: 2004
+  selection_name:
+    api.operation|contains: ransom
+  selection_message:
+    message|contains: ransom
+  selection_technique:
+    - raw.technique_id: T1486
+    - raw.mitreTechniques|contains: T1486
+  # Office 365, Identity, Cloud Apps, Entra ID Protection, App Governance and
+  # Purview alerts from Defender, and Falcon Identity Protection: about an
+  # account, not a host. Defender for Cloud alerts are azure_vendor_alert's;
+  # Graph sends them and Sentinel's as unknownFutureValue unless asked not to.
+  filter_not_endpoint:
+    - api.service.name: [microsoftDefenderForOffice365, microsoftDefenderForIdentity,
+                         microsoftDefenderForCloudApps, azureAdIdentityProtection,
+                         microsoftAppGovernance, dataLossPrevention, microsoftDefenderForCloud,
+                         unknownFutureValue]
+    - api.service.name|startswith: idp
+  # The vendor rated it informational, or an analyst already ruled it benign.
+  filter_ruled_out:
+    severity_id: 1
+  condition: selection and (selection_name or selection_message or selection_technique) and not filter_not_endpoint and not filter_ruled_out
+  timeframe: 15m
+# An alert with no device id keys on the host name, then the user.
+entity: [resource.uid, device.hostname, actor.user.name]
+fields: [device.hostname, resource.uid, actor.user.name, message, process.name, process.cmd_line,
+         file.path, file.hashes.sha256]

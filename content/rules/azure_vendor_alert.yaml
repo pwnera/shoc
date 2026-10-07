@@ -1,0 +1,25 @@
+id: azure_vendor_alert
+title: High-severity Defender for Cloud or Azure Monitor alert
+description: >
+  Defender for Cloud raised a high-severity alert, or an Azure Monitor alert
+  fired at critical level, in the subscription's Activity Log. They are stored
+  either way; this turns them into a case for subscriptions whose alerts do not
+  also come in through the Defender XDR API.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1078.004]
+logsource:
+  product: azure
+  service: activity
+detection:
+  selection:
+    class_uid: 2004
+    activity_id: 1
+    severity_id|gte: 4
+  condition: selection
+  timeframe: 15m
+entity: [resource.uid, actor.user.name, cloud.account.uid]
+fields: [resource.uid, actor.user.name, api.operation, message, process.name, cloud.account.uid]

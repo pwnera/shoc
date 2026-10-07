@@ -1,0 +1,158 @@
+[
+  {
+    "_source": "crowdstrike",
+    "detection_id": "cs-Discovery-Low",
+    "max_severity_displayname": "Low",
+    "tactic": "Discovery",
+    "description": "something",
+    "name": "Discovery",
+    "user_name": "jdoe",
+    "local_ip": "10.1.2.3",
+    "hostname": "laptop-17",
+    "device_id": "dev-1",
+    "status": "new"
+  },
+  {
+    "_source": "wazuh",
+    "id": "wz-5712",
+    "rule": {
+      "id": "5712",
+      "level": 11,
+      "description": "sshd: brute force trying to get access to the system.",
+      "groups": [
+        "syslog",
+        "sshd",
+        "authentication_failures"
+      ]
+    },
+    "agent": {
+      "id": "001",
+      "name": "web-01",
+      "ip": "10.1.2.5"
+    },
+    "decoder": {
+      "name": "sshd"
+    },
+    "data": {
+      "srcip": "203.0.113.77"
+    }
+  },
+  {
+    "_source": "wazuh",
+    "id": "wz-23506",
+    "rule": {
+      "id": "23506",
+      "level": 13,
+      "description": "CVE-2026-0001 affects openssl",
+      "groups": [
+        "vulnerability-detector"
+      ]
+    },
+    "agent": {
+      "id": "001",
+      "name": "web-01",
+      "ip": "10.1.2.5"
+    },
+    "decoder": {
+      "name": "sshd"
+    },
+    "data": {
+      "srcip": "203.0.113.77"
+    }
+  },
+  {
+    "_source": "defender",
+    "id": "da-office-1",
+    "severity": "high",
+    "title": "Email messages containing malicious URL removed",
+    "category": "InitialAccess",
+    "serviceSource": "microsoftDefenderForOffice365",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "jdoe@example.com"
+        }
+      }
+    ]
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "idp:alert-1",
+    "type": "idp-user-endpoint-app-access",
+    "product": "idp",
+    "severity": 80,
+    "tactic": "Initial Access",
+    "description": "Unusual login to an endpoint",
+    "device": {
+      "device_id": "5d40e8a1c7b6",
+      "hostname": "laptop-33"
+    },
+    "user_name": "jdoe"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-AlertInfo",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "AlertId": "da638001",
+      "Title": "Suspicious PowerShell command line",
+      "Category": "Execution",
+      "Severity": "High",
+      "ServiceSource": "Microsoft Defender for Endpoint",
+      "DetectionSource": "EDR"
+    }
+  },
+  {
+    "_source": "defender",
+    "id": "da-defender-for-cloud-1",
+    "severity": "high",
+    "title": "Suspicious sign-in to a storage account from a Tor exit node",
+    "category": "InitialAccess",
+    "serviceSource": "microsoftDefenderForCloud",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "jdoe@example.com"
+        }
+      }
+    ]
+  },
+  {
+    "_source": "defender",
+    "id": "da-dlp-1",
+    "severity": "high",
+    "title": "DLP policy match for document with credit card numbers",
+    "category": "Exfiltration",
+    "serviceSource": "dataLossPrevention",
+    "detectionSource": "dataLossPrevention",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "jdoe@example.com"
+        }
+      }
+    ]
+  },
+  {
+    "_source": "defender",
+    "id": "da-unknown-source-1",
+    "severity": "high",
+    "title": "Suspicious sign-in to a storage account from a Tor exit node",
+    "category": "InitialAccess",
+    "serviceSource": "unknownFutureValue",
+    "detectionSource": "unknownFutureValue",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.ipEvidence",
+        "ipAddress": "203.0.113.66"
+      }
+    ]
+  }
+]

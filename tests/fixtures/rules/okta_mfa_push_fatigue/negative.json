@@ -1,0 +1,130 @@
+[
+  {
+    "uuid": "okta-user.authentication.auth_via_mfa",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR"
+      }
+    },
+    "_repeat": 6
+  },
+  {
+    "uuid": "okta-push",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com"
+      }
+    ],
+    "debugContext": {
+      "debugData": {
+        "factor": "OKTA_VERIFY_PUSH"
+      }
+    },
+    "_repeat": 2
+  },
+  {
+    "uuid": "okta-deny-push-upgrade-needed",
+    "eventType": "user.mfa.okta_verify.deny_push_upgrade_needed",
+    "displayMessage": "Rejected Okta push verify as Upgrade Needed",
+    "actor": {
+      "id": "00u2efgh",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "bob"
+    },
+    "client": {
+      "ipAddress": "198.51.100.6",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-bob"
+    },
+    "target": [
+      {
+        "id": "00u2efgh",
+        "type": "User",
+        "alternateId": "bob@example.com"
+      }
+    ],
+    "_repeat": 6
+  }
+]

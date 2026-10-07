@@ -1,0 +1,20 @@
+[
+  {
+    "Id": "m365-Add member to role helpdesk",
+    "Operation": "Add member to role.",
+    "OrganizationId": "org-1",
+    "RecordType": 8,
+    "ResultStatus": "Success",
+    "UserKey": "u-2",
+    "UserType": 0,
+    "UserId": "admin@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.7",
+    "ObjectId": "it@example.com",
+    "ModifiedProperties": [
+      { "Name": "Role.DisplayName", "NewValue": "Helpdesk Administrator", "OldValue": "" },
+      { "Name": "Role.TemplateId", "NewValue": "729827e3-9c14-49f7-bb1b-9608f156bbb8", "OldValue": "" }
+    ],
+    "_content_type": "Audit.AzureActiveDirectory"
+  }
+]

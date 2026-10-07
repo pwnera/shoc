@@ -1,0 +1,22 @@
+id: cloudflare_api_token_created
+title: Cloudflare API token created
+description: >
+  A token can change DNS, the WAF and every zone setting without a password or
+  a second factor, and it outlives the session that made it.
+status: stable
+date: 2026-09-30
+modified: 2026-09-30
+severity: high
+confidence: 0.55
+attack: [T1098.001]
+logsource:
+  product: cloudflare
+  service: audit_log
+detection:
+  selection:
+    raw.raw.method: POST
+    raw.raw.uri|endswith: /tokens
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, cloud.account.uid]

@@ -1,0 +1,116 @@
+[
+  {
+    "id": 8471,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "member_updated",
+    "created_at": "2026-09-20T10:00:00.000Z",
+    "details": {
+      "event_name": "member_updated",
+      "change": "access_level",
+      "from": "Developer",
+      "to": "Owner",
+      "expiry_from": null,
+      "expiry_to": null,
+      "as": "Owner",
+      "member_id": 311,
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "target_id": 99,
+      "target_type": "User",
+      "target_details": "marc@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform"
+    }
+  },
+  {
+    "id": 8472,
+    "author_id": 42,
+    "entity_id": 18,
+    "entity_type": "Project",
+    "event_name": "deploy_key_added",
+    "created_at": "2026-09-20T10:04:00.000Z",
+    "details": {
+      "event_name": "deploy_key_added",
+      "custom_message": "Added deploy key",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "target_id": 7,
+      "target_type": "DeployKey",
+      "target_details": "ci-deploy-key",
+      "ip_address": "198.51.100.61",
+      "entity_path": "acme/platform/api"
+    }
+  },
+  {
+    "id": 8473,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "member_created",
+    "created_at": "2026-09-20T10:06:00.000Z",
+    "details": {
+      "event_name": "member_created",
+      "add": "user_access",
+      "as": "Owner",
+      "member_id": 312,
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "target_id": 100,
+      "target_type": "User",
+      "target_details": "backup-admin",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform"
+    }
+  },
+  {
+    "id": 8474,
+    "author_id": 42,
+    "entity_id": 18,
+    "entity_type": "Project",
+    "event_name": "project_access_token_created",
+    "created_at": "2026-09-20T10:09:00.000Z",
+    "details": {
+      "event_name": "project_access_token_created",
+      "custom_message": "Created project access token with token_id: 55 with scopes: [:api, :write_repository] and Maintainer access level.",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "target_id": 55,
+      "target_type": "PersonalAccessToken",
+      "target_details": "release-bot",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform/api"
+    }
+  },
+  {
+    "id": "8475",
+    "author_id": 42,
+    "author_name": "Dana Ops",
+    "entity_id": 18,
+    "entity_type": "Project",
+    "entity_path": "acme/platform/api",
+    "event_type": "protected_branch_removed",
+    "created_at": "2026-09-20T10:12:00.000Z",
+    "ip_address": "203.0.113.55",
+    "target_id": 21,
+    "target_type": "ProtectedBranch",
+    "target_details": "main",
+    "details": {
+      "event_name": "protected_branch_removed",
+      "custom_message": "Unprotected branch",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "target_id": 21,
+      "target_type": "ProtectedBranch",
+      "target_details": "main",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform/api"
+    }
+  }
+]

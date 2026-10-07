@@ -1,0 +1,62 @@
+id: endpoint_tunnel_exposes_remote_admin
+title: A tunnel published this machine's Remote Desktop, SMB or WinRM to the internet
+description: >
+  A tunnel tool (ngrok, cloudflared, plink, ssh, chisel) was pointed at port
+  3389, 445, 5985 or 5986. That opens Remote Desktop, file sharing or remote
+  PowerShell to the internet past the firewall; developers tunnel web ports.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.75
+attack: [T1572, T1133, T1021.001]
+sources:
+  - name: Sigma
+    title: "Potential Remote Desktop Tunneling"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_remote_desktop_tunneling.yml
+    author: "Tim Rauch, Elastic (idea)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Potential RDP Tunneling Via SSH"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_ssh_rdp_tunneling.yml
+    author: "Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "PUA - Ngrok Execution"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_pua_ngrok.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: "Potential Remote Desktop Tunneling Detected"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/command_and_control_rdp_tunnel_plink.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Cloudflare
+    title: "Connect to RDP with client-side cloudflared"
+    url: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/use-cases/rdp/rdp-cloudflared-authentication/
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+  sel_tool:
+    process.cmd_line|contains: [ngrok, cloudflared, plink, ssh, chisel, frpc, bore, localtonet,
+                                pinggy]
+  sel_port:
+    process.cmd_line|re: '(:|\s|//)(3389|445|5985|5986)(\s|"|$)'
+  sel_rdp_scheme:
+    process.cmd_line|contains: ['rdp://', 'smb://']
+  # The Cloudflare Access client opens a local port to a remote server's RDP.
+  filter_access_client:
+    process.cmd_line|contains: [' access rdp ', ' access tcp ']
+  condition: selection_process and sel_tool and (sel_port or sel_rdp_scheme) and not filter_access_client
+  timeframe: 1h
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         process.parent_process.name, process.file.path]

@@ -1,0 +1,25 @@
+id: aws_root_account_activity
+title: AWS root account used
+description: >
+  The AWS account root user performed an API call. Root should be used only for
+  the handful of tasks that require it, and every use deserves a look.
+status: stable
+date: 2026-09-24
+modified: 2026-09-24
+severity: high
+confidence: 0.7
+attack: [T1078.004]
+references:
+  - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    actor.user.type: Root
+  filter_service_events:
+    actor.invoked_by|exists: true
+  condition: selection and not filter_service_events
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip, cloud.account.uid]

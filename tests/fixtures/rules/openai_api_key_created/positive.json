@@ -1,0 +1,20 @@
+[
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-01KeyCreated",
+    "type": "api_key.created",
+    "project": {"id": "proj_abc", "name": "Default project"},
+    "actor": {"type": "session", "session": {"user": {"id": "user-9", "email": "mallory@example.com"}, "ip_address": "203.0.113.44", "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "api_key.created": {"id": "key_new1", "data": {"scopes": ["all"]}},
+    "details": {"id": "key_new1", "data": {"scopes": ["all"]}},
+    "key_id": "key_new1"
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-01AdminKeyCreated",
+    "type": "tenant.admin_api_key.created",
+    "actor": {"type": "session", "session": {"user": {"id": "user-9", "email": "mallory@example.com"}, "ip_address": "203.0.113.44", "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "details": {},
+    "key_id": null
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "Id": "m365-FileDownloaded-browser",
+    "Operation": "FileDownloaded",
+    "OrganizationId": "org-1",
+    "RecordType": 6,
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "OneDrive",
+    "ClientIP": "198.51.100.150",
+    "UserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+    "ItemType": "File",
+    "ObjectId": "https://example-my.sharepoint.com/personal/jane/Documents/customers.xlsx"
+  },
+  {
+    "Id": "m365-FileUploaded-pnp",
+    "Operation": "FileUploaded",
+    "OrganizationId": "org-1",
+    "RecordType": 6,
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "SharePoint",
+    "ClientIP": "198.51.100.150",
+    "UserAgent": "NONISV|SharePointPnP|PnPPS/2.4.0",
+    "ItemType": "File",
+    "ObjectId": "https://example.sharepoint.com/sites/it/Shared Documents/report.csv"
+  }
+]

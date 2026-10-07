@@ -1,0 +1,44 @@
+id: contain_tailscale_tampering
+title: Contain tampering with the tailnet
+description: >
+  A protection was switched off, the access policy changed, or someone was
+  made an admin. Suspending the person who did it stops their devices, keys
+  and tokens at once and is reversible, but locks a colleague out of the
+  network, so it waits for a human, who is paged either way. A new auth key is
+  answered in contain_tailscale_key.
+rules:
+  - tailscale_defence_disabled
+  - tailscale_admin_role_granted
+  - tailscale_acl_changed
+  - hunt:tailscale_principal_first_operation
+questions:
+  - id: actor
+    ask: Who made the change, through the admin console, the API or an OAuth client, and is that person an owner or admin who usually does this?
+  - id: reach
+    ask: Which devices or tags can the change reach now that they could not before?
+  - id: after
+    ask: What else did the same person change in the tailnet that day, the access policy, device approvals or other users' roles?
+benign_when:
+  - The change came from the infrastructure OAuth client and matches the policy repository.
+  - An owner turned a setting off for a migration and back on within the hour.
+  - The actor is an OAuth client id that `own.list` records as shoc's own, and it only read.
+example: |
+  claim (actor): "mallory@example.com, a member who never changed tailnet settings, made herself an admin and turned off device approval two minutes later", citing both events.
+  checked and absent: "a change to the policy repository or a note from an owner (7d)", which rules out a planned change.
+  disposition: malicious, because a member gave herself admin and then removed the check on new devices.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.75
+steps:
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: tailnet changed by {{ entity.user }}, check it: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: suspend the user who made the change
+    action: tailscale.suspend_user
+    optional: true
+    params:
+      user: "{{ entity.user }}"

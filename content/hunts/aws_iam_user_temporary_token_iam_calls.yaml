@@ -1,0 +1,34 @@
+id: aws_iam_user_temporary_token_iam_calls
+title: An IAM user calls IAM with temporary credentials it minted
+hypothesis: >
+  An attacker holding a user's long-term key calls GetSessionToken and works
+  from the temporary credentials, so the access key id in later events is not
+  the leaked one. IAM calls from such a session, outside the console, are rare.
+attack: [T1550.001, T1098]
+logsource:
+  product: aws
+  service: cloudtrail
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    actor.user.type: IAMUser
+    actor.session.uid|startswith: ASIA
+    api.service.name: iam.amazonaws.com
+  filter_console:
+    raw.sessionCredentialFromConsole: true
+  condition: selection and not filter_console
+baseline:
+  first_seen: [actor.user.name, api.operation]
+  lookback: 30d
+pivot: [actor.user.name, actor.session.uid, api.operation, src_endpoint.ip]
+triage: >
+  Does this person use an MFA-wrapped CLI (aws-vault, a GetSessionToken
+  script)? If not, who minted the session, and from which address was the
+  GetSessionToken call made? Denied calls are kept: they are the probing.
+sources:
+  - name: Elastic
+    title: AWS IAM API Calls via Temporary Session Tokens
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_api_calls_via_user_session_token
+    license: Elastic-2.0
+    relation: adapted

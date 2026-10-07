@@ -1,0 +1,36 @@
+id: aws_bedrock_first_use
+title: An identity uses Bedrock for the first time
+hypothesis: >
+  LLMjacking starts by listing models, checking whether invocation logging is
+  on, and invoking a model with a stolen key. Identities that have never used
+  Bedrock doing any of it is the earliest sign.
+attack: [T1496.004, T1526]
+logsource:
+  product: aws
+  service: cloudtrail
+window: 1d
+cadence_days: 1
+sensitive: true
+detection:
+  selection:
+    api.operation: [ListFoundationModels, GetFoundationModelAvailability, ListInferenceProfiles, GetModelInvocationLoggingConfiguration, InvokeModel, InvokeModelWithResponseStream, Converse, ConverseStream, CreateProvisionedModelThroughput]
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, api.operation]
+  lookback: 30d
+pivot: [actor.user.name, actor.session.uid, src_endpoint.ip, cloud.region]
+triage: >
+  Does this identity belong to a service the team built on Bedrock? A CI or
+  deployment key, or a human IAM user, invoking models in a region the
+  company does not use is resale, not research.
+sources:
+  - name: Elastic
+    title: AWS Bedrock Foundation Model Enumeration Followed by Invocation via Long-Term Key
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_bedrock_model_recon_and_invocation_via_long_term_key
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS Bedrock Provisioned Model Throughput Tampering
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_bedrock_provisioned_model_throughput_tampering
+    license: Elastic-2.0
+    relation: inspired

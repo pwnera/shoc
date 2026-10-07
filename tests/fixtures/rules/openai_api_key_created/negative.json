@@ -1,0 +1,22 @@
+[
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-01KeyDeleted",
+    "type": "api_key.deleted",
+    "project": {"id": "proj_abc", "name": "Default project"},
+    "actor": {"type": "session", "session": {"user": {"id": "user-9", "email": "mallory@example.com"}, "ip_address": "203.0.113.44", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "api_key.deleted": {"id": "key_old1"},
+    "details": {"id": "key_old1"},
+    "key_id": "key_old1"
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-01KeyUpdated",
+    "type": "api_key.updated",
+    "project": {"id": "proj_abc", "name": "Default project"},
+    "actor": {"type": "session", "session": {"user": {"id": "user-9", "email": "mallory@example.com"}, "ip_address": "203.0.113.44", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "api_key.updated": {"id": "key_old2", "changes_requested": {"scopes": ["api.model.request"]}},
+    "details": {"id": "key_old2", "changes_requested": {"scopes": ["api.model.request"]}},
+    "key_id": "key_old2"
+  }
+]

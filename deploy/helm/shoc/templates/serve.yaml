@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shoc.fullname" . }}-serve
+  labels:
+    {{- include "shoc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: serve
+spec:
+  replicas: {{ .Values.serve.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "shoc.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: serve
+  template:
+    metadata:
+      labels:
+        {{- include "shoc.labels" . | nindent 8 }}
+        app.kubernetes.io/component: serve
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name | default (include "shoc.fullname" .) }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: serve
+          image: {{ include "shoc.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["serve", "--host", "0.0.0.0", "--port", "{{ .Values.serve.port }}"]
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            {{- include "shoc.env" . | nindent 12 }}
+            {{- include "shoc.runtimeEnv" . | nindent 12 }}
+          envFrom:
+            - secretRef:
+                name: {{ include "shoc.secretName" . }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.serve.port }}
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 10
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 5
+          resources:
+            {{- toYaml .Values.serve.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}

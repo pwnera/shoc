@@ -1,0 +1,34 @@
+id: anthropic_mcp_server_first_seen
+title: A new MCP server is added to the Claude organisation
+hypothesis: >
+  An MCP server added to the organisation runs tools with what members share in
+  their chats. A server pointed at an attacker's endpoint reads what people
+  paste into Claude; a company adds one every few months.
+attack: [T1176, T1567]
+logsource:
+  product: anthropic
+  service: activity_feed
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: mcp_server_created
+  condition: selection
+baseline:
+  first_seen: [cloud.account.uid, raw.mcp_server_name]
+  lookback: 60d
+pivot: [actor.user.name, raw.mcp_server_name, src_endpoint.ip]
+triage: >
+  Does the team know this server and who runs it? A server on a domain the
+  company does not own, added by an account that has never configured the
+  organisation before, is the one to escalate.
+follow_up:
+  - Which URL does the server point to, and who owns that domain?
+  - Who added it, and did they change other organisation settings the same day?
+sensitive: false
+sources:
+  - name: Elastic
+    title: Anthropic MCP Server Created
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/anthropic/persistence_anthropic_mcp_server_created
+    license: Elastic-2.0
+    relation: adapted

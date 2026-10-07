@@ -1,0 +1,19 @@
+# Default: any maintainer may review.
+*                           @Rettila
+
+# Security-sensitive paths: two reviewers required (see CONTRIBUTING.md).
+/shoc/agents/               @Rettila
+/shoc/cases/                @Rettila
+/shoc/actions/              @Rettila
+/shoc/api/auth.py           @Rettila
+/shoc/db/audit.py           @Rettila
+/shoc/db/secrets.py         @Rettila
+/shoc/capabilities/registry.py @Rettila
+
+# Content and docs.
+/content/                   @Rettila
+/docs/                      @Rettila
+/rfcs/                      @Rettila
+
+# The console: an independent project inside the repo.
+/console/                   @Rettila

@@ -1,0 +1,40 @@
+id: m365_device_code_sign_in
+title: Sign-in through the device code flow (Microsoft 365 audit)
+description: >
+  The unified audit log recorded a sign-in that used the device code flow.
+  Device code phishing gets the victim to sign in for the attacker, skipping
+  the password and MFA prompts. This copy of the Entra rule covers tenants
+  without Entra P1, whose only sign-in record is this one. Phones enrolling into
+  Intune are left out.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1566.002, T1528, T1550.001]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation: UserLoggedIn
+    unmapped.props.RequestType: "Cmsi:Cmsi"
+  # Phones enrolling into Intune sign in this way too (Sigma).
+  filter_intune_enrollment:
+    resource.uid: 0000000a-0000-0000-c000-000000000000
+  condition: selection and not filter_intune_enrollment
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, http_request.user_agent, actor.invoked_by]
+sources:
+  - name: Elastic
+    title: M365 Identity Device Code Grant with Unusual User and ASN
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/initial_access_identity_oauth_device_code_grant_unusual_source_asn
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: Azure Login Bypassing Conditional Access Policies
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/m365/audit/microsoft365_bypass_conditional_access.yml
+    author: Josh Nickels, Marius Rothenbücher
+    license: DRL-1.1
+    relation: adapted

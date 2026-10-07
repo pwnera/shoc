@@ -1,0 +1,59 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Mac",
+    "ImageFileName": "/usr/bin/osascript",
+    "CommandLine": "osascript -e display dialog \"Backup finished\"",
+    "ParentBaseFileName": "bash",
+    "RawProcessId": "4242",
+    "UserSid": "S-1-5-21-1111111111-2222222222-3333333333-1104"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "host05.example.com",
+      "os": "osx"
+    },
+    "tgt": {
+      "process": {
+        "name": "security",
+        "cmdline": "security find-generic-password -s AirPort -w",
+        "image": {
+          "path": "/usr/bin/security"
+        },
+        "user": "jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "zsh"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "5555555555555555555555555555555555555555",
+      "DeviceName": "mbp-jdoe.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "dscl",
+      "FolderPath": "/usr/bin/dscl",
+      "ProcessCommandLine": "dscl . -read /Users/jdoe RealName",
+      "InitiatingProcessFileName": "zsh",
+      "InitiatingProcessCommandLine": "-zsh",
+      "AccountName": "jdoe"
+    }
+  }
+]

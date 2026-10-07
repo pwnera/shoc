@@ -1,0 +1,64 @@
+id: endpoint_tunnel_client_first_seen_on_host
+title: A tunnel client runs on a machine for the first time
+hypothesis: >
+  A tunnel client (ngrok, cloudflared, VS Code tunnels, chisel, frp) gives
+  whoever holds the other end a way into the machine past the firewall.
+  Developers who tunnel every day stay in the baseline; a first run on a server
+  or a finance laptop does not.
+attack: [T1572, T1090]
+sources:
+  - name: Sigma
+    title: "Tunneling Tool Execution"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/windows/process_creation/proc_creation_win_susp_exfil_and_tunneling_tool_execution.yml
+    author: "Daniil Yugoslavskiy, oscd.community"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Cloudflared Quick Tunnel Execution"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_cloudflared_quicktunnel_execution.yml
+    author: "Sajid Nawaz Khan"
+    license: DRL-1.1
+    relation: inspired
+  - name: Sigma
+    title: "Visual Studio Code Tunnel Execution"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_vscode_tunnel_execution.yml
+    author: "Nasreddine Bencherchali (Nextron Systems), citron_ninja"
+    license: DRL-1.1
+    relation: inspired
+  - name: Elastic
+    title: "Potential Protocol Tunneling via Cloudflared"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/command_and_control_tunnel_cloudflared.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: "Attempt to Establish VScode Remote Tunnel"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/command_and_control_tunnel_vscode.toml
+    license: Elastic-2.0
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    class_uid: 1007
+    activity_id: 1
+    process.name: [ngrok, ngrok.exe, cloudflared, cloudflared.exe, code-tunnel, code-tunnel.exe,
+                   devtunnel, devtunnel.exe, chisel, chisel.exe, frpc, frpc.exe, bore,
+                   localtonet.exe, zrok, zerotier-one, zerotier-one_x64.exe, plink.exe, socat,
+                   stunnel.exe, httptunnel.exe]
+  condition: selection
+baseline:
+  first_seen: [device.uid, process.name]
+  lookback: 30d
+pivot: [device.hostname, device.uid, process.name, process.cmd_line, actor.user.name,
+        process.parent_process.name]
+triage: >
+  Is this a developer's machine tunnelling a web port, or a server, a finance
+  laptop, or a tunnel to Remote Desktop or SMB (then
+  endpoint_tunnel_exposes_remote_admin fired as well)?
+follow_up:
+  - Which port or service does the command line expose?
+  - Who started it, and from which parent process?
+sensitive: false

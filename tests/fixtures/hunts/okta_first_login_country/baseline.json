@@ -1,0 +1,14 @@
+[
+  {
+    "uuid": "hunt-okta-known-country",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "outcome": { "result": "SUCCESS" },
+    "_repeat": 3,
+    "actor": { "alternateId": "jane@example.com", "displayName": "Jane", "type": "User" },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "geographicalContext": { "country": "Moldova", "city": "Chisinau" }
+    }
+  }
+]

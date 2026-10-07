@@ -1,0 +1,36 @@
+id: gke_user_first_exec_into_pod
+title: A person opens a shell in a GKE pod they never opened one in
+hypothesis: >
+  Running a command inside a pod reads its mounted secrets and service account
+  token. Engineers do it while debugging, in the pods they own; a person doing
+  it in a pod they never touched is a stolen kubeconfig or a curious insider.
+attack: [T1609]
+logsource:
+  product: gcp
+  service: audit
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation|endswith: [pods.exec.create, pods.exec.get]
+  filter_system:
+    actor.user.name|startswith: "system:"
+  condition: selection and not filter_system
+baseline:
+  first_seen: [actor.user.name, resource.uid]
+  lookback: 30d
+pivot: [actor.user.name, resource.uid, src_endpoint.ip, cloud.account.uid]
+triage: >
+  Was there an incident or a deploy this person was debugging? An exec into a
+  pod that holds production secrets, from an address outside the company, is
+  the one to escalate.
+follow_up:
+  - Which secrets and service account does that pod mount?
+  - Did the same person exec into other pods or read secrets in the same hour?
+sensitive: false
+sources:
+  - name: Elastic
+    title: GKE User Exec into Pod
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/execution_gcp_gke_user_exec_into_pod
+    license: Elastic-2.0
+    relation: adapted

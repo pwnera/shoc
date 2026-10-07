@@ -1,0 +1,21 @@
+id: stripe_early_fraud_warning
+title: Stripe early fraud warning on a charge
+description: >
+  The card's issuer reported the charge as fraud. A dispute usually follows,
+  and the same card or email tends to come back for another try.
+status: stable
+date: 2026-09-30
+modified: 2026-09-30
+severity: medium
+confidence: 0.7
+attack: [T1657]
+logsource:
+  product: stripe
+  service: events
+detection:
+  selection:
+    api.operation: radar.early_fraud_warning.created
+  condition: selection
+  timeframe: 15m
+entity: resource.uid
+fields: [resource.uid, cloud.account.uid]

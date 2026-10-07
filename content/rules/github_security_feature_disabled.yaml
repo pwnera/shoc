@@ -1,0 +1,65 @@
+id: github_security_feature_disabled
+title: Secret scanning, push protection, 2FA requirement or app restrictions switched off
+description: >
+  Turning off secret scanning or push protection comes before pushing stolen
+  code or reading secrets out of history; dropping the 2FA requirement or the
+  OAuth app restrictions opens the organisation to the next login or app.
+  Repository settings arrive by webhook too; the organisation settings need the
+  audit-log API.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1562.001, T1556]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  selection:
+    api.operation:
+      - repository_secret_scanning.disable
+      - repository_secret_scanning_push_protection.disable
+      - repository_secret_scanning_custom_pattern_push_protection.disabled
+      - repo.advanced_security_disabled
+      - secret_scanning.disable
+      - secret_scanning_new_repos.disable
+      - org.secret_scanning_push_protection_disable
+      - org.secret_scanning_push_protection_new_repos_disable
+      - org.secret_scanning_custom_pattern_push_protection_disabled
+      - org.advanced_security_disabled_on_all_repos
+      - org.advanced_security_disabled_for_new_repos
+      - org.disable_two_factor_requirement
+      - org.disable_oauth_app_restrictions
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid]
+sources:
+  - name: Elastic
+    title: GitHub Secret Scanning Disabled
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/defense_evasion_secret_scanning_disabled
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Github Secret Scanning Feature Disabled
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/application/github/audit/github_secret_scanning_feature_disabled.yml
+    author: Muhammad Faisal (@faisalusuf)
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: Github Push Protection Disabled
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/application/github/audit/github_push_protection_disabled.yml
+    author: Muhammad Faisal (@faisalusuf)
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: Github High Risk Configuration Disabled
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/application/github/audit/github_disable_high_risk_configuration.yml
+    author: Muhammad Faisal (@faisalusuf)
+    license: DRL-1.1
+    relation: adapted
+  - name: GitHub
+    title: Audit log events for your organization
+    url: https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization
+    relation: inspired

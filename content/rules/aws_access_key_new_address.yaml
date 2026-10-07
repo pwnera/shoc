@@ -1,0 +1,34 @@
+id: aws_access_key_new_address
+title: Long-term access key used from an address it never used
+description: >
+  An IAM user's access key made a successful call from an address it had not
+  used in the last 30 days. A leaked key works exactly as before, only from
+  somewhere else, so the address is often the first thing that changes. A key
+  used from CI runners with changing addresses fires on each new one until it
+  is narrowed or replaced by a role. Quiet for the first 30 days of history.
+status: experimental
+date: 2026-10-02
+severity: medium
+confidence: 0.5
+attack: [T1078.004, T1552]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    actor.session.uid|startswith: AKIA
+    src_endpoint.ip|exists: true
+    status: Success
+  condition: selection
+  timeframe: 15m
+baseline:
+  first_seen: [actor.session.uid, src_endpoint.ip]
+  lookback: 30d
+entity: actor.session.uid
+fields: [actor.user.name, src_endpoint.ip, http_request.user_agent, api.operation]
+sources:
+  - name: Elastic
+    title: AWS IAM Long-Term Access Key First Seen from Source IP
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/credential_access_iam_long_term_access_key_first_seen_from_source_ip
+    license: Elastic-2.0
+    relation: adapted

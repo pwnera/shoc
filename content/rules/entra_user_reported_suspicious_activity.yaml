@@ -1,0 +1,30 @@
+id: entra_user_reported_suspicious_activity
+title: User reported an MFA prompt they did not start
+description: >
+  A user answered an MFA prompt with "report suspicious activity". The user is
+  telling you someone else has their password and is trying to sign in with it
+  right now.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.85
+attack: [T1621, T1078.004]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection:
+    api.operation|contains: suspicious activity reported
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Entra ID User Reported Suspicious Activity
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_user_reported_risk
+    license: Elastic-2.0
+    relation: adapted

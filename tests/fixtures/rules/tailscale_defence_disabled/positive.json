@@ -1,0 +1,34 @@
+[
+  {
+    "action": "DISABLE",
+    "actor": {"displayName": "Mallory", "id": "u999CNTRL", "loginName": "mallory@example.com", "type": "USER"},
+    "eventGroupID": "6dae044c7a8998599e94657b511d28f9",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "example.com", "name": "example.com", "type": "TAILNET", "property": "MACHINE_APPROVAL_NEEDED"},
+    "type": "CONFIG",
+    "event": "TAILNET.DISABLE.MACHINE_APPROVAL_NEEDED",
+    "tailnet": "example.com"
+  },
+  {
+    "action": "DISABLE",
+    "actor": {"displayName": "Mallory", "id": "u999CNTRL", "loginName": "mallory@example.com", "type": "USER"},
+    "eventGroupID": "6dae044c7a8998599e94657b511d2a01",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "example.com", "name": "example.com", "type": "TAILNET", "property": "TAILNET_LOCK"},
+    "type": "CONFIG",
+    "event": "TAILNET.DISABLE.TAILNET_LOCK",
+    "tailnet": "example.com"
+  },
+  {
+    "action": "UPDATE",
+    "actor": {"displayName": "Mallory", "id": "u999CNTRL", "loginName": "mallory@example.com", "type": "USER"},
+    "eventGroupID": "6dae044c7a8998599e94657b511d2a02",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "example.com", "name": "example.com", "type": "TAILNET", "property": "LOGSTREAM_ENDPOINT"},
+    "type": "CONFIG",
+    "old": "https://siem.example.com/ingest",
+    "new": "https://collector.example.net/ingest",
+    "event": "TAILNET.UPDATE.LOGSTREAM_ENDPOINT",
+    "tailnet": "example.com"
+  }
+]

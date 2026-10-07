@@ -1,0 +1,29 @@
+id: m365_app_consent_granted
+title: Application consent granted in Microsoft 365
+description: >
+  An OAuth application was consented to, or granted permissions for every
+  user. Check what it asked for before deciding whether it belongs. A consent
+  Entra blocked, such as a risky app stepped up to admin approval, is left out.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1528]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation|contains: [consent, add delegated permission grant, add app role assignment to service principal]
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid]
+sources:
+  - name: Microsoft
+    title: Configure risk-based step-up consent
+    url: https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-risk-based-step-up-consent
+    relation: inspired

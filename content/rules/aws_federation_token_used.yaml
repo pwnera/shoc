@@ -1,0 +1,70 @@
+id: aws_federation_token_used
+title: Access key exchanged for a federated console session
+description: >
+  An IAM user called GetFederationToken and, within ten minutes, a federated
+  session issued by that user signed in to the console. Tools that turn a
+  stolen key into a console session do exactly this, and the session keeps
+  working after the key is disabled. The sign-in can come from another
+  address than the token request, as when a chat app previews the sign-in
+  link. A key that mints federation tokens without signing in is left to the
+  first-use hunt.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1550.001, T1078.004]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  token:
+    api.operation: GetFederationToken
+    status: Success
+  console:
+    api.operation: ConsoleLogin
+    actor.user.type: FederatedUser
+    status: Success
+  # A federated session names the IAM user that issued it, so both events
+  # carry that user; the federated name is the caller's choice.
+  sequence:
+    by: [actor.user.name]
+    first: token
+    then: console
+    within: 10m
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.user.uid, actor.session.uid, src_endpoint.ip, http_request.user_agent]
+sources:
+  - name: Elastic
+    title: AWS GetFederationToken Followed by Console Login via Federation Exchange
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/credential_access_get_federation_token_followed_by_console_login_via_federation_exchange
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS Sign-In Console Login with Federated User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/initial_access_signin_console_login_federated_user
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: STS Suspicious Federated Temporary Credential Request
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/sts_suspicious_federated_temporary_credential_request.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic hunting
+    title: Signin Single Factor Console Login via Federated Session
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/signin_single_factor_console_login_via_federated_session.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Datadog Security Labs
+    title: "Tales from the cloud trenches: The attacker doth persist too much, methinks"
+    url: https://securitylabs.datadoghq.com/articles/tales-from-the-cloud-trenches-the-attacker-doth-persist-too-much/
+    relation: inspired
+  - name: CrowdStrike
+    title: How Adversaries Can Persist with AWS User Federation
+    url: https://www.crowdstrike.com/blog/how-adversaries-persist-with-aws-user-federation/
+    relation: inspired
+  - name: AWS
+    title: CloudTrail userIdentity element
+    url: https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-user-identity.html
+    relation: inspired

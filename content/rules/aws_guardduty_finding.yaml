@@ -1,0 +1,54 @@
+id: aws_guardduty_finding
+title: GuardDuty reported a high-severity or credential finding
+description: >
+  GuardDuty raised a high or critical finding, or a medium one about an IAM
+  credential, S3 data or crypto mining: a key used from an unusual place,
+  instance credentials used outside AWS, a Kali or Tor caller, anomalous S3
+  reads or deletes. The company pays for GuardDuty and nobody reads its
+  console; this puts its findings in a case. Archived and sample findings are
+  left out.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.75
+attack: [T1078.004, T1552.005, T1496.001]
+logsource:
+  product: aws
+  service: guardduty
+detection:
+  selection_high:
+    class_uid: 2004
+    severity_id|gte: 4
+  selection_credential:
+    class_uid: 2004
+    severity_id: 3
+    api.operation|startswith:
+      - "UnauthorizedAccess:IAMUser/"
+      - "InitialAccess:IAMUser/"
+      - "Recon:IAMUser/"
+      - "CredentialAccess:IAMUser/"
+      - "Discovery:IAMUser/"
+      - "Persistence:IAMUser/"
+      - "PrivilegeEscalation:IAMUser/"
+      - "DefenseEvasion:IAMUser/"
+      - "Impact:IAMUser/"
+      - "Exfiltration:IAMUser/"
+      - "Exfiltration:S3/"
+      - "Impact:S3/"
+      - "PenTest:"
+      - "Discovery:S3/TorIPCaller"
+      - "CryptoCurrency:"
+  filter_closed:
+    activity_id: 3
+  filter_sample:
+    raw.service.additionalInfo.sample: true
+  condition: (selection_high or selection_credential) and not filter_closed and not filter_sample
+  timeframe: 15m
+entity: resource.uid
+fields: [api.operation, message, actor.user.name, actor.session.uid, src_endpoint.ip, resource.uid, cloud.region]
+sources:
+  - name: AWS
+    title: GuardDuty finding types
+    url: https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_finding-types-active.html
+    relation: inspired

@@ -1,0 +1,48 @@
+id: linux_rare_process_external_connection
+title: A process on a Linux server talks to the internet and no other server runs it
+hypothesis: >
+  A web shell, a miner or a backdoor on a Linux server is a process that
+  connects out and that no other server runs. Package managers, agents and the
+  application itself connect out from every server and drop out here.
+attack: [T1071, T1105]
+sources:
+  - name: Elastic hunting
+    title: "Low Volume External Network Connections from Process by Unique Agent"
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/linux/queries/low_volume_external_network_connections_from_process.toml
+    license: Elastic-2.0
+    relation: adapted
+logsource:
+  product: edr
+  service: telemetry
+window: 1d
+# The most expensive pack here: 30 days of network events, grouped.
+cadence_days: 7
+detection:
+  sel_net:
+    class_uid: 4001
+    activity_id: 1
+    dst_endpoint.ip|exists: true
+  sel_linux_fdr:
+    raw.event_platform: Lin
+  sel_linux_s1:
+    raw.endpoint.os: linux
+  # Private, loopback, link-local and CGNAT (Tailscale) addresses.
+  filter_private:
+    dst_endpoint.ip|cidr: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 169.254.0.0/16,
+                           100.64.0.0/10, fc00::/7, fe80::/10, '::1/128']
+  condition: sel_net and (sel_linux_fdr or sel_linux_s1) and not filter_private
+baseline:
+  rare:
+    by: [process.name]
+    among: device.uid
+    seen_by_fewer_than: 2
+  lookback: 30d
+pivot: [device.hostname, device.uid, process.name, dst_endpoint.ip, dst_endpoint.port]
+triage: >
+  Is the process part of the application or an agent that runs on one server
+  only? A binary in /tmp, /dev/shm or a web root, or a shell, talking to an
+  address nobody else talks to, is the case.
+follow_up:
+  - Where is the binary on disk, and when was it written?
+  - What else did the same process do?
+sensitive: false

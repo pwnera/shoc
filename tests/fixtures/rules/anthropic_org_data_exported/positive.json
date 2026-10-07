@@ -1,0 +1,15 @@
+[
+  {
+    "id": "activity_01Export",
+    "organization_id": "org_01",
+    "type": "org_data_export_accessed",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "export_type": "conversations"
+  }
+]

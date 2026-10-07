@@ -1,0 +1,16 @@
+[
+  {
+    "Id": "m365-FileDownloaded-rclone",
+    "Operation": "FileDownloaded",
+    "OrganizationId": "org-1",
+    "RecordType": 6,
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "OneDrive",
+    "ClientIP": "203.0.113.150",
+    "UserAgent": "rclone/v1.67.0",
+    "ItemType": "File",
+    "ObjectId": "https://example-my.sharepoint.com/personal/jane/Documents/customers.xlsx"
+  }
+]

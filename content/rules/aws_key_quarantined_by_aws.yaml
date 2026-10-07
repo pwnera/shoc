@@ -1,0 +1,29 @@
+id: aws_key_quarantined_by_aws
+title: AWS quarantined an access key it found exposed
+description: >
+  AWS attached its compromised-key quarantine policy to an IAM user, which it
+  does when it finds the user's access key in a public place such as a GitHub
+  repository. The key is already known to be leaked, and the policy blocks
+  only part of what it can do.
+status: experimental
+date: 2026-10-02
+severity: critical
+confidence: 0.9
+attack: [T1552.001, T1078.004]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.operation: AttachUserPolicy
+    raw.requestParameters.policyArn|contains: AWSCompromisedKeyQuarantine
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [raw.requestParameters.userName, raw.requestParameters.policyArn, actor.user.name, cloud.account.uid]
+sources:
+  - name: Elastic
+    title: AWS IAM CompromisedKeyQuarantine Policy Attached to User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/credential_access_iam_compromisedkeyquarantine_policy_attached_to_user
+    license: Elastic-2.0
+    relation: adapted

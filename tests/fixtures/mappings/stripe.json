@@ -1,0 +1,56 @@
+[
+  {
+    "id": "accact_1SdeybAiQNL8swvtMHyVtfCU",
+    "object": "v2.iam.activity_log",
+    "created": "2026-09-20T00:00:00.000Z",
+    "type": "api_key_created",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {"type": "user", "user": {"email": "user@example.com"}},
+    "details": {"type": "api_key", "api_key": {"id": "mk_1SdeybAiQNL8swvtMHyVtfCU", "created": "2026-09-20T00:00:00.000Z", "type": "secret_key", "name": "My API Key", "note": "", "expires_at": null, "ip_allowlist": [], "new_key": null, "managed_by": null}}
+  },
+  {
+    "id": "evt_3PfakeCardTest0001",
+    "object": "event",
+    "api_version": "2026-07-29",
+    "created": 1790000000,
+    "type": "charge.failed",
+    "livemode": true,
+    "data": {"object": {
+      "id": "ch_3PfakeCharge0001",
+      "object": "charge",
+      "amount": 100,
+      "currency": "usd",
+      "failure_code": "card_declined",
+      "failure_message": "Your card was declined.",
+      "billing_details": {"email": "tester@example.net"},
+      "outcome": {"type": "issuer_declined", "risk_level": "elevated", "seller_message": "The bank did not return any further details with this decline."},
+      "payment_method_details": {"card": {"fingerprint": "Xt5EWLLDS7FJjR1c", "country": "US", "checks": {"cvc_check": "fail"}}}
+    }}
+  },
+  {
+    "id": "accact_1SdeybAiQNL8swvtUserRole01",
+    "object": "v2.iam.activity_log",
+    "created": "2026-09-20T00:10:00.000Z",
+    "type": "user_roles_updated",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {"type": "api_key", "api_key": {"id": "rk_live_fakeRestricted01"}},
+    "details": {"type": "user_roles", "user_roles": {"user_email": "new-admin@example.org", "old_roles": ["view_only"], "new_roles": ["administrator"]}}
+  },
+  {
+    "id": "evt_3PfakeFraudWarning01",
+    "object": "event",
+    "api_version": "2026-07-29",
+    "created": 1790000600,
+    "type": "radar.early_fraud_warning.created",
+    "livemode": true,
+    "data": {"object": {
+      "id": "issfr_3PfakeWarning01",
+      "object": "radar.early_fraud_warning",
+      "actionable": true,
+      "charge": "ch_3PfakeCharge0002",
+      "fraud_type": "made_with_stolen_card"
+    }}
+  }
+]

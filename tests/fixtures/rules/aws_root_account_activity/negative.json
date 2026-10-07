@@ -1,0 +1,20 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateUser",
+    "eventName": "CreateUser",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "insertId": "gcp-sink-create",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "logging_sink",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "logging.googleapis.com",
+      "methodName": "google.logging.v2.ConfigServiceV2.CreateSink",
+      "resourceName": "projects/example-prod/sinks/billing-export",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.12",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      }
+    }
+  },
+  {
+    "insertId": "gcp-audit-config-on",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudresourcemanager.googleapis.com",
+      "methodName": "SetIamPolicy",
+      "resourceName": "projects/example-prod",
+      "authenticationInfo": {
+        "principalEmail": "dana@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.12",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "serviceData": {
+        "@type": "type.googleapis.com/google.iam.v1.logging.AuditData",
+        "policyDelta": {
+          "auditConfigDeltas": [
+            {
+              "action": "ADD",
+              "service": "storage.googleapis.com",
+              "logType": "DATA_READ"
+            }
+          ]
+        }
+      }
+    }
+  }
+]

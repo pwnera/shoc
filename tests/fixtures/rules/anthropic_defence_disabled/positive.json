@@ -1,0 +1,65 @@
+[
+  {
+    "id": "activity_01IpDel",
+    "organization_id": "org_01",
+    "type": "org_ip_restriction_deleted",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    }
+  },
+  {
+    "id": "activity_01SsoOff",
+    "organization_id": "org_01",
+    "type": "org_sso_toggled",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "enabled": false
+  },
+  {
+    "id": "activity_01LogOff",
+    "organization_id": "org_01",
+    "type": "org_compliance_api_settings_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "compliance_api_logging_enabled": false
+  },
+  {
+    "id": "activity_01SpendDel",
+    "organization_id": "org_01",
+    "type": "platform_spend_limit_deleted",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "spend_limit_id": "0b1c2d3e-0000-4000-8000-000000000001"
+  },
+  {
+    "id": "activity_01ComplianceOff",
+    "organization_id": "org_01",
+    "type": "org_compliance_api_settings_updated",
+    "actor": {
+      "type": "admin_api_key_actor",
+      "admin_api_key_id": "apikey_01StolenAdmin",
+      "ip_address": "198.51.100.23",
+      "user_agent": "python-httpx/0.27.0"
+    },
+    "compliance_api_enabled": false
+  }
+]

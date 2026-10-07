@@ -1,0 +1,65 @@
+[
+  {
+    "Id": "m365-MailItemsAccessed",
+    "Operation": "MailItemsAccessed",
+    "OrganizationId": "org-1",
+    "RecordType": 50,
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "ClientIP": "198.51.100.11",
+    "Workload": "Exchange",
+    "ResultStatus": "Succeeded",
+    "SessionId": "s-1",
+    "MailboxOwnerUPN": "jane@example.com"
+  },
+  {
+    "Id": "m365-Add-MailboxPermission-system",
+    "Operation": "Add-MailboxPermission",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "UserKey": "NT AUTHORITY\\SYSTEM (Microsoft.Exchange.ServiceHost)",
+    "UserType": 3,
+    "UserId": "NT AUTHORITY\\SYSTEM (Microsoft.Exchange.ServiceHost)",
+    "Workload": "Exchange",
+    "ResultStatus": "True",
+    "ObjectId": "Shared Finance",
+    "Parameters": [
+      {
+        "Name": "Identity",
+        "Value": "Shared Finance"
+      },
+      {
+        "Name": "User",
+        "Value": "jane@example.com"
+      },
+      {
+        "Name": "AccessRights",
+        "Value": "FullAccess"
+      }
+    ]
+  },
+  {
+    "Id": "m365-Set-Mailbox-language",
+    "Operation": "Set-Mailbox",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "ClientIP": "198.51.100.11",
+    "Workload": "Exchange",
+    "ResultStatus": "True",
+    "ObjectId": "Jane Doe",
+    "Parameters": [
+      {
+        "Name": "Identity",
+        "Value": "Jane Doe"
+      },
+      {
+        "Name": "Languages",
+        "Value": "fr-FR"
+      }
+    ]
+  }
+]

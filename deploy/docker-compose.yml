@@ -1,0 +1,131 @@
+# Quick start: docker compose up -d
+# Migrations run first, as their own service, so nothing starts against a
+# half-built schema.
+name: shoc
+
+x-shoc-env: &shoc-env
+  # serve and worker connect as shoc_app, which does not own the schema, so
+  # they cannot disable the audit log's triggers or delete its rows. Only the
+  # migrate service holds the owner's DSN (RFC 0024).
+  SHOC_DSN: ${SHOC_DSN:-postgresql://shoc_app:${SHOC_APP_DB_PASSWORD:-shoc_app}@postgres:5432/shoc}
+  SHOC_TENANT: ${SHOC_TENANT:-default}
+  SHOC_BACKEND: postgres
+  SHOC_MASTER_KEY: ${SHOC_MASTER_KEY:?run "shoc keygen" and put the value in .env}
+  SHOC_DRY_RUN: ${SHOC_DRY_RUN:-1}
+  # How long events are kept. The nightly job drops whole monthly partitions
+  # older than this, so an instance replaying a historical dataset has to raise
+  # it or lose what it just loaded.
+  SHOC_RETENTION_DAYS: ${SHOC_RETENTION_DAYS:-90}
+  # Agents read through a role that only holds SELECT (SEC-1). Create it with
+  # `shoc grant-readonly` and put the DSN it prints in .env.
+  SHOC_READONLY_DSN: ${SHOC_READONLY_DSN:-postgresql://shoc_agent:${SHOC_AGENT_DB_PASSWORD:-shoc_agent}@postgres:5432/shoc}
+  # Bearer tokens: {"<token>": {"role": "operator", "id": "alice"}} for a person,
+  # {"<token>": {"kind": "service", "id": "ci", "scopes": [...]}} for a machine.
+  # With none set and no account, shoc is in single-user mode, which is only
+  # safe on loopback.
+  SHOC_TOKENS: ${SHOC_TOKENS:-}
+  # The address the port is published on (see `ports` below). serve checks it,
+  # not its in-container 0.0.0.0, and refuses to start without a token or an
+  # account when it is not loopback.
+  SHOC_BIND: ${SHOC_BIND:-127.0.0.1}
+  # People sign in to the console (RFC 0028). SHOC_PUBLIC_URL is the address
+  # they open it at, e.g. https://shoc.example.com; sign-in is off without it.
+  # SHOC_SMTP_URL (smtps://user:pass@host:465, or smtp:// on 587 with STARTTLS)
+  # emails invitation and reset links; without it they are returned once.
+  # SHOC_MAIL_FROM defaults to the SMTP user.
+  SHOC_PUBLIC_URL: ${SHOC_PUBLIC_URL:-}
+  SHOC_SMTP_URL: ${SHOC_SMTP_URL:-}
+  SHOC_MAIL_FROM: ${SHOC_MAIL_FROM:-}
+  # Networks whose X-Forwarded-For sign-in limits believe. Empty means
+  # loopback and 172.16.0.0/12, which covers the console's nginx; add a TLS
+  # terminator on another host.
+  SHOC_TRUSTED_PROXIES: ${SHOC_TRUSTED_PROXIES:-}
+  # The crew. Left unset, shoc stays deterministic and hands cases to a human.
+  # `openai` is any endpoint speaking /v1/chat/completions, gateways included.
+  SHOC_LLM_PROVIDER: ${SHOC_LLM_PROVIDER:-none}
+  SHOC_LLM_BASE_URL: ${SHOC_LLM_BASE_URL:-}
+  SHOC_LLM_MODEL: ${SHOC_LLM_MODEL:-}
+  SHOC_LLM_API_KEY: ${SHOC_LLM_API_KEY:-}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      # The superuser stays `postgres`; the init script below creates an
+      # ordinary `shoc` role that owns the shoc database. shoc connects as that
+      # role, because a superuser would bypass row-level security.
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+      SHOC_DB_PASSWORD: ${SHOC_DB_PASSWORD:-shoc}
+      SHOC_APP_DB_PASSWORD: ${SHOC_APP_DB_PASSWORD:-shoc_app}
+      SHOC_AGENT_DB_PASSWORD: ${SHOC_AGENT_DB_PASSWORD:-shoc_agent}
+    volumes:
+      - shoc-pg:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    # Forward-only and safe to re-run, so it runs on every `up`. Everything
+    # else waits for it to finish: a worker that starts first runs a detection
+    # cycle against tables that do not exist yet and reports fifty broken rules
+    # on a healthy install.
+    image: ghcr.io/pwnera/shoc:${SHOC_VERSION:-edge}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: ["migrate"]
+    # The schema owner, for `migrate` and `rotate-key`:
+    #   docker compose run --rm migrate rotate-key
+    environment:
+      <<: *shoc-env
+      SHOC_MIGRATE_DSN: ${SHOC_MIGRATE_DSN:-postgresql://shoc:${SHOC_DB_PASSWORD:-shoc}@postgres:5432/shoc}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  shoc:
+    image: ghcr.io/pwnera/shoc:${SHOC_VERSION:-edge}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: ["serve", "--host", "0.0.0.0", "--port", "8080"]
+    environment: *shoc-env
+    ports:
+      # Bound to one address, not 0.0.0.0: Docker's port publishing bypasses
+      # ufw, so 0.0.0.0 on this kind of host means the public internet. Set
+      # SHOC_BIND to a private address (a VPN interface), or keep loopback and
+      # put a TLS terminator in front. Either way, issue a token or invite an
+      # account first.
+      - "${SHOC_BIND:-127.0.0.1}:${SHOC_PORT:-8080}:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  worker:
+    image: ghcr.io/pwnera/shoc:${SHOC_VERSION:-edge}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: ["worker"]
+    environment: *shoc-env
+    # The image's check probes /healthz, which only `serve` answers, so an
+    # otherwise healthy worker reports unhealthy forever. A worker has no port
+    # to probe: it exits when its loop dies and `restart` brings it back, so
+    # the check is disabled rather than replaced with one that always passes.
+    healthcheck:
+      test: ["NONE"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  shoc-pg:

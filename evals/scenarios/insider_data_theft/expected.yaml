@@ -1,0 +1,18 @@
+# An insider leaving with the customer list (AGT-6).
+id: insider_data_theft
+title: Bulk download before a leaver's last day
+description: >
+  Seventy files downloaded from Drive in half an hour, an export tool authorised
+  against the account, and second factors removed. Not every case is an outside
+  attacker, and this one still needs somebody to look.
+source: google_workspace
+entity: leaver@acme.com
+expected_rules:
+  - google_drive_mass_download
+  - google_oauth_token_authorized
+  - google_two_step_verification_disabled
+must_not_fire:
+  - m365_inbox_rule_created
+  - aws_discovery_burst
+expected_verdict: suspicious
+minimum_confidence: 0.5

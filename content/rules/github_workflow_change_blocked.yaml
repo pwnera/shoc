@@ -1,0 +1,29 @@
+id: github_workflow_change_blocked
+title: A push that changes a workflow was refused
+description: >
+  Something without the workflow permission tried to add or change a file
+  under .github/workflows and GitHub refused it. A stolen app or OAuth token
+  trying to plant a workflow fails this way first; a person rarely does.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: medium
+confidence: 0.5
+attack: [T1195.002]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  selection:
+    api.operation: protected_branch.rejected_ref_update
+    raw.reasons|contains: workflow_updates
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: GitHub Actions Workflow Modification Blocked
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/initial_access_github_actions_workflow_injection_blocked
+    license: Elastic-2.0
+    relation: adapted

@@ -1,0 +1,49 @@
+[
+  {
+    "id": "SSPR_tid-1_en-reset-by-admin",
+    "activityDisplayName": "Reset password (by admin)",
+    "category": "UserManagement",
+    "loggedByService": "Self-service Password Management",
+    "operationType": "Update",
+    "result": "success",
+    "resultReason": "Successfully completed reset.",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@acme.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "userPrincipalName": "jane@acme.com",
+        "id": "u-1",
+        "modifiedProperties": []
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Reset user password",
+    "activityDisplayName": "Reset user password",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@acme.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "displayName": "jane@acme.com",
+        "id": "u-1"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

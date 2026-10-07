@@ -1,0 +1,55 @@
+id: okta_network_zone_changed
+title: Okta network zone changed or removed
+description: >
+  A network zone was edited, deactivated or deleted, a zone stopped being a
+  blocklist, or addresses were taken off the blocklist. Sign-on policies trust
+  zones, so adding an address to a trusted zone turns MFA off for whoever
+  comes from it without touching a policy.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1556.009, T1562.007]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation:
+      - zone.update
+      - zone.deactivate
+      - zone.delete
+      - zone.remove_blacklist
+      - security.zone.remove_blacklist
+      - network_zone.rule.disabled
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Attempt to Modify an Okta Network Zone
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/defense_evasion_okta_attempt_to_modify_okta_network_zone
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Attempt to Deactivate an Okta Network Zone
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/defense_evasion_attempt_to_deactivate_okta_network_zone
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Attempt to Delete an Okta Network Zone
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/defense_evasion_attempt_to_delete_okta_network_zone
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Okta Network Zone Deactivated or Deleted
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_network_zone_deactivated_or_deleted.yml
+    author: Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: adapted
+  - name: Okta
+    title: Event types catalogue (zone.remove_blacklist, security.zone.remove_blacklist)
+    url: https://github.com/okta/okta-developer-docs/blob/master/packages/@okta/vuepress-site/data/event-types.json
+    relation: inspired

@@ -1,0 +1,17 @@
+# The Hunter settling a first-seen country on something it can check (RFC 0022).
+id: hunt_okta_travel_written_down
+title: A first sign-in from abroad that somebody wrote down
+description: >
+  Jane has signed in from Paris for three weeks. Today she signs in from Sao
+  Paulo, and the operator wrote down last week that she is at a conference
+  there. The okta_first_login_country pack returns the new country, and the
+  Hunter should explain it by the written fact, citing it, rather than raise it.
+source: okta
+entity: jane@example.com
+connected: [okta]
+history_days: 60
+memory:
+  - "jane@example.com is at a customer conference in Sao Paulo, Brazil, this week and will sign in from there."
+expected_rules: []
+expected_hunts:
+  okta_first_login_country: explained

@@ -1,0 +1,83 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-StartExportTask",
+    "eventName": "StartExportTask",
+    "eventSource": "discovery.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "exportDataFormat": [
+        "CSV"
+      ]
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-PutBucketReplication",
+    "eventName": "PutBucketReplication",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-data"
+      }
+    ],
+    "requestParameters": {
+      "bucketName": "acme-data",
+      "replication": [
+        ""
+      ],
+      "ReplicationConfiguration": {
+        "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+        "Role": "arn:aws:iam::123456789012:role/replication",
+        "Rule": {
+          "Status": "Enabled",
+          "Destination": {
+            "Bucket": "arn:aws:s3:::acme-data-dr"
+          }
+        }
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-DescribeExportTasks",
+    "eventName": "DescribeExportTasks",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  }
+]

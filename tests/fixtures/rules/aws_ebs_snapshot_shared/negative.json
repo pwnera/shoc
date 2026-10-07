@@ -1,0 +1,186 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ModifySnapshotAttribute",
+    "eventName": "ModifySnapshotAttribute",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "snapshotId": "snap-0123456789abcdef0",
+      "attributeType": "CREATE_VOLUME_PERMISSION",
+      "createVolumePermission": {
+        "remove": {
+          "items": [
+            {
+              "userId": "999988887777"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-DescribeSnapshotAttribute",
+    "eventName": "DescribeSnapshotAttribute",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "snapshotId": "snap-0123456789abcdef0"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ModifyImageAttribute-marketplace",
+    "eventName": "ModifyImageAttribute",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE:assets",
+      "arn": "arn:aws:sts::123456789012:assumed-role/marketplace/assets",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLESESSION01",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE",
+          "arn": "arn:aws:iam::123456789012:role/marketplace",
+          "accountId": "123456789012",
+          "userName": "marketplace"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T09:00:00Z",
+          "mfaAuthenticated": "false"
+        }
+      },
+      "invokedBy": "assets.marketplace.amazonaws.com"
+    },
+    "requestParameters": {
+      "imageId": "ami-0123456789abcdef0",
+      "launchPermission": {
+        "add": {
+          "items": [
+            {
+              "userId": "999988887777"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ModifyDBSnapshotAttribute-remove",
+    "eventName": "ModifyDBSnapshotAttribute",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "dBSnapshotIdentifier": "prod-db-2026-10-01",
+      "attributeName": "restore",
+      "valuesToRemove": [
+        "999988887777"
+      ]
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ModifySnapshotAttribute-empty",
+    "eventName": "ModifySnapshotAttribute",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "snapshotId": "snap-0123456789abcdef0",
+      "createVolumePermission": {
+        "add": {}
+      },
+      "attributeType": "CREATE_VOLUME_PERMISSION"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ModifySnapshotAttribute-backup",
+    "eventName": "ModifySnapshotAttribute",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "backup.amazonaws.com",
+    "userAgent": "backup.amazonaws.com",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEBACKUP01:AWSBackup-AWSServiceRoleForBackup",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSServiceRoleForBackup/AWSBackup-AWSServiceRoleForBackup",
+      "accountId": "123456789012",
+      "invokedBy": "backup.amazonaws.com",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEBACKUP01",
+          "arn": "arn:aws:iam::123456789012:role/aws-service-role/backup.amazonaws.com/AWSServiceRoleForBackup",
+          "accountId": "123456789012",
+          "userName": "AWSServiceRoleForBackup"
+        }
+      }
+    },
+    "requestParameters": {
+      "snapshotId": "snap-0fedcba9876543210",
+      "createVolumePermission": {
+        "add": {
+          "items": [
+            {
+              "userId": "111122223333"
+            }
+          ]
+        }
+      },
+      "attributeType": "CREATE_VOLUME_PERMISSION"
+    }
+  }
+]

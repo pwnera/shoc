@@ -1,0 +1,49 @@
+[
+  {
+    "_document_id": "gh-secret_scanning_alert.create",
+    "action": "secret_scanning_alert.create",
+    "actor": "github",
+    "actor_id": 9919,
+    "org": "acme",
+    "repo": "acme/landing-page",
+    "number": 3,
+    "multi_repo": false,
+    "publicly_leaked": false,
+    "secret_type": "aws_access_key_id",
+    "secret_type_display_name": "Amazon AWS Access Key ID"
+  },
+  {
+    "_document_id": "gh-secret_scanning_push_protection.bypass",
+    "action": "secret_scanning_push_protection.bypass",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "number": 4,
+    "secret_type": "github_personal_access_token",
+    "secret_type_display_name": "GitHub Personal Access Token",
+    "push_protection_bypass_reason": "will_fix_later",
+    "operation_type": "create"
+  },
+  {
+    "_document_id": "github-webhook-secret-alert-created",
+    "action": "secret_scanning_alert.create",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "org": "acme",
+    "repo": "acme/payments",
+    "alert": {
+      "number": 4,
+      "secret_type": "github_personal_access_token",
+      "secret_type_display_name": "GitHub Personal Access Token",
+      "push_protection_bypassed": true,
+      "validity": "active",
+      "html_url": "https://github.com/acme/payments/security/secret-scanning/4"
+    },
+    "webhook": {
+      "event": "secret_scanning_alert",
+      "action": "created"
+    }
+  }
+]

@@ -1,0 +1,49 @@
+id: okta_security_policy_changed
+title: Okta sign-on or password policy changed
+description: >
+  A policy or one of its rules was changed or deactivated, or one app's
+  sign-on policy was edited. Weakening MFA for one group or one app is a
+  common step before the actual theft. Okta's scheduled runs of a rule's
+  action and an app policy turning a user away are logged under the same
+  names and are left out.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1556.009, T1556.006]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation|contains: policy
+  selection_change:
+    api.operation|contains: lifecycle
+  selection_rule:
+    api.operation|contains: rule
+  selection_app_policy:
+    api.operation|startswith: application.policy.sign_on
+  # Not changes: a scheduled run of a rule's action, and an app policy denying a user.
+  filter_runtime:
+    api.operation: [policy.rule.action.execute, application.policy.sign_on.deny_access]
+  condition: ((selection and (selection_change or selection_rule)) or selection_app_policy) and not filter_runtime
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid]
+sources:
+  - name: Elastic
+    title: Modification or Removal of an Okta Application Sign-On Policy
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/persistence_okta_attempt_to_modify_or_delete_application_sign_on_policy
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Okta Application Sign-On Policy Modified or Deleted
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_application_sign_on_policy_modified_or_deleted.yml
+    author: Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: adapted
+  - name: Okta
+    title: Event types catalogue (policy.rule.action.execute, application.policy.sign_on.deny_access)
+    url: https://github.com/okta/okta-developer-docs/blob/master/packages/@okta/vuepress-site/data/event-types.json
+    relation: inspired

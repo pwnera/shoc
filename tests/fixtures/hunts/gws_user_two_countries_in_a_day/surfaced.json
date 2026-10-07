@@ -1,0 +1,68 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "g-home",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "login",
+    "events": [
+      {
+        "type": "login",
+        "name": "login_success",
+        "parameters": [
+          {
+            "name": "login_type",
+            "value": "google_password"
+          }
+        ]
+      }
+    ],
+    "networkInfo": {
+      "ipAsn": [
+        64500
+      ],
+      "regionCode": "PT"
+    }
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "g-away",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.150",
+    "_application": "login",
+    "events": [
+      {
+        "type": "login",
+        "name": "login_success",
+        "parameters": [
+          {
+            "name": "login_type",
+            "value": "google_password"
+          }
+        ]
+      }
+    ],
+    "networkInfo": {
+      "ipAsn": [
+        64511
+      ],
+      "regionCode": "NG"
+    }
+  }
+]

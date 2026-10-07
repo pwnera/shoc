@@ -1,0 +1,92 @@
+id: contain_leaked_cloud_key
+title: Contain a leaked cloud access key
+description: >
+  A cloud access key is being used by someone who should not have it. A human
+  is told, then the key is disabled, which is reversible and stops the
+  bleeding; both happen in the same pass. The page comes first so that a
+  session key (ASIA…), which IAM cannot disable, or missing credentials, which
+  fail the run, never cost it. Disabling a key leaves alive the sessions it
+  minted with GetSessionToken or GetFederationToken, and a session key has no
+  key to disable, so revoking every session issued before now to the user or
+  role behind the key waits for a human after the page. The key's user is read
+  from the events where the key acted, not from the case, which may name
+  several users. Attaching AWS's quarantine policy to that user, which denies
+  the writes a stolen key is used for, also waits for a human. Workload role
+  credentials used elsewhere have their own playbook, which revokes the role's
+  sessions.
+rules:
+  - aws_access_key_created
+  - aws_access_denied_burst
+  - aws_discovery_burst
+  - aws_secrets_enumeration
+  - aws_iam_user_created
+  - aws_console_password_set_for_user
+  - aws_key_quarantined_by_aws
+  - aws_offensive_tool_user_agent
+  - aws_federation_token_used
+  - aws_ses_abuse
+  - aws_bedrock_abuse
+  - aws_compute_capacity_grab
+  - aws_access_key_new_address
+  - aws_caller_identity_first_call
+  - aws_ses_identity_verified_then_deleted
+  - aws_bedrock_models_listed_then_invoked
+  - aws_compute_region_sweep
+  - hunt:aws_identity_first_api_call
+  - hunt:aws_rare_api_operation
+  - hunt:aws_bedrock_first_use
+  - hunt:aws_compute_new_region
+  - hunt:aws_iam_user_temporary_token_iam_calls
+  - hunt:aws_secret_first_read
+  - hunt:aws_sns_sms_first_use
+questions:
+  - id: first_use
+    ask: When and from which address was the key first used, and has that address used any other credential in this account?
+  - id: new_behaviour
+    ask: Which API operations did the principal call in the last 24 hours that it never called in the 30 days before?
+  - id: persistence
+    ask: Did the same principal create an access key, IAM user, login profile or role trust in the same window?
+  - id: data_touched
+    ask: Which secrets, buckets or snapshots did it read, and how many objects?
+  - id: other_keys
+    ask: Which access keys does this user have, and which of them were used from addresses outside their last 30 days?
+  - id: federation
+    ask: Did the key call GetFederationToken or GetSessionToken, and is the session it minted still in use after the key was disabled?
+  - id: key_type
+    ask: Is the key a long-term AKIA key of an IAM user, or an ASIA session of a role, and which role issued it?
+benign_when:
+  - The principal is a CI or deployment role and its operations and source addresses match its last 30 days.
+  - A named engineer created the key and deleted an older key of the same user within the hour.
+example: |
+  claim (first_use): "The key was first used from 203.0.113.55 at 02:14 UTC, and that address has used no other credential in the account", citing the first event from it.
+  checked and absent: "a DeleteAccessKey for an older key of the same user within the hour (30d)", which rules out a rotation by a named engineer.
+  disposition: malicious, because a new address enumerated the account and then read data.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: AWS key {{ entity.key }} used by someone else: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+      details:
+        case: "{{ case.case_uid }}"
+        key: "{{ entity.key }}"
+        source_ip: "{{ entity.ip }}"
+  - name: revoke the sessions minted from the key
+    action: aws.revoke_sessions
+    optional: true
+    params:
+      access_key_id: "{{ entity.key }}"
+  - name: disable the access key
+    action: aws.disable_access_key
+    params:
+      access_key_id: "{{ entity.key }}"
+  - name: quarantine the key's user
+    action: aws.quarantine_user
+    optional: true
+    params:
+      access_key_id: "{{ entity.key }}"

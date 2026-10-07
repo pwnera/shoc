@@ -1,0 +1,65 @@
+id: endpoint_clickfix_paste_and_run
+title: A command pasted into the Run box downloaded and ran code
+description: >
+  Explorer started PowerShell, mshta, cmd, conhost or msiexec with a command that
+  fetches code from the internet, or the Run box history holds one. Fake CAPTCHA pages
+  ("ClickFix") get people to paste exactly this, and it is the main way Windows
+  infostealers arrive.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1204.004, T1059.001, T1218.005]
+sources:
+  - name: Elastic
+    title: "Potential Fake CAPTCHA Phishing Attack"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/execution_windows_fakecaptcha_cmd_ps.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: "Potential ClickFix Command via Windows Run Dialog"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/execution_windows_clickfix_runmru.toml
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: "Command Executed Via Run Dialog Box - Registry"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/windows/registry/registry_set/registry_set_runmru_command_execution.yml
+    author: "Ahmed Farouk, Nasreddine Bencherchali"
+    license: DRL-1.1
+    relation: inspired
+  - name: Microsoft
+    title: "Think before you Click(Fix): Analyzing the ClickFix social engineering technique"
+    url: https://www.microsoft.com/en-us/security/blog/2025/08/21/think-before-you-clickfix-analyzing-the-clickfix-social-engineering-technique/
+    author: "Microsoft Threat Intelligence"
+    relation: adapted
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  # Defender only: Falcon's ASEP events and Cloud Funnel's default categories
+  # do not cover RunMRU.
+  sel_runmru:
+    raw.category: AdvancedHunting-DeviceRegistryEvents
+    raw.properties.RegistryKey|contains: RunMRU
+    raw.properties.RegistryValueData|contains: [powershell, pwsh, mshta, curl, msiexec, conhost, rundll32,
+                                                bitsadmin, forfiles]
+  # People type a bare "powershell" or a URL into Run; a pasted lure fetches or decodes.
+  sel_runmru_fetch:
+    raw.properties.RegistryValueData|contains: ['http', 'iex ', 'iex(', '|iex', '| iex', 'irm ', 'iwr ',
+                                                Invoke-WebRequest, Invoke-RestMethod, DownloadString,
+                                                DownloadFile, FromBase64String, '-w h', '@ssl', '^']
+  sel_child:
+    class_uid: 1007
+    activity_id: 1
+    process.parent_process.name: explorer.exe
+    process.name: [powershell.exe, pwsh.exe, mshta.exe, cmd.exe, conhost.exe, msiexec.exe]
+  # 'iex' alone is inside every msiexec command line.
+  sel_child_fetch:
+    process.cmd_line|contains: ['http://', 'https://', 'iex ', 'iex(', '|iex', '| iex', 'irm ', 'iwr ',
+                                Invoke-WebRequest, Invoke-RestMethod, DownloadString]
+  condition: (sel_runmru and sel_runmru_fetch) or (sel_child and sel_child_fetch)
+  timeframe: 1h
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         raw.properties.RegistryValueData]

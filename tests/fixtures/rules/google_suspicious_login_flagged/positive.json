@@ -1,0 +1,87 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-suspicious_login",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "login",
+    "events": [
+      {
+        "type": "account_warning",
+        "name": "suspicious_login",
+        "parameters": [
+          {
+            "name": "affected_email_address",
+            "value": "jane@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-susp",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "login",
+    "events": [
+      {
+        "type": "login",
+        "name": "login_success",
+        "parameters": [
+          {
+            "name": "login_type",
+            "value": "google_password"
+          },
+          {
+            "name": "is_suspicious",
+            "boolValue": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-cookie",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.70",
+    "_application": "login",
+    "events": [
+      {
+        "type": "account_warning",
+        "name": "user_signed_out_due_to_suspicious_session_cookie",
+        "parameters": [
+          {
+            "name": "affected_email_address",
+            "value": "jane@example.com"
+          }
+        ]
+      }
+    ]
+  }
+]

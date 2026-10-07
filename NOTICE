@@ -1,0 +1,22 @@
+shoc
+Copyright 2026 The shoc maintainers
+
+This product includes software developed as part of the shoc project
+(https://github.com/pwnera/shoc), licensed under the Apache License 2.0.
+
+Third-party components, each under a licence compatible with Apache 2.0 and
+checked in CI:
+
+  sqlglot            MIT
+  psycopg            LGPL-3.0-or-later (used as an unmodified library)
+  httpx              BSD-3-Clause
+  starlette          BSD-3-Clause
+  uvicorn            BSD-3-Clause
+  PyYAML             MIT
+  cryptography       Apache-2.0 OR BSD-3-Clause
+  PyJWT              MIT
+  mcp                MIT
+
+Detection content in `content/rules/` maps to MITRE ATT&CK®. ATT&CK is a
+registered trademark of The MITRE Corporation; this project is not affiliated
+with or endorsed by MITRE.

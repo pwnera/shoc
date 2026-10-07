@@ -1,0 +1,56 @@
+[
+  {
+    "id": "accact_api_key_viewed",
+    "object": "v2.iam.activity_log",
+    "type": "api_key_viewed",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "mallory@example.com"
+      }
+    },
+    "details": {
+      "type": "api_key",
+      "api_key": {
+        "id": "mk_1Sdey",
+        "created": "2026-04-01T00:00:00.000Z",
+        "type": "secret_key",
+        "name": "backup",
+        "note": "",
+        "expires_at": null,
+        "ip_allowlist": [],
+        "new_key": null,
+        "managed_by": null
+      }
+    }
+  },
+  {
+    "id": "accact_api_key_created",
+    "object": "v2.iam.activity_log",
+    "type": "api_key_created",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "mallory@example.com"
+      }
+    },
+    "details": {
+      "type": "api_key",
+      "api_key": {
+        "id": "mk_1SdezNew",
+        "created": "2026-04-01T00:00:00.000Z",
+        "type": "secret_key",
+        "name": "sync",
+        "note": "",
+        "expires_at": null,
+        "ip_allowlist": [],
+        "new_key": null,
+        "managed_by": null
+      }
+    }
+  }
+]

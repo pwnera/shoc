@@ -1,0 +1,42 @@
+id: m365_global_admin_assigned
+title: Global Administrator granted (Microsoft 365 audit)
+description: >
+  The unified audit log recorded someone being made Global Administrator. A
+  small tenant has two or three; a new one is how an attacker keeps the
+  tenant. This copy of the Entra rule covers tenants that connect only
+  Microsoft 365.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: critical
+confidence: 0.75
+attack: [T1098.003]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation|contains: [add member to role, add eligible member to role]
+  # The role added, by template id or name; a role removed is in OldValue.
+  global_admin:
+    - unmapped.modified.Role_TemplateId.NewValue: 62e90394-69f5-4237-9190-012177145e10
+    - unmapped.modified.Role_DisplayName.NewValue: [Global Administrator, Company Administrator]
+    - unmapped.modified.Role_WellKnownObjectName.NewValue: TenantAdmins
+  filter_failed:
+    status: Failure
+  condition: selection and global_admin and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Entra ID Global Administrator Role Assigned
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_global_administrator_role_assigned
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: Users Added to Global or Device Admin Roles
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_ad_users_added_to_device_admin_roles.yml
+    author: Michael Epping, '@mepples21'
+    license: DRL-1.1
+    relation: inspired

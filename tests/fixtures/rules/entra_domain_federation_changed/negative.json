@@ -1,0 +1,38 @@
+[
+  {
+    "id": "en-Verify domain",
+    "activityDisplayName": "Verify domain: Success",
+    "category": "DirectoryManagement",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      { "type": "Other", "displayName": "example.com", "id": "d-1" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Set domain authentication failed",
+    "activityDisplayName": "Set domain authentication",
+    "category": "DirectoryManagement",
+    "result": "failure",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      { "type": "Other", "displayName": "example.com", "id": "d-1" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

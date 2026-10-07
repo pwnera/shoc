@@ -1,0 +1,71 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "staging-ListUsers",
+    "eventName": "ListUsers",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Darwin/23.4",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "accountId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEALICE0001"
+    },
+    "requestParameters": {}
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "staging-CreateUser",
+    "eventName": "CreateUser",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Darwin/23.4",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "accountId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEALICE0001"
+    },
+    "requestParameters": {
+      "userName": "terraform-staging"
+    },
+    "responseElements": {
+      "user": {
+        "userName": "terraform-staging",
+        "userId": "AIDAEXAMPLESTAGING01",
+        "arn": "arn:aws:iam::123456789012:user/terraform-staging"
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "staging-AddUserToGroup",
+    "eventName": "AddUserToGroup",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12 Darwin/23.4",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEALICE",
+      "accountId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEALICE0001"
+    },
+    "requestParameters": {
+      "groupName": "deployers",
+      "userName": "terraform-staging"
+    }
+  }
+]

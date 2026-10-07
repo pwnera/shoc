@@ -1,0 +1,39 @@
+# A backup tool rotating its own key, closed by a person as the rule's mistake
+# (D77). The closure hands the Detection Engineer one item; it narrows the rule
+# on the tool's address and role, which it has seen every day for a week, and
+# the same key used from anywhere else still fires.
+id: backup_tool_false_positive
+title: A backup tool's key rotation closed as a false positive, and the rule narrowed
+source: aws_cloudtrail
+entity: arn:aws:iam::123456789012:role/backup
+expected_rules: [aws_access_key_created]
+close: {disposition: false_positive, reason: the backup tool rotates its key every night}
+de:
+  items: 1
+  merge:
+    narrows: aws_access_key_created
+    exclude:
+      - {src_endpoint.ip: 198.51.100.20, actor.user.uid: "arn:aws:iam::123456789012:role/backup"}
+  merged: true
+must_not_merge_on: [203.0.113.99]
+after_merge:
+  - record:
+      eventVersion: "1.09"
+      eventID: bk-after-routine
+      eventName: CreateAccessKey
+      eventSource: iam.amazonaws.com
+      awsRegion: us-east-1
+      sourceIPAddress: 198.51.100.20
+      recipientAccountId: "123456789012"
+      userIdentity: {type: AssumedRole, arn: "arn:aws:iam::123456789012:role/backup", accountId: "123456789012"}
+    fires: []
+  - record:
+      eventVersion: "1.09"
+      eventID: bk-after-stolen
+      eventName: CreateAccessKey
+      eventSource: iam.amazonaws.com
+      awsRegion: us-east-1
+      sourceIPAddress: 203.0.113.99
+      recipientAccountId: "123456789012"
+      userIdentity: {type: AssumedRole, arn: "arn:aws:iam::123456789012:role/backup", accountId: "123456789012"}
+    fires: [aws_access_key_created]

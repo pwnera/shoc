@@ -1,0 +1,23 @@
+id: tailscale_acl_changed
+title: Tailnet access policy changed
+description: >
+  The tailnet policy file decides which device may reach which. One edited
+  line can open the production servers to every laptop, or to a device
+  nobody approved. Changes through the policy repository's OAuth client are
+  expected; one from the admin console is worth a look.
+status: stable
+date: 2026-10-02
+modified: 2026-10-02
+severity: medium
+confidence: 0.5
+attack: [T1562.007, T1098]
+logsource:
+  product: tailscale
+  service: configuration_log
+detection:
+  selection:
+    api.operation: TAILNET.UPDATE.ACL
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.invoked_by, cloud.account.uid]

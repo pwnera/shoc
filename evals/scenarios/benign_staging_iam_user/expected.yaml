@@ -1,0 +1,24 @@
+# A lookalike: a new IAM user that a person said was coming (AGT-6).
+id: benign_staging_iam_user
+title: The staging pipeline gets its IAM user
+description: >
+  An admin creates an IAM user for the staging Terraform pipeline from the
+  office and puts it in the deployers group. The new-user rule fires, as it
+  should, and the right answer is benign_expected because a person wrote down
+  that this user was planned.
+source: aws_cloudtrail
+entity: alice
+memory:
+  - >-
+    alice is creating an IAM user called terraform-staging this week for the
+    staging Terraform pipeline, from the office address 198.51.100.10, and is
+    adding it to the deployers group.
+expected_rules:
+  - aws_iam_user_created
+must_not_fire:
+  - aws_access_key_created
+  - aws_admin_policy_attached
+  - aws_workload_credentials_misused
+expected_verdict: benign_expected
+forbidden_verdicts:
+  - malicious

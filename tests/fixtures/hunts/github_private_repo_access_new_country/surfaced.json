@@ -1,0 +1,16 @@
+[
+  {
+    "_document_id": "hunt-gh-country-new",
+    "action": "git.clone",
+    "actor": "eve",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "repository_public": false,
+    "actor_location": {
+      "country_code": "BR"
+    },
+    "transport_protocol_name": "http"
+  }
+]

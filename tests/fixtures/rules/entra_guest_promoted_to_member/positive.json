@@ -1,0 +1,38 @@
+[
+  {
+    "id": "en-guest-member",
+    "activityDisplayName": "Update user",
+    "category": "UserManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "it@acme.com",
+        "id": "u-admin",
+        "ipAddress": "198.51.100.20"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "userPrincipalName": "partner_example.org#EXT#@acme.onmicrosoft.com",
+        "id": "u-target",
+        "modifiedProperties": [
+          {
+            "displayName": "UserType",
+            "oldValue": "[\"Guest\"]",
+            "newValue": "[\"Member\"]"
+          },
+          {
+            "displayName": "Included Updated Properties",
+            "oldValue": "",
+            "newValue": "\"UserType\""
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

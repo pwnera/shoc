@@ -1,0 +1,106 @@
+[
+  {
+    "uuid": "okta-erin-in",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u5",
+      "type": "User",
+      "alternateId": "erin@example.com",
+      "displayName": "erin"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-e"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-frank-fail",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u6",
+      "type": "User",
+      "alternateId": "frank@example.com",
+      "displayName": "frank"
+    },
+    "client": {
+      "ipAddress": "203.0.113.66",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-threat-neg",
+    "eventType": "security.threat.detected",
+    "displayMessage": "Request from suspicious actor",
+    "actor": {
+      "id": "unknown",
+      "type": "User",
+      "alternateId": "unknown",
+      "displayName": "unknown"
+    },
+    "client": {
+      "ipAddress": "203.0.113.66",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "DENY"
+    },
+    "authenticationContext": {},
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "threatDetections": "{\"Password Spray\":\"ATTACK\"}",
+        "threatSuspected": "true"
+      }
+    }
+  }
+]

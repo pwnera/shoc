@@ -1,0 +1,11 @@
+[
+  {
+    "id": "cf-mem-1",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Add Member", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"method": "POST", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/members", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "r-1", "request": {"email": "outsider@example.net"}, "response": {}},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  }
+]

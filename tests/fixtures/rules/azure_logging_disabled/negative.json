@@ -1,0 +1,26 @@
+[
+  {
+    "resourceId": "/SUBSCRIPTIONS/00000000-1111-2222-3333-444444444444/PROVIDERS/MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/TO-SHOC",
+    "operationName": "MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/WRITE",
+    "category": "Administrative",
+    "resultType": "Success",
+    "callerIpAddress": "198.51.100.24",
+    "correlationId": "99999999-aaaa-4aaa-8aaa-999999999999",
+    "identity": {
+      "claims": { "upn": "dana@example.com", "ipaddr": "198.51.100.24" }
+    },
+    "level": "Information"
+  },
+  {
+    "resourceId": "/SUBSCRIPTIONS/00000000-1111-2222-3333-444444444444/PROVIDERS/MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/TO-SHOC",
+    "operationName": "MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/DELETE",
+    "category": "Administrative",
+    "resultType": "Failure",
+    "callerIpAddress": "198.51.100.24",
+    "correlationId": "99999999-bbbb-4bbb-8bbb-999999999999",
+    "identity": {
+      "claims": { "upn": "dana@example.com", "ipaddr": "198.51.100.24" }
+    },
+    "level": "Error"
+  }
+]

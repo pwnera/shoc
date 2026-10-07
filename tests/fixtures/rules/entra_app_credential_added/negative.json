@@ -1,0 +1,38 @@
+[
+  {
+    "id": "en-Update application",
+    "activityDisplayName": "Update application",
+    "category": "ApplicationManagement",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "id": "u-2",
+        "ipAddress": "198.51.100.7",
+        "userPrincipalName": "dev@example.com"
+      }
+    },
+    "targetResources": [
+      { "displayName": "Mail Sync", "id": "app-obj-1", "type": "Application" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Remove service principal credentials",
+    "activityDisplayName": "Remove service principal credentials",
+    "category": "ApplicationManagement",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "id": "u-2",
+        "ipAddress": "198.51.100.7",
+        "userPrincipalName": "dev@example.com"
+      }
+    },
+    "targetResources": [
+      { "displayName": "Mail Sync", "id": "sp-1", "type": "ServicePrincipal" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

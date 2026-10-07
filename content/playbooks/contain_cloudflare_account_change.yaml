@@ -1,0 +1,46 @@
+id: contain_cloudflare_account_change
+title: Contain a change to the Cloudflare account
+description: >
+  A token was created, a member added or promoted, a mail record repointed, or
+  TLS switched off. When the change came through an account API token, that
+  token is disabled, which is reversible; a dashboard session cannot be ended
+  through the API, so a human is paged to remove the member or revert the record.
+rules:
+  - cloudflare_api_token_created
+  - cloudflare_member_added_or_changed
+  - cloudflare_mail_dns_record_changed
+  - cloudflare_ssl_downgraded
+  - cloudflare_api_token_revoked
+  - cloudflare_logpush_job_disabled
+  - hunt:cloudflare_member_first_product
+questions:
+  - id: actor
+    ask: Who made the change, from which address, and through the dashboard or an API token?
+  - id: change
+    ask: What exactly changed, the token's permissions, the member's roles, the record's content or the SSL mode, and what was there before?
+  - id: after
+    ask: What did the same person or token do next, more tokens, DNS records or zone settings?
+benign_when:
+  - The change came from the deployment token, from its usual addresses, and matches the infrastructure code.
+  - The token id is one `own.list` records as shoc's own read token, and the event is its own creation before shoc was configured.
+  - A named engineer made it and reverted it, or announced it, within the hour.
+example: |
+  claim (actor): "The MX record was changed through the dashboard by mallory@example.com from 203.0.113.7, an address that never signed in to this account before", citing the change.
+  checked and absent: "a change from the Terraform token to the same record in the last 30 days (30d)", which rules out the usual deployment.
+  disposition: malicious, because the company's mail now goes to a server outside it.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.75
+steps:
+  - name: disable the API token the change was made with
+    action: cloudflare.disable_api_token
+    optional: true
+    params:
+      token_id: "{{ entity.key }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: Cloudflare account changed by {{ entity.user }}, check it: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"

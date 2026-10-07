@@ -1,0 +1,43 @@
+[
+  {
+    "uuid": "okta-user.mfa.factor.reset_all",
+    "eventType": "user.mfa.factor.reset_all",
+    "displayMessage": "user mfa factor reset_all",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u2efgh",
+        "type": "User",
+        "alternateId": "bob@example.com"
+      }
+    ]
+  }
+]

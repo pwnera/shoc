@@ -1,0 +1,114 @@
+[
+  {
+    "id": "evt_retry",
+    "object": "event",
+    "livemode": true,
+    "pending_webhooks": 0,
+    "type": "charge.failed",
+    "data": {
+      "object": {
+        "id": "ch_retry",
+        "object": "charge",
+        "amount": 4900,
+        "amount_captured": 0,
+        "captured": false,
+        "currency": "usd",
+        "billing_details": {
+          "address": {
+            "postal_code": null
+          },
+          "email": "buyer@example.com",
+          "name": null,
+          "phone": null
+        },
+        "failure_code": "card_declined",
+        "failure_message": "Your card has insufficient funds.",
+        "livemode": true,
+        "outcome": {
+          "network_status": "declined_by_network",
+          "reason": "insufficient_funds",
+          "risk_level": "normal",
+          "seller_message": "The bank returned the decline code `insufficient_funds`.",
+          "type": "issuer_declined"
+        },
+        "paid": false,
+        "payment_intent": "pi_ch_retry",
+        "payment_method": "pm_ch_retry",
+        "payment_method_details": {
+          "card": {
+            "brand": "visa",
+            "checks": {
+              "cvc_check": "unchecked"
+            },
+            "country": "US",
+            "exp_month": 11,
+            "exp_year": 2028,
+            "fingerprint": "Xq1Dretry",
+            "funding": "credit",
+            "last4": "4242"
+          },
+          "type": "card"
+        },
+        "receipt_email": null,
+        "status": "failed"
+      }
+    },
+    "_repeat": 4
+  },
+  {
+    "id": "evt_expired",
+    "object": "event",
+    "livemode": true,
+    "pending_webhooks": 0,
+    "type": "charge.failed",
+    "data": {
+      "object": {
+        "id": "ch_expired",
+        "object": "charge",
+        "amount": 4900,
+        "amount_captured": 0,
+        "captured": false,
+        "currency": "usd",
+        "billing_details": {
+          "address": {
+            "postal_code": null
+          },
+          "email": "renewal@example.org",
+          "name": null,
+          "phone": null
+        },
+        "failure_code": "expired_card",
+        "failure_message": "Your card has expired.",
+        "livemode": true,
+        "outcome": {
+          "network_status": "declined_by_network",
+          "reason": "expired_card",
+          "risk_level": "normal",
+          "seller_message": "The bank returned the decline code `expired_card`.",
+          "type": "issuer_declined"
+        },
+        "paid": false,
+        "payment_intent": "pi_ch_expired",
+        "payment_method": "pm_ch_expired",
+        "payment_method_details": {
+          "card": {
+            "brand": "visa",
+            "checks": {
+              "cvc_check": "unchecked"
+            },
+            "country": "US",
+            "exp_month": 11,
+            "exp_year": 2028,
+            "fingerprint": "Xq1Eexpired",
+            "funding": "credit",
+            "last4": "1881"
+          },
+          "type": "card"
+        },
+        "receipt_email": null,
+        "status": "failed"
+      }
+    },
+    "_repeat": 5
+  }
+]

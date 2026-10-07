@@ -1,0 +1,60 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-CREATE_USER",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "USER_SETTINGS",
+        "name": "CREATE_USER",
+        "parameters": [
+          {
+            "name": "USER_EMAIL",
+            "value": "bob@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-ASSIGN_ROLE",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "DELEGATED_ADMIN_SETTINGS",
+        "name": "ASSIGN_ROLE",
+        "parameters": [
+          {
+            "name": "ROLE_NAME",
+            "value": "Reports Admin"
+          },
+          {
+            "name": "USER_EMAIL",
+            "value": "reports-reader@example-project.iam.gserviceaccount.com"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,62 @@
+id: contain_github_org_tampering
+title: Contain tampering with the GitHub organisation
+description: >
+  Branch protection was removed, an Actions secret changed, a webhook was
+  deleted, a runner, deploy key or token was added, or repositories were
+  deleted, moved out or cloned in bulk. Each one opens a path into production
+  through the code, and a deleted webhook can be shoc's own. When an owner made
+  the change, demoting them to member waits for a human, who is paged. The
+  Commander can propose `github.remove_deploy_key` for a new key. A new owner
+  is answered in contain_github_owner_added, a security feature turned off in
+  restore_github_security.
+rules:
+  - github_protected_branch_removed
+  - github_secret_changed
+  - github_webhook_deleted
+  - github_self_hosted_runner_registered
+  - github_deploy_key_added
+  - github_repo_deleted_or_transferred
+  - github_mass_clone
+  - github_force_push_to_default_branch
+  - github_workflow_change_blocked
+  - github_fine_grained_pat_granted
+  - hunt:github_self_hosted_runner_first_seen
+  - hunt:github_private_repo_access_new_country
+  - hunt:github_identity_first_push_to_repo
+  - hunt:github_workflow_first_run_in_repo
+questions:
+  - id: actor
+    ask: Who made the change, from which address, and are they an owner?
+  - id: pushed
+    ask: Was anything pushed to the unprotected branch, and by whom?
+  - id: secret_use
+    ask: Which workflows read the changed secret, and has one run since?
+  - id: access_kept
+    ask: Was a runner, deploy key or token added, by whom, and what has it done since?
+  - id: code_taken
+    ask: Which repositories were cloned, transferred or deleted, and where did they go?
+benign_when:
+  - An owner lifted protection for a release and restored it within the hour.
+  - The secret was rotated by the team that owns it, on its usual schedule.
+  - The runner, key or token was set up by the team for a build or deploy it announced.
+example: |
+  claim (pushed): "Branch protection on main was removed and a commit was pushed directly 3 minutes later by the same account, from 203.0.113.52", citing both events.
+  checked and absent: "protection restored within the hour (2h window)", which rules out a release window.
+  disposition: malicious, because the protection stayed off and the direct push came from an address the owner never used.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: GitHub organisation changed by {{ entity.user }}, undo it: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: make the owner who made the change a member
+    action: github.demote_org_owner
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+      org: "{{ entity.account }}"

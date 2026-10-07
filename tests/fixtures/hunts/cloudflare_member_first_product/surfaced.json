@@ -1,0 +1,23 @@
+[
+  {
+    "id": "hunt-cf-1",
+    "action": {
+      "time": "",
+      "type": "update",
+      "description": "update dns",
+      "result": "success"
+    },
+    "actor": {
+      "email": "mallory@example.com",
+      "ip_address": "198.51.100.30",
+      "type": "user"
+    },
+    "account": {
+      "id": "acc-1"
+    },
+    "resource": {
+      "product": "dns",
+      "id": "dns-1"
+    }
+  }
+]

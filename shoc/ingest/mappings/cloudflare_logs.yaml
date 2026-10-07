@@ -1,0 +1,167 @@
+# Cloudflare Logpush datasets -> OCSF. ING-1, ING-3.
+#
+# The connector tags each record with `_dataset`, the dataset of the job that
+# wrote it, and the derive rules pick the class from it. Field names barely
+# overlap between datasets, so one path list per column serves all of them;
+# where a name means different things (`Action`, `OriginIP`), the comment says
+# which dataset it comes from.
+#
+# Logpush writes no single field with the full URL of a zone request
+# (`ClientRequestURI` is path and query only), so `http_request_url` is filled
+# from Gateway's `URL` alone. The host the visitor asked for is the destination
+# domain.
+#
+# Rows carry no event_uid: a firewall event shares its RayID with the request
+# and with every other rule that matched it, so the whole record is hashed.
+source: cloudflare_logs
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [cloudflare/logpush, dns]
+
+constants:
+  category_uid: 4
+  class_uid: 4001
+  class_name: Network Activity
+  type_uid: 400199
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  cloud_provider: Cloudflare
+  metadata_product: Cloudflare Logpush
+
+fields:
+  # Zero Trust sessions are logged when they close, so the end time comes first.
+  time:
+    paths: [EdgeStartTimestamp, Datetime, Timestamp, CreatedAt, SessionEndTime, SessionStartTime, When, ActionTimestamp]
+    transform: iso8601
+  # firewall_events and Gateway: what was done to the request (block, allow,
+  # allowedOnNoRuleMatch); gateway_dns: the resolver's decision.
+  status: { paths: [Action, ResolverDecision] }
+  status_code: { paths: [EdgeResponseStatus, HTTPStatusCode, RCode, ResponseCode], transform: str }
+  message: { paths: [Description, Metadata.rule_message, PolicyName] }
+  actor_user_name: { paths: [Email, ActorEmail] }
+  actor_user_uid: { paths: [UserUID, UserID, ActorID] }
+  actor_user_type: { path: ActorType }
+  actor_invoked_by: { path: Interface }
+  # dns_logs: the resolver that asked Cloudflare's authoritative DNS.
+  src_endpoint_ip: { paths: [ClientIP, SourceIP, SrcIP, IPAddress, ActorIP, ActorIPAddress] }
+  src_endpoint_port: { paths: [ClientSrcPort, SourcePort, SrcPort], transform: int }
+  src_endpoint_location_country:
+    paths: [ClientCountry, Country, SrcIPCountryCode, SourceIPCountryCode]
+    transform: upper
+  src_endpoint_asn: { path: ClientASN, transform: str }
+  # http_requests and zero_trust_network_sessions: the origin the request or
+  # session reached. gateway_dns: the resolver address the query went to.
+  dst_endpoint_ip: { paths: [DestinationIP, DstIP, OriginIP] }
+  dst_endpoint_port: { paths: [DestinationPort, DstPort, OriginPort], transform: int }
+  dst_endpoint_domain: { paths: [ClientRequestHost, HTTPHost, SNI, ResolvedFQDN] }
+  # Cloudflare keeps the case the client sent (`fOo-BaR.example.`).
+  dns_query_hostname: { path: QueryName, transform: lower }
+  http_request_url: { path: URL }
+  http_user_agent: { paths: [ClientRequestUserAgent, UserAgent] }
+  api_operation: { path: ActionType }
+  device_hostname: { path: DeviceName }
+  device_uid: { path: DeviceID }
+  file_path: { paths: [BlockedFileName, "FileInfo.files[*].file_name"] }
+  file_hash_sha256: { path: BlockedFileHash }
+  resource_type: { path: ResourceType }
+  # Audit: the changed resource. access_requests: the Access application.
+  # Zone datasets: the zone.
+  resource_uid: { paths: [ResourceID, AppDomain, ZoneName] }
+  cloud_account_uid: { paths: [AccountID, Metadata.account_id] }
+
+derive:
+  # -- HTTP: zone requests, firewall events, Gateway HTTP -----------------
+  - when: { _dataset: { in: [http_requests, firewall_events, gateway_http] } }
+    set: { class_uid: 4002, class_name: HTTP Activity, type_uid: 400200 }
+  - when: { ClientRequestMethod: { exists: true } }
+    set: { activity_id: 99, activity_name: Other, type_uid: 400299 }
+  - when: { HTTPMethod: { exists: true } }
+    set: { activity_id: 99, activity_name: Other, type_uid: 400299 }
+  - when: { ClientRequestMethod: CONNECT }
+    set: { activity_id: 1, activity_name: Connect, type_uid: 400201 }
+  - when: { HTTPMethod: CONNECT }
+    set: { activity_id: 1, activity_name: Connect, type_uid: 400201 }
+  - when: { ClientRequestMethod: DELETE }
+    set: { activity_id: 2, activity_name: Delete, type_uid: 400202 }
+  - when: { HTTPMethod: DELETE }
+    set: { activity_id: 2, activity_name: Delete, type_uid: 400202 }
+  - when: { ClientRequestMethod: GET }
+    set: { activity_id: 3, activity_name: Get, type_uid: 400203 }
+  - when: { HTTPMethod: GET }
+    set: { activity_id: 3, activity_name: Get, type_uid: 400203 }
+  - when: { ClientRequestMethod: HEAD }
+    set: { activity_id: 4, activity_name: Head, type_uid: 400204 }
+  - when: { HTTPMethod: HEAD }
+    set: { activity_id: 4, activity_name: Head, type_uid: 400204 }
+  - when: { ClientRequestMethod: OPTIONS }
+    set: { activity_id: 5, activity_name: Options, type_uid: 400205 }
+  - when: { HTTPMethod: OPTIONS }
+    set: { activity_id: 5, activity_name: Options, type_uid: 400205 }
+  - when: { ClientRequestMethod: POST }
+    set: { activity_id: 6, activity_name: Post, type_uid: 400206 }
+  - when: { HTTPMethod: POST }
+    set: { activity_id: 6, activity_name: Post, type_uid: 400206 }
+  - when: { ClientRequestMethod: PUT }
+    set: { activity_id: 7, activity_name: Put, type_uid: 400207 }
+  - when: { HTTPMethod: PUT }
+    set: { activity_id: 7, activity_name: Put, type_uid: 400207 }
+  - when: { ClientRequestMethod: TRACE }
+    set: { activity_id: 8, activity_name: Trace, type_uid: 400208 }
+  - when: { HTTPMethod: TRACE }
+    set: { activity_id: 8, activity_name: Trace, type_uid: 400208 }
+  # A firewall event stays at severity 1, blocks included: a public zone is
+  # scanned all day, and a block is the control working. Rules decide which
+  # ones matter (a block followed by an allow, a leaked credential).
+  # A file Gateway's antivirus stopped is a malware download that was attempted.
+  - when: { BlockedFileReason: avscan }
+    set: { severity_id: 3 }
+
+  # -- DNS: authoritative queries to the zone, and Gateway's resolver ------
+  - when: { _dataset: { in: [dns_logs, gateway_dns] } }
+    set: { class_uid: 4003, class_name: DNS Activity, type_uid: 400306, activity_id: 6, activity_name: Traffic }
+
+  # -- Network: Gateway sessions, and Zero Trust sessions when they close --
+  - when: { _dataset: gateway_network }
+    set: { activity_id: 1, activity_name: Open, type_uid: 400101 }
+  - when: { _dataset: gateway_network, Action: { contains: block } }
+    set: { activity_id: 5, activity_name: Refuse, type_uid: 400105 }
+  - when: { _dataset: zero_trust_network_sessions }
+    set: { activity_id: 2, activity_name: Close, type_uid: 400102 }
+
+  # -- Access logins -------------------------------------------------------
+  - when: { _dataset: access_requests }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, type_uid: 300299, activity_id: 99, activity_name: Other }
+  - when: { _dataset: access_requests, Action: login }
+    set: { type_uid: 300201, activity_id: 1, activity_name: Logon }
+  - when: { _dataset: access_requests, Action: logout }
+    set: { type_uid: 300202, activity_id: 2, activity_name: Logoff }
+  - when: { _dataset: access_requests, Allowed: true }
+    set: { status: Success }
+  - when: { _dataset: access_requests, Allowed: false }
+    set: { status: Failure, severity_id: 2 }
+
+  # -- Audit logs pushed rather than read from the API ---------------------
+  # The product is the audit log's, so the `cloudflare` audit rules read these rows.
+  - when: { _dataset: { in: [audit_logs, audit_logs_v2] } }
+    set: { category_uid: 6, class_uid: 6003, class_name: API Activity, type_uid: 600399, status: Success, metadata_product: Cloudflare Audit Log }
+  - when: { _dataset: { in: [audit_logs, audit_logs_v2] }, ActionType: { contains: create } }
+    set: { activity_id: 1, activity_name: Create, type_uid: 600301 }
+  - when: { _dataset: { in: [audit_logs, audit_logs_v2] }, ActionType: { contains: update } }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303 }
+  - when: { _dataset: { in: [audit_logs, audit_logs_v2] }, ActionType: { contains: delete } }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 600304 }
+  - when: { _dataset: { in: [audit_logs, audit_logs_v2] }, ActionResult: false }
+    set: { status: Failure, severity_id: 2 }
+  - when: { _dataset: { in: [audit_logs, audit_logs_v2] }, ActionResult: failure }
+    set: { status: Failure, severity_id: 2 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: dst_endpoint_ip, name: dst_endpoint.ip, type: "IP Address" }
+  - { column: dst_endpoint_domain, name: dst_endpoint.domain, type: "Domain Name" }
+  - { column: dns_query_hostname, name: query.hostname, type: "Domain Name" }
+  - { column: http_request_url, name: http_request.url.url_string, type: "URL String" }
+  - { column: actor_user_name, name: actor.user.name, type: "Email Address" }
+  - { column: device_hostname, name: device.hostname, type: Hostname }
+  - { column: file_hash_sha256, name: file.hashes.sha256, type: "File Hash" }

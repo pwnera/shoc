@@ -1,0 +1,58 @@
+id: entra_mfa_disabled
+title: MFA turned off or a method removed by an admin
+description: >
+  An admin turned off per-user MFA for an account or deleted one of its
+  sign-in methods. Many small tenants still rely on per-user MFA, so this takes
+  away the one control between a stolen password and the mailbox. Core
+  Directory's record of a per-user MFA change names a Microsoft service as the
+  actor, so the admin's own record from Authentication Methods counts too. A
+  user removing their own old phone is left to the hunt.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1556.006]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection:
+    api.operation|contains: [disable strong authentication, admin deleted security info]
+  selection_per_user:
+    api.operation: Update per-user multifactor authentication state
+  # The value is JSON text: "[]" holds no requirement, which is how a user
+  # without per-user MFA reads.
+  per_user_off:
+    - unmapped.modified.StrongAuthenticationRequirements.newValue: '"[]"'
+    - unmapped.modified.StrongAuthenticationRequirements.newValue|contains: disabled
+  filter_failed:
+    status: Failure
+  condition: (selection or (selection_per_user and per_user_off)) and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Sigma
+    title: Disabled MFA to Bypass Authentication Mechanisms
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_mfa_disabled.yml
+    author: "'@ionsor'"
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: Entra ID MFA Disabled for User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_mfa_disabled_for_user
+    license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft
+    title: Microsoft Entra audit log activity reference
+    url: https://learn.microsoft.com/en-us/entra/identity/monitoring-health/reference-audit-activities
+    relation: inspired
+  - name: Microsoft
+    title: strongAuthenticationRequirements resource type
+    url: https://learn.microsoft.com/en-us/graph/api/resources/strongauthenticationrequirements?view=graph-rest-beta
+    relation: inspired
+  - name: Azure-Hardening-IAM-Lab
+    title: Entra audit log export of per-user MFA changes (lab tenant)
+    url: https://github.com/Inevitable-debug/Azure-Hardening-IAM-Lab/blob/main/logs/AuditLogs_2026-04-15%20(POST-HARDENING).csv
+    relation: inspired

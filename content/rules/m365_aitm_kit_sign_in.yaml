@@ -1,0 +1,34 @@
+id: m365_aitm_kit_sign_in
+title: Sign-in from a phishing-kit HTTP client (Microsoft 365 audit)
+description: >
+  The unified audit log recorded a sign-in to Office from a Node.js HTTP client
+  instead of a browser, the way Tycoon 2FA and similar kits relay a victim's
+  password and MFA. This copy of the Entra rule covers tenants without Entra
+  P1. Failed attempts count too.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.8
+attack: [T1557, T1539, T1566.002]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_app:
+    api.operation: [UserLoggedIn, UserLoginFailed]
+    raw.ApplicationId: [4765445b-32c6-49b0-83e6-1d93765276ca, 29d9ed98-a469-4536-ade2-f981bc1d605e]
+  selection_axios:
+    http_request.user_agent|startswith: axios/
+  selection_node:
+    http_request.user_agent: [node, undici]
+  condition: selection_app and (selection_axios or selection_node)
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, http_request.user_agent, status]
+sources:
+  - name: Elastic
+    title: M365 Potential AiTM UserLoggedIn via Office App (Tycoon2FA)
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/initial_access_tycoon_o365
+    license: Elastic-2.0
+    relation: adapted

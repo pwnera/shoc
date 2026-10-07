@@ -1,0 +1,27 @@
+id: okta_support_impersonation
+title: Okta support access granted or used
+description: >
+  An admin let Okta support into the tenant, or support started a session as a
+  user. The 2023 Okta support breach went through this path; here it should
+  match an open support ticket and nothing else.
+status: experimental
+date: 2026-10-02
+severity: medium
+confidence: 0.6
+attack: [T1078.004, T1199]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation: [user.session.impersonation.grant, user.session.impersonation.initiate]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Okta User Session Impersonation
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_user_impersonation_access
+    license: Elastic-2.0
+    relation: adapted

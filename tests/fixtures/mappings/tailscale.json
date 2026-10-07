@@ -1,0 +1,112 @@
+[
+  {
+    "action": "UPDATE",
+    "actor": {
+      "displayName": "Alice Architect",
+      "id": "u123456CNTRL",
+      "loginName": "alice@example.com",
+      "type": "USER"
+    },
+    "deferredAt": "0001-01-01T00:00:00Z",
+    "eventGroupID": "12345",
+    "eventTime": "2026-09-20T20:13:30.136022207Z",
+    "new": "2027-01-14T20:13:30.134350003Z",
+    "old": "0001-01-01T00:00:00Z",
+    "origin": "NODE",
+    "target": {
+      "id": "n654321CNTRL",
+      "name": "node1.example-tailnet.ts.net",
+      "property": "KEY_EXPIRY_TIME",
+      "type": "NODE"
+    },
+    "type": "CONFIG",
+    "event": "NODE.UPDATE.KEY_EXPIRY_TIME",
+    "tailnet": "T1234CNTRL"
+  },
+  {
+    "action": "CREATE",
+    "actor": {
+      "displayName": "Mallory",
+      "id": "u999CNTRL",
+      "loginName": "mallory@example.com",
+      "type": "USER"
+    },
+    "eventGroupID": "12346",
+    "eventTime": "2026-09-20T20:20:00Z",
+    "new": {
+      "capabilities": [
+        "CONTROL_API_SCOPE_ALL"
+      ],
+      "expires": "2026-12-19 18:40:58 +0000 UTC"
+    },
+    "origin": "ADMIN_CONSOLE",
+    "target": {
+      "id": "k6r3fm3CNTRL",
+      "name": "Control API key",
+      "type": "API_KEY"
+    },
+    "type": "CONFIG",
+    "event": "API_KEY.CREATE",
+    "tailnet": "T1234CNTRL"
+  },
+  {
+    "action": "LOGIN",
+    "actor": {
+      "displayName": "OAuth client",
+      "id": "k777CNTRL",
+      "loginName": "",
+      "type": "OAUTH_CLIENT"
+    },
+    "eventGroupID": "12347",
+    "eventTime": "2026-09-20T21:00:00.000000001Z",
+    "origin": "NODE",
+    "target": {
+      "id": "n888CNTRL",
+      "name": "build-edge.example-tailnet.ts.net",
+      "type": "NODE"
+    },
+    "type": "CONFIG",
+    "event": "NODE.LOGIN",
+    "tailnet": "T1234CNTRL"
+  },
+  {
+    "action": "APPROVE",
+    "actor": {
+      "displayName": "OAuth client",
+      "id": "k777CNTRL",
+      "loginName": "",
+      "type": "OAUTH_CLIENT"
+    },
+    "eventGroupID": "12347",
+    "eventTime": "2026-09-20T21:00:00.000000002Z",
+    "origin": "NODE",
+    "target": {
+      "id": "n888CNTRL",
+      "name": "build-edge.example-tailnet.ts.net",
+      "type": "NODE"
+    },
+    "type": "CONFIG",
+    "event": "NODE.APPROVE",
+    "tailnet": "T1234CNTRL"
+  },
+  {
+    "action": "LOGIN",
+    "actor": {
+      "displayName": "Alice Architect",
+      "id": "u123456CNTRL",
+      "loginName": "alice@example.com",
+      "type": "USER"
+    },
+    "eventGroupID": "",
+    "eventTime": "2026-09-20T21:05:00Z",
+    "origin": "ADMIN_CONSOLE",
+    "target": {
+      "id": "ADMIN_CONSOLE",
+      "name": "Admin console",
+      "type": "ADMIN_CONSOLE"
+    },
+    "type": "CONFIG",
+    "event": "ADMIN_CONSOLE.LOGIN",
+    "tailnet": "T1234CNTRL"
+  }
+]

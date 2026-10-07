@@ -1,0 +1,140 @@
+[
+  {
+    "uuid": "okta-denied-only",
+    "eventType": "user.mfa.okta_verify.deny_push",
+    "displayMessage": "user mfa okta_verify deny_push",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "203.0.113.200",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Russia",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "DENY"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-x"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "_repeat": 3
+  },
+  {
+    "uuid": "okta-bob-ok",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u2",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "bob"
+    },
+    "client": {
+      "ipAddress": "198.51.100.6",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-b"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-carol-denied",
+    "eventType": "user.mfa.okta_verify.deny_push",
+    "displayMessage": "user mfa okta_verify deny_push",
+    "actor": {
+      "id": "00u3",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "carol"
+    },
+    "client": {
+      "ipAddress": "198.51.100.7",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "DENY"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-c"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-carol-approved-before",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u3",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "carol"
+    },
+    "client": {
+      "ipAddress": "198.51.100.7",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-c"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "OKTA_VERIFY_PUSH"
+      }
+    }
+  }
+]

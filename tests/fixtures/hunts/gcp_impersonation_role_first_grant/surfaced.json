@@ -1,0 +1,38 @@
+[
+  {
+    "insertId": "hunt-gcp-tokencreator",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "service_account",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.admin.v1.SetIAMPolicy",
+      "resourceName": "projects/-/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.81",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "serviceData": {
+        "@type": "type.googleapis.com/google.iam.v1.logging.AuditData",
+        "policyDelta": {
+          "bindingDeltas": [
+            {
+              "action": "ADD",
+              "role": "roles/iam.serviceAccountTokenCreator",
+              "member": "user:backup@example.net"
+            }
+          ]
+        }
+      }
+    }
+  }
+]

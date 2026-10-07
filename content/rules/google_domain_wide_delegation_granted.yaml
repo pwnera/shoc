@@ -1,0 +1,24 @@
+id: google_domain_wide_delegation_granted
+title: A client was given domain-wide delegation in Google Workspace
+description: >
+  An administrator let an OAuth client act as any user in the domain. That
+  client can then read every mailbox and every file without anyone signing in,
+  which is the access an attacker who reached the admin console wants to keep.
+  shoc's own setup grants this to its service account with one read-only
+  scope; the intake check recognises that grant (RFC 0021).
+status: stable
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1098.001, T1550.001]
+logsource:
+  product: google
+  service: reports
+detection:
+  selection:
+    api.operation: AUTHORIZE_API_CLIENT_ACCESS
+  condition: selection
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, resource.uid, src_endpoint.ip]

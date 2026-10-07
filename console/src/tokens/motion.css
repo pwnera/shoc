@@ -1,0 +1,89 @@
+/* Motion. Colour changes fast; floating surfaces enter with a short fade and a 4px rise;
+   a row that arrives flashes once. Presence is the only loop. Never width, height or bounce. */
+:root {
+  --dur-1: 100ms;
+  --dur-2: 150ms;
+  --dur-3: 200ms; /* popover, menu, tooltip, toast enter */
+  --dur-4: 280ms; /* dialog, palette, chat window enter */
+  --dur-flash: 1200ms; /* a row that arrives */
+  --ease: cubic-bezier(0.2, 0, 0, 1); /* ease-out: enter and colour */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1); /* exit */
+  --transition-color:
+    color var(--dur-2) var(--ease), background-color var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease);
+}
+@keyframes sh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes sh-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes sh-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@keyframes sh-flash {
+  from {
+    background-color: var(--bg-3);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+@keyframes sh-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* A toast's lifetime bar; the toast leaves when it ends, so hovering pauses both. */
+@keyframes sh-life {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Reduced motion: enters fade without moving, a flash holds still for 2s, the pulse rests on
+   its lit frame. The spinner swaps to a static "…" in shoc.css. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-3: var(--dur-1);
+    --dur-4: var(--dur-1);
+    --dur-flash: 2s;
+  }
+  @keyframes sh-enter {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes sh-flash {
+    0%,
+    99% {
+      background-color: var(--bg-3);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+  @keyframes sh-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+  }
+}

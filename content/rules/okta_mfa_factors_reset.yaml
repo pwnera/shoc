@@ -1,0 +1,32 @@
+id: okta_mfa_factors_reset
+title: MFA factors reset for a user
+description: >
+  All second factors were reset or deactivated for an account. Done by an
+  attacker with a session, it turns a hijacked login into lasting access. A
+  user changing their own security question is left out.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1556.006]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection_reset:
+    api.operation|contains: user.mfa.factor.reset_all
+  selection_deactivate:
+    api.operation|contains: user.mfa.factor.deactivate
+  filter_security_question:
+    status_code: User reset SECURITY_QUESTION factor
+  condition: (selection_reset or selection_deactivate) and not filter_security_question
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: MFA Deactivation with no Re-Activation for Okta User Account
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/persistence_mfa_deactivation_with_no_reactivation
+    license: Elastic-2.0
+    relation: inspired

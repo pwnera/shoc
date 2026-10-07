@@ -1,0 +1,41 @@
+[
+  {
+    "_document_id": "gh-protected_branch.destroy",
+    "action": "protected_branch.destroy",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "name": "main",
+    "user_agent": "Mozilla/5.0",
+    "operation_type": "remove"
+  },
+  {
+    "_document_id": "github-webhook-ruleset-disabled",
+    "action": "repository_ruleset.update",
+    "actor": "mallory",
+    "org": "acme",
+    "repo": "acme/payments",
+    "repository_ruleset": {"id": 12, "name": "main", "enforcement": "disabled"},
+    "changes": {"enforcement": {"from": "active"}},
+    "webhook": {"event": "repository_ruleset", "action": "edited"}
+  },
+  {
+    "_document_id": "gh-repository_ruleset.update-disabled",
+    "action": "repository_ruleset.update",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "actor_is_bot": false,
+    "org": "acme",
+    "public_repo": false,
+    "ruleset_id": 1082915,
+    "ruleset_name": "protect-default-branch",
+    "ruleset_source_type": "Organization",
+    "ruleset_enforcement": "disabled",
+    "ruleset_old_enforcement": "active",
+    "user_agent": "Mozilla/5.0",
+    "operation_type": "modify"
+  }
+]

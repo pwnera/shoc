@@ -1,0 +1,65 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateVirtualMFADevice",
+    "eventName": "CreateVirtualMFADevice",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "Mozilla/5.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice",
+      "accessKeyId": "ASIAEXAMPLECONSOLE1"
+    },
+    "requestParameters": {
+      "virtualMFADeviceName": "alice-phone"
+    },
+    "sessionCredentialFromConsole": "true"
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-EnableMFADevice",
+    "eventName": "EnableMFADevice",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "Mozilla/5.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice",
+      "accessKeyId": "ASIAEXAMPLECONSOLE1"
+    },
+    "requestParameters": {
+      "userName": "alice",
+      "serialNumber": "arn:aws:iam::123456789012:mfa/alice-phone"
+    },
+    "sessionCredentialFromConsole": "true"
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ListMFADevices",
+    "eventName": "ListMFADevices",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  }
+]

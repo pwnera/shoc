@@ -1,0 +1,26 @@
+[
+  {
+    "_document_id": "hunt-gh-runner-base",
+    "action": "workflow_job.queued",
+    "actor": "eve",
+    "org": "acme",
+    "webhook": {
+      "event": "workflow_job",
+      "action": "queued"
+    },
+    "repo": "acme/payments",
+    "workflow_job": {
+      "id": 9001,
+      "name": "build",
+      "workflow_name": "ci",
+      "labels": [
+        "self-hosted",
+        "linux",
+        "x64"
+      ],
+      "runner_name": "SHA1HULUD",
+      "status": "queued",
+      "html_url": "https://github.com/acme/payments/actions/runs/1/job/9001"
+    }
+  }
+]

@@ -1,0 +1,77 @@
+id: contain_infostealer
+title: Contain an infostealer on a laptop
+description: >
+  Something on a laptop took, or tried to take, saved passwords, browser
+  cookies or the login password. Stolen sessions work from anywhere, so
+  isolating the laptop is not enough: the person's sessions are revoked too.
+  Both are reversible, and the page goes out with them. Saved passwords leave
+  with the cookies, so resetting the person's password waits for a human after
+  the page.
+rules:
+  - macos_password_prompt_or_browser_key_read
+  - endpoint_clickfix_paste_and_run
+  - defender_browser_credential_file_read
+questions:
+  - id: ran
+    ask: Did the prompt, the pasted command or the file read run to completion, or did the EDR stop it?
+  - id: person
+    ask: Which identity provider login belongs to the local account on this host (jdoe on the laptop, jane.doe@example.com in Okta or Entra)?
+  - id: sessions
+    ask: Did that login sign in from a new address, device or country after the theft?
+  - id: egress
+    ask: Did the host send data to an address or domain no other host talks to right after?
+benign_when:
+  - An MDM script (Jamf Connect, Kandji) asked for the password to escrow a FileVault key, and its parent is the MDM agent.
+  - A developer tool read browser cookies on purpose (yt-dlp --cookies-from-browser), started by the person in a terminal.
+example: |
+  claim (person): "The local account jdoe on laptop-21 is jane.doe@example.com: her Okta sign-ins name that device", citing the endpoint event and one Okta sign-in.
+  checked and absent: "an Okta sign-in for jane.doe@example.com from a new country or device after 10:02 UTC (24h)", so no stolen session was used yet.
+  disposition: malicious on the laptop, with the sessions revoked before anyone used them.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: isolate the host in CrowdStrike
+    action: crowdstrike.isolate_host
+    optional: true
+    params:
+      device_id: "{{ platform.edr.device }}"
+  - name: isolate the host in SentinelOne
+    action: sentinelone.isolate_host
+    optional: true
+    params:
+      device_id: "{{ platform.edr.device }}"
+  - name: isolate the host in Defender
+    action: defender.isolate_host
+    optional: true
+    params:
+      device_id: "{{ platform.edr.device }}"
+  # jdoe on the laptop is never sent to the IdP: the action acts on the login
+  # identity.resolve links it to, or is refused (RFC 0027).
+  - name: revoke the person's sessions in Okta
+    action: okta.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: revoke the person's sessions in Entra ID
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: infostealer on {{ platform.edr.device }}, sessions of {{ entity.user }}: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: make the person's password stop working in Okta
+    action: okta.reset_password
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: make the person's password stop working in Entra ID
+    action: entra.reset_password
+    optional: true
+    params:
+      user: "{{ entity.user }}"

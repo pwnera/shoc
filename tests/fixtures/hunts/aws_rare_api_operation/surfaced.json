@@ -1,0 +1,16 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "hunt-rare-listusers",
+    "eventName": "ListUsers",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  }
+]

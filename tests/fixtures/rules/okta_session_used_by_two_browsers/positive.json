@@ -1,0 +1,68 @@
+[
+  {
+    "uuid": "okta-replay-sso",
+    "eventType": "user.authentication.sso",
+    "displayMessage": "user authentication sso",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "203.0.113.150",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/127.0 Safari/537.36",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "102sessAiTM"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-victim-start",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "102sessAiTM"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    }
+  }
+]

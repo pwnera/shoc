@@ -1,0 +1,51 @@
+id: endpoint_remote_access_tool_first_seen
+title: A remote-access tool runs that nobody in the company ran before
+hypothesis: >
+  Helpdesk-scam callers and intruders install their own remote-access tool. A
+  company uses one or two such tools, so a third one appearing on any machine
+  is either a new IT decision or somebody else's way in.
+attack: [T1219]
+sources:
+  - name: Elastic
+    title: "First Time Seen Remote Monitoring and Management Tool"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/command_and_control_new_terms_commonly_abused_rmm.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: "Remote Access Tool - AnyDesk Execution"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_remote_access_tools_anydesk.yml
+    author: "frack113"
+    license: DRL-1.1
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    class_uid: 1007
+    activity_id: 1
+    process.name: [AnyDesk.exe, AnyDesk, ScreenConnect.ClientService.exe,
+                   ScreenConnect.WindowsClient.exe, TeamViewer.exe, TeamViewer_Service.exe,
+                   TeamViewer, rustdesk.exe, rustdesk, AteraAgent.exe, NinjaRMMAgent.exe,
+                   SRService.exe, SplashtopSOS.exe, strwinclt.exe, LogMeIn.exe, lmi_rescue.exe,
+                   GoToAssistService.exe, MeshAgent.exe, meshagent, tacticalrmm.exe, Supremo.exe,
+                   rutserv.exe, rfusclient.exe, client32.exe, AA_v3.exe, quickassist.exe,
+                   simplehelpcustomer.exe, getscreen.exe, helpwire.exe, ToDesk_Service.exe,
+                   AweSun.exe, ZohoURS.exe, radmin.exe, winvnc.exe, tvnserver.exe, dwagsvc.exe,
+                   tmate]
+  condition: selection
+baseline:
+  first_seen: [process.name]
+  lookback: 30d
+pivot: [process.name, device.hostname, device.uid, actor.user.name, process.parent_process.name,
+        process.cmd_line, process.file.path]
+triage: >
+  Did IT or the MSP roll this tool out this week? One laptop running a tool the
+  company never used, started from Downloads or by a browser, after a phone
+  call, is the case to escalate.
+follow_up:
+  - Which process started it, and was the file downloaded today?
+  - Did the same person get a call or a Teams message from "IT support" just before?
+sensitive: true

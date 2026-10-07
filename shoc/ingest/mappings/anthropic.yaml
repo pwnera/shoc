@@ -1,0 +1,63 @@
+# Anthropic activity feed, new API keys and hourly key usage -> OCSF API Activity (6003).
+# ING-1, ING-3. An activity names its kind in `type`; the other two in `event`.
+source: anthropic
+ocsf_version: "1.3.0"
+
+constants:
+  category_uid: 6
+  class_uid: 6003
+  class_name: API Activity
+  type_uid: 600399
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  status: Success
+  cloud_provider: Anthropic
+  metadata_product: Anthropic
+  api_service_name: anthropic
+
+fields:
+  event_uid: { path: id }
+  time: { paths: [bucket_start, created_at], transform: iso8601 }
+  api_operation: { paths: [event, type] }
+  message: { path: name }
+  actor_user_name:
+    paths:
+      - actor.email_address
+      - actor.user_id
+      - created_by.id
+      - principal.user_id
+      - principal.service_account_id
+  actor_user_type: { paths: [actor.type, created_by.type] }
+  # The key that was created, the key that used the API, or the key an activity names.
+  actor_session_uid:
+    paths: [key_id, api_key_id, actor.api_key_id, admin_api_key_id, actor.admin_api_key_id]
+  src_endpoint_ip: { path: actor.ip_address }
+  http_user_agent: { path: actor.user_agent }
+  cloud_account_uid: { path: organization_id }
+  resource_type: { const: workspace }
+  resource_uid: { paths: [workspace_id, scope.workspace_id] }
+
+derive:
+  # The verb at the end of an activity's name.
+  - when: { type: { contains: created } }
+    set: { activity_id: 1, activity_name: Create }
+  - when: { type: { contains: updated } }
+    set: { activity_id: 3, activity_name: Update }
+  - when: { type: { contains: deleted } }
+    set: { activity_id: 4, activity_name: Delete }
+  - when: { event: api_key.created }
+    set: { activity_id: 1, activity_name: Create, severity_id: 2 }
+  - when: { event: usage }
+    set: { activity_id: 2, activity_name: Read }
+  # An hour's output by order of magnitude, so a rule can ask whether a key
+  # has worked at this level before (RFC 0023 `first_seen`).
+  - when: { event: usage, output_tokens: { gte: 1000000 } }
+    set: { severity_id: 2 }
+  - when: { event: usage, output_tokens: { gte: 10000000 } }
+    set: { severity_id: 3 }
+  - when: { event: usage, output_tokens: { gte: 100000000 } }
+    set: { severity_id: 4 }
+
+observables:
+  - { column: actor_session_uid, name: actor.session.uid, type: Other }

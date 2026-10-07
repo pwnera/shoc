@@ -1,0 +1,325 @@
+[
+ {
+  "uuid": "okta-spray-success-mia",
+  "eventType": "user.session.start",
+  "displayMessage": "User login to Okta",
+  "actor": {
+   "id": "00u4",
+   "type": "User",
+   "alternateId": "mia@example.com",
+   "displayName": "mia"
+  },
+  "client": {
+   "ipAddress": "203.0.113.77",
+   "userAgent": {
+    "rawUserAgent": "python-requests/2.32",
+    "os": "Unknown",
+    "browser": "UNKNOWN"
+   },
+   "geographicalContext": {
+    "country": "Romania",
+    "city": "Somewhere"
+   }
+  },
+  "outcome": {
+   "result": "SUCCESS"
+  },
+  "authenticationContext": {
+   "externalSessionId": "sess-mia"
+  },
+  "securityContext": {
+   "asNumber": 64500,
+   "isProxy": false
+  },
+  "target": [
+   {
+    "id": "00u4",
+    "type": "User",
+    "alternateId": "mia@example.com"
+   }
+  ]
+ },
+ {
+  "uuid": "okta-spray-fail-omar",
+  "eventType": "user.session.start",
+  "displayMessage": "User login to Okta",
+  "actor": {
+   "id": "00u5",
+   "type": "User",
+   "alternateId": "omar@example.com",
+   "displayName": "omar"
+  },
+  "client": {
+   "ipAddress": "203.0.113.77",
+   "userAgent": {
+    "rawUserAgent": "python-requests/2.32",
+    "os": "Unknown",
+    "browser": "UNKNOWN"
+   },
+   "geographicalContext": {
+    "country": "Romania",
+    "city": "Somewhere"
+   }
+  },
+  "outcome": {
+   "result": "FAILURE",
+   "reason": "INVALID_CREDENTIALS"
+  },
+  "authenticationContext": {
+   "externalSessionId": "unknown"
+  },
+  "securityContext": {
+   "asNumber": 64500,
+   "isProxy": false
+  },
+  "target": [
+   {
+    "id": "00u5",
+    "type": "User",
+    "alternateId": "omar@example.com"
+   }
+  ]
+ },
+ {
+  "uuid": "okta-spray-fail-mia",
+  "eventType": "user.session.start",
+  "displayMessage": "User login to Okta",
+  "actor": {
+   "id": "00u4",
+   "type": "User",
+   "alternateId": "mia@example.com",
+   "displayName": "mia"
+  },
+  "client": {
+   "ipAddress": "203.0.113.77",
+   "userAgent": {
+    "rawUserAgent": "python-requests/2.32",
+    "os": "Unknown",
+    "browser": "UNKNOWN"
+   },
+   "geographicalContext": {
+    "country": "Romania",
+    "city": "Somewhere"
+   }
+  },
+  "outcome": {
+   "result": "FAILURE",
+   "reason": "INVALID_CREDENTIALS"
+  },
+  "authenticationContext": {
+   "externalSessionId": "unknown"
+  },
+  "securityContext": {
+   "asNumber": 64500,
+   "isProxy": false
+  },
+  "target": [
+   {
+    "id": "00u4",
+    "type": "User",
+    "alternateId": "mia@example.com"
+   }
+  ]
+ },
+ {
+  "uuid": "okta-spray-fail-dana",
+  "eventType": "user.session.start",
+  "displayMessage": "User login to Okta",
+  "actor": {
+   "id": "00u3",
+   "type": "User",
+   "alternateId": "dana@example.com",
+   "displayName": "dana"
+  },
+  "client": {
+   "ipAddress": "203.0.113.77",
+   "userAgent": {
+    "rawUserAgent": "python-requests/2.32",
+    "os": "Unknown",
+    "browser": "UNKNOWN"
+   },
+   "geographicalContext": {
+    "country": "Romania",
+    "city": "Somewhere"
+   }
+  },
+  "outcome": {
+   "result": "FAILURE",
+   "reason": "INVALID_CREDENTIALS"
+  },
+  "authenticationContext": {
+   "externalSessionId": "unknown"
+  },
+  "securityContext": {
+   "asNumber": 64500,
+   "isProxy": false
+  },
+  "target": [
+   {
+    "id": "00u3",
+    "type": "User",
+    "alternateId": "dana@example.com"
+   }
+  ]
+ },
+ {
+  "uuid": "okta-spray-fail-carl",
+  "eventType": "user.session.start",
+  "displayMessage": "User login to Okta",
+  "actor": {
+   "id": "00u2",
+   "type": "User",
+   "alternateId": "carl@example.com",
+   "displayName": "carl"
+  },
+  "client": {
+   "ipAddress": "203.0.113.77",
+   "userAgent": {
+    "rawUserAgent": "python-requests/2.32",
+    "os": "Unknown",
+    "browser": "UNKNOWN"
+   },
+   "geographicalContext": {
+    "country": "Romania",
+    "city": "Somewhere"
+   }
+  },
+  "outcome": {
+   "result": "FAILURE",
+   "reason": "INVALID_CREDENTIALS"
+  },
+  "authenticationContext": {
+   "externalSessionId": "unknown"
+  },
+  "securityContext": {
+   "asNumber": 64500,
+   "isProxy": false
+  },
+  "target": [
+   {
+    "id": "00u2",
+    "type": "User",
+    "alternateId": "carl@example.com"
+   }
+  ]
+ },
+ {
+  "uuid": "okta-spray-fail-beth",
+  "eventType": "user.session.start",
+  "displayMessage": "User login to Okta",
+  "actor": {
+   "id": "00u1",
+   "type": "User",
+   "alternateId": "beth@example.com",
+   "displayName": "beth"
+  },
+  "client": {
+   "ipAddress": "203.0.113.77",
+   "userAgent": {
+    "rawUserAgent": "python-requests/2.32",
+    "os": "Unknown",
+    "browser": "UNKNOWN"
+   },
+   "geographicalContext": {
+    "country": "Romania",
+    "city": "Somewhere"
+   }
+  },
+  "outcome": {
+   "result": "FAILURE",
+   "reason": "INVALID_CREDENTIALS"
+  },
+  "authenticationContext": {
+   "externalSessionId": "unknown"
+  },
+  "securityContext": {
+   "asNumber": 64500,
+   "isProxy": false
+  },
+  "target": [
+   {
+    "id": "00u1",
+    "type": "User",
+    "alternateId": "beth@example.com"
+   }
+  ]
+ },
+ {
+  "uuid": "okta-spray-fail-adam",
+  "eventType": "user.session.start",
+  "displayMessage": "User login to Okta",
+  "actor": {
+   "id": "00u0",
+   "type": "User",
+   "alternateId": "adam@example.com",
+   "displayName": "adam"
+  },
+  "client": {
+   "ipAddress": "203.0.113.77",
+   "userAgent": {
+    "rawUserAgent": "python-requests/2.32",
+    "os": "Unknown",
+    "browser": "UNKNOWN"
+   },
+   "geographicalContext": {
+    "country": "Romania",
+    "city": "Somewhere"
+   }
+  },
+  "outcome": {
+   "result": "FAILURE",
+   "reason": "INVALID_CREDENTIALS"
+  },
+  "authenticationContext": {
+   "externalSessionId": "unknown"
+  },
+  "securityContext": {
+   "asNumber": 64500,
+   "isProxy": false
+  },
+  "target": [
+   {
+    "id": "00u0",
+    "type": "User",
+    "alternateId": "adam@example.com"
+   }
+  ]
+ },
+ {
+  "uuid": "okta-threat-spray",
+  "eventType": "security.threat.detected",
+  "displayMessage": "Request from suspicious actor",
+  "actor": {
+   "id": "unknown",
+   "type": "User",
+   "alternateId": "unknown",
+   "displayName": "unknown"
+  },
+  "client": {
+   "ipAddress": "203.0.113.77",
+   "userAgent": {
+    "rawUserAgent": "python-requests/2.32",
+    "os": "Unknown",
+    "browser": "UNKNOWN"
+   },
+   "geographicalContext": {
+    "country": "Romania",
+    "city": "Somewhere"
+   }
+  },
+  "outcome": {
+   "result": "DENY"
+  },
+  "authenticationContext": {},
+  "securityContext": {
+   "asNumber": 64500,
+   "isProxy": false
+  },
+  "debugContext": {
+   "debugData": {
+    "threatDetections": "{\"Password Spray\":\"ATTACK\"}",
+    "threatSuspected": "true"
+   }
+  }
+ }
+]

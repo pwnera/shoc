@@ -1,0 +1,89 @@
+[
+  {
+    "id": "en-Consent to application",
+    "activityDisplayName": "Consent to application",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@acme.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "displayName": "jane@acme.com",
+        "id": "u-1"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Add delegated permission grant",
+    "activityDisplayName": "Add delegated permission grant",
+    "category": "ApplicationManagement",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@acme.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "ServicePrincipal",
+        "displayName": "Mail Helper",
+        "id": "sp-9",
+        "modifiedProperties": [
+          { "displayName": "DelegatedPermissionGrant.Scope", "newValue": "\"Mail.Read offline_access\"" },
+          { "displayName": "DelegatedPermissionGrant.ConsentType", "newValue": "\"AllPrincipals\"" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Add service principal by person in app",
+    "activityDisplayName": "Add service principal",
+    "category": "ApplicationManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Add",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "u-2",
+        "displayName": null,
+        "userPrincipalName": "admin@acme.com",
+        "ipAddress": "203.0.113.61",
+        "roles": [],
+        "userType": "Member",
+        "agentType": "notAgentic"
+      },
+      "app": {
+        "appId": "00000000-0000-0000-0000-00000000aa01",
+        "displayName": "Graph Explorer",
+        "servicePrincipalId": null,
+        "servicePrincipalName": null,
+        "agentType": "notAgentic"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "ServicePrincipal",
+        "displayName": "Mail Sync Pro",
+        "id": "sp-10",
+        "modifiedProperties": [
+          { "displayName": "AccountEnabled", "oldValue": "[]", "newValue": "[true]" },
+          { "displayName": "DisplayName", "oldValue": "[]", "newValue": "[\"Mail Sync Pro\"]" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

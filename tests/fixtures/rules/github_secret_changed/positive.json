@@ -1,0 +1,29 @@
+[
+  {
+    "_document_id": "gh-repo.create_actions_secret",
+    "action": "repo.create_actions_secret",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "public_repo": false,
+    "key": "NPM_TOKEN",
+    "operation_type": "create",
+    "user_agent": "Mozilla/5.0"
+  },
+  {
+    "_document_id": "gh-environment.update_actions_secret",
+    "action": "environment.update_actions_secret",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "public_repo": false,
+    "environment_name": "production",
+    "key": "AWS_SECRET_ACCESS_KEY",
+    "operation_type": "modify",
+    "user_agent": "Mozilla/5.0"
+  }
+]

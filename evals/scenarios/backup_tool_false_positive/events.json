@@ -1,0 +1,136 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "bk-0",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.20",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "arn": "arn:aws:iam::123456789012:role/backup",
+      "accountId": "123456789012"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "bk-1",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.20",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "arn": "arn:aws:iam::123456789012:role/backup",
+      "accountId": "123456789012"
+    },
+    "_day_offset": 1
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "bk-2",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.20",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "arn": "arn:aws:iam::123456789012:role/backup",
+      "accountId": "123456789012"
+    },
+    "_day_offset": 2
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "bk-3",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.20",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "arn": "arn:aws:iam::123456789012:role/backup",
+      "accountId": "123456789012"
+    },
+    "_day_offset": 3
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "bk-4",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.20",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "arn": "arn:aws:iam::123456789012:role/backup",
+      "accountId": "123456789012"
+    },
+    "_day_offset": 4
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "bk-5",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.20",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "arn": "arn:aws:iam::123456789012:role/backup",
+      "accountId": "123456789012"
+    },
+    "_day_offset": 5
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "bk-6",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.20",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "arn": "arn:aws:iam::123456789012:role/backup",
+      "accountId": "123456789012"
+    },
+    "_day_offset": 6
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "bk-7",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.20",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "arn": "arn:aws:iam::123456789012:role/backup",
+      "accountId": "123456789012"
+    },
+    "_day_offset": 7
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "bk-8",
+    "eventName": "CreateAccessKey",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "198.51.100.20",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "arn": "arn:aws:iam::123456789012:role/backup",
+      "accountId": "123456789012"
+    },
+    "_day_offset": 8
+  }
+]

@@ -1,0 +1,81 @@
+id: aws_recovery_disabled
+title: Bucket versioning, backups or database backups switched off
+description: >
+  Versioning was suspended, MFA delete removed by the root user, a backup
+  vault or its lock deleted, a recovery point deleted by a person, or database
+  backups set to zero days. Ransomware in the cloud removes the way back
+  before it encrypts. These are management events, so the rule works on
+  LookupEvents too.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1490]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_versioning:
+    api.operation: PutBucketVersioning
+    raw.requestParameters.VersioningConfiguration.Status: Suspended
+  # Only the root user can turn MFA delete off; IaC sends "Disabled" on buckets that never had it.
+  selection_mfa_delete:
+    api.operation: PutBucketVersioning
+    raw.requestParameters.VersioningConfiguration.MfaDelete: Disabled
+    actor.user.type: Root
+  selection_vault:
+    api.operation: [DeleteBackupVault, DeleteBackupVaultLockConfiguration, DeleteRecoveryPoint]
+  selection_rds:
+    api.operation: [ModifyDBInstance, ModifyDBCluster]
+    raw.requestParameters.backupRetentionPeriod: 0
+  success:
+    status: Success
+  filter_aws:
+    actor.invoked_by|exists: true
+  filter_aws_type:
+    actor.user.type: AWSService
+  condition: success and selection_* and not filter_aws and not filter_aws_type
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, api.operation, resource.uid, raw.requestParameters.bucketName]
+sources:
+  - name: Elastic
+    title: AWS S3 Object Versioning Suspended
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_s3_object_versioning_disabled
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS S3 Bucket MFA Delete Disabled
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_s3_mfa_delete_disabled
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS Backup Vault Deleted or Vault Lock Removed
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_backup_vault_deleted_or_lock_removed
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS Backup Recovery Point Deleted by Unusual User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_backup_recovery_point_deleted
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS RDS Snapshot Deleted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_rds_snapshot_deleted
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: AWS S3 Bucket Versioning Disable
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_disable_bucket_versioning.yml
+    author: Sean Johnstone | Unit 42
+    license: DRL-1.1
+    relation: adapted
+  - name: AWS
+    title: Configuring MFA delete
+    url: https://docs.aws.amazon.com/AmazonS3/latest/userguide/MultiFactorAuthenticationDelete.html
+    relation: inspired
+  - name: terraform-aws-modules
+    title: terraform-aws-s3-bucket complete example (versioning with mfa_delete = false)
+    url: https://github.com/terraform-aws-modules/terraform-aws-s3-bucket/blob/master/examples/complete/main.tf
+    relation: inspired

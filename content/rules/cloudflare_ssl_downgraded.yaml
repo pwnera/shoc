@@ -1,0 +1,22 @@
+id: cloudflare_ssl_downgraded
+title: Cloudflare SSL mode set to Off or Flexible
+description: >
+  Off serves the site over plain HTTP; Flexible sends traffic from Cloudflare to
+  the origin unencrypted. Either one lets a network in between read logins.
+status: stable
+date: 2026-09-30
+modified: 2026-09-30
+severity: high
+confidence: 0.6
+attack: [T1562]
+logsource:
+  product: cloudflare
+  service: audit_log
+detection:
+  selection:
+    raw.raw.uri|endswith: /settings/ssl
+    raw.resource.request.value: ["off", flexible]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, resource.uid]

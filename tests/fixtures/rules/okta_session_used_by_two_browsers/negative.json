@@ -1,0 +1,139 @@
+[
+  {
+    "uuid": "okta-hotspot-sso",
+    "eventType": "user.authentication.sso",
+    "displayMessage": "user authentication sso",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.200",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "102sessJane"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-office-start",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "102sessJane"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-bob-start",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u2",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "bob"
+    },
+    "client": {
+      "ipAddress": "198.51.100.6",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/127.0 Safari/537.36",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "102sessBob"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-fastpass",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "OktaVerify/9.20.0 (Macintosh)",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "102sessJane"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "SIGNED_NONCE"
+      }
+    }
+  }
+]

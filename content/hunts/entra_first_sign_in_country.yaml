@@ -1,0 +1,42 @@
+id: entra_first_sign_in_country
+title: Somebody signs in to Entra ID from a country they have never signed in from
+hypothesis: >
+  A stolen password or a replayed token works exactly like the real user, from
+  somewhere the user has never been. A first-seen country is weak on its own
+  and strong next to a new inbox rule or MFA method, which is why it is a hunt
+  and not a rule. Apps and managed identities are left out; they have no travel.
+attack: [T1078.004]
+logsource:
+  product: entra
+  service: sign_ins
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    class_name|contains: Authentication
+    status: Success
+  filter_workload:
+    actor.user.type: [ServicePrincipal, ManagedIdentity]
+  condition: selection and not filter_workload
+baseline:
+  first_seen: [actor.user.name, src_endpoint.location.country]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.location.country, src_endpoint.ip, http_request.user_agent]
+triage: >
+  Is this person travelling, and does anybody know? A trip nobody wrote down and
+  a stolen session look the same here; the difference is whether the usual
+  country kept signing in at the same time.
+references:
+  - https://attack.mitre.org/techniques/T1078/004/
+sources:
+  - name: Elastic
+    title: M365 Identity Login from Atypical Region
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/initial_access_entra_id_portal_login_atypical_travel
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: New Country
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/identity_protection/azure_identity_protection_new_coutry_region.yml
+    author: Mark Morowczynski '@markmorow', Gloria Lee, '@gleeiamglo'
+    license: DRL-1.1
+    relation: inspired

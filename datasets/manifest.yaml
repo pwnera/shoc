@@ -1,0 +1,291 @@
+# Public raw log datasets, per source (ING-1, AGT-6).
+#
+# `scripts/fetch_dataset.py` downloads these into `var/datasets/`, which is not
+# committed: the licences differ and some forbid redistribution, so the repo
+# holds pointers, not data. Each entry names the shoc `source` whose OCSF mapping
+# reads the records, so a dataset replays through the `file` connector.
+#
+# `real: yes` means the records came out of a live tenant (usually redacted),
+# `lab` means a real product driven by a scripted attack, `shaped` means a
+# vendor-accurate sample small enough to be a schema reference and nothing more.
+# An entry with `lfs` comes from a repo's Git LFS store; one with `prepare`
+# needs that one command run before it can be replayed.
+#
+# Checked 2026-09-25. Providers move files; `--list` then a failed fetch is the
+# symptom, and a pull request fixing a URL is welcome.
+version: 1
+
+datasets:
+  # -- cloud control planes -------------------------------------------------
+  - name: cloudtrail-flaws
+    source: aws_cloudtrail
+    what: "flaws.cloud, 1.94M real CloudTrail events over three years"
+    urls: ["https://summitroute.com/downloads/flaws_cloudtrail_logs.tar"]
+    size: "240MB"
+    records: "1939207"
+    format: "tar of .json.gz, each {\"Records\": [...]}"
+    licence: "none stated (published for research)"
+    real: yes
+    notes: >
+      The scale fixture. Anonymised with Latacora's wernicke. No digest files and
+      no data events, so it exercises management events only. Measured on replay:
+      1,939,207 records hold 1,228,684 distinct events — the later members repeat
+      roughly half their events, which `event_uid` deduplication absorbs.
+
+  - name: cloudtrail-invictus
+    source: aws_cloudtrail
+    what: "one real account under Stratus Red Team attacks, in S3 object layout"
+    urls: ["https://github.com/invictus-ir/aws_dataset/archive/refs/heads/main.tar.gz"]
+    size: "3.7MB"
+    records: ~
+    format: "55 files, {\"Records\": [...]}, named as S3 delivers them"
+    licence: "MIT"
+    real: yes
+    notes: About an hour of activity; the value is the delivery layout and the attack.
+
+  - name: azure-activity-zenodo
+    source: azure_activity
+    what: "real Azure Activity Log, 35 attack scenarios with clean pairs"
+    urls: ["https://zenodo.org/records/19228517/files/azure_logs_redacted.zip?download=1"]
+    size: "10MB packed, 62MB of Activity Log unpacked"
+    records: ~20000
+    format: "zip; read azure_logs/default-logs/ (JSON arrays, REST shape)"
+    replay_subdir: azure_logs/default-logs
+    licence: "CC-BY-4.0"
+    real: yes
+    notes: >
+      default-logs is the REST/CLI serialisation the connector pulls.
+      additional-logs is Log Analytics table export — already normalised, skip it.
+      Measured on replay: 16,702 records become 12,736 events, because the
+      redaction replaced the event GUID inside `id` and distinct events collapsed
+      onto the same identifier. That is lost in the dataset, not in the mapping.
+
+  - name: gcp-audit-zenodo
+    source: gcp_audit
+    what: "real GCP Cloud Audit LogEntry records, attack and clean pairs"
+    urls: ["https://zenodo.org/records/19228517/files/gcp_logs_redacted.zip?download=1"]
+    size: "15MB packed, 78MB unpacked"
+    records: ~20000
+    format: "zip; read gcp_logs/default-logs/ (JSON arrays of LogEntry)"
+    replay_subdir: audit
+    prepare: >
+      mkdir -p var/datasets/gcp-audit-zenodo/audit && jq -c '.[] | select(.logName
+      | contains("cloudaudit"))' var/datasets/gcp-audit-zenodo/gcp_logs/default-logs/*.json
+      > var/datasets/gcp-audit-zenodo/audit/activity.ndjson
+    licence: "CC-BY-4.0"
+    real: yes
+    notes: >
+      Project ids redacted; protoPayload is intact, including authorizationInfo.
+      Only about a fifth of default-logs is Cloud Audit — the rest is Cloud Build
+      and Cloud Run output from the same projects, which is why `prepare` filters
+      on logName before replaying.
+
+  - name: guardduty-shape
+    source: aws_guardduty
+    what: "six findings in the exact API shape"
+    urls: ["https://raw.githubusercontent.com/elastic/integrations/main/packages/aws/data_stream/guardduty/_dev/test/pipeline/test-guardduty.log"]
+    size: "15KB"
+    records: "6"
+    format: "NDJSON"
+    licence: "Elastic-2.0"
+    real: shaped
+    notes: >
+      No public GuardDuty corpus exists. Six records is a mapping check, not a
+      dataset; for volume, `aws guardduty create-sample-findings` in a throwaway
+      account. Elastic-2.0, so keep it in var/ and never vendor it.
+
+  # -- identity ------------------------------------------------------------
+  - name: okta-system-shape
+    source: okta
+    what: "System Log records, including the debugContext variants"
+    urls:
+      - "https://raw.githubusercontent.com/elastic/integrations/main/packages/okta/data_stream/system/_dev/test/pipeline/test-okta-system-events.log"
+      - "https://raw.githubusercontent.com/elastic/integrations/main/packages/okta/data_stream/system/_dev/test/pipeline/test-okta-system-no-flattened-events.log"
+    size: "99KB"
+    records: "~50"
+    format: "NDJSON"
+    licence: "Elastic-2.0"
+    real: shaped
+    notes: >
+      Small, but it covers the two things an Okta mapping gets wrong: the
+      polymorphic `target` array and the debugContext.debugData variants.
+
+  - name: okta-attack-data
+    source: okta
+    what: "Okta System Log from Splunk's attack range, per ATT&CK technique"
+    lfs: { repo: splunk/attack_data, ref: master, include: "/okta", suffix: ".log" }
+    size: ~1MB
+    records: ~450
+    format: "NDJSON"
+    licence: "Apache-2.0"
+    real: lab
+    skip_unreadable: true
+    notes: >
+      Roughly 500 raw Okta records is all that is public anywhere; treat it as
+      positives, not volume. The files are Git LFS pointers, so they come from
+      the media host rather than raw.githubusercontent.com. Two of the files are
+      Splunk notable-event exports in key=value form rather than Okta JSON, which
+      is why this entry replays with `skip_unreadable`.
+
+  - name: entra-signin-shape
+    source: entra
+    what: "Entra ID sign-in and audit logs in the Event Hub envelope"
+    urls:
+      - "https://raw.githubusercontent.com/elastic/integrations/main/packages/azure/data_stream/signinlogs/_dev/test/pipeline/test-signinlogs-raw.log"
+      - "https://raw.githubusercontent.com/elastic/integrations/main/packages/azure/data_stream/signinlogs/_dev/test/pipeline/test-non-interactive-user-sample.log"
+    size: "48KB"
+    records: "~120"
+    format: "NDJSON"
+    licence: "Elastic-2.0"
+    real: shaped
+    notes: >
+      The only sizeable real Entra corpus is Splunk BOTSv3 (320MB, CC0), which
+      ships as Splunk buckets and needs an extraction step to get JSON back.
+
+  - name: google-workspace-invictus
+    source: google_workspace
+    what: ~10k real Reports API activities across login, admin, token and drive
+    urls:
+      - "https://raw.githubusercontent.com/invictus-ir/gws_dataset/main/token.json"
+      - "https://raw.githubusercontent.com/invictus-ir/gws_dataset/main/login.json"
+      - "https://raw.githubusercontent.com/invictus-ir/gws_dataset/main/admin.json"
+      - "https://raw.githubusercontent.com/invictus-ir/gws_dataset/main/drive.json"
+      - "https://raw.githubusercontent.com/invictus-ir/gws_dataset/main/calendar.json"
+      - "https://raw.githubusercontent.com/invictus-ir/gws_dataset/main/groups_enterprise.json"
+      - "https://raw.githubusercontent.com/invictus-ir/gws_dataset/main/user_accounts.json"
+    size: "9MB"
+    records: "9993"
+    format: 'one {"activities": [...]} per application, exactly as the API answers'
+    licence: "MIT"
+    real: yes
+    notes: >
+      Collected with Invictus's ALFA against a lab tenant, attacks included (an
+      OAuth grant to an app named "Data exfil"). 97% of it is token events, so
+      login and drive are thin.
+
+  # -- productivity --------------------------------------------------------
+  - name: m365-ual-invictus
+    source: m365
+    what: "9,608 real Unified Audit Log records from business email compromise"
+    urls: ["https://github.com/invictus-ir/o365_dataset/raw/main/auditrecords.7z"]
+    size: "600KB packed"
+    records: "9608"
+    format: "7z of a Splunk CSV export whose AuditData column holds the raw UAL record"
+    licence: "CC-BY-4.0"
+    real: yes
+    replay_subdir: auditrecords.ndjson
+    prepare: >
+      7z x -y -ovar/datasets/m365-ual-invictus var/datasets/m365-ual-invictus/auditrecords.7z
+      && python scripts/unwrap_splunk_csv.py var/datasets/m365-ual-invictus/auditrecords.csv
+      --column AuditData --out var/datasets/m365-ual-invictus/auditrecords.ndjson
+    notes: >
+      Needs p7zip. What is inside the archive is a Splunk export, so the real
+      Unified Audit Log record lives in the CSV's AuditData column and has to be
+      unwrapped before it is raw again. Real intrusions, so real IPs and domains
+      are in there: keep it out of the repo and out of screenshots.
+
+  - name: m365-attack-data
+    source: m365
+    what: ~8,500 Management Activity records across Exchange, SharePoint and DLP
+    lfs: { repo: splunk/attack_data, ref: master, include: "/o365", suffix: ".log" }
+    size: ~11MB
+    records: ~8500
+    format: "NDJSON"
+    licence: "Apache-2.0"
+    real: lab
+    notes: >
+      Wider workload spread than the Invictus set — Exchange admin, SharePoint,
+      DLP, service principals — which makes the two complementary.
+
+  # -- EDR -----------------------------------------------------------------
+  - name: defender-alerts-shape
+    source: defender
+    what: "Defender alerts in both the Graph alerts_v2 and SecurityCenter shapes"
+    urls:
+      - "https://raw.githubusercontent.com/elastic/integrations/main/packages/m365_defender/data_stream/alert/_dev/test/pipeline/test-alert.log"
+      - "https://raw.githubusercontent.com/elastic/integrations/main/packages/microsoft_defender_endpoint/data_stream/log/_dev/test/pipeline/test-defenderatp.log"
+    size: "31KB"
+    records: ~
+    format: "NDJSON"
+    licence: "Elastic-2.0"
+    real: shaped
+    notes: No vendor releases EDR tenant data. Hundreds of records; multiply them if you need load.
+
+  - name: crowdstrike-alerts-shape
+    source: crowdstrike
+    what: "Falcon alerts and the streaming detection-summary envelope"
+    urls:
+      - "https://raw.githubusercontent.com/elastic/integrations/main/packages/crowdstrike/data_stream/alert/_dev/test/pipeline/test-alert.log"
+    size: "50KB"
+    records: ~
+    format: "NDJSON"
+    licence: "Elastic-2.0"
+    real: shaped
+    notes: The richest public CrowdStrike sample set; still a schema reference, not a corpus.
+
+  - name: sentinelone-threats-shape
+    source: sentinelone
+    what: "threats exactly as /web/api/v2.1/threats answers"
+    urls:
+      - "https://raw.githubusercontent.com/elastic/integrations/main/packages/sentinel_one/data_stream/threat/_dev/test/pipeline/test-pipeline-threat.log"
+    size: "39KB"
+    records: ~
+    format: "NDJSON, nested agentDetectionInfo / threatInfo"
+    licence: "Elastic-2.0"
+    real: shaped
+    notes: Matches what the connector pulls, envelope included.
+
+  - name: wazuh-ait-alerts
+    source: wazuh
+    what: "Wazuh and Suricata alerts from eight simulated enterprises"
+    urls: ["https://zenodo.org/api/records/8263181/files/ait_ads.zip/content"]
+    size: "96MB"
+    records: "100000+"
+    format: "zip of JSON alerts plus analysis CSV and labels"
+    licence: "CC-BY-4.0"
+    real: lab
+    notes: >
+      The AIT alert data set. The only Wazuh data at volume under a licence that
+      lets us use it. Its sibling AIT Log Data Set V2.1 is CC-BY-NC-SA, so we
+      leave that one alone.
+
+  - name: endpoint-telemetry-attack-data
+    source: unmapped
+    what: "Sysmon logs from Splunk's attack range, 233 files over 118 ATT&CK techniques"
+    lfs: { repo: splunk/attack_data, ref: master, include: "/attack_techniques/", suffix: "windows-sysmon.log" }
+    size: "2.7GB"
+    records: "millions"
+    format: "rendered EVTX XML, one <Event> per line"
+    licence: "Apache-2.0"
+    real: lab
+    notes: >
+      No shoc mapping reads Sysmon yet. The largest file, T1053.005's
+      taskschedule run, is 278MB.
+
+  # -- source control ------------------------------------------------------
+  - name: github-audit-shape
+    source: github
+    what: "organisation and enterprise audit-log records"
+    urls:
+      - "https://raw.githubusercontent.com/elastic/integrations/main/packages/github/data_stream/audit/_dev/test/pipeline/test-organisation-audit-json.log"
+    size: "40KB"
+    records: ~
+    format: "NDJSON"
+    licence: "Elastic-2.0"
+    real: shaped
+    notes: >
+      The closest thing to a public GitHub org audit log. GH Archive is the
+      public-events firehose — real and enormous, but a different schema with no
+      actor IP and no security actions, so it is a load generator at best.
+
+  - name: gitlab-audit-shape
+    source: gitlab
+    what: "GitLab audit events, dotted meta keys included"
+    urls:
+      - "https://raw.githubusercontent.com/elastic/integrations/main/packages/gitlab/data_stream/audit/_dev/test/pipeline/test-audit.log"
+    size: "2KB"
+    records: ~
+    format: "NDJSON"
+    licence: "Elastic-2.0"
+    real: shaped
+    notes: GitLab only exports audit events as CSV from the UI, so nothing public exists at size.

@@ -1,0 +1,35 @@
+id: okta_sign_in_via_new_identity_provider
+title: Somebody signs in to Okta through an identity provider never used before
+hypothesis: >
+  An attacker with admin access adds or repoints an external identity provider
+  and signs in as anyone through it. Most small companies have no inbound
+  federation at all, so the first sign-in through a given provider is either a
+  planned rollout or that backdoor in use.
+attack: [T1199, T1556.007]
+logsource:
+  product: okta
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: [user.authentication.auth_via_IDP, user.authentication.auth_via_inbound_SAML, user.authentication.auth_via_social]
+  condition: selection
+# The provider is the first target (resource.uid); the user is the second target.
+baseline:
+  first_seen: [resource.uid]
+  lookback: 30d
+pivot: [resource.uid, actor.user.name, src_endpoint.ip]
+triage: >
+  Which identity provider is this, who added it, and was a rollout planned? A
+  partner's tenant connected on purpose explains it; a provider nobody
+  remembers adding does not.
+follow_up:
+  - Was the identity provider created or changed in the last 30 days, and by whom?
+  - Which users signed in through it, and what did they do next?
+sensitive: true
+sources:
+  - name: Elastic
+    title: Okta Sign-In Events via Third-Party IdP
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/initial_access_sign_in_events_via_third_party_idp
+    license: Elastic-2.0
+    relation: inspired

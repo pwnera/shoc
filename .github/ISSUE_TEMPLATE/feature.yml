@@ -1,0 +1,30 @@
+name: Feature request
+description: Propose a capability or behaviour shoc does not have.
+labels: ["kind/feature", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: Who has it, and what do they do today instead?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: If it is a new operation, say which capability it should be.
+    validations:
+      required: true
+  - type: input
+    id: requirement
+    attributes:
+      label: Related requirement ID
+      description: "From docs/prd.md, e.g. DET-4. Leave blank if there is none."
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This does not add a required service or a new core dependency (those need an RFC).
+        - label: I have read the non-goals in `docs/prd.md`.

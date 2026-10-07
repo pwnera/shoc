@@ -1,0 +1,67 @@
+id: google_oauth_token_authorized
+title: Third-party app given mail, Drive or admin access in Google Workspace
+description: >
+  A user granted an application a scope that reads or sends mail, reads all of
+  Drive, admin or Vault data, or cloud resources. This is how a phish turns into
+  permanent access without a password. "Sign in with Google" grants only
+  identity scopes and is left to the first-seen client hunt. A service account
+  with domain-wide delegation logs the same grant under the user it acts as,
+  each time it asks for a token.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1550.001, T1528]
+logsource:
+  product: google
+  service: reports
+detection:
+  # Exactly the token log's grant. `contains: authorize` also caught the
+  # admin console's domain-wide delegation, which has its own rule now
+  # (google_domain_wide_delegation_granted). shoc's own token requests appear
+  # here too; the intake check marks them as shoc's (RFC 0021).
+  # The granted scopes are a JSON list; `/auth/drive"` with its closing quote
+  # is full Drive, not drive.file. Gmail's restricted scopes and send, not the
+  # add-on and label scopes every Gmail or Docs add-on asks for.
+  selection:
+    api.operation: authorize
+    api.service.name: token
+    unmapped.params.scope|contains:
+      - https://mail.google.com/
+      - /auth/gmail.readonly
+      - /auth/gmail.modify
+      - /auth/gmail.compose
+      - /auth/gmail.insert
+      - /auth/gmail.metadata
+      - /auth/gmail.settings.
+      - /auth/gmail.send
+      - /auth/drive"
+      - /auth/drive.readonly
+      - /auth/admin.
+      - /auth/ediscovery
+      - /auth/cloud-platform
+      - /auth/script.send_mail
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, unmapped.params.scope]
+sources:
+  - name: Elastic
+    title: First Time Seen Google Workspace OAuth Login from Third-Party Application
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/defense_evasion_google_workspace_new_oauth_login_from_third_party_application
+    license: Elastic-2.0
+    relation: inspired
+  - name: Google
+    title: Choose Gmail API scopes
+    url: https://developers.google.com/workspace/gmail/api/auth/scopes
+    relation: inspired
+  - name: Panther
+    title: Google Workspace OAuth Privileged Scopes
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/gsuite_activityevent_rules/gsuite_oauth_privileged_scopes.py
+    license: Apache-2.0
+    relation: inspired
+  - name: Hunters
+    title: "DeleFriend: severe design flaw in domain-wide delegation could leave Google Workspace vulnerable for takeover"
+    url: https://www.hunters.security/en/blog/delefriend-a-newly-discovered-design-flaw-in-domain-wide-delegation-could-leave-google-workspace-vulnerable-for-takeover
+    relation: inspired

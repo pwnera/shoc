@@ -1,0 +1,73 @@
+id: aws_ses_abuse
+title: SES probed or prepared for sending by an access key
+description: >
+  A long-term key checked SES sending quota or identities, sending was
+  switched on or production access requested, or SES full access was
+  granted. Each counts the first time that user makes that call from that
+  address in 30 days, because mailing tools such as Sendy and WP Offload SES
+  make the same checks with their own key every day. Leaked keys are sold for
+  SES spam, which burns the company's domain reputation. SES logs sends only
+  as opt-in data events and SMTP sends not at all, so these calls are what
+  shows.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1496.004, T1526]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_probe:
+    api.service.name: ses.amazonaws.com
+    api.operation: [GetSendQuota, GetAccountSendingEnabled, GetAccount, GetSendStatistics, ListIdentities, ListEmailIdentities, ListVerifiedEmailAddresses]
+    actor.session.uid|startswith: AKIA
+  selection_enable:
+    api.service.name: ses.amazonaws.com
+    api.operation: [UpdateAccountSendingEnabled, PutAccountSendingAttributes]
+    raw.requestParameters|re: '[eE]nabled"\s*:\s*true'
+    status: Success
+  selection_production:
+    api.service.name: ses.amazonaws.com
+    api.operation: PutAccountDetails
+    status: Success
+  selection_grant:
+    api.operation: [AttachUserPolicy, AttachRolePolicy, AttachGroupPolicy]
+    raw.requestParameters.policyArn|endswith: /AmazonSESFullAccess
+    status: Success
+  condition: selection_*
+  timeframe: 15m
+baseline:
+  first_seen: [actor.user.name, api.operation, src_endpoint.ip]
+  lookback: 30d
+entity: actor.session.uid
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, cloud.region]
+sources:
+  - name: Elastic
+    title: AWS SES Enumeration via Long-Term Access Key
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_ses_enumeration_via_long_term_access_key
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS SES Account Email Sending Enabled
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/resource_development_ses_account_sending_enabled
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS SES Full Access Policy Attached to IAM Entity by Unusual User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_ses_fullaccess_policy_attached_by_unusual_user
+    license: Elastic-2.0
+    relation: inspired
+  - name: Delicious Brains
+    title: Custom IAM Policy for Amazon SES
+    url: https://deliciousbrains.com/wp-offload-ses/doc/custom-iam-policy-for-amazon-ses/
+    relation: inspired
+  - name: MailBlast
+    title: "How to Install Sendy: Complete 2026 Setup Guide for Amazon SES"
+    url: https://www.mailblast.io/blog/ses/sendy-installation-guide
+    relation: inspired
+  - name: AWS
+    title: Logging Amazon SES API calls with AWS CloudTrail
+    url: https://docs.aws.amazon.com/ses/latest/dg/logging-using-cloudtrail.html
+    relation: inspired

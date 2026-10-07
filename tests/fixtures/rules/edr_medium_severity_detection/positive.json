@@ -1,0 +1,50 @@
+[
+  {
+    "_source": "crowdstrike",
+    "composite_id": "ldt:5d40e8a1c7b6:9002",
+    "type": "ldt",
+    "product": "epp",
+    "severity": 70,
+    "tactic": "Execution",
+    "description": "A process was blocked from running",
+    "device": {
+      "device_id": "5d40e8a1c7b6",
+      "hostname": "laptop-33"
+    },
+    "user_name": "jdoe",
+    "pattern_disposition_description": "Prevention, process killed.",
+    "filename": "invoice.pdf.exe"
+  },
+  {
+    "_source": "sentinelone",
+    "id": "1373834705420286900",
+    "threatInfo": {
+      "threatId": "1373834705420286900",
+      "threatName": "invoice.pdf.exe",
+      "confidenceLevel": "malicious",
+      "mitigationStatus": "mitigated",
+      "classification": "Trojan"
+    },
+    "agentRealtimeInfo": {
+      "agentComputerName": "host05.example.com",
+      "agentId": "1000000000000000001",
+      "agentUuid": "11112222333344445555666677778888"
+    }
+  },
+  {
+    "_source": "defender",
+    "id": "da638101",
+    "severity": "medium",
+    "title": "Suspicious process injection observed",
+    "category": "DefenseEvasion",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-21.example.org",
+        "mdeDeviceId": "2222222222222222222222222222222222222222"
+      }
+    ]
+  }
+]

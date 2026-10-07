@@ -1,0 +1,20 @@
+# Expected outcome for the MFA-fatigue scenario (AGT-6).
+id: okta_mfa_fatigue
+title: MFA push fatigue leading to account takeover
+description: >
+  An attacker sprays five of the company's accounts from a new country, gets
+  Jane's password, pushes seven MFA challenges until one is approved, then
+  resets her second factors and mints an API token to keep the access.
+source: okta
+entity: jane@example.com
+expected_rules:
+  - okta_login_failure_burst
+  - okta_mfa_push_fatigue
+  - okta_push_approved_after_denial
+  - okta_mfa_factors_reset
+  - okta_api_token_created
+must_not_fire:
+  - aws_root_account_activity
+  - github_repo_made_public
+expected_verdict: malicious
+minimum_confidence: 0.6

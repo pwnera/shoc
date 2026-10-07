@@ -1,0 +1,17 @@
+.git
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+dist
+tests
+# …except the shipped rules' fixtures: the Detection Engineer's gate checks a
+# narrowing still fires on the rule's positive fixture (D77).
+!tests/fixtures/rules
+evals
+# …except the recorded scenarios: the image ships them so that
+# `shoc replay --scenario` works where the quick start says it does.
+!evals/scenarios
+docs
+rfcs
+console

@@ -1,0 +1,33 @@
+id: m365_bulk_file_download
+title: Many SharePoint or OneDrive files downloaded in minutes
+description: >
+  One user downloaded twenty-five or more different files from SharePoint or
+  OneDrive from one address in five minutes. A person reading documents does
+  not do that; a stolen session emptying a site, or a leaver taking the
+  customer list, does. The same file fetched again by a sync client counts
+  once, and OneDrive sync on a new laptop is left out.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: medium
+confidence: 0.5
+attack: [T1530]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation: FileDownloaded
+  condition: selection
+  timeframe: 5m
+  group_by: [actor.user.name, src_endpoint.ip]
+  count_distinct: resource.uid
+  count: ">= 25"
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, http_request.user_agent, resource.uid]
+sources:
+  - name: Elastic
+    title: M365 OneDrive/SharePoint Excessive File Downloads
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/collection_onedrive_excessive_file_downloads
+    license: Elastic-2.0
+    relation: inspired

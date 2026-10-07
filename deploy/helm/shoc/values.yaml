@@ -1,0 +1,93 @@
+# shoc Helm values. Postgres is the only required service, and this chart does
+# not run one for you: put a DSN you manage in the secret `secrets.existingSecret` names.
+
+image:
+  repository: ghcr.io/pwnera/shoc
+  tag: ""            # defaults to the chart's appVersion
+  pullPolicy: IfNotPresent
+
+serve:
+  # An MCP client's session, and the confirmation prompt an L2 call waits on,
+  # live in one serve process (RFC 0018). With more than one replica, route
+  # /mcp by its Mcp-Session-Id header, e.g. for ingress-nginx:
+  #   nginx.ingress.kubernetes.io/upstream-hash-by: "$http_mcp_session_id"
+  replicas: 1
+  port: 8080
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 1Gi }
+
+worker:
+  # Scale by adding workers: jobs are claimed with SKIP LOCKED, so they never
+  # collide, and exactly one worker becomes the cron leader by advisory lock.
+  replicas: 2
+  resources:
+    requests: { cpu: 100m, memory: 512Mi }
+    limits: { memory: 2Gi }
+
+tenant: default
+backend: postgres
+
+# Dry run is the default: actions are planned and recorded, never executed.
+dryRun: true
+
+llm:
+  provider: none     # none | anthropic | openai
+  model: ""
+  baseUrl: ""
+
+# Secrets. Create the secret yourself, or let the chart create one from
+# `values.secrets` (not recommended outside a test cluster). SHOC_TOKENS is
+# required: serve listens on 0.0.0.0 in the pod and refuses to start without
+# tokens, because anyone who reached it would be a human with every scope.
+secrets:
+  existingSecret: ""     # must contain SHOC_DSN, SHOC_MASTER_KEY, SHOC_TOKENS and any others
+  create: false
+  # SHOC_DSN is the role serve and worker run as, and must not own the schema;
+  # SHOC_MIGRATE_DSN is the owner, and only the migrate job sees it (RFC 0024).
+  # Create the runtime role once, as an administrator of your Postgres:
+  #   CREATE ROLE shoc_app LOGIN PASSWORD '...'; GRANT shoc_app TO <owner>;
+  # The migrate job grants it the rest. Leave SHOC_MIGRATE_DSN empty and both
+  # run as SHOC_DSN, which then owns the audit log and could delete its rows.
+  values:
+    SHOC_DSN: ""
+    SHOC_MIGRATE_DSN: ""
+    SHOC_MASTER_KEY: ""
+    SHOC_READONLY_DSN: ""
+    SHOC_LLM_API_KEY: ""
+    SHOC_TOKENS: ""
+
+migrate:
+  # Runs `shoc migrate` as a pre-install/pre-upgrade hook. Migrations are
+  # forward-only and safe to re-run.
+  enabled: true
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  host: shoc.example.com
+  tls: []
+  annotations: {}
+
+serviceAccount:
+  create: true
+  name: ""
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  fsGroup: 10001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

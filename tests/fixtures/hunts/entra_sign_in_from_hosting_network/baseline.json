@@ -1,0 +1,18 @@
+[
+  {
+    "id": "hunt-entra-vultr-vpn",
+    "userPrincipalName": "jane@example.com",
+    "userId": "u-1",
+    "userType": "Member",
+    "appDisplayName": "Microsoft Teams",
+    "ipAddress": "203.0.113.221",
+    "autonomousSystemNumber": 20473,
+    "location": { "countryOrRegion": "US" },
+    "status": { "errorCode": 0 },
+    "correlationId": "c-0",
+    "tenantId": "tid-1",
+    "signInEventTypes": ["nonInteractiveUser"],
+    "_stream": "nonInteractiveSignIns",
+    "_repeat": 3
+  }
+]

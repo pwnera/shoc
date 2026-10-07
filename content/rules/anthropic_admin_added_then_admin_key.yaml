@@ -1,0 +1,46 @@
+id: anthropic_admin_added_then_admin_key
+title: Claude admin added, then an Admin key created within the hour
+description: >
+  Someone was made an admin or owner of the Claude organisation, invited as
+  one, or given the primary owner role, and within an hour an Admin key was
+  created in the same organisation. An Admin key manages every member and key
+  and survives the session that made it, so the pair is how a Console takeover
+  becomes permanent.
+status: experimental
+date: 2026-10-02
+severity: critical
+confidence: 0.7
+attack: [T1098.003, T1098.001]
+logsource:
+  product: anthropic
+  service: activity_feed
+detection:
+  admin_added:
+    - api.operation: claude_user_role_updated
+      raw.current_role: [admin, owner]
+    - api.operation: org_user_invite_sent
+      raw.invited_role: [admin, owner]
+    - api.operation: primary_owner_transferred
+  admin_key:
+    api.operation: admin_api_key_created
+  # The organisation id is the one field both activities carry with the same
+  # meaning: the role change names its target by user id, the key its creator
+  # by email.
+  sequence:
+    by: [cloud.account.uid]
+    first: admin_added
+    then: admin_key
+    within: 1h
+entity: [actor.user.name, cloud.account.uid]
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, cloud.account.uid]
+sources:
+  - name: Elastic
+    title: Anthropic Admin Role Assigned to User
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/persistence_anthropic_admin_role_assigned_to_user.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Anthropic Admin API Key Created
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/persistence_anthropic_admin_api_key_created.toml
+    license: Elastic-2.0
+    relation: inspired

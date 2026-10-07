@@ -1,0 +1,51 @@
+[
+  {
+    "id": "activity_01RoleUser",
+    "organization_id": "org_01",
+    "organization_uuid": "00000000-0000-4000-8000-000000000001",
+    "type": "claude_user_role_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "user_email": "dev@example.com",
+    "user_id": "user_01Dev",
+    "previous_role": "admin",
+    "current_role": "user"
+  },
+  {
+    "id": "activity_01RoleRemoved",
+    "organization_id": "org_01",
+    "organization_uuid": "00000000-0000-4000-8000-000000000001",
+    "type": "claude_user_role_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "user_email": "leaver@example.com",
+    "user_id": "user_01Leaver",
+    "previous_role": "admin",
+    "current_role": null
+  },
+  {
+    "id": "activity_01InviteDev",
+    "organization_id": "org_01",
+    "organization_uuid": "00000000-0000-4000-8000-000000000001",
+    "type": "org_user_invite_sent",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "invited_email": "dev@example.com",
+    "invited_role": "developer"
+  }
+]

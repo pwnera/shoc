@@ -1,0 +1,36 @@
+[
+  {
+    "Id": "m365-Consent to application-blocked",
+    "Operation": "Consent to application.",
+    "OrganizationId": "org-1",
+    "RecordType": 8,
+    "ResultStatus": "Failure",
+    "UserKey": "10032001A2B3C4D5@example.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "AzureActiveDirectory",
+    "ObjectId": "11111111-2222-4333-8444-555555555555",
+    "UserId": "jane@example.com",
+    "AzureActiveDirectoryEventType": 1,
+    "ModifiedProperties": [
+      { "Name": "ConsentContext.IsAdminConsent", "NewValue": "False", "OldValue": "" },
+      { "Name": "ConsentContext.OnBehalfOfAll", "NewValue": "False", "OldValue": "" }
+    ],
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-Remove delegated permission grant",
+    "Operation": "Remove delegated permission grant.",
+    "OrganizationId": "org-1",
+    "RecordType": 8,
+    "ResultStatus": "Success",
+    "UserKey": "10032001A2B3C4D6@example.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "AzureActiveDirectory",
+    "ObjectId": "11111111-2222-4333-8444-555555555555",
+    "UserId": "admin@example.com",
+    "AzureActiveDirectoryEventType": 1,
+    "_content_type": "Audit.AzureActiveDirectory"
+  }
+]

@@ -1,0 +1,100 @@
+[
+  {
+    "uuid": "okta-user.session.start",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "legacyEventType": "core.user_auth.login_success",
+    "severity": "INFO",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "203.0.113.40",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Brazil",
+        "city": "Sao Paulo"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": null,
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/api/v1/authn",
+        "behaviors": "{New Geo-Location=POSITIVE, New Device=NEGATIVE, New IP=POSITIVE, New State=POSITIVE, New Country=POSITIVE, Velocity=POSITIVE, New City=POSITIVE}",
+        "risk": "{reasons=Impossible travel, level=HIGH}",
+        "threatSuspected": "false"
+      }
+    }
+  },
+  {
+    "uuid": "okta-user.session.start-log-only",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "legacyEventType": "core.user_auth.login_success",
+    "severity": "INFO",
+    "actor": {
+      "id": "00u2efgh",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob Martin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.41",
+      "device": "Unknown",
+      "zone": "null",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+        "os": "Linux",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States",
+        "state": "Virginia",
+        "city": "Ashburn"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "authenticationStep": 0,
+      "externalSessionId": "102BobLogOnly01"
+    },
+    "securityContext": {
+      "asNumber": 64496,
+      "asOrg": "example cloud",
+      "isp": "example cloud",
+      "domain": "example.net",
+      "isProxy": false
+    },
+    "target": null,
+    "debugContext": {
+      "debugData": {
+        "requestId": "reqFlaggedSignIn0002",
+        "requestUri": "/api/v1/authn",
+        "url": "/api/v1/authn?",
+        "threatSuspected": "false",
+        "logOnlySecurityData": "{\"risk\":{\"reasons\":\"Anomalous Location, Anomalous Device\",\"level\":\"HIGH\"},\"behaviors\":{\"New Geo-Location\":\"POSITIVE\",\"New Device\":\"BAD_REQUEST\",\"New IP\":\"POSITIVE\",\"New State\":\"POSITIVE\",\"New Country\":\"POSITIVE\",\"Velocity\":\"NEGATIVE\",\"New City\":\"POSITIVE\"}}"
+      }
+    }
+  }
+]

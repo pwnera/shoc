@@ -1,0 +1,26 @@
+id: google_suspended_user_reactivated
+title: A suspended Google account was reactivated
+description: >
+  An admin unsuspended an account. A leaver's account brought back is either a
+  records request someone can name, or a dormant account an attacker revived.
+status: experimental
+date: 2026-10-02
+severity: medium
+confidence: 0.5
+attack: [T1078.004, T1098]
+logsource:
+  product: google
+  service: reports
+detection:
+  selection:
+    api.operation: UNSUSPEND_USER
+  condition: selection
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, resource.uid, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: Google Workspace Suspended User Account Renewed
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/initial_access_google_workspace_suspended_user_renewed
+    license: Elastic-2.0
+    relation: adapted

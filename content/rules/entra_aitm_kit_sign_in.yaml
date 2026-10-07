@@ -1,0 +1,40 @@
+id: entra_aitm_kit_sign_in
+title: Sign-in from a phishing-kit HTTP client
+description: >
+  A sign-in to Office came from a Node.js HTTP client instead of a browser.
+  Adversary-in-the-middle kits such as Tycoon 2FA relay the victim's password
+  and MFA this way, then keep the session. Failed attempts count too: they show
+  the kit is working on that user.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.8
+attack: [T1557, T1539, T1566.002]
+logsource:
+  product: entra
+  service: sign_ins
+detection:
+  selection_app:
+    - raw.appId: [4765445b-32c6-49b0-83e6-1d93765276ca, 29d9ed98-a469-4536-ade2-f981bc1d605e]
+    - raw.properties.appId: [4765445b-32c6-49b0-83e6-1d93765276ca, 29d9ed98-a469-4536-ade2-f981bc1d605e]
+  selection_axios:
+    http_request.user_agent|startswith: axios/
+  selection_node:
+    http_request.user_agent: [node, undici]
+  condition: selection_app and (selection_axios or selection_node)
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.asn, http_request.user_agent, status]
+sources:
+  - name: Elastic
+    title: Entra ID Potential AiTM Sign-In via OfficeHome (Tycoon2FA)
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_tycoon_entra_id
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Azure Sign-In With Axios User Agent
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/cloud/azure/signin_logs/azure_ad_signin_axios_user_agent.yml
+    author: Marco Pedrinazzi (@pedrinazziM) (InTheCyber)
+    license: DRL-1.1
+    relation: inspired

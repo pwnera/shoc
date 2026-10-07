@@ -1,0 +1,37 @@
+name: Connector request
+description: Ask for a new log source, or offer to write one.
+labels: ["kind/connector", "area/ingest", "needs-triage"]
+body:
+  - type: input
+    id: product
+    attributes:
+      label: Product
+      description: e.g. Cloudflare, Slack audit log, Microsoft Defender
+    validations:
+      required: true
+  - type: input
+    id: api
+    attributes:
+      label: API documentation
+      description: Link to the audit or event API you want shoc to pull.
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Delivery
+      options: [Pull (shoc polls the API), Push (the product posts to shoc)]
+    validations:
+      required: true
+  - type: textarea
+    id: events
+    attributes:
+      label: Events worth detecting on
+      description: Which event types matter, and which OCSF class they belong to.
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Can you help?
+      options:
+        - label: I can write the connector and its mapping.
+        - label: I can test it against a real tenant.

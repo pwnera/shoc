@@ -1,0 +1,74 @@
+[
+  {
+    "id": "accact_invite2",
+    "object": "v2.iam.activity_log",
+    "type": "user_invite_created",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "admin@example.com"
+      }
+    },
+    "details": {
+      "type": "user_invite",
+      "user_invite": {
+        "invited_user_email": "newuser@example.com",
+        "roles": [
+          "developer"
+        ]
+      }
+    }
+  },
+  {
+    "id": "accact_roles2",
+    "object": "v2.iam.activity_log",
+    "type": "user_roles_updated",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "admin@example.com"
+      }
+    },
+    "details": {
+      "type": "user_roles",
+      "user_roles": {
+        "user_email": "former.admin@example.com",
+        "old_roles": [
+          "admin"
+        ],
+        "new_roles": [
+          "view_only"
+        ],
+        "source": "dashboard"
+      }
+    }
+  },
+  {
+    "id": "accact_roles3",
+    "object": "v2.iam.activity_log",
+    "type": "user_roles_deleted",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "admin@example.com"
+      }
+    },
+    "details": {
+      "type": "user_roles",
+      "user_roles": {
+        "user_email": "leaver@example.com",
+        "old_roles": [
+          "admin"
+        ],
+        "new_roles": [],
+        "source": "dashboard"
+      }
+    }
+  }
+]

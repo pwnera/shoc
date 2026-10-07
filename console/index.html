@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>shoc</title>
+    <meta name="description" content="An optional console for shoc, the headless agentic SOC." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      // The theme chosen in the console (src/lib/theme.ts), applied before the first paint.
+      try {
+        var mode = localStorage.getItem("shoc.theme");
+        if (mode === "system")
+          mode = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        if (mode === "dark" || mode === "light") document.documentElement.dataset.theme = mode;
+      } catch (e) {}
+    </script>
+  </head>
+  <body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

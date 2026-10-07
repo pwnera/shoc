@@ -1,0 +1,64 @@
+id: azure_vm_run_command
+title: Command run on an Azure VM from the control plane
+description: >
+  Someone ran a command on a virtual machine through Azure Resource Manager, or
+  installed the extension that runs a script, resets a local password or applies
+  a DSC configuration. Run Command executes as SYSTEM or root, so any identity
+  with the right Azure role owns the machine without its password or network
+  access to it. Extensions Azure installs on its own, such as Azure Backup's
+  snapshot agent and Defender for Endpoint, are left out.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1651]
+logsource:
+  product: azure
+  service: activity
+detection:
+  selection:
+    api.operation:
+      - Microsoft.Compute/virtualMachines/runCommand/action
+      - Microsoft.Compute/virtualMachineScaleSets/virtualMachines/runCommand/action
+      - Microsoft.Compute/virtualMachines/runCommands/write
+      - Microsoft.Compute/virtualMachineScaleSets/virtualMachines/runCommands/write
+  # By the extension resource's name; UNC3944's VMAccess was "enablevmaccess".
+  selection_extension:
+    api.operation: Microsoft.Compute/virtualMachines/extensions/write
+    resource.uid|contains: [/extensions/customscript, /extensions/vmaccess, /extensions/enablevmaccess,
+                            /extensions/runcommand, /extensions/dsc, /extensions/microsoft.powershell.dsc]
+  selection_ok:
+    status: Success
+  condition: (selection or selection_extension) and selection_ok
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, cloud.account.uid]
+sources:
+  - name: Elastic
+    title: Azure Compute VM Command Executed
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/execution_compute_vm_command_executed
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Azure VM Managed Run Command Created or Updated with Unusual Principal
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/execution_azure_vm_managed_run_command_unusual_identity
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Azure VM Extension Deployment by User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_azure_vm_extension_deployment_by_interactive_user
+    license: Elastic-2.0
+    relation: adapted
+  - name: Mandiant
+    title: SIM swapping and abuse of the Microsoft Azure Serial Console
+    url: https://cloud.google.com/blog/topics/threat-intelligence/sim-swapping-abuse-azure-serial
+    relation: inspired
+  - name: Microsoft
+    title: VM Snapshot Windows extension for Azure Backup
+    url: https://learn.microsoft.com/en-us/azure/virtual-machines/extensions/vmsnapshot-windows
+    relation: inspired
+  - name: Microsoft
+    title: Enable Defender for Endpoint integration in Microsoft Defender for Cloud
+    url: https://learn.microsoft.com/en-us/azure/defender-for-cloud/enable-defender-for-endpoint
+    relation: inspired

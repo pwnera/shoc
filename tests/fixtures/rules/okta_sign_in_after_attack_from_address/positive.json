@@ -1,0 +1,72 @@
+[
+  {
+    "uuid": "okta-dave-in",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u4",
+      "type": "User",
+      "alternateId": "dave@example.com",
+      "displayName": "dave"
+    },
+    "client": {
+      "ipAddress": "203.0.113.66",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Romania",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-d"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-threat",
+    "eventType": "security.threat.detected",
+    "displayMessage": "Request from suspicious actor",
+    "actor": {
+      "id": "unknown",
+      "type": "User",
+      "alternateId": "unknown",
+      "displayName": "unknown"
+    },
+    "client": {
+      "ipAddress": "203.0.113.66",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh) Chrome/128.0",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Somewhere"
+      }
+    },
+    "outcome": {
+      "result": "DENY"
+    },
+    "authenticationContext": {},
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "threatDetections": "{\"Password Spray\":\"ATTACK\"}",
+        "threatSuspected": "true"
+      }
+    }
+  }
+]

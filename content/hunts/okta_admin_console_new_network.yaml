@@ -1,0 +1,35 @@
+id: okta_admin_console_new_network
+title: The Okta admin console is opened from a network the admin never used
+hypothesis: >
+  An attacker who took over an administrator opens the admin console from
+  their own infrastructure. The company's one or two admins open it from the
+  same office and home networks every week, so a new ASN for an admin is the
+  deviation.
+attack: [T1078.004]
+logsource:
+  product: okta
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: user.session.access_admin_app
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, src_endpoint.asn]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.ip, src_endpoint.asn, src_endpoint.location.country]
+triage: >
+  Was the admin working from a new place they can name, such as a hotel or a
+  new ISP at home? A trip explains it; admin changes made from that network
+  that nobody asked for do not.
+follow_up:
+  - What did the admin change in the console during that session?
+  - Did the admin sign in from their usual network on the same day?
+sensitive: true
+sources:
+  - name: Sigma
+    title: Okta New Admin Console Behaviours
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_new_behaviours_admin_console.yml
+    author: kelnage
+    license: DRL-1.1
+    relation: inspired

@@ -1,0 +1,44 @@
+id: okta_session_used_by_two_browsers
+title: One Okta session used by two different browsers
+description: >
+  A single Okta session signed in to apps with two different user agents
+  within an hour. A session cookie lives in one browser, so a second browser
+  on the same session is a cookie taken by a phishing proxy or an infostealer
+  and replayed by the attacker. Changing networks keeps the same browser and
+  stays quiet.
+status: experimental
+date: 2026-10-02
+severity: high
+confidence: 0.6
+attack: [T1539, T1550.004]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  # The events that start a session and then use it, as Elastic's replay
+  # rule reads them; MFA and factor events can carry Okta Verify's own agent.
+  selection:
+    api.operation: [user.session.start, user.authentication.sso, policy.evaluate_sign_on]
+    actor.session.uid|exists: true
+    actor.user.type: User
+  filter_system:
+    actor.user.name: system@okta.com
+  condition: selection and not filter_system
+  timeframe: 1h
+  group_by: [actor.session.uid]
+  count_distinct: http_request.user_agent
+  count: ">= 2"
+entity: [actor.user.name, actor.session.uid]
+fields: [actor.user.name, actor.session.uid, http_request.user_agent, src_endpoint.ip,
+         src_endpoint.location.country]
+sources:
+  - name: Elastic
+    title: Okta AiTM Session Cookie Replay
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_aitm_session_cookie_replay
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: Okta Multiple OS Names Detected for a Single DT Hash
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_multiple_user_agent_os_authentication
+    license: Elastic-2.0
+    relation: inspired

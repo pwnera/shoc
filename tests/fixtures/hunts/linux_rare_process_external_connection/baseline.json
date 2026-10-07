@@ -1,0 +1,38 @@
+[
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "ip",
+      "type": "IP Connect",
+      "network": {
+        "direction": "OUTGOING",
+        "connectionStatus": "SUCCESS"
+      },
+      "id": "hunt-baseline"
+    },
+    "agent": {
+      "uuid": "7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d"
+    },
+    "endpoint": {
+      "name": "web-02.example.org",
+      "os": "linux"
+    },
+    "src": {
+      "process": {
+        "name": "kworkerds",
+        "image": {
+          "path": "/tmp/.x/kworkerds"
+        },
+        "cmdline": "/tmp/.x/kworkerds"
+      }
+    },
+    "dst": {
+      "ip": {
+        "address": "203.0.113.66"
+      },
+      "port": {
+        "number": 443
+      }
+    }
+  }
+]

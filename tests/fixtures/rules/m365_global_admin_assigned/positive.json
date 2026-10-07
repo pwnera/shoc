@@ -1,0 +1,22 @@
+[
+  {
+    "Id": "m365-Add member to role GA",
+    "Operation": "Add member to role.",
+    "OrganizationId": "org-1",
+    "RecordType": 8,
+    "ResultStatus": "Success",
+    "UserKey": "u-2",
+    "UserType": 0,
+    "UserId": "admin@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "203.0.113.61",
+    "ObjectId": "helpdesk.temp@example.com",
+    "ModifiedProperties": [
+      { "Name": "Role.ObjectID", "NewValue": "f2ef992c-3afb-46b9-b7cf-a126ee74c451", "OldValue": "" },
+      { "Name": "Role.DisplayName", "NewValue": "Global Administrator", "OldValue": "" },
+      { "Name": "Role.TemplateId", "NewValue": "62e90394-69f5-4237-9190-012177145e10", "OldValue": "" },
+      { "Name": "Role.WellKnownObjectName", "NewValue": "TenantAdmins", "OldValue": "" }
+    ],
+    "_content_type": "Audit.AzureActiveDirectory"
+  }
+]

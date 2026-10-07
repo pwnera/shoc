@@ -1,0 +1,36 @@
+id: gcp_privileged_role_granted
+title: Owner or IAM-admin role granted on a GCP project or organisation
+description: >
+  Someone was given Owner, Organization Administrator, Project IAM Admin or
+  Security Admin. Each one can grant itself everything else, and a company this
+  size grants them a few times a year.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.6
+attack: [T1098.003]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection:
+    api.operation|endswith: SetIamPolicy
+    status: Success
+  # An ADD of one of these roles, so a demotion (owner removed, viewer added in
+  # the same save) does not fire.
+  granted:
+    - unmapped.deltas.ADD.roles_owner.member|exists: true
+    - unmapped.deltas.ADD.roles_resourcemanager_organizationAdmin.member|exists: true
+    - unmapped.deltas.ADD.roles_resourcemanager_projectIamAdmin.member|exists: true
+    - unmapped.deltas.ADD.roles_iam_securityAdmin.member|exists: true
+  condition: selection and granted
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, resource.uid, raw.protoPayload.serviceData.policyDelta.bindingDeltas]
+sources:
+  - name: Elastic
+    title: GCP IAM Service Account Impersonation Role Granted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/persistence_gcp_service_account_impersonation_role_grant
+    license: Elastic-2.0
+    relation: inspired

@@ -1,0 +1,36 @@
+id: okta_first_login_country
+title: Somebody signs in from a country they have never signed in from
+hypothesis: >
+  Credential theft usually shows up as geography before it shows up as
+  behaviour: the account works exactly as it always did, from somewhere it
+  never has. A first-seen country is weak evidence on its own and strong
+  evidence next to anything else, which is why it is a hunt and not a rule.
+attack: [T1078]
+logsource:
+  product: okta
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    class_name|contains: Authentication
+    status: Success
+    # People only: API tokens, SCIM and Workflows sign in from a data centre
+    # whose country moves with the provider, not with a thief.
+    actor.user.type: User
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, src_endpoint.location.country]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.location.country, src_endpoint.ip]
+triage: >
+  Is this person travelling, and does anybody know? A holiday nobody wrote down
+  and a stolen session look identical here, and the difference is whether the old
+  country stopped at the same moment the new one started.
+references:
+  - https://attack.mitre.org/techniques/T1078/
+sources:
+  - name: Elastic hunting
+    title: Successful Impossible Travel Sign-On Events
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/okta/queries/initial_access_impossible_travel_sign_on.toml
+    license: Elastic-2.0
+    relation: inspired

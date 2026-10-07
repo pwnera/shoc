@@ -1,0 +1,46 @@
+id: aws_kms_key_disabled_or_deleted
+title: KMS key disabled, deleted or locked against its owner
+description: >
+  A key was disabled, scheduled for deletion or had its imported key material
+  deleted, or a key policy was written with the lockout safety check bypassed.
+  Each makes everything the key encrypted unreadable to the company, which is
+  how a cloud ransom starts.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: critical
+confidence: 0.8
+attack: [T1485, T1486]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_destroy:
+    api.operation: [ScheduleKeyDeletion, DisableKey, DeleteImportedKeyMaterial]
+  selection_lockout:
+    api.operation: [PutKeyPolicy, CreateKey]
+    raw.requestParameters.bypassPolicyLockoutSafetyCheck: true
+  scope:
+    api.service.name: kms.amazonaws.com
+    status: Success
+  condition: scope and (selection_destroy or selection_lockout)
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid]
+sources:
+  - name: Elastic
+    title: AWS KMS Imported Key Material Deleted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_kms_imported_key_material_deleted
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS KMS Key Policy Updated via PutKeyPolicy
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_kms_key_policy_put
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: AWS KMS Imported Key Material Usage
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_kms_import_key_material.yml
+    author: toopricey
+    license: DRL-1.1
+    relation: inspired

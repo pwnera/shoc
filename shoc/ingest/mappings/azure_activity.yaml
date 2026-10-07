@@ -1,0 +1,129 @@
+# Azure Activity Log -> OCSF. ING-1, ING-3.
+# Azure serialises the same event two ways: the REST/CLI shape the connector
+# pulls (operationName and category as objects, claims at the top level) and
+# the diagnostic-setting shape an Event Hub export pushes (operationName and
+# category as strings, callerIpAddress, identity). Both are mapped here.
+#
+# The category picks the class: Administrative, Policy, ServiceHealth,
+# ResourceHealth, Recommendation and Autoscale are API Activity (6003);
+# Security (Defender for Cloud) and Alert (Azure Monitor) are Detection
+# Finding (2004).
+source: azure_activity
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [azure]
+
+constants:
+  category_uid: 6
+  class_uid: 6003
+  class_name: API Activity
+  type_uid: 600399
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  status: Success
+  cloud_provider: Azure
+  metadata_product: Azure Activity Log
+  api_service_name: azure
+
+fields:
+  # `id` ends in the event id and the tick count, so it is the more unique of
+  # the two, and it survives a dataset that redacts bare GUIDs.
+  event_uid: { paths: [id, eventDataId] }
+  time: { paths: [eventTimestamp, time, submissionTimestamp], transform: iso8601 }
+  api_operation: { paths: ["operationName.value", operationName, "operationName.localizedValue"] }
+  message:
+    paths:
+      - description
+      - "properties.message"
+      - "operationName.localizedValue"
+      - "status.value"
+  status: { paths: ["status.value", resultType] }
+  status_code: { paths: ["subStatus.value", resultSignature, "properties.statusCode"] }
+  actor_user_name:
+    paths:
+      - "claims.upn"
+      - caller
+      - "claims.name"
+      - "identity.claims.upn"
+      - "identity.claims.name"
+      - "properties.userName"
+  actor_user_uid: { paths: [caller, "claims.appid", "identity.claims.appid"] }
+  actor_invoked_by: { paths: ["claims.appid", "identity.claims.appid"] }
+  # User, ServicePrincipal or Group: whether a person or an app made the call.
+  actor_user_type:
+    paths: ["authorization.evidence.principalType", "identity.authorization.evidence.principalType"]
+  actor_session_uid: { path: correlationId }
+  src_endpoint_ip:
+    paths: ["httpRequest.clientIpAddress", callerIpAddress, "claims.ipaddr", "identity.claims.ipaddr"]
+  cloud_account_uid: { path: subscriptionId }
+  cloud_region: { paths: [location, "properties.resourceLocation"] }
+  resource_type: { paths: ["resourceType.value", "resourceProviderName.value"] }
+  resource_uid: { paths: [resourceId, resourceGroupName] }
+  # Defender for Cloud alerts name the process they caught in `properties`.
+  process_name: { path: "properties.processName" }
+  process_pid: { path: "properties.processId", transform: int }
+  process_cmd_line: { path: "properties.commandLine" }
+  process_parent_name: { path: "properties.parentProcess" }
+
+derive:
+  - when: { status: { in: [Succeeded, Success] } }
+    set: { status: Success }
+  - when: { status: { in: [Failed, Failure] } }
+    set: { status: Failure, severity_id: 2 }
+  # API verbs from the operation name, for every 6003 category.
+  - when: { api_operation: { contains: /read } }
+    set: { type_uid: 600302, activity_id: 2, activity_name: Read }
+  - when: { api_operation: { contains: /write } }
+    set: { type_uid: 600303, activity_id: 3, activity_name: Update }
+  - when: { api_operation: { contains: /delete } }
+    set: { type_uid: 600304, activity_id: 4, activity_name: Delete, severity_id: 3 }
+  - when: { api_operation: { contains: roleAssignments } }
+    set: { severity_id: 3 }
+  - when: { api_operation: { contains: Microsoft.KeyVault } }
+    set: { severity_id: 3 }
+  - when: { api_operation: { contains: listKeys } }
+    set: { severity_id: 3 }
+  - when: { api_operation: { contains: runCommand } }
+    set: { severity_id: 3 }
+  # A policy that blocked a request.
+  - when: { api_operation: { contains: policies/deny } }
+    set: { severity_id: 2 }
+  # Health and alert categories carry their weight in `level`.
+  - when: { level: Warning, "category.value": { in: [ServiceHealth, ResourceHealth, Alert] } }
+    set: { severity_id: 2 }
+  - when: { level: Warning, category: { in: [ServiceHealth, ResourceHealth, Alert] } }
+    set: { severity_id: 2 }
+  - when: { level: Error, "category.value": { in: [ServiceHealth, ResourceHealth, Alert] } }
+    set: { severity_id: 3 }
+  - when: { level: Error, category: { in: [ServiceHealth, ResourceHealth, Alert] } }
+    set: { severity_id: 3 }
+  - when: { level: Critical }
+    set: { severity_id: 4 }
+
+  # Findings. An Azure Monitor alert is operational unless its rule says
+  # otherwise; a Defender for Cloud alert brings its own severity.
+  - when: { "category.value": Alert }
+    set: { category_uid: 2, class_uid: 2004, class_name: Detection Finding, type_uid: 200401, activity_id: 1, activity_name: Create }
+  - when: { category: Alert }
+    set: { category_uid: 2, class_uid: 2004, class_name: Detection Finding, type_uid: 200401, activity_id: 1, activity_name: Create }
+  - when: { "category.value": Security }
+    set: { category_uid: 2, class_uid: 2004, class_name: Detection Finding, type_uid: 200401, activity_id: 1, activity_name: Create, severity_id: 3 }
+  - when: { category: Security }
+    set: { category_uid: 2, class_uid: 2004, class_name: Detection Finding, type_uid: 200401, activity_id: 1, activity_name: Create, severity_id: 3 }
+  - when: { class_uid: 2004, status: Resolved }
+    set: { type_uid: 200403, activity_id: 3, activity_name: Close }
+  - when: { "properties.Severity": { in: [Informational, informational] } }
+    set: { severity_id: 1 }
+  - when: { "properties.Severity": { in: [Low, low] } }
+    set: { severity_id: 2 }
+  - when: { "properties.Severity": { in: [Medium, medium] } }
+    set: { severity_id: 3 }
+  - when: { "properties.Severity": { in: [High, high] } }
+    set: { severity_id: 4 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: resource_uid, name: resource.uid, type: Resource }
+  - { column: process_name, name: process.name, type: "Process Name" }

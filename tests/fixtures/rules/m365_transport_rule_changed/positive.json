@@ -1,0 +1,20 @@
+[
+  {
+    "Id": "m365-New-TransportRule",
+    "Operation": "New-TransportRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "203.0.113.45:51000",
+    "ObjectId": "Archive copy",
+    "Parameters": [
+      { "Name": "Name", "Value": "Archive copy" },
+      { "Name": "BlindCopyTo", "Value": "archive@example.org" },
+      { "Name": "SentToScope", "Value": "InOrganization" }
+    ]
+  }
+]

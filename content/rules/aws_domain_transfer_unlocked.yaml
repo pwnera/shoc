@@ -1,0 +1,44 @@
+id: aws_domain_transfer_unlocked
+title: Route 53 domain unlocked, moved or its name servers changed
+description: >
+  A domain registered in Route 53 had its transfer lock removed, its transfer
+  code read, its name servers replaced, or was moved to another AWS account.
+  The company domain carries its email and every password reset.
+status: experimental
+date: 2026-10-02
+severity: high
+confidence: 0.8
+attack: [T1584.001, T1098]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.operation: [DisableDomainTransferLock, TransferDomainToAnotherAwsAccount, RetrieveDomainAuthCode, UpdateDomainNameservers]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, raw.requestParameters.domainName, status]
+sources:
+  - name: Elastic
+    title: AWS Route 53 Domain Transfer Lock Disabled
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_route_53_domain_transfer_lock_disabled
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS Route 53 Domain Transferred to Another Account
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_route_53_domain_transferred_to_another_account
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: AWS Route 53 Domain Transfer Lock Disabled
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_route_53_domain_transferred_lock_disabled.yml
+    author: Elastic, Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: AWS Route 53 Domain Transferred to Another Account
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_route_53_domain_transferred_to_another_account.yml
+    author: Elastic, Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: adapted

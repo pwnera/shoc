@@ -1,0 +1,49 @@
+id: okta_mfa_push_fatigue
+title: MFA push fatigue against an Okta user
+description: >
+  Five or more push challenges were rejected by the same user within an hour.
+  The attacker already has the password and is waiting for one tired
+  approval. Only push failures count: on Identity Engine a wrong password is
+  also an MFA failure, and five of those are a forgotten password. A push
+  refused because the Okta Verify app needs an update is left out.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: high
+confidence: 0.75
+attack: [T1621]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection_denied_mfa:
+    api.operation|contains: auth_via_mfa
+    status: Failure
+    raw.debugContext.debugData.factor: OKTA_VERIFY_PUSH
+  selection_rejected_push:
+    api.operation: user.mfa.okta_verify.deny_push
+  condition: selection_denied_mfa or selection_rejected_push
+  timeframe: 1h
+  group_by: [actor.user.name]
+  count: ">= 5"
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, api.operation]
+sources:
+  - name: Elastic
+    title: Potential Okta MFA Bombing via Push Notifications
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_mfa_bombing_via_push_notifications
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Potentially Successful Okta MFA Bombing via Push Notifications
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_potentially_successful_okta_bombing_via_push_notifications
+    license: Elastic-2.0
+    relation: inspired
+  - name: Okta
+    title: Using Workflows to Respond to Anomalous Push Requests
+    url: https://sec.okta.com/articles/pushfatigueworkflows/
+    relation: inspired
+  - name: Okta
+    title: Event types catalogue (user.mfa.okta_verify.deny_push and deny_push_upgrade_needed)
+    url: https://github.com/okta/okta-developer-docs/blob/master/packages/@okta/vuepress-site/data/event-types.json
+    relation: inspired

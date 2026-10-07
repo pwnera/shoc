@@ -1,0 +1,41 @@
+id: gcp_impersonation_role_first_grant
+title: Someone grants a role that lets another identity act as a service account
+hypothesis: >
+  Token Creator, Service Account User and Workload Identity User let one
+  identity act as a service account and use its rights. Granting one to an
+  attacker-held account is a quiet way to keep access that survives a key
+  rotation. Few people here grant these roles, so the first grant by a person is worth a look.
+attack: [T1098.003]
+logsource:
+  product: gcp
+  service: audit
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation|endswith: SetIamPolicy
+    status: Success
+  granted:
+    - unmapped.deltas.ADD.roles_iam_serviceAccountTokenCreator.member|exists: true
+    - unmapped.deltas.ADD.roles_iam_serviceAccountUser.member|exists: true
+    - unmapped.deltas.ADD.roles_iam_serviceAccountOpenIdTokenCreator.member|exists: true
+    - unmapped.deltas.ADD.roles_iam_workloadIdentityUser.member|exists: true
+  condition: selection and granted
+baseline:
+  first_seen: [actor.user.name, api.operation]
+  lookback: 30d
+pivot: [actor.user.name, resource.uid, src_endpoint.ip]
+triage: >
+  Who received the role, and on which service account? A member outside the
+  company's domain, or a grant on a service account with Owner or Editor, is the
+  one to escalate.
+follow_up:
+  - What can the service account do in the project?
+  - Did the new member act as the service account after the grant?
+sensitive: true
+sources:
+  - name: Elastic
+    title: GCP IAM Service Account Impersonation Role Granted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/persistence_gcp_service_account_impersonation_role_grant
+    license: Elastic-2.0
+    relation: adapted

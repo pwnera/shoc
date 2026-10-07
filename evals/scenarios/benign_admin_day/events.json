@@ -1,0 +1,145 @@
+[
+  {
+    "uuid": "okta-user.session.start",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u9",
+      "type": "User",
+      "alternateId": "alice@acme.com",
+      "displayName": "Alice"
+    },
+    "client": {
+      "ipAddress": "198.51.100.40",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0"
+      },
+      "geographicalContext": {
+        "country": "France"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-ok"
+    },
+    "securityContext": {
+      "asNumber": 64500
+    },
+    "target": [
+      {
+        "id": "0oa1",
+        "type": "AppInstance",
+        "alternateId": "Okta Dashboard"
+      }
+    ],
+    "_repeat": 8
+  },
+  {
+    "uuid": "okta-user.authentication.auth_via_mfa",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u9",
+      "type": "User",
+      "alternateId": "alice@acme.com",
+      "displayName": "Alice"
+    },
+    "client": {
+      "ipAddress": "198.51.100.40",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0"
+      },
+      "geographicalContext": {
+        "country": "France"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-ok"
+    },
+    "securityContext": {
+      "asNumber": 64500
+    },
+    "target": [
+      {
+        "id": "0oa1",
+        "type": "AppInstance",
+        "alternateId": "Okta Dashboard"
+      }
+    ],
+    "_repeat": 6
+  },
+  {
+    "uuid": "okta-application.user_membership.add",
+    "eventType": "application.user_membership.add",
+    "displayMessage": "application user_membership add",
+    "actor": {
+      "id": "00u9",
+      "type": "User",
+      "alternateId": "alice@acme.com",
+      "displayName": "Alice"
+    },
+    "client": {
+      "ipAddress": "198.51.100.40",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0"
+      },
+      "geographicalContext": {
+        "country": "France"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-ok"
+    },
+    "securityContext": {
+      "asNumber": 64500
+    },
+    "target": [
+      {
+        "id": "0oa1",
+        "type": "AppInstance",
+        "alternateId": "Okta Dashboard"
+      }
+    ],
+    "_repeat": 3
+  },
+  {
+    "_document_id": "gh-repo.add_member",
+    "action": "repo.add_member",
+    "actor": "alice",
+    "actor_id": 9,
+    "actor_ip": "198.51.100.41",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "Mozilla/5.0",
+    "_repeat": 4
+  },
+  {
+    "_document_id": "gh-pull_request.create",
+    "action": "pull_request.create",
+    "actor": "alice",
+    "actor_id": 9,
+    "actor_ip": "198.51.100.41",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "Mozilla/5.0",
+    "_repeat": 12
+  },
+  {
+    "_document_id": "gh-protected_branch.create",
+    "action": "protected_branch.create",
+    "actor": "alice",
+    "actor_id": 9,
+    "actor_ip": "198.51.100.41",
+    "org": "acme",
+    "repo": "acme/payments",
+    "user_agent": "Mozilla/5.0"
+  }
+]

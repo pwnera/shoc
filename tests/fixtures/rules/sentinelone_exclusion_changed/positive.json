@@ -1,0 +1,76 @@
+[
+  {
+    "_source": "sentinelone",
+    "accountId": "000000000000000000",
+    "activityType": 3008,
+    "agentId": null,
+    "data": {
+      "accountName": "example.com",
+      "exclusionType": "path",
+      "fullScopeDetails": "Group Default Group in Site Default site of Account example.com",
+      "groupName": "Default Group",
+      "osFamily": "Windows",
+      "scopeLevel": "Group",
+      "scopeName": "Default Group",
+      "siteName": "Default site",
+      "username": "it.admin@example.com",
+      "value": "C:\\Users\\Public\\tools"
+    },
+    "groupId": "900000000000000003",
+    "id": "act-3008-1",
+    "osFamily": "windows",
+    "primaryDescription": "The Management user it.admin@example.com added the Path Exclusion C:\\Users\\Public\\tools for Windows to the Group Default Group",
+    "secondaryDescription": null,
+    "siteId": "900000000000000002",
+    "threatId": null,
+    "userId": "000000000000000001"
+  },
+  {
+    "_source": "sentinelone",
+    "accountId": "000000000000000000",
+    "activityType": 3001,
+    "agentId": null,
+    "data": {
+      "accountName": "example.com",
+      "exclusionType": "white_hash",
+      "fullScopeDetails": "Account example.com",
+      "osFamily": "Windows",
+      "scopeLevel": "Account",
+      "scopeName": "example.com",
+      "username": "it.admin@example.com",
+      "value": "1111111111111111111111111111111111111111"
+    },
+    "id": "act-3001-1",
+    "osFamily": "windows",
+    "primaryDescription": "The Management user it.admin@example.com added a hash exclusion for Windows to the Account example.com",
+    "secondaryDescription": null,
+    "threatId": null,
+    "userId": "000000000000000001"
+  },
+  {
+    "_source": "sentinelone",
+    "accountId": "000000000000000000",
+    "activityType": 3012,
+    "agentId": null,
+    "data": {
+      "accountName": "example.com",
+      "exclusionType": "path",
+      "fullScopeDetails": "Group Default Group in Site Default site of Account example.com",
+      "groupName": "Default Group",
+      "osFamily": "Windows",
+      "scopeLevel": "Group",
+      "scopeName": "Default Group",
+      "siteName": "Default site",
+      "username": "it.admin@example.com",
+      "value": "C:\\ProgramData"
+    },
+    "groupId": "900000000000000003",
+    "id": "act-3012-1",
+    "osFamily": "windows",
+    "primaryDescription": "The Management user it.admin@example.com modified the Path Exclusion C:\\ProgramData for Windows in the Group Default Group",
+    "secondaryDescription": null,
+    "siteId": "900000000000000002",
+    "threatId": null,
+    "userId": "000000000000000001"
+  }
+]

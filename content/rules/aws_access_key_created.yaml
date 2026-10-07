@@ -1,0 +1,48 @@
+id: aws_access_key_created
+title: New IAM access key or service credential created
+description: >
+  A long-lived access key, or a service-specific credential such as a Bedrock
+  API key, was created for another user, or by a user for itself outside the
+  console. Attackers create a second key to keep access after the first one is
+  rotated, and a key for another user is a backdoor in that user's name. A
+  person rotating their own key in the console is not a match.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: high
+confidence: 0.6
+attack: [T1098.001]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.operation: [CreateAccessKey, CreateServiceSpecificCredential]
+    status: Success
+  named:
+    raw.requestParameters.userName|exists: true
+  same_user:
+    raw.requestParameters.userName|fieldref: actor.user.name
+  filter_console:
+    raw.sessionCredentialFromConsole: true
+  condition: selection and ((named and not same_user) or not filter_console)
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip, cloud.account.uid, raw.requestParameters.userName, raw.requestParameters.serviceName]
+sources:
+  - name: Elastic
+    title: AWS IAM Credentials Added to a Bedrock API Key Phantom User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_bedrock_phantom_user_credentials_added
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS IAM User Created Access Keys For Another User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_user_created_access_keys_for_another_user
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: AWS IAM Backdoor Users Keys
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_iam_backdoor_users_keys.yml
+    author: faloker
+    license: DRL-1.1
+    relation: adapted

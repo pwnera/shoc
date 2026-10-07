@@ -1,0 +1,34 @@
+[
+  {
+    "_document_id": "github-webhook-deploy-key-created",
+    "action": "public_key.create",
+    "actor": "mallory",
+    "org": "acme",
+    "webhook": {
+      "event": "deploy_key",
+      "action": "created"
+    },
+    "repo": "acme/payments",
+    "key": {
+      "id": 7,
+      "title": "backup",
+      "read_only": false,
+      "key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIexample"
+    }
+  },
+  {
+    "_document_id": "gh-public_key.create",
+    "action": "public_key.create",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "public_repo": false,
+    "title": "backup",
+    "read_only": false,
+    "fingerprint": "SHA256:examplefingerprintexamplefingerprint00000",
+    "user_agent": "Mozilla/5.0",
+    "operation_type": "create"
+  }
+]

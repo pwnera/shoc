@@ -1,0 +1,136 @@
+[
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-allowlist-on",
+    "type": "ip_allowlist.config.activated",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-9",
+          "email": "mallory@example.com"
+        },
+        "ip_address": "203.0.113.44",
+        "user_agent": "Mozilla/5.0",
+        "ip_address_details": {
+          "country": "US",
+          "asn": "64500"
+        }
+      }
+    },
+    "ip_allowlist.config.activated": {
+      "configs": [
+        {
+          "id": "ipal_1",
+          "name": "office"
+        }
+      ]
+    },
+    "details": {
+      "configs": [
+        {
+          "id": "ipal_1",
+          "name": "office"
+        }
+      ]
+    },
+    "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-allowlist-new",
+    "type": "ip_allowlist.created",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-9",
+          "email": "mallory@example.com"
+        },
+        "ip_address": "203.0.113.44",
+        "user_agent": "Mozilla/5.0",
+        "ip_address_details": {
+          "country": "US",
+          "asn": "64500"
+        }
+      }
+    },
+    "ip_allowlist.created": {
+      "id": "ipal_2",
+      "name": "vpn",
+      "allowed_ips": [
+        "203.0.113.0/24"
+      ]
+    },
+    "details": {
+      "id": "ipal_2",
+      "name": "vpn",
+      "allowed_ips": [
+        "203.0.113.0/24"
+      ]
+    },
+    "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-allowlist-edit",
+    "type": "ip_allowlist.updated",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-9",
+          "email": "mallory@example.com"
+        },
+        "ip_address": "203.0.113.44",
+        "user_agent": "Mozilla/5.0",
+        "ip_address_details": {
+          "country": "US",
+          "asn": "64500"
+        }
+      }
+    },
+    "ip_allowlist.updated": {
+      "id": "ipal_1",
+      "allowed_ips": [
+        "198.51.100.0/24",
+        "203.0.113.0/24"
+      ]
+    },
+    "details": {
+      "id": "ipal_1",
+      "allowed_ips": [
+        "198.51.100.0/24",
+        "203.0.113.0/24"
+      ]
+    },
+    "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-scim-on",
+    "type": "scim.enabled",
+    "actor": {
+      "type": "session",
+      "session": {
+        "user": {
+          "id": "user-9",
+          "email": "mallory@example.com"
+        },
+        "ip_address": "203.0.113.44",
+        "user_agent": "Mozilla/5.0",
+        "ip_address_details": {
+          "country": "US",
+          "asn": "64500"
+        }
+      }
+    },
+    "scim.enabled": {
+      "id": "org-abc"
+    },
+    "details": {
+      "id": "org-abc"
+    },
+    "key_id": null
+  }
+]

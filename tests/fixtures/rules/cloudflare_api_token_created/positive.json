@@ -1,0 +1,15 @@
+[
+  {
+    "id": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a01",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5"},
+    "action": {"description": "Create Token", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8c1f0e2d3a4b5c01", "method": "POST", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/tokens", "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"},
+    "resource": {
+      "scope": "accounts",
+      "product": "tokens",
+      "request": {"name": "backup", "policies": [{"effect": "allow", "permission_groups": [{"id": "c1fde68c7bcc44588cbb6ddbc16d6480"}]}]},
+      "response": {"id": "0f1e2d3c4b5a69788796a5b4c3d2e1f0", "name": "backup", "status": "active", "policies": [{"id": "1a2b3c4d5e6f708192a3b4c5d6e7f809", "effect": "allow", "permission_groups": [{"id": "c1fde68c7bcc44588cbb6ddbc16d6480", "name": "Account Settings Read"}]}], "issued_on": "2026-09-30T21:02:50Z", "modified_on": "2026-09-30T21:02:50Z"}
+    }
+  }
+]

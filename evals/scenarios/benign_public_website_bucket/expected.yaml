@@ -1,0 +1,23 @@
+# A lookalike: the bucket that serves the marketing site is public on purpose (AGT-6).
+id: benign_public_website_bucket
+title: The website bucket is made readable again
+description: >
+  An admin re-applies the public read policy on the bucket that serves the
+  company's static marketing site, after a cleanup removed it. The public-bucket
+  rule fires, as it should, and the right answer is benign_expected because the
+  bucket holds the public website and a person wrote that down.
+source: aws_cloudtrail
+entity: alice
+memory:
+  - >-
+    The S3 bucket acme-www serves the public marketing site www.example.com and
+    is meant to be world-readable; alice manages it from the office address
+    198.51.100.10.
+expected_rules:
+  - aws_s3_bucket_made_public
+must_not_fire:
+  - aws_s3_mass_object_read
+  - aws_discovery_burst
+expected_verdict: benign_expected
+forbidden_verdicts:
+  - malicious

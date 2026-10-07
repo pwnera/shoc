@@ -1,0 +1,29 @@
+/* Type. Geist reads; Geist Mono labels, identifies and counts. */
+:root {
+  --font-sans:
+    "Geist Variable", "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-features: "cv02", "cv03", "cv04", "cv11";
+
+  /* Sans roles */
+  --text-display: 700 56px/56px var(--font-sans); /* sign-in only */
+  --text-page-title: 600 20px/28px var(--font-sans); /* h1 of a page, one line */
+  --text-card-title: 600 13px/20px var(--font-sans); /* panel and dialog titles */
+  --text-body: 400 13px/20px var(--font-sans); /* default */
+  --text-small: 400 12px/16px var(--font-sans); /* hints, cells that need to be short */
+  --text-button: 500 13px/20px var(--font-sans);
+
+  /* Mono roles */
+  --text-label: 500 11px/16px var(--font-mono); /* uppercase, table heads, badges, section labels */
+  --text-index: 500 11px/16px var(--font-mono); /* "01", "E3", row numbers */
+  --text-mono: 400 12px/16px var(--font-mono); /* IPs, ARNs, ids, hashes, times */
+  --text-json: 400 11px/16px var(--font-mono); /* raw kernel output */
+  --text-stat: 600 28px/32px var(--font-mono); /* KPI values (report print view) */
+  --text-fact: 600 15px/20px var(--font-mono); /* state strip values */
+  --text-micro: 500 10px/12px var(--font-mono); /* chart axes, avatar monograms, graph labels */
+  --text-kbd: 500 10px/14px var(--font-mono);
+
+  --tracking-label: 0.06em;
+  --tracking-tight: -0.02em;
+  --tracking-display: -0.03em;
+}

@@ -1,0 +1,38 @@
+id: contain_tailscale_device
+title: Take a suspect device off the tailnet
+description: >
+  A device was set never to expire. Turning key expiry back on reverts that
+  and runs on its own. Deauthorizing it takes it off the network and is undone
+  by authorizing it again; a server that routes for others takes those routes
+  down with it, so a human approves first.
+rules:
+  - tailscale_device_key_expiry_disabled
+questions:
+  - id: device
+    ask: Whose device is it, what OS and client version, when was it added, and is it a server or a laptop?
+  - id: actor
+    ask: Who disabled key expiry, and do they own the device or administer the tailnet?
+  - id: reach
+    ask: Which tags, routes or exit-node role does it hold, and what can it reach under the access policy?
+benign_when:
+  - It is a tagged server whose expiry an admin disabled when it was set up.
+example: |
+  claim (device): "The device is an untagged Windows laptop added yesterday under a contractor's account", citing the device event.
+  checked and absent: "a tag or subnet route on the device (now)", which rules out a server that is meant never to expire.
+  disposition: suspicious, because a personal laptop was set to stay on the network indefinitely.
+trigger:
+  verdict: [malicious, suspicious]
+  entity_kinds: [resource]
+  severity_at_least: medium
+  min_confidence: 0.7
+steps:
+  # Before the deauthorization, which waits for a human and holds the run.
+  - name: turn the device's key expiry back on
+    action: tailscale.enable_key_expiry
+    optional: true
+    params:
+      device_id: "{{ entity.resource }}"
+  - name: deauthorize the device
+    action: tailscale.deauthorize_device
+    params:
+      device_id: "{{ entity.resource }}"

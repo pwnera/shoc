@@ -1,0 +1,28 @@
+id: cloudflare_member_first_product
+title: A Cloudflare member or token changes a product it never changed before
+hypothesis: >
+  Mail and traffic are redirected through DNS, page rules and workers. A member
+  or token that only ever touched one product suddenly editing DNS or adding a
+  worker route is how a takeover of the account shows itself.
+attack: [T1584.002, T1098]
+logsource:
+  product: cloudflare
+  service: audit_log
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    status: Success
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, api.service.name]
+  lookback: 30d
+pivot: [actor.user.name, api.service.name, src_endpoint.ip, resource.uid]
+triage: >
+  Is this the deployment token touching what the infrastructure code manages, or a
+  named engineer working on that product? DNS changes to MX or NS records by a
+  newcomer to DNS are the ones to escalate.
+follow_up:
+  - Did the same actor change MX or NS records?
+  - Is the address one this account used before?
+sensitive: true

@@ -1,0 +1,85 @@
+[
+  {
+    "id": "en-User deleted security info",
+    "activityDisplayName": "User deleted security info",
+    "category": "UserManagement",
+    "loggedByService": "Authentication Methods",
+    "result": "success",
+    "resultReason": "User deleted Authenticator App with Notification and Code",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "jane@example.com",
+        "id": "u-1",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      { "type": "User", "userPrincipalName": "jane@example.com", "id": "u-1" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Enable Strong Authentication",
+    "activityDisplayName": "Enable Strong Authentication",
+    "category": "UserManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "app": {
+        "displayName": "Azure Credential Configuration Endpoint Service",
+        "servicePrincipalId": "sp-ccs-1"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "userPrincipalName": "new.hire@example.com",
+        "id": "u-4",
+        "modifiedProperties": [
+          {
+            "displayName": "StrongAuthenticationRequirement",
+            "oldValue": "[]",
+            "newValue": "[{\"RelyingParty\":\"*\",\"State\":1,\"RememberDevicesNotIssuedBefore\":\"2026-04-15T02:28:10.9233413Z\"}]"
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Update per-user MFA on",
+    "activityDisplayName": "Update per-user multifactor authentication state",
+    "category": "UserManagement",
+    "loggedByService": "Authentication Methods",
+    "operationType": "Update",
+    "result": "success",
+    "resultReason": "Admin successfully updated per-user multifactor authentication state.",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.7"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "displayName": "New Hire",
+        "userPrincipalName": "new.hire@example.com",
+        "id": "u-4",
+        "modifiedProperties": [
+          {
+            "displayName": "StrongAuthenticationRequirements",
+            "oldValue": "\"[]\"",
+            "newValue": "\"[{\\\"relyingParty\\\":\\\"*\\\",\\\"state\\\":\\\"enabled\\\",\\\"rememberDevicesNotIssuedBefore\\\":\\\"2026-04-15T02:28:10.9233413Z\\\"}]\""
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

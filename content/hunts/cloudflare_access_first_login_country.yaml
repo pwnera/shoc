@@ -1,0 +1,36 @@
+id: cloudflare_access_first_login_country
+title: Someone signs in to a Cloudflare Access app from a new country
+hypothesis: >
+  A stolen session or password shows up as a sign-in to an internal app from a
+  country the person never signed in from. Access sits in front of the apps
+  the identity provider does not see one by one.
+attack: [T1078]
+sources:
+  - name: Elastic
+    title: "Google Workspace User Login with Unusual ASN"
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/initial_access_google_workspace_login_from_atypical_asn
+    license: Elastic-2.0
+    relation: inspired
+logsource:
+  product: cloudflare
+  service: logpush
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    class_uid: 3002
+    status: Success
+    src_endpoint.location.country|exists: true
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, src_endpoint.location.country]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.location.country, src_endpoint.ip, resource.uid]
+triage: >
+  Is this person travelling, and did their identity provider sign-in come from
+  the same country at the same time? A new country that only Access saw is the
+  one to escalate.
+follow_up:
+  - Did the identity provider see the same person sign in from that country?
+  - Which apps did the session reach afterwards?
+sensitive: true

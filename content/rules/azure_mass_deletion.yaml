@@ -1,0 +1,65 @@
+id: azure_mass_deletion
+title: Many Azure resources, backups or snapshots deleted by one identity
+description: >
+  One identity deleted five or more different resource groups, storage
+  accounts, disk snapshots, restore points, backup items or Key Vaults, or the
+  locks and immutability policies that protect them, within an hour. That is
+  what destruction or ransomware in the cloud looks like, and the backups go
+  first. Azure logs each delete more than once, as it starts and as it ends;
+  each resource counts once.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1485, T1490]
+logsource:
+  product: azure
+  service: activity
+detection:
+  selection:
+    api.operation:
+      - Microsoft.Resources/subscriptions/resourceGroups/delete
+      - Microsoft.Storage/storageAccounts/delete
+      - Microsoft.Compute/snapshots/delete
+      - Microsoft.Compute/restorePointCollections/delete
+      - Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/protectedItems/delete
+      - Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/delete
+      - Microsoft.KeyVault/vaults/delete
+      # Storm-0501 took these off before deleting what they protected.
+      - Microsoft.Authorization/locks/delete
+      - Microsoft.Storage/storageAccounts/blobServices/containers/immutabilityPolicies/delete
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 1h
+  group_by: [actor.user.name]
+  count_distinct: resource.uid
+  count: ">= 5"
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, cloud.account.uid]
+sources:
+  - name: Elastic
+    title: Azure Resource Group Deleted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/impact_resources_resource_group_deletion
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Azure Storage Account Deletions by User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/impact_azure_storage_account_deletion_multiple
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Azure Compute Snapshot Deletions by User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/impact_azure_compute_vm_snapshot_deletions
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Azure Compute Restore Point Collections Deleted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/impact_azure_compute_restore_point_collections_deleted
+    license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft
+    title: Storm-0501's evolving techniques lead to cloud-based ransomware
+    url: https://www.microsoft.com/en-us/security/blog/2025/08/27/storm-0501s-evolving-techniques-lead-to-cloud-based-ransomware/
+    relation: inspired

@@ -1,0 +1,26 @@
+id: okta_mfa_bypass_attempt
+title: Okta recorded an attempt to bypass MFA
+description: >
+  Okta logged an attempt to get past the second factor. Whoever made it
+  already has the password.
+status: experimental
+date: 2026-10-02
+severity: high
+confidence: 0.6
+attack: [T1111]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation: user.mfa.attempt_bypass
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, http_request.user_agent]
+sources:
+  - name: Elastic
+    title: Attempted Bypass of Okta MFA
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_attempted_bypass_of_okta_mfa
+    license: Elastic-2.0
+    relation: adapted

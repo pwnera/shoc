@@ -1,0 +1,208 @@
+# Google Workspace Admin SDK reports -> OCSF. ING-1, ING-3.
+# One record is one activity; its first event decides the class. Sign-ins
+# (login, saml, ChromeOS, context-aware access) are Authentication (3002);
+# account settings are Account Change (3001); admin roles and OAuth grants are
+# User Access Management (3005); groups are Group Management (3006); Drive is
+# Web Resources Activity (6001); Google's own warnings and DLP rule matches are
+# Detection Finding (2004); every other application is API Activity (6003).
+#
+# Event parameters are a list of {name, value}, read by name with
+# `parameters[name=...]`. Every parameter of the first event is also written
+# to `unmapped.params.<NAME>` (RFC 0023), so a rule reads the role, the setting,
+# the new value or the granted scopes without a column for each.
+source: google_workspace
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [google]
+
+keyed:
+  params:
+    path: "events[*].parameters"
+    key: name
+    value: [value, intValue, boolValue, multiValue]
+
+constants:
+  category_uid: 6
+  class_uid: 6003
+  class_name: API Activity
+  type_uid: 600399
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  status: Success
+  cloud_provider: Google
+  metadata_product: Google Workspace
+
+fields:
+  event_uid: { path: "id.uniqueQualifier" }
+  time: { path: "id.time", transform: iso8601 }
+  api_operation: { path: "events[0].name" }
+  api_service_name: { paths: ["id.applicationName", _application], default: google_workspace }
+  message: { path: "events[0].type" }
+  actor_user_name: { paths: ["actor.email", "actor.profileId", "actor.key"] }
+  actor_user_uid: { path: "actor.profileId" }
+  actor_user_type: { path: "actor.callerType" }
+  # Meet records the participant's address as a parameter.
+  src_endpoint_ip: { paths: [ipAddress, "events[0].parameters[name=ip_address].value"] }
+  src_endpoint_asn: { path: "networkInfo.ipAsn[0]", transform: str }
+  src_endpoint_location_country: { path: "networkInfo.regionCode" }
+  cloud_account_uid: { path: "id.customerId" }
+  resource_type: { paths: ["resourceDetails[0].type", "id.applicationName", _application] }
+  # The Drive item, the user or group an admin changed, the group a member
+  # joined, the OAuth client a user authorised or an admin delegated to, or
+  # the app an admin installed. An out-of-domain forward names the outside
+  # address first: that is the evidence, more than the user it was set on.
+  resource_uid:
+    paths:
+      - "events[0].parameters[name=email_forwarding_destination_address].value"
+      - "events[0].resourceIds[0]"
+      - "resourceDetails[0].id"
+      - "events[0].parameters[name=doc_id].value"
+      - "events[0].parameters[name=USER_EMAIL].value"
+      - "events[0].parameters[name=GROUP_EMAIL].value"
+      - "events[0].parameters[name=group_id].value"
+      - "events[0].parameters[name=client_id].value"
+      # Domain-wide delegation names the client it grants as API_CLIENT_NAME.
+      - "events[0].parameters[name=API_CLIENT_NAME].value"
+      # A Marketplace app installed for the domain (ADD_APPLICATION).
+      - "events[0].parameters[name=APPLICATION_NAME].value"
+  # ChromeOS events name the device they happened on.
+  device_hostname: { path: "events[0].parameters[name=DEVICE_NAME].value" }
+  device_uid: { path: "events[0].parameters[name=DIRECTORY_DEVICE_ID].value" }
+
+derive:
+  # -- sign-ins: login, saml, context-aware access, ChromeOS --------------------
+  - when: { "events[0].type": login }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, activity_id: 1, activity_name: Logon, type_uid: 300201 }
+  - when: { "events[0].name": { in: [login_failure, CHROME_OS_LOGIN_FAILURE_EVENT] } }
+    set: { status: Failure, severity_id: 2 }
+  - when: { "events[0].name": logout }
+    set: { activity_id: 2, activity_name: Logoff, type_uid: 300202 }
+  - when: { "events[0].name": login_success, "events[0].parameters[name=is_suspicious].boolValue": true }
+    set: { severity_id: 3 }
+  # A challenge is a step of the sign-in; Google records whether it was passed.
+  - when: { "events[0].name": { in: [login_challenge, login_verification] } }
+    set: { activity_id: 6, activity_name: Preauth, type_uid: 300206, status: Unknown }
+  - when: { "events[0].name": { in: [login_challenge, login_verification] }, "events[0].parameters[name=login_challenge_status].value": passed }
+    set: { status: Success }
+  - when: { "events[0].name": { in: [login_challenge, login_verification] }, "events[0].parameters[name=login_challenge_status].value": { in: [incorrect_answer_entered, challenge_failed, failed] } }
+    set: { status: Failure, severity_id: 2 }
+  # SAML sign-in to a third-party app: Google issues an assertion for it.
+  - when: { "id.applicationName": saml }
+    set: { activity_id: 4, activity_name: "Service Ticket Request", type_uid: 300204 }
+  - when: { "id.applicationName": context_aware_access }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, activity_id: 1, activity_name: Logon, type_uid: 300201 }
+  - when: { "events[0].name": { contains: ACCESS_DENY } }
+    set: { status: Failure, severity_id: 2 }
+  # Monitor mode only records what an access level would have blocked.
+  - when: { "events[0].name": { contains: MONITOR_MODE } }
+    set: { status: Success, severity_id: 1 }
+  - when: { "events[0].name": { in: [CHROME_OS_LOGIN_EVENT, CHROME_OS_LOGIN_FAILURE_EVENT, CHROME_OS_CRD_CLIENT_CONNECTED] } }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, activity_id: 1, activity_name: Logon, type_uid: 300201 }
+  - when: { "events[0].name": { in: [CHROME_OS_LOGOUT_EVENT, CHROME_OS_CRD_CLIENT_DISCONNECTED] } }
+    set: { category_uid: 3, class_uid: 3002, class_name: Authentication, activity_id: 2, activity_name: Logoff, type_uid: 300202 }
+
+  # -- a user's own account settings (login, user_accounts) ---------------------
+  - when: { "events[0].type": { in: [2sv_change, password_change, recovery_info_change, titanium_change, email_forwarding_change, blocked_sender_change] } }
+    set: { category_uid: 3, class_uid: 3001, class_name: "Account Change", activity_id: 99, activity_name: Other, type_uid: 300199 }
+  - when: { "events[0].name": password_edit }
+    set: { activity_id: 3, activity_name: "Password Change", type_uid: 300103 }
+  - when: { "events[0].name": { in: [2sv_enroll, titanium_enroll] } }
+    set: { activity_id: 10, activity_name: "MFA Factor Enable", type_uid: 300110 }
+  - when: { "events[0].name": { in: [2sv_disable, titanium_unenroll] } }
+    set: { activity_id: 11, activity_name: "MFA Factor Disable", type_uid: 300111, severity_id: 3 }
+  - when: { "events[0].name": email_forwarding_out_of_domain }
+    set: { severity_id: 3 }
+
+  # -- admin console --------------------------------------------------------------
+  - when: { "id.applicationName": admin }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303 }
+  - when: { "events[0].type": { in: [ALERT_CENTER, SECURITY_INVESTIGATION] } }
+    set: { activity_id: 2, activity_name: Read, type_uid: 600302 }
+  # An admin reading a user's mail or files through the investigation tool.
+  - when: { "events[0].name": SECURITY_INVESTIGATION_CONTENT_ACCESS }
+    set: { severity_id: 2 }
+  - when: { "events[0].type": USER_SETTINGS }
+    set: { category_uid: 3, class_uid: 3001, class_name: "Account Change", activity_id: 99, activity_name: Other, type_uid: 300199 }
+  - when: { "events[0].name": CREATE_USER }
+    set: { category_uid: 3, class_uid: 3001, class_name: "Account Change", activity_id: 1, activity_name: Create, type_uid: 300101 }
+  - when: { "events[0].name": { in: [UNSUSPEND_USER, UNDELETE_USER] } }
+    set: { category_uid: 3, class_uid: 3001, class_name: "Account Change", activity_id: 2, activity_name: Enable, type_uid: 300102 }
+  - when: { "events[0].name": SUSPEND_USER }
+    set: { category_uid: 3, class_uid: 3001, class_name: "Account Change", activity_id: 5, activity_name: Disable, type_uid: 300105 }
+  - when: { "events[0].name": DELETE_USER }
+    set: { category_uid: 3, class_uid: 3001, class_name: "Account Change", activity_id: 6, activity_name: Delete, type_uid: 300106, severity_id: 2 }
+  - when: { "events[0].name": CHANGE_PASSWORD }
+    set: { category_uid: 3, class_uid: 3001, class_name: "Account Change", activity_id: 4, activity_name: "Password Reset", type_uid: 300104, severity_id: 2 }
+  - when: { "events[0].name": UNENROLL_USER_FROM_STRONG_AUTH }
+    set: { category_uid: 3, class_uid: 3001, class_name: "Account Change", activity_id: 11, activity_name: "MFA Factor Disable", type_uid: 300111, severity_id: 3 }
+  - when: { "events[0].type": DELEGATED_ADMIN_SETTINGS }
+    set: { category_uid: 3, class_uid: 3005, class_name: "User Access Management", activity_id: 99, activity_name: Other, type_uid: 300599, severity_id: 2 }
+  - when: { "events[0].name": { in: [GRANT_ADMIN_PRIVILEGE, ASSIGN_ROLE] } }
+    set: { category_uid: 3, class_uid: 3005, class_name: "User Access Management", activity_id: 1, activity_name: "Assign Privileges", type_uid: 300501, severity_id: 3 }
+  - when: { "events[0].name": { in: [REVOKE_ADMIN_PRIVILEGE, UNASSIGN_ROLE] } }
+    set: { category_uid: 3, class_uid: 3005, class_name: "User Access Management", activity_id: 2, activity_name: "Revoke Privileges", type_uid: 300502 }
+  # Domain-wide delegation: a client that may act as any user.
+  - when: { "events[0].name": AUTHORIZE_API_CLIENT_ACCESS }
+    set: { category_uid: 3, class_uid: 3005, class_name: "User Access Management", activity_id: 1, activity_name: "Assign Privileges", type_uid: 300501, severity_id: 3 }
+  - when: { "events[0].name": REMOVE_API_CLIENT_ACCESS }
+    set: { category_uid: 3, class_uid: 3005, class_name: "User Access Management", activity_id: 2, activity_name: "Revoke Privileges", type_uid: 300502 }
+
+  # -- groups -----------------------------------------------------------------------
+  - when: { "events[0].type": { in: [GROUP_SETTINGS, moderator_action] } }
+    set: { category_uid: 3, class_uid: 3006, class_name: "Group Management", activity_id: 99, activity_name: Other, type_uid: 300699 }
+  - when: { "id.applicationName": { in: [groups, groups_enterprise] } }
+    set: { category_uid: 3, class_uid: 3006, class_name: "Group Management", activity_id: 99, activity_name: Other, type_uid: 300699 }
+  - when: { class_uid: 3006, "events[0].name": { in: [ADD_GROUP_MEMBER, add_user, add_member] } }
+    set: { activity_id: 3, activity_name: "Add User", type_uid: 300603 }
+  - when: { class_uid: 3006, "events[0].name": { in: [REMOVE_GROUP_MEMBER, remove_user, remove_member] } }
+    set: { activity_id: 4, activity_name: "Remove User", type_uid: 300604 }
+  - when: { class_uid: 3006, "events[0].name": { in: [CREATE_GROUP, create_group] } }
+    set: { activity_id: 6, activity_name: Create, type_uid: 300606 }
+  - when: { class_uid: 3006, "events[0].name": { in: [DELETE_GROUP, delete_group] } }
+    set: { activity_id: 5, activity_name: Delete, type_uid: 300605 }
+
+  # -- OAuth tokens -------------------------------------------------------------------
+  - when: { "id.applicationName": token, "events[0].name": authorize }
+    set: { category_uid: 3, class_uid: 3005, class_name: "User Access Management", activity_id: 1, activity_name: "Assign Privileges", type_uid: 300501, severity_id: 3 }
+  - when: { "id.applicationName": token, "events[0].name": revoke }
+    set: { category_uid: 3, class_uid: 3005, class_name: "User Access Management", activity_id: 2, activity_name: "Revoke Privileges", type_uid: 300502 }
+  # A call made with a granted token.
+  - when: { "id.applicationName": token, "events[0].name": { in: [activity, request] } }
+    set: { activity_id: 99, activity_name: Other, type_uid: 600399 }
+
+  # -- Drive ----------------------------------------------------------------------------
+  - when: { "id.applicationName": drive }
+    set: { category_uid: 6, class_uid: 6001, class_name: "Web Resources Activity", activity_id: 99, activity_name: Other, type_uid: 600199 }
+  - when: { class_uid: 6001, "events[0].name": { in: [view, preview] } }
+    set: { activity_id: 2, activity_name: Read, type_uid: 600102 }
+  - when: { class_uid: 6001, "events[0].name": { in: [download, print] } }
+    set: { activity_id: 7, activity_name: Export, type_uid: 600107 }
+  - when: { class_uid: 6001, "events[0].name": { in: [create, upload, copy] } }
+    set: { activity_id: 1, activity_name: Create, type_uid: 600101 }
+  - when: { class_uid: 6001, "events[0].name": { in: [edit, rename, move, add_to_folder, remove_from_folder, label_field_changed, label_added, label_removed] } }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600103 }
+  - when: { class_uid: 6001, "events[0].name": { in: [delete, trash] } }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 600104 }
+  - when: { class_uid: 6001, "events[0].name": sheets_import_range }
+    set: { activity_id: 6, activity_name: Import, type_uid: 600106 }
+  - when: { class_uid: 6001, "events[0].type": acl_change }
+    set: { activity_id: 8, activity_name: Share, type_uid: 600108 }
+
+  # -- Google's own detections ------------------------------------------------------------
+  # Account warnings: suspicious sign-ins, leaked passwords, accounts Google disabled.
+  - when: { "events[0].type": { in: [account_warning, attack_warning] } }
+    set: { category_uid: 2, class_uid: 2004, class_name: "Detection Finding", activity_id: 1, activity_name: Create, type_uid: 200401, severity_id: 3 }
+  - when: { "events[0].name": { contains: account_disabled } }
+    set: { severity_id: 4 }
+  - when: { "events[0].name": gov_attack_warning }
+    set: { severity_id: 4 }
+  # A DLP or activity rule matched content, and the action it took.
+  - when: { "id.applicationName": rules }
+    set: { category_uid: 2, class_uid: 2004, class_name: "Detection Finding", activity_id: 1, activity_name: Create, type_uid: 200401, severity_id: 2 }
+  - when: { "id.applicationName": mobile, "events[0].name": { in: [DEVICE_COMPROMISED_EVENT, SUSPICIOUS_ACTIVITY_EVENT] } }
+    set: { category_uid: 2, class_uid: 2004, class_name: "Detection Finding", activity_id: 1, activity_name: Create, type_uid: 200401, severity_id: 3 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_user_name, name: actor.user.name, type: User }

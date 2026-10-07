@@ -1,0 +1,34 @@
+id: m365_vendor_alert
+title: High-severity Microsoft 365 security alert
+description: >
+  Microsoft 365 raised a high-severity alert of its own: Defender for Office
+  365, Defender for Cloud Apps, malware found in a stored file, or a DLP match.
+  These arrive in the audit feed and are stored either way; this turns them
+  into a case for tenants that do not connect the Defender XDR API.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1566, T1114]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    class_uid: 2004
+    activity_id: 1
+    severity_id|gte: 4
+  condition: selection
+  timeframe: 15m
+# The alert id first: Security & Compliance alerts all name the same system
+# account as their user.
+entity: [resource.uid, actor.user.name, cloud.account.uid]
+fields: [actor.user.name, api.operation, message, resource.uid, src_endpoint.ip]
+sources:
+  - name: Sigma
+    title: Suspicious Inbox Forwarding
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/m365/threat_management/microsoft365_susp_inbox_forwarding.yml
+    author: Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: inspired

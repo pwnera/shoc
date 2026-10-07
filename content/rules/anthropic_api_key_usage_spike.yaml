@@ -1,0 +1,29 @@
+id: anthropic_api_key_usage_spike
+title: Claude API key reached an hourly output it has not reached in a week
+description: >
+  A key that leaked into a repository or a front-end bundle is found and resold
+  within hours, and shows up as output nobody's product asked for. The mapping
+  bands each key's hourly output tokens by order of magnitude from one million
+  (1M, 10M, 100M); the rule fires the first hour a key works in a band it has
+  not worked in for seven days, so a key that always runs at ten million an
+  hour is quiet there and fires at a hundred million.
+status: stable
+date: 2026-09-30
+modified: 2026-10-02
+severity: high
+confidence: 0.5
+attack: [T1496.004]
+logsource:
+  product: anthropic
+  service: usage
+detection:
+  selection:
+    api.operation: usage
+    severity_id|gte: 2
+  condition: selection
+  timeframe: 1h
+baseline:
+  first_seen: [api.operation, actor.session.uid, severity_id]
+  lookback: 7d
+entity: actor.session.uid
+fields: [actor.session.uid, resource.uid, raw.output_tokens]

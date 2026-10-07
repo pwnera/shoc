@@ -1,0 +1,198 @@
+[
+  {
+    "schemaVersion": "2.0",
+    "accountId": "123456789012",
+    "region": "eu-west-1",
+    "partition": "aws",
+    "id": "gd-probe",
+    "type": "Recon:EC2/PortProbeUnprotectedPort",
+    "severity": 2,
+    "title": "Recon:EC2/PortProbeUnprotectedPort",
+    "description": "GuardDuty finding Recon:EC2/PortProbeUnprotectedPort.",
+    "resource": {
+      "resourceType": "Instance",
+      "instanceDetails": {
+        "instanceId": "i-0abc123def4567890",
+        "instanceType": "t3.large"
+      }
+    },
+    "service": {
+      "serviceName": "guardduty",
+      "detectorId": "12abc34d567e8fa901bc2d34e56789f0",
+      "archived": false,
+      "count": 3,
+      "action": {
+        "actionType": "AWS_API_CALL",
+        "awsApiCallAction": {
+          "api": "ListBuckets",
+          "serviceName": "s3.amazonaws.com",
+          "remoteIpDetails": {
+            "ipAddressV4": "203.0.113.55",
+            "country": {
+              "countryName": "Netherlands"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "schemaVersion": "2.0",
+    "accountId": "123456789012",
+    "region": "eu-west-1",
+    "partition": "aws",
+    "id": "gd-portscan",
+    "type": "Recon:EC2/Portscan",
+    "severity": 5,
+    "title": "Recon:EC2/Portscan",
+    "description": "GuardDuty finding Recon:EC2/Portscan.",
+    "resource": {
+      "resourceType": "Instance",
+      "instanceDetails": {
+        "instanceId": "i-0abc123def4567890",
+        "instanceType": "t3.large"
+      }
+    },
+    "service": {
+      "serviceName": "guardduty",
+      "detectorId": "12abc34d567e8fa901bc2d34e56789f0",
+      "archived": false,
+      "count": 3,
+      "action": {
+        "actionType": "AWS_API_CALL",
+        "awsApiCallAction": {
+          "api": "ListBuckets",
+          "serviceName": "s3.amazonaws.com",
+          "remoteIpDetails": {
+            "ipAddressV4": "203.0.113.55",
+            "country": {
+              "countryName": "Netherlands"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "schemaVersion": "2.0",
+    "accountId": "123456789012",
+    "region": "eu-west-1",
+    "partition": "aws",
+    "id": "gd-archived",
+    "type": "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration.OutsideAWS",
+    "severity": 8,
+    "title": "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration.OutsideAWS",
+    "description": "GuardDuty finding UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration.OutsideAWS.",
+    "resource": {
+      "resourceType": "AccessKey",
+      "accessKeyDetails": {
+        "accessKeyId": "ASIAEXAMPLEINSTANCE1",
+        "principalId": "AROAEXAMPLEROLE:i-0abc123def4567890",
+        "userName": "web-role",
+        "userType": "AssumedRole"
+      }
+    },
+    "service": {
+      "serviceName": "guardduty",
+      "detectorId": "12abc34d567e8fa901bc2d34e56789f0",
+      "archived": true,
+      "count": 3,
+      "action": {
+        "actionType": "AWS_API_CALL",
+        "awsApiCallAction": {
+          "api": "ListBuckets",
+          "serviceName": "s3.amazonaws.com",
+          "remoteIpDetails": {
+            "ipAddressV4": "203.0.113.55",
+            "country": {
+              "countryName": "Netherlands"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "schemaVersion": "2.0",
+    "accountId": "123456789012",
+    "region": "eu-west-1",
+    "partition": "aws",
+    "id": "gd-sample",
+    "type": "UnauthorizedAccess:IAMUser/MaliciousIPCaller",
+    "severity": 5,
+    "title": "UnauthorizedAccess:IAMUser/MaliciousIPCaller",
+    "description": "GuardDuty finding UnauthorizedAccess:IAMUser/MaliciousIPCaller.",
+    "resource": {
+      "resourceType": "AccessKey",
+      "accessKeyDetails": {
+        "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+        "principalId": "AIDAEXAMPLEPRINCIPAL",
+        "userName": "deploy-ci",
+        "userType": "IAMUser"
+      }
+    },
+    "service": {
+      "serviceName": "guardduty",
+      "detectorId": "12abc34d567e8fa901bc2d34e56789f0",
+      "archived": false,
+      "count": 3,
+      "action": {
+        "actionType": "AWS_API_CALL",
+        "awsApiCallAction": {
+          "api": "ListBuckets",
+          "serviceName": "s3.amazonaws.com",
+          "remoteIpDetails": {
+            "ipAddressV4": "203.0.113.55",
+            "country": {
+              "countryName": "Netherlands"
+            }
+          }
+        }
+      },
+      "additionalInfo": {
+        "value": "{\"sample\":true}",
+        "type": "default",
+        "sample": true
+      }
+    }
+  },
+  {
+    "schemaVersion": "2.0",
+    "accountId": "123456789012",
+    "region": "eu-west-1",
+    "partition": "aws",
+    "id": "gd-discovery-low",
+    "type": "Discovery:IAMUser/AnomalousBehavior",
+    "severity": 2,
+    "title": "Discovery:IAMUser/AnomalousBehavior",
+    "description": "GuardDuty finding Discovery:IAMUser/AnomalousBehavior.",
+    "resource": {
+      "resourceType": "AccessKey",
+      "accessKeyDetails": {
+        "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+        "principalId": "AIDAEXAMPLEPRINCIPAL",
+        "userName": "deploy-ci",
+        "userType": "IAMUser"
+      }
+    },
+    "service": {
+      "serviceName": "guardduty",
+      "detectorId": "12abc34d567e8fa901bc2d34e56789f0",
+      "archived": false,
+      "count": 3,
+      "action": {
+        "actionType": "AWS_API_CALL",
+        "awsApiCallAction": {
+          "api": "ListBuckets",
+          "serviceName": "s3.amazonaws.com",
+          "remoteIpDetails": {
+            "ipAddressV4": "203.0.113.55",
+            "country": {
+              "countryName": "Netherlands"
+            }
+          }
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,23 @@
+id: aws_iam_user_created
+title: New IAM user created
+description: >
+  A new IAM user was created. In a small company IAM users are rare and mostly
+  replaced by SSO, so a new one is worth confirming.
+status: stable
+date: 2026-09-24
+modified: 2026-09-24
+severity: medium
+confidence: 0.55
+attack: [T1136.003]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.operation: CreateUser
+    api.service.name|contains: iam
+    status: Success
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip]

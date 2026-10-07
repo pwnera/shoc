@@ -1,0 +1,39 @@
+[
+  {
+    "_source": "crowdstrike",
+    "detection_id": "cs-Credential Access-High",
+    "max_severity_displayname": "High",
+    "tactic": "Credential Access",
+    "description": "something",
+    "name": "Credential Access",
+    "user_name": "jdoe",
+    "local_ip": "10.1.2.3",
+    "hostname": "laptop-17",
+    "device_id": "dev-1",
+    "status": "new"
+  },
+  {
+    "_source": "wazuh",
+    "id": "wz-510",
+    "rule": {
+      "id": "510",
+      "level": 12,
+      "description": "Host-based anomaly detection event (rootcheck).",
+      "groups": [
+        "ossec",
+        "rootcheck"
+      ]
+    },
+    "agent": {
+      "id": "001",
+      "name": "web-01",
+      "ip": "10.1.2.5"
+    },
+    "decoder": {
+      "name": "sshd"
+    },
+    "data": {
+      "srcip": "203.0.113.77"
+    }
+  }
+]

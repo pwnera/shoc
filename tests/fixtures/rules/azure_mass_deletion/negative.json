@@ -1,0 +1,93 @@
+[
+  {
+    "eventDataId": "az-snapshot-delete-1-started",
+    "correlationId": "aaaaaaaa-0001-4aaa-8aaa-aaaaaaaaaaaa",
+    "operationName": { "value": "Microsoft.Compute/snapshots/delete" },
+    "category": { "value": "Administrative" },
+    "status": { "value": "Started" },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": { "upn": "dana@example.com" },
+    "httpRequest": { "clientIpAddress": "198.51.100.24" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/snapshots/snap-old-1"
+  },
+  {
+    "eventDataId": "az-snapshot-delete-1-succeeded",
+    "correlationId": "aaaaaaaa-0001-4aaa-8aaa-aaaaaaaaaaaa",
+    "operationName": { "value": "Microsoft.Compute/snapshots/delete" },
+    "category": { "value": "Administrative" },
+    "status": { "value": "Succeeded" },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": { "upn": "dana@example.com" },
+    "httpRequest": { "clientIpAddress": "198.51.100.24" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/snapshots/snap-old-1"
+  },
+  {
+    "eventDataId": "az-snapshot-delete-2-started",
+    "correlationId": "aaaaaaaa-0002-4aaa-8aaa-aaaaaaaaaaaa",
+    "operationName": { "value": "Microsoft.Compute/snapshots/delete" },
+    "category": { "value": "Administrative" },
+    "status": { "value": "Started" },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": { "upn": "dana@example.com" },
+    "httpRequest": { "clientIpAddress": "198.51.100.24" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/snapshots/snap-old-2"
+  },
+  {
+    "eventDataId": "az-snapshot-delete-2-succeeded",
+    "correlationId": "aaaaaaaa-0002-4aaa-8aaa-aaaaaaaaaaaa",
+    "operationName": { "value": "Microsoft.Compute/snapshots/delete" },
+    "category": { "value": "Administrative" },
+    "status": { "value": "Succeeded" },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": { "upn": "dana@example.com" },
+    "httpRequest": { "clientIpAddress": "198.51.100.24" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/snapshots/snap-old-2"
+  },
+  {
+    "eventDataId": "az-snapshot-delete-3-started",
+    "correlationId": "aaaaaaaa-0003-4aaa-8aaa-aaaaaaaaaaaa",
+    "operationName": { "value": "Microsoft.Compute/snapshots/delete" },
+    "category": { "value": "Administrative" },
+    "status": { "value": "Started" },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": { "upn": "dana@example.com" },
+    "httpRequest": { "clientIpAddress": "198.51.100.24" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/snapshots/snap-old-3"
+  },
+  {
+    "eventDataId": "az-snapshot-delete-3-succeeded",
+    "correlationId": "aaaaaaaa-0003-4aaa-8aaa-aaaaaaaaaaaa",
+    "operationName": { "value": "Microsoft.Compute/snapshots/delete" },
+    "category": { "value": "Administrative" },
+    "status": { "value": "Succeeded" },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": { "upn": "dana@example.com" },
+    "httpRequest": { "clientIpAddress": "198.51.100.24" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/snapshots/snap-old-3"
+  },
+  {
+    "eventDataId": "az-vm-delete",
+    "operationName": { "value": "Microsoft.Compute/virtualMachines/delete" },
+    "category": { "value": "Administrative" },
+    "status": { "value": "Succeeded" },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": { "upn": "dana@example.com" },
+    "httpRequest": { "clientIpAddress": "198.51.100.24" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-test/providers/Microsoft.Compute/virtualMachines/vm-test",
+    "_repeat": 6
+  }
+]

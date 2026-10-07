@@ -1,0 +1,42 @@
+id: contain_stripe_fraud
+title: Refuse the next payment from a fraudulent card
+description: >
+  An issuer reported a charge as fraud, or a burst of failed charges says the
+  checkout is being used to test stolen cards. The card and the email behind
+  the charge go on Radar's block lists, which is lifted by deleting the items.
+  A card-testing run has many cards; a human is paged to add a CAPTCHA or a
+  rate limit to the checkout.
+rules:
+  - stripe_early_fraud_warning
+  - stripe_card_testing_burst
+questions:
+  - id: pattern
+    ask: How many charges failed in the window, with how many distinct cards, and from how many customers or emails?
+  - id: charged
+    ask: Did any charge from the same card, email or customer succeed, and has it been refunded?
+  - id: warning
+    ask: What fraud type did the issuer report, and does the charge have a dispute yet?
+benign_when:
+  - The failures are one real customer retrying a declined card a few times.
+  - The warning is on a charge that was already refunded as fraudulent, which blocked the card already.
+example: |
+  claim (pattern): "Forty-two charges of one dollar failed in twelve minutes, each with a different card and no customer", citing the first and last failure.
+  checked and absent: "a successful charge of more than one dollar in the same window (1h)", which rules out a real customer's retries.
+  disposition: malicious, because stolen cards are being tested against the checkout.
+trigger:
+  verdict: [malicious]
+  severity_at_least: medium
+  min_confidence: 0.7
+steps:
+  - name: block the card and email behind the charge
+    action: stripe.block_charge_card
+    optional: true
+    params:
+      charge: "{{ entity.resource }}"
+  - name: page the on-call engineer
+    action: notify.page
+    optional: true
+    params:
+      summary: "shoc: {{ case.title }}. Add a CAPTCHA or rate limit to the checkout"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"

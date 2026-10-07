@@ -1,0 +1,21 @@
+id: okta_user_deactivated_or_deleted
+title: Okta user deactivated or deleted
+description: >
+  Removing an account destroys access and evidence. Outside a leaver process
+  it is either a mistake or an attacker cleaning up.
+status: stable
+date: 2026-09-24
+modified: 2026-09-24
+severity: medium
+confidence: 0.55
+attack: [T1531]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation: [user.lifecycle.deactivate, user.lifecycle.delete.initiated]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid]

@@ -1,0 +1,56 @@
+id: aws_offensive_tool_user_agent
+title: AWS API called by a secret scanner or offensive distribution
+description: >
+  A call came from TruffleHog, from a Kali, Parrot or Pentoo machine, or from
+  S3 Browser touching IAM. The distribution shows in the AWS CLI's `distrib#`
+  tag, and Kali also in the kernel release the CLI and SDKs report, such as
+  `Linux/5.15.0-kali3-amd64`. Whoever harvests a key from a public repository
+  checks it with TruffleHog first, so this is often the earliest event of a
+  leaked key.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.85
+attack: [T1078.004, T1087.004]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_tool:
+    http_request.user_agent|contains: [trufflehog, "distrib#kali", "+kali", "-kali", "distrib#parrot", "distrib#pentoo"]
+  selection_s3browser_iam:
+    http_request.user_agent|contains: "s3 browser"
+    api.service.name: iam.amazonaws.com
+  condition: selection_tool or selection_s3browser_iam
+  timeframe: 15m
+entity: actor.session.uid
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, http_request.user_agent, api.operation]
+sources:
+  - name: Elastic
+    title: AWS Suspicious User Agent Fingerprint
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/initial_access_suspicious_user_agent_detected_in_cloudtrail
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: PUA - AWS TruffleHog Execution
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_cloudtrail_pua_trufflehog.yml
+    author: Swachchhanda Shrawan Poudel (Nextron Systems)
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: AWS STS GetCallerIdentity Enumeration Via TruffleHog
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_sts_getcalleridentity_trufflehog.yml
+    author: Adan Alvarez @adanalvarez
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: AWS IAM S3Browser User or AccessKey Creation
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_iam_s3browser_user_or_accesskey_creation.yml
+    author: daniel.bohannon@permiso.io (@danielhbohannon)
+    license: DRL-1.1
+    relation: inspired
+  - name: Qualys
+    title: "TotalCloud Insights: Protect Your AWS Environment by Managing Access Keys Securely"
+    url: https://blog.qualys.com/vulnerabilities-threat-research/2024/06/19/totalcloud-insights-protect-your-aws-environment-by-managing-access-keys-securely
+    relation: inspired

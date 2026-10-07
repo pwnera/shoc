@@ -1,0 +1,31 @@
+id: cloudflare_gateway_phishing_resolved
+title: Someone reached a phishing domain Cloudflare did not block
+description: >
+  Gateway resolved a name it classes as phishing and let it through. The person
+  reached a page Cloudflare already knows is fake; the next step is a sign-in
+  to the identity provider from the attacker's proxy.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: medium
+confidence: 0.6
+attack: [T1566.002]
+sources:
+  - name: Elastic hunting
+    title: "Potential Spoofed `microsoftonline.com` via Fuzzy Match"
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/cross-platform/queries/potentially_spoofed_microsoft_authentication_domain.toml
+    license: Elastic-2.0
+    relation: inspired
+logsource:
+  product: cloudflare
+  service: logpush
+detection:
+  selection:
+    class_uid: 4003
+    raw.QueryCategoryNames|contains: Phishing
+    status|startswith: allowed
+  condition: selection
+  timeframe: 1h
+# A row without a signed-in WARP user keys on the device, then the address.
+entity: [actor.user.name, device.hostname, src_endpoint.ip]
+fields: [actor.user.name, device.hostname, query.hostname, status]

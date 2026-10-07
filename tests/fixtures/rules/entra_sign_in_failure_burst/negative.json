@@ -1,0 +1,447 @@
+[
+  {
+    "id": "en-Teams",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-1",
+    "appDisplayName": "Teams",
+    "ipAddress": "203.0.113.200",
+    "correlationId": "c-1",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "bad password"
+    },
+    "_stream": "signIns",
+    "_repeat": 3
+  },
+  {
+    "id": "en-kmsi",
+    "userPrincipalName": "jane@acme.com",
+    "userId": "u-2",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.200",
+    "correlationId": "c-2",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "FR"
+    },
+    "status": {
+      "errorCode": 50140,
+      "failureReason": "This error occurred due to 'Keep me signed in' interrupt when the user was signing in."
+    },
+    "_stream": "nonInteractiveSignIns",
+    "_repeat": 8
+  },
+  {
+    "id": "en-mfa-interrupt",
+    "userPrincipalName": "bob@acme.com",
+    "userId": "u-3",
+    "appDisplayName": "Microsoft Teams",
+    "ipAddress": "203.0.113.200",
+    "correlationId": "c-3",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "FR"
+    },
+    "status": {
+      "errorCode": 50074,
+      "failureReason": "Strong Authentication is required."
+    },
+    "_stream": "signIns",
+    "_repeat": 6
+  },
+  {
+    "id": "en-spray-100",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-100",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-101",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-101",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-102",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-102",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-103",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-103",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-104",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-104",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-105",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-105",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-106",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-106",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-107",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-107",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-108",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-108",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-109",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-109",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-110",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-110",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-111",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-111",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-112",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-112",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-113",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.201",
+    "correlationId": "c-113",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-200",
+    "userPrincipalName": "admin@acme.com",
+    "userId": "u-admin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.202",
+    "correlationId": "c-200",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-201",
+    "userPrincipalName": "jane@acme.com",
+    "userId": "u-jane",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.202",
+    "correlationId": "c-201",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-202",
+    "userPrincipalName": "bob@acme.com",
+    "userId": "u-bob",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.202",
+    "correlationId": "c-202",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-203",
+    "userPrincipalName": "carol@acme.com",
+    "userId": "u-carol",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.202",
+    "correlationId": "c-203",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-204",
+    "userPrincipalName": "dave@acme.com",
+    "userId": "u-dave",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.202",
+    "correlationId": "c-204",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-205",
+    "userPrincipalName": "erin@acme.com",
+    "userId": "u-erin",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.202",
+    "correlationId": "c-205",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-206",
+    "userPrincipalName": "frank@acme.com",
+    "userId": "u-frank",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.202",
+    "correlationId": "c-206",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-207",
+    "userPrincipalName": "grace@acme.com",
+    "userId": "u-grace",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.202",
+    "correlationId": "c-207",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-spray-208",
+    "userPrincipalName": "heidi@acme.com",
+    "userId": "u-heidi",
+    "appDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.202",
+    "correlationId": "c-208",
+    "tenantId": "tid-1",
+    "location": {
+      "countryOrRegion": "RU"
+    },
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password."
+    },
+    "_stream": "signIns"
+  }
+]

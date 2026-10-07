@@ -1,0 +1,37 @@
+id: github_webhook_deleted
+title: Webhook deleted or switched off
+description: >
+  A webhook was deleted or made inactive. When it is the one sending the
+  organisation's events to shoc, shoc stops seeing GitHub from that moment, and
+  nothing else says so. Switching one off sends no webhook event, so only the
+  audit log shows it; switching one back on does not fire.
+status: stable
+date: 2026-09-30
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1562.008]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  selection:
+    api.operation: [hook.destroy, hook.active_changed]
+  # `active` is the hook's new state; a deleted hook keeps its last one.
+  filter_switched_on:
+    api.operation: hook.active_changed
+    raw.active: true
+  condition: selection and not filter_switched_on
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, raw.hook_id]
+sources:
+  - name: Elastic
+    title: GCP Logging Sink Modification
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/exfiltration_gcp_logging_sink_modification
+    license: Elastic-2.0
+    relation: inspired
+  - name: GitHub
+    title: Audit log events for your organization
+    url: https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization
+    relation: inspired

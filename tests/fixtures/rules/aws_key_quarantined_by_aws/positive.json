@@ -1,0 +1,29 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-AttachUserPolicy-quarantine",
+    "eventName": "AttachUserPolicy",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "AWS Internal",
+    "userAgent": "AWS Internal",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "invokedBy": "AWS Internal"
+    },
+    "requestParameters": {
+      "userName": "deploy-ci",
+      "policyArn": "arn:aws:iam::aws:policy/AWSCompromisedKeyQuarantineV3"
+    },
+    "responseElements": null,
+    "readOnly": false,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  }
+]

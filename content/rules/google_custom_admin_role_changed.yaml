@@ -1,0 +1,41 @@
+id: google_custom_admin_role_changed
+title: Custom admin role assigned, or an admin role's privileges changed
+description: >
+  A custom admin role was assigned, or privileges were added to a role. A
+  custom role with user management or security privileges is an admin grant
+  under another name, and adding privileges to a role someone already holds
+  needs no assignment at all. shoc's own setup assigns a Reports role once.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: medium
+confidence: 0.55
+attack: [T1098.003]
+logsource:
+  product: google
+  service: reports
+detection:
+  selection_assign:
+    api.operation: ASSIGN_ROLE
+  # Built-in admin roles are google_admin_privilege_granted.
+  filter_builtin:
+    - unmapped.params.ROLE_NAME|endswith: _ADMIN_ROLE
+    - unmapped.params.ROLE_NAME: Super Admin
+  selection_change:
+    api.operation: [ADD_PRIVILEGE, UPDATE_ROLE]
+  condition: (selection_assign and not filter_builtin) or selection_change
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, unmapped.params.ROLE_NAME, resource.uid]
+sources:
+  - name: Elastic
+    title: Google Workspace Role Modified
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/persistence_google_workspace_role_modified
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Google Workspace Role Modified or Deleted
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/gcp/gworkspace/admin/gcp_gworkspace_role_modified_or_deleted.yml
+    author: Austin Songer
+    license: DRL-1.1
+    relation: inspired

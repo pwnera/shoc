@@ -1,0 +1,41 @@
+id: okta_factor_enrolled_from_new_network
+title: An Okta factor is enrolled from a network the user has never used
+hypothesis: >
+  A caller who talks the help desk into resetting someone's MFA then enrols
+  their own factor, from their own network. The user's account works as
+  before afterwards, so the enrolment is the one moment that shows it: a new
+  factor, from an ASN this person has never signed in from.
+attack: [T1098.005, T1556.006]
+logsource:
+  product: okta
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation|startswith: user.mfa.factor.activate
+    status: Success
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, src_endpoint.asn]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.ip, src_endpoint.asn, src_endpoint.location.country, device.hostname]
+triage: >
+  Did the user enrol this factor themselves, on a phone they can show, from
+  home or a trip they can name? A new hire's first enrolment explains it once;
+  an enrolment right after a help-desk reset, from a network nobody recognises,
+  does not.
+follow_up:
+  - Did an admin reset this user's factors or password in the 24 hours before?
+  - Is the user a new hire (user.lifecycle.create in the last week)?
+sensitive: true
+sources:
+  - name: Elastic
+    title: Stolen Credentials Used to Login to Okta Account After MFA Reset
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/persistence_stolen_credentials_used_to_login_to_okta_account_after_mfa_reset
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: MFA Deactivation with no Re-Activation for Okta User Account
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/persistence_mfa_deactivation_with_no_reactivation
+    license: Elastic-2.0
+    relation: inspired

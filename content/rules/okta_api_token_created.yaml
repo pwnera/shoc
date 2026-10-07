@@ -1,0 +1,21 @@
+id: okta_api_token_created
+title: Okta API token created
+description: >
+  An API token gives long-lived, non-interactive access to the identity
+  provider and survives a password reset.
+status: stable
+date: 2026-09-24
+modified: 2026-09-24
+severity: high
+confidence: 0.7
+attack: [T1098.001]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation|contains: system.api_token.create
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, resource.uid]

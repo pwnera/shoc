@@ -1,0 +1,73 @@
+id: contain_google_workspace_compromise
+title: Contain a compromised Google Workspace account
+description: >
+  A Google account lost its second factor, gained an admin role, delegated
+  domain-wide access, forwarded or rerouted mail, exported data, or Google
+  itself flagged it. Signing the user out everywhere is reversible and runs
+  first. After the page the mailbox's automatic forwarding is turned off and
+  kept for undo. Resetting the password and suspending them wait for a human. Removing a forwarding
+  filter or a mail route, uninstalling a Marketplace app and cancelling an
+  export need actions shoc does not have yet, so a human is paged. An app a user authorised is
+  answered in contain_google_app_grant.
+rules:
+  - google_two_step_verification_disabled
+  - google_admin_privilege_granted
+  - google_domain_wide_delegation_granted
+  - google_drive_mass_download
+  - google_suspicious_login_flagged
+  - google_gmail_forwarding_out_of_domain
+  - google_gmail_routing_changed
+  - google_marketplace_app_installed
+  - google_customer_takeout_started
+  - google_custom_admin_role_changed
+  - google_suspended_user_reactivated
+  - hunt:gws_first_login_country
+  - hunt:gws_user_two_countries_in_a_day
+  - hunt:gws_admin_first_console_operation
+questions:
+  - id: origin
+    ask: Did the account act from an address, country or device it has not used in the last 30 days?
+  - id: who_changed
+    ask: Who turned off two-step verification or granted super admin, the user or an admin?
+  - id: files
+    ask: How many files were downloaded, whose were they, and is the user leaving the company?
+  - id: mail_out
+    ask: Where does a new forward or mail route send mail, who set it, and did mail already flow through it?
+benign_when:
+  - An admin reset two-step verification for a user who lost their phone, and the user re-enrolled from their usual device.
+  - A sync client on the user's known device re-downloaded their own files after a reinstall.
+example: |
+  claim (who_changed): "Two-step verification was turned off by the user themselves from 203.0.113.51, a country the account has not used", citing the settings change and the sign-in.
+  checked and absent: "an admin reset for this user (30d)", which rules out the lost-phone reset.
+  disposition: malicious, because the user's own session disabled the second factor from a new country.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: sign the user out of every Google session
+    action: google.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: Google account {{ entity.user }} compromised: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: turn off mail forwarding
+    action: google.disable_mail_forwarding
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: make the password stop working
+    action: google.reset_password
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: suspend the account
+    action: google.suspend_user
+    optional: true
+    params:
+      user: "{{ entity.user }}"

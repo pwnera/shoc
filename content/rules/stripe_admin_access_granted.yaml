@@ -1,0 +1,25 @@
+id: stripe_admin_access_granted
+title: Stripe team member given an administrator role
+description: >
+  An administrator can change the bank account payouts go to and create API
+  keys. Someone who took over a dashboard login invites a second account first.
+status: stable
+date: 2026-09-30
+modified: 2026-09-30
+severity: high
+confidence: 0.6
+attack: [T1098]
+logsource:
+  product: stripe
+  service: activity_log
+detection:
+  selection_roles:
+    api.operation: user_roles_updated
+    raw.details.user_roles.new_roles|contains: admin
+  selection_invite:
+    api.operation: user_invite_created
+    raw.details.user_invite.roles|contains: admin
+  condition: selection_roles or selection_invite
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, cloud.account.uid]

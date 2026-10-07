@@ -1,0 +1,29 @@
+[
+  {
+    "id": "en-Set federation settings on domain",
+    "activityDisplayName": "Set federation settings on domain",
+    "category": "DirectoryManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Other",
+        "displayName": "example.com",
+        "id": "d-1",
+        "modifiedProperties": [
+          { "displayName": "IssuerUri", "newValue": "\"http://idp.example.org/adfs/services/trust\"" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

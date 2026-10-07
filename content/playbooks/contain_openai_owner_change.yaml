@@ -1,0 +1,43 @@
+id: contain_openai_owner_change
+title: Contain a new owner of the OpenAI organization
+description: >
+  Someone was invited or promoted to owner. The API can take the role back,
+  but not the Admin keys an owner may already have made, so a human is paged
+  to check both in the dashboard.
+rules:
+  - openai_owner_role_granted
+  - openai_defence_disabled
+  - openai_login_failure_burst
+  - hunt:openai_user_first_login_country
+questions:
+  - id: actor
+    ask: Who granted the role, from which address, and is that address one this person used before?
+  - id: target
+    ask: Who received it, and is that a person the company knows?
+  - id: after
+    ask: Did the new owner, or the account that promoted them, create keys, change the audit log setting or add projects since?
+  - id: guarded
+    ask: If the IP allowlist or SCIM was switched off, or sign-ins failed, did a sign-in succeed afterwards, and from where?
+benign_when:
+  - A founder added a co-founder or a new engineering lead and said so.
+example: |
+  claim (actor): "mallory@example.com invited backup@example.net as owner from 203.0.113.44, an address this account never used before", citing the invite.
+  checked and absent: "a login by mallory@example.com from that address before (90d)", which rules out a known device.
+  disposition: suspicious, because an outside address was made owner from a new location.
+trigger:
+  verdict: [malicious, suspicious]
+  severity_at_least: high
+  min_confidence: 0.6
+steps:
+  - name: delete the API key the new owner made
+    action: openai.delete_api_key
+    optional: true
+    params:
+      key_id: "{{ entity.key }}"
+      project_id: "{{ entity.resource }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: new OpenAI owner granted by {{ entity.user }}, check the organization's members and Admin keys"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"

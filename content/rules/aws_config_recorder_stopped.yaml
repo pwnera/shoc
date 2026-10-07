@@ -1,0 +1,32 @@
+id: aws_config_recorder_stopped
+title: AWS Config recording stopped or its rules deleted
+description: >
+  Configuration recording was stopped, its delivery channel removed, or its
+  rules, conformance packs or remediations deleted, which hides changes made
+  afterwards. Deletions by Security Hub, Control Tower or Firewall Manager
+  managing their own rules are left out.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: high
+confidence: 0.75
+attack: [T1562.008]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.operation: [StopConfigurationRecorder, DeleteDeliveryChannel, DeleteConfigurationRecorder, DeleteConfigRule, DeleteOrganizationConfigRule, DeleteConformancePack, DeleteOrganizationConformancePack, DeleteRemediationConfiguration]
+    status: Success
+  filter_aws:
+    actor.invoked_by: [securityhub.amazonaws.com, controltower.amazonaws.com, fms.amazonaws.com, config-conforms.amazonaws.com]
+  condition: selection and not filter_aws
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation]
+sources:
+  - name: Elastic
+    title: AWS Config Resource Deletion
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_config_service_rule_deletion
+    license: Elastic-2.0
+    relation: adapted

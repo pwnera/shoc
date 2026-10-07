@@ -1,0 +1,75 @@
+id: endpoint_local_admin_granted
+title: An account was added to a computer's local administrators
+description: >
+  An account joined the Administrators group of a Windows machine or the admin
+  group of a Mac. It is the step after a foothold, the persistence of a
+  helpdesk-scam caller, and how an employee quietly makes themselves admin.
+status: experimental
+date: 2026-10-02
+severity: medium
+confidence: 0.5
+attack: [T1098, T1078.003]
+sources:
+  - name: Sigma
+    title: "User Added to Local Administrators Group"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_add_user_local_admin_group.yml
+    author: "Florian Roth (Nextron Systems), Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "User Added to Local Administrator Group"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/security/win_security_user_added_to_local_administrators.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "User Added To Admin Group Via DseditGroup"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/macos/process_creation/proc_creation_macos_dseditgroup_add_to_admin_group.yml
+    author: "Sohan G (D4rkCiph3r)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "User Added To Admin Group Via Sysadminctl"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/macos/process_creation/proc_creation_macos_sysadminctl_add_user_to_admin_group.yml
+    author: "Sohan G (D4rkCiph3r)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "User Added To Admin Group Via Dscl"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/macos/process_creation/proc_creation_macos_dscl_add_user_to_admin_group.yml
+    author: "Sohan G (D4rkCiph3r)"
+    license: DRL-1.1
+    relation: adapted
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  sel_win_cmd:
+    class_uid: 1007
+    process.cmd_line|contains: ['localgroup ', Add-LocalGroupMember]
+  sel_win_add:
+    process.cmd_line|contains: [' /add', ' -Member ']
+  sel_win_group:
+    process.cmd_line|contains: [administrators, administrateurs, administratoren]
+  sel_mac_cmd:
+    class_uid: 1007
+    process.name: [dseditgroup, dscl, sysadminctl]
+    process.cmd_line|contains: ['-a ', '-append', '-addUser']
+  sel_mac_group:
+    process.cmd_line|contains: [' admin', /Groups/admin, '-admin']
+  # Falcon writes the group RID as eight hex digits: Administrators is 544.
+  sel_falcon:
+    api.operation: UserAccountAddedToGroup
+    raw.GroupRid: ['00000220', '220']
+  sel_s1:
+    class_uid: 3006
+    raw.winEventLog.data.event.system.eventID: '4732'
+    raw.winEventLog.data.event.eventData.targetSid: S-1-5-32-544
+  sel_defender:
+    api.operation: UserAccountAddedToLocalGroup
+    raw.properties.AdditionalFields|contains: S-1-5-32-544
+  condition: (sel_win_cmd and sel_win_add and sel_win_group) or (sel_mac_cmd and sel_mac_group) or sel_falcon or sel_s1 or sel_defender
+  timeframe: 1h
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.cmd_line, process.parent_process.name,
+         api.operation]

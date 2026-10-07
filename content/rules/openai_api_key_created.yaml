@@ -1,0 +1,29 @@
+id: openai_api_key_created
+title: OpenAI API key created
+description: >
+  A key spends the organization's money from anywhere, and someone who got
+  into a dashboard session makes one before the session is noticed. An Admin
+  key also manages every member, project and key.
+status: stable
+date: 2026-09-30
+modified: 2026-10-03
+severity: high
+confidence: 0.5
+attack: [T1098.001]
+logsource:
+  product: openai
+  service: audit_log
+detection:
+  selection:
+    # The audit log also names project and Admin key creation under `tenant.`.
+    api.operation: [api_key.created, tenant.project_api_key.created, tenant.admin_api_key.created]
+  condition: selection
+  timeframe: 15m
+# The connector reads the new key's id only from `api_key.` events.
+entity: [actor.session.uid, actor.user.name]
+fields: [actor.user.name, src_endpoint.ip, actor.session.uid, resource.uid]
+sources:
+  - name: OpenAI
+    title: OpenAI API OpenAPI specification (AuditLogEventType)
+    url: https://github.com/openai/openai-openapi/blob/main/openapi.yaml
+    relation: inspired

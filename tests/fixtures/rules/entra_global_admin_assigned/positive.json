@@ -1,0 +1,92 @@
+[
+  {
+    "id": "en-Add member to role GA",
+    "activityDisplayName": "Add member to role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Assign",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "userPrincipalName": "helpdesk.temp@example.com",
+        "id": "u-8",
+        "modifiedProperties": [
+          { "displayName": "Role.ObjectID", "newValue": "\"f2ef992c-3afb-46b9-b7cf-a126ee74c451\"" },
+          { "displayName": "Role.DisplayName", "newValue": "\"Global Administrator\"" },
+          { "displayName": "Role.TemplateId", "newValue": "\"62e90394-69f5-4237-9190-012177145e10\"" }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Elevate access",
+    "activityDisplayName": "User has elevated their access to User Access Administrator for their Azure Resources",
+    "category": "AzureRBACRoleManagementElevateAccess",
+    "loggedByService": "Azure RBAC (Elevated Access)",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      { "type": "Other", "displayName": "User Access Administrator", "id": "/" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "PIM_tid-1_en-eligible-ga",
+    "activityDisplayName": "Add eligible member to role in PIM completed (permanent)",
+    "category": "RoleManagement",
+    "loggedByService": "PIM",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "it.lead@example.com",
+        "id": "u-5",
+        "ipAddress": "203.0.113.62"
+      }
+    },
+    "additionalDetails": [
+      { "key": "RoleDefinitionOriginId", "value": "62e90394-69f5-4237-9190-012177145e10" },
+      { "key": "RoleDefinitionOriginType", "value": "BuiltInRole" },
+      { "key": "TemplateId", "value": "62e90394-69f5-4237-9190-012177145e10" }
+    ],
+    "targetResources": [
+      {
+        "id": "62e90394-69f5-4237-9190-012177145e10",
+        "displayName": "Global Administrator",
+        "type": "Role",
+        "modifiedProperties": [
+          { "displayName": "RoleDefinitionOriginId", "oldValue": "\"\"", "newValue": "\"62e90394-69f5-4237-9190-012177145e10\"" },
+          { "displayName": "RoleDefinitionOriginType", "oldValue": "\"\"", "newValue": "\"BuiltInRole\"" },
+          { "displayName": "TemplateId", "oldValue": "\"\"", "newValue": "\"62e90394-69f5-4237-9190-012177145e10\"" }
+        ]
+      },
+      { "id": "tid-1", "displayName": "Example Corp", "type": "Directory", "modifiedProperties": [] },
+      {
+        "id": "u-9",
+        "displayName": "Contractor",
+        "type": "User",
+        "userPrincipalName": "contractor@example.com",
+        "modifiedProperties": []
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

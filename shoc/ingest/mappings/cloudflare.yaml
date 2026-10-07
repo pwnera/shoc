@@ -1,0 +1,80 @@
+# Cloudflare account audit log -> OCSF API Activity (6003). ING-1, ING-3.
+#
+# The connector reads Audit Logs v2 from the API (`action.*`, `actor.*`,
+# `raw.*`). Each field also lists the Logpush paths, so an audit-log Logpush
+# export loaded with `events.ingest` maps too: the `audit_logs` dataset
+# (`ActionType`, `ActorEmail`, `ActorIP`, `When`, ...) and `audit_logs_v2`
+# (`ActionTimestamp`, `ActorIPAddress`, `AuditLogID`, ...). The API paths come
+# first; the shipped rules read them as `raw.raw.*`.
+source: cloudflare
+ocsf_version: "1.3.0"
+
+constants:
+  category_uid: 6
+  class_uid: 6003
+  class_name: API Activity
+  type_uid: 600399
+  activity_id: 99
+  activity_name: Other
+  severity_id: 1
+  status: Success
+  cloud_provider: Cloudflare
+  metadata_product: Cloudflare Audit Log
+
+fields:
+  event_uid: { paths: [id, ID, AuditLogID] }
+  time: { paths: [action.time, When, ActionTimestamp], transform: iso8601 }
+  # Logpush `audit_logs` names the operation in ActionType (`gateway_create`,
+  # `job_update`); in `audit_logs_v2` ActionType is only create/update/delete.
+  api_operation: { paths: [action.description, raw.uri, ActionDescription, ActionType] }
+  message: { paths: [action.description, ActionDescription] }
+  actor_user_name: { paths: [actor.email, actor.token_name, actor.id, ActorEmail, ActorID] }
+  actor_user_uid: { paths: [actor.id, ActorID] }
+  actor_user_type: { paths: [actor.type, ActorType] }
+  # The API token the change was made with, if any: the credential to disable.
+  actor_session_uid: { path: actor.token_id }
+  actor_invoked_by: { paths: [actor.context, Interface, ActorContext] }
+  # Logpush `audit_logs` writes IPv4 actors IPv4-mapped (`::ffff:198.51.100.7`).
+  # The Logpush audit_logs dataset writes IPv4 as `::ffff:a.b.c.d`.
+  src_endpoint_ip: { paths: [actor.ip_address, ActorIP, ActorIPAddress], transform: ip }
+  http_user_agent: { path: raw.user_agent }
+  api_service_name: { paths: [resource.product, ResourceProduct] }
+  api_response_code: { path: raw.status_code, transform: int }
+  resource_type: { paths: [resource.type, resource.product, ResourceType, ResourceProduct] }
+  # A created token or member has no resource.id; its id is in the response.
+  resource_uid: { paths: [resource.id, resource.response.id, zone.name, ResourceID, ZoneName] }
+  cloud_account_uid: { paths: [account.id, AccountID, Metadata.account_id] }
+
+derive:
+  - when: { action.type: create }
+    set: { activity_id: 1, activity_name: Create, type_uid: 600301 }
+  - when: { action.type: update }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303 }
+  - when: { action.type: delete }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 600304 }
+  - when: { ActionType: { contains: create } }
+    set: { activity_id: 1, activity_name: Create, type_uid: 600301 }
+  - when: { ActionType: { contains: update } }
+    set: { activity_id: 3, activity_name: Update, type_uid: 600303 }
+  - when: { ActionType: { contains: delete } }
+    set: { activity_id: 4, activity_name: Delete, type_uid: 600304 }
+  - when: { action.result: failure }
+    set: { status: Failure, severity_id: 2 }
+  # `audit_logs` writes the result as a boolean, `audit_logs_v2` as a word.
+  - when: { ActionResult: false }
+    set: { status: Failure, severity_id: 2 }
+  - when: { ActionResult: failure }
+    set: { status: Failure, severity_id: 2 }
+  - when: { raw.uri: { contains: "/tokens" } }
+    set: { severity_id: 3 }
+  - when: { raw.uri: { contains: "/members" } }
+    set: { severity_id: 3 }
+  - when: { ResourceType: { contains: token } }
+    set: { severity_id: 3 }
+  - when: { ResourceType: { contains: member } }
+    set: { severity_id: 3 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: resource_uid, name: resource.uid, type: Resource }

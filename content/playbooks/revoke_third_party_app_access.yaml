@@ -1,0 +1,58 @@
+id: revoke_third_party_app_access
+title: Contain a malicious or backdoored app
+description: >
+  A user or admin granted an OAuth app access to mail, files or code, or a
+  secret was added to an app registration. The grant and the secret outlive a
+  password reset. Revoking the user's sessions stops the account that granted
+  it or added the secret. For Microsoft, the Commander revokes the grant itself with
+  `m365.revoke_app_consent`, using the grant id `m365.list_app_consents`
+  returns. A GitHub OAuth app still needs a human, who is paged; the member's
+  IdP sessions are revoked when GitHub's SAML identity names their login
+  (RFC 0027).
+rules:
+  - entra_app_consent_granted
+  - m365_app_consent_granted
+  - github_oauth_app_authorized
+  - hunt:entra_app_consent_first_seen
+  - entra_app_credential_added
+  - hunt:entra_service_principal_new_network
+questions:
+  - id: scopes
+    ask: Which scopes or permissions did the app receive?
+  - id: breadth
+    ask: How many users granted the same app in the window?
+  - id: used
+    ask: Has the app read mail, files or repositories since the grant, and from which addresses?
+  - id: publisher
+    ask: Is the publisher verified, and does anyone else in the tenant already use the app?
+  - id: grant_type
+    ask: Is it a delegated grant, an admin-consented application permission, or a secret on the app itself?
+  - id: app_secret
+    ask: If a secret was added to an app, what permissions does the app hold, and has the app signed in since from a new address?
+benign_when:
+  - The app is from a verified publisher already used in the tenant, with read-only profile scopes.
+example: |
+  claim (scopes): "Seven users granted an unverified app Mail.ReadWrite and Files.Read.All in one hour", citing the first and last consent.
+  checked and absent: "any earlier use of the app in the tenant (90d)", which rules out an app already in use.
+  disposition: malicious, because seven people gave mail and file access to a publisher nobody here has used, in one hour.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: revoke the granting user's sessions in Okta
+    action: okta.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: revoke the granting user's sessions in Entra ID
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: third-party app granted by {{ entity.user }}, revoke it: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"

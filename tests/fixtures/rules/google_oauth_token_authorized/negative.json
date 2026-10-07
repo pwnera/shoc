@@ -1,0 +1,150 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-revoke",
+      "applicationName": "token",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "token",
+    "events": [
+      {
+        "type": "auth",
+        "name": "revoke",
+        "parameters": [
+          {
+            "name": "client_id",
+            "value": "100000000000000000077"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-signin",
+      "applicationName": "token",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "token",
+    "events": [
+      {
+        "type": "auth",
+        "name": "authorize",
+        "parameters": [
+          {
+            "name": "client_id",
+            "value": "100000000000000000088"
+          },
+          {
+            "name": "app_name",
+            "value": "Notes app"
+          },
+          {
+            "name": "scope",
+            "multiValue": [
+              "openid",
+              "https://www.googleapis.com/auth/userinfo.email",
+              "https://www.googleapis.com/auth/userinfo.profile"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-drivefile",
+      "applicationName": "token",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "token",
+    "events": [
+      {
+        "type": "auth",
+        "name": "authorize",
+        "parameters": [
+          {
+            "name": "client_id",
+            "value": "100000000000000000099"
+          },
+          {
+            "name": "app_name",
+            "value": "Diagram tool"
+          },
+          {
+            "name": "scope",
+            "multiValue": [
+              "https://www.googleapis.com/auth/drive.file"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-gmail-addon",
+      "applicationName": "token",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "token",
+    "events": [
+      {
+        "type": "auth",
+        "name": "authorize",
+        "parameters": [
+          {
+            "name": "client_id",
+            "value": "100000000000-meetingnotes.apps.googleusercontent.com"
+          },
+          {
+            "name": "app_name",
+            "value": "Gmail Add-on"
+          },
+          {
+            "name": "client_type",
+            "value": "WEB"
+          },
+          {
+            "name": "scope",
+            "multiValue": [
+              "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
+              "https://www.googleapis.com/auth/gmail.addons.execute",
+              "https://www.googleapis.com/auth/script.external_request",
+              "https://www.googleapis.com/auth/script.storage",
+              "https://www.googleapis.com/auth/userinfo.email"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

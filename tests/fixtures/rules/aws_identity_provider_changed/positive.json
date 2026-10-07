@@ -1,0 +1,110 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateSAMLProvider",
+    "eventName": "CreateSAMLProvider",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "name": "okta-new",
+      "sAMLMetadataDocument": "<sensitiveDataRemoved>"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateOpenIDConnectProvider",
+    "eventName": "CreateOpenIDConnectProvider",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "url": "https://token.example.org",
+      "clientIDList": [
+        "sts.amazonaws.com"
+      ]
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-EnableExternalIdPConfigurationForDirectory",
+    "eventName": "EnableExternalIdPConfigurationForDirectory",
+    "eventSource": "sso-directory.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateTrustAnchor",
+    "eventName": "CreateTrustAnchor",
+    "eventSource": "rolesanywhere.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "name": "ca",
+      "enabled": true
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-UpdateSAMLProvider-spoofed-agent",
+    "eventName": "UpdateSAMLProvider",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "sso.amazonaws.com",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "sAMLProviderArn": "arn:aws:iam::123456789012:saml-provider/AWSSSO_0123456789abcdef_DO_NOT_DELETE",
+      "sAMLMetadataDocument": "<sensitiveDataRemoved>"
+    }
+  }
+]

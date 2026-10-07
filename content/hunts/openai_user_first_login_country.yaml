@@ -1,0 +1,33 @@
+id: openai_user_first_login_country
+title: Someone signs in to OpenAI from a country they never signed in from
+hypothesis: >
+  A stolen dashboard password or session is used from wherever the attacker
+  is, and the account then makes keys or invites an owner. A first-seen country
+  is weak on its own and strong next to either of those.
+attack: [T1078.004]
+logsource:
+  product: openai
+  service: audit_log
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: login.succeeded
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, src_endpoint.location.country]
+  lookback: 30d
+pivot: [actor.user.name, src_endpoint.location.country, src_endpoint.ip]
+triage: >
+  Is this person travelling? A sign-in from a new country followed within the
+  hour by a key, an invitation or a project change is the one to escalate.
+follow_up:
+  - Did the account create a key or invite anyone after this sign-in?
+  - Did the old country stop at the same time the new one started?
+sensitive: false
+sources:
+  - name: Elastic
+    title: Anthropic Impossible Travel Login
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/anthropic/initial_access_anthropic_impossible_travel_login
+    license: Elastic-2.0
+    relation: inspired

@@ -1,0 +1,26 @@
+[
+  {
+    "eventDataId": "hunt-az-first-op",
+    "operationName": { "value": "Microsoft.Authorization/roleAssignments/write" },
+    "category": { "value": "Administrative" },
+    "status": { "value": "Succeeded" },
+    "level": "Informational",
+    "caller": "ci-deployer@example.com",
+    "claims": { "upn": "ci-deployer@example.com" },
+    "httpRequest": { "clientIpAddress": "203.0.113.230" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/providers/Microsoft.Authorization/roleAssignments/xyz"
+  },
+  {
+    "eventDataId": "hunt-az-read",
+    "operationName": { "value": "Microsoft.Storage/storageAccounts/read" },
+    "category": { "value": "Administrative" },
+    "status": { "value": "Succeeded" },
+    "level": "Informational",
+    "caller": "ci-deployer@example.com",
+    "claims": { "upn": "ci-deployer@example.com" },
+    "httpRequest": { "clientIpAddress": "203.0.113.230" },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Storage/storageAccounts/stprod01"
+  }
+]

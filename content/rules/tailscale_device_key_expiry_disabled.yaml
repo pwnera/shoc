@@ -1,0 +1,34 @@
+id: tailscale_device_key_expiry_disabled
+title: Key expiry disabled on a Tailscale device
+description: >
+  The device stays on the network without its owner ever signing in again,
+  which is how a device that was taken over stays in. Tailscale turns expiry
+  off by itself when a tagged node registers, logged with origin NODE, so only
+  a change from the admin console or the API counts.
+status: stable
+date: 2026-09-30
+modified: 2026-10-03
+severity: medium
+confidence: 0.5
+attack: [T1098]
+sources:
+  - name: Tailscale
+    title: Key expiry
+    url: https://tailscale.com/docs/features/access-control/key-expiry
+    relation: inspired
+  - name: Tailscale
+    title: Tagged nodes no longer require key renewal
+    url: https://tailscale.com/blog/tagged-key-expiry
+    relation: inspired
+logsource:
+  product: tailscale
+  service: configuration_log
+detection:
+  selection:
+    api.operation: NODE.DISABLE.KEY_EXPIRY
+  registered:
+    actor.invoked_by: NODE
+  condition: selection and not registered
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, resource.uid, cloud.account.uid]

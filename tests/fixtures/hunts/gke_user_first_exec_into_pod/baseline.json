@@ -1,0 +1,28 @@
+[
+  {
+    "insertId": "hunt-gke-exec-base",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "k8s_cluster",
+      "labels": {
+        "project_id": "example-prod",
+        "cluster_name": "prod",
+        "location": "europe-west1"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "k8s.io",
+      "methodName": "io.k8s.core.v1.pods.exec.create",
+      "resourceName": "core/v1/namespaces/default/pods/web-7d9f/exec",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.84",
+        "callerSuppliedUserAgent": "kubectl/v1.31.0 (linux/amd64) kubernetes/abc1234"
+      }
+    }
+  }
+]

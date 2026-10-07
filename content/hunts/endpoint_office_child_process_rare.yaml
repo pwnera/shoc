@@ -1,0 +1,42 @@
+id: endpoint_office_child_process_rare
+title: An Office app starts something no other machine saw it start
+hypothesis: >
+  A malicious document runs code as a child of Word, Excel, PowerPoint or
+  Outlook. Add-ins and printing start the same children on every machine; a
+  child seen on one machine only is the document that did something.
+attack: [T1566.001, T1204.002]
+sources:
+  - name: Elastic hunting
+    title: "Microsoft Office Child Processes with Low Occurrence Frequency by Unique Agent"
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/windows/queries/microsoft_office_child_processes_with_low_occurrence_frequency.toml
+    license: Elastic-2.0
+    relation: adapted
+logsource:
+  product: edr
+  service: telemetry
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    class_uid: 1007
+    activity_id: 1
+    process.parent_process.name: [WINWORD.EXE, EXCEL.EXE, POWERPNT.EXE, OUTLOOK.EXE, ONENOTE.EXE,
+                                  MSACCESS.EXE, MSPUB.EXE, Microsoft Word, Microsoft Excel,
+                                  Microsoft PowerPoint, Microsoft Outlook]
+  condition: selection
+baseline:
+  rare:
+    by: [process.parent_process.name, process.name]
+    among: device.uid
+    seen_by_fewer_than: 2
+  lookback: 30d
+pivot: [device.hostname, device.uid, process.parent_process.name, process.name, process.cmd_line,
+        actor.user.name]
+triage: >
+  Is the child an add-in, a printer driver or a viewer the company installed?
+  A shell, a script host or a binary from the user's profile, right after a
+  document arrived by mail, is the case.
+follow_up:
+  - Which document was open, and where did it come from?
+  - Did the child connect out or write a file?
+sensitive: false

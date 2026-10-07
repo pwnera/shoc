@@ -1,0 +1,24 @@
+[
+  {
+    "_document_id": "hunt-gh-push-base",
+    "action": "push",
+    "actor": "mallory",
+    "org": "acme",
+    "repo": "acme/payments",
+    "webhook": {
+      "event": "push",
+      "action": ""
+    },
+    "ref": "refs/heads/main"
+  },
+  {
+    "_document_id": "hunt-gh-git-push-base",
+    "action": "git.push",
+    "actor": "eve",
+    "actor_ip": "203.0.113.70",
+    "org": "acme",
+    "repo": "acme/api",
+    "repository_public": false,
+    "transport_protocol_name": "http"
+  }
+]

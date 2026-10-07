@@ -1,0 +1,54 @@
+id: endpoint_rclone_upload_to_file_sharing
+title: Rclone or MEGA tools copied files to a file-sharing service
+description: >
+  Rclone copied files to MEGA, pCloud or FTP, or a MEGA command-line tool
+  uploaded them. Extortion crews take the data this way before they encrypt;
+  a company's own backups go to S3, B2 or GCS with a config file.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1567.002, T1048]
+sources:
+  - name: Sigma
+    title: "PUA - Rclone Execution"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_pua_rclone_execution.yml
+    author: "Bhabesh Raj, Sittikorn S, Aaron Greetham (@beardofbinary) - NCC Group"
+    license: DRL-1.1
+    relation: inspired
+  - name: Elastic
+    title: "Potential Data Exfiltration via Rclone"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/exfiltration_rclone_cloud_upload.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: The DFIR Report
+    title: "From a Single Click: How Lunar Spider Enabled a Near Two-Month Intrusion"
+    url: https://thedfirreport.com/2025/09/29/from-a-single-click-how-lunar-spider-enabled-a-near-two-month-intrusion/
+    relation: inspired
+  - name: The DFIR Report
+    title: "Cobalt Strike and a Pair of SOCKS Lead to LockBit Ransomware"
+    url: https://thedfirreport.com/2025/01/27/cobalt-strike-and-a-pair-of-socks-lead-to-lockbit-ransomware/
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+  # Crews rename the binary; --multi-thread-streams is an rclone flag.
+  sel_rclone:
+    process.cmd_line|contains: [rclone, --multi-thread-streams]
+  sel_rclone_verb:
+    process.cmd_line|contains: [' copy ', ' sync ', ' move ', ' copyto ', ' moveto ']
+  sel_rclone_dest:
+    process.cmd_line|contains: ['mega:', 'pcloud:', ' ftp:', '--no-check-certificate',
+                                '--auto-confirm']
+  sel_mega_cli:
+    process.cmd_line|contains: [mega-put, megaput, megatools put, megacopy]
+  condition: selection_process and ((sel_rclone and sel_rclone_verb and sel_rclone_dest) or sel_mega_cli)
+  timeframe: 1h
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         process.parent_process.name, process.file.path]

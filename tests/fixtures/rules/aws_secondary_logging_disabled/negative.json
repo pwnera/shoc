@@ -1,0 +1,77 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-PutBucketLogging",
+    "eventName": "PutBucketLogging",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-data"
+      }
+    ],
+    "requestParameters": {
+      "bucketName": "acme-data",
+      "logging": [
+        ""
+      ],
+      "BucketLoggingStatus": {
+        "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+        "LoggingEnabled": {
+          "TargetBucket": "acme-logs",
+          "TargetPrefix": "acme-data/"
+        }
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateFlowLogs",
+    "eventName": "CreateFlowLogs",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-DeleteFlowLogs-denied",
+    "eventName": "DeleteFlowLogs",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "errorCode": "AccessDenied",
+    "errorMessage": "User is not authorized to perform this operation"
+  }
+]

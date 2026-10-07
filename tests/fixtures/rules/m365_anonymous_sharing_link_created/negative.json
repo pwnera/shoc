@@ -1,0 +1,43 @@
+[
+  {
+    "Id": "m365-SecureLinkCreated",
+    "Operation": "SecureLinkCreated",
+    "OrganizationId": "org-1",
+    "RecordType": 14,
+    "UserKey": "i:0h.f|membership|10032001a2b3c4d5@live.com",
+    "UserType": 0,
+    "Workload": "SharePoint",
+    "ClientIP": "198.51.100.11",
+    "UserId": "jane@example.com",
+    "ItemType": "File",
+    "SiteUrl": "https://example.sharepoint.com/sites/finance/",
+    "SourceFileName": "budget.xlsx",
+    "ObjectId": "https://example.sharepoint.com/sites/finance/Shared Documents/budget.xlsx"
+  },
+  {
+    "Id": "m365-AnonymousLinkUsed",
+    "Operation": "AnonymousLinkUsed",
+    "OrganizationId": "org-1",
+    "RecordType": 14,
+    "UserKey": "urn:spo:anon#0123",
+    "UserType": 0,
+    "UserId": "urn:spo:anon#0123",
+    "ClientIP": "203.0.113.80",
+    "Workload": "OneDrive",
+    "ObjectId": "https://example.sharepoint.com/sites/finance/budget.xlsx",
+    "SessionId": "s-2"
+  },
+  {
+    "Id": "m365-AnonymousLinkRemoved",
+    "Operation": "AnonymousLinkRemoved",
+    "OrganizationId": "org-1",
+    "RecordType": 14,
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "ClientIP": "198.51.100.11",
+    "Workload": "OneDrive",
+    "ObjectId": "https://example.sharepoint.com/sites/finance/budget.xlsx",
+    "SessionId": "s-1"
+  }
+]

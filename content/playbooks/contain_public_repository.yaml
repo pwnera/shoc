@@ -1,0 +1,39 @@
+id: contain_public_repository
+title: Put a leaked repository back behind the wall
+description: >
+  A private repository became public. Making it private again is one click, but
+  it does not un-clone anything, so the page says what still has to be rotated.
+  The page goes first: making it private waits for a human, and the page is how
+  that human hears of it.
+rules:
+  - github_repo_made_public
+questions:
+  - id: who
+    ask: Who changed the visibility, from which address, and is that account an organisation owner?
+  - id: exposure_window
+    ask: How long was the repository public, and was it forked, starred or cloned by accounts outside the organisation in that time?
+  - id: secrets
+    ask: Which secrets, keys or customer data have ever been committed to it?
+benign_when:
+  - The repository is intended to be open source and the change was announced or made by its maintainer.
+example: |
+  claim (who): "The repository was made public by a member who is not an owner, from 203.0.113.60", citing the visibility change.
+  checked and absent: "a release announcement or maintainer note that it is meant to be open source", which rules out an intended release.
+  disposition: suspicious, because nobody said this repository should be public.
+trigger:
+  verdict: [malicious, suspicious]
+  entity_kinds: [resource]
+  severity_at_least: high
+  min_confidence: 0.7
+steps:
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: {{ entity.resource }} was made public; approve making it private, then rotate anything committed to it"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: make the repository private
+    action: github.make_repo_private
+    optional: true
+    params:
+      repo: "{{ entity.resource }}"

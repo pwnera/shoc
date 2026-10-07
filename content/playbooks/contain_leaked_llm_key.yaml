@@ -1,0 +1,56 @@
+id: contain_leaked_llm_key
+title: Contain a leaked model API key
+description: >
+  A Claude or OpenAI key is spending far more than usual, or a new one appeared.
+  A Claude key is disabled, which is reversible and stops the bill; an OpenAI
+  key can only be deleted, so that waits for a human, and a human is paged
+  either way to find where the key leaked. Meanwhile the OpenAI key's project
+  is throttled to the lowest rate limits, with the old ones kept for undo.
+rules:
+  - anthropic_api_key_usage_spike
+  - anthropic_api_key_created
+  - openai_api_key_usage_spike
+  - openai_api_key_created
+questions:
+  - id: baseline
+    ask: How many tokens did this key use per hour over the last 30 days, and when did the jump start?
+  - id: origin
+    ask: Who created the key, when, and for which project or workspace?
+  - id: leak
+    ask: Does the key's hint or name appear in a secret-scanning alert, a public repository or a recent deploy of a front end?
+benign_when:
+  - The key belongs to a batch job or launch that the team announced, and its usage matches that job's size.
+  - A named engineer created the key for a new service and its usage is small.
+example: |
+  claim (baseline): "The key averaged 40,000 output tokens an hour for 30 days and produced 6.4 million between 02:00 and 03:00", citing the usage record.
+  checked and absent: "a deploy or batch job announced for that night (24h)", which rules out a planned run.
+  disposition: malicious, because a key that normally idles is generating output at resale volume.
+trigger:
+  verdict: [malicious]
+  entity_kinds: [key]
+  severity_at_least: high
+  min_confidence: 0.75
+steps:
+  - name: disable the Claude API key
+    action: anthropic.disable_api_key
+    optional: true
+    params:
+      key_id: "{{ entity.key }}"
+  - name: delete the OpenAI API key
+    action: openai.delete_api_key
+    optional: true
+    params:
+      key_id: "{{ entity.key }}"
+      project_id: "{{ entity.resource }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: model API key {{ entity.key }} is being abused, find where it leaked"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  # Deleting the key waits for a human; throttling its project does not.
+  - name: throttle the OpenAI project
+    action: openai.limit_project
+    optional: true
+    params:
+      project_id: "{{ entity.resource }}"

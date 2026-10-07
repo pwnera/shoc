@@ -1,0 +1,45 @@
+id: aws_discovery_burst
+title: Cloud infrastructure discovery burst
+description: >
+  A long-term access key called eight or more different List, Describe, Get or
+  Generate operations within 15 minutes. That breadth is what a freshly stolen
+  key does first: work out what it can reach. Repeating a few calls, as backup
+  and deploy jobs do, is not a match. Role sessions are left out because
+  compliance scanners and monitoring integrations sweep through roles all day,
+  and so are object reads, console sessions, infrastructure-as-code runs and
+  calls AWS made on the key's behalf.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1580, T1526]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.operation|startswith: [list, describe, get, generate]
+    actor.session.uid|startswith: AKIA
+  # S3 data events, which arrive once a trail records them.
+  filter_data_events:
+    api.operation|startswith: [GetObject, ListObject, ListParts, ListMultipartUploads]
+  filter_aws:
+    actor.invoked_by|exists: true
+  filter_iac:
+    http_request.user_agent|contains: [terraform, pulumi, eksctl]
+  # Console sessions run on temporary ASIA credentials, so the key selection
+  # already leaves them out.
+  condition: selection and not filter_data_events and not filter_aws and not filter_iac
+  timeframe: 15m
+  group_by: [actor.session.uid]
+  count_distinct: api.operation
+  count: ">= 8"
+entity: actor.session.uid
+fields: [actor.user.name, api.operation, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: AWS Discovery API Calls via CLI from a Single Resource
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_multiple_discovery_api_calls_via_cli
+    license: Elastic-2.0
+    relation: adapted

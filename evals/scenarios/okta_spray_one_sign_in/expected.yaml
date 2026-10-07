@@ -1,0 +1,23 @@
+# A spray with one success: six accounts on one case, one of them got in (RSP-2).
+id: okta_spray_one_sign_in
+title: Password spray from one address, one account signs in
+description: >
+  Okta ThreatInsight flags 203.0.113.77 for a password spray. The address fails
+  to sign in as six accounts, then signs in as mia@example.com. The case names
+  all six; only Mia's sessions are the attacker's, and adam@example.com, the
+  first account alphabetically, never got in.
+source: okta
+entity: 203.0.113.77
+expected_rules:
+  - okta_login_failure_burst
+  - okta_sign_in_after_attack_from_address
+must_not_fire:
+  - okta_mfa_push_fatigue
+expected_verdict: malicious
+minimum_confidence: 0.6
+min_cases: 1
+max_cases: 1
+# What each playbook step is aimed at once the case is ruled malicious.
+playbook_targets:
+  contain_password_spray:
+    revoke the sessions of the account that signed in: {user: mia@example.com}

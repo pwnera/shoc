@@ -1,0 +1,73 @@
+[
+  {
+    "insertId": "gcp-sink-delete",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "logging_sink",
+      "labels": {
+        "project_id": "example-prod",
+        "name": "shoc-audit",
+        "destination": ""
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "logging.googleapis.com",
+      "methodName": "google.logging.v2.ConfigServiceV2.DeleteSink",
+      "resourceName": "projects/example-prod/sinks/shoc-audit",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.81",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/google.logging.v2.DeleteSinkRequest",
+        "sinkName": "projects/example-prod/sinks/shoc-audit"
+      }
+    }
+  },
+  {
+    "insertId": "gcp-audit-config-off",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudresourcemanager.googleapis.com",
+      "methodName": "SetIamPolicy",
+      "resourceName": "projects/example-prod",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.81",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "serviceData": {
+        "@type": "type.googleapis.com/google.iam.v1.logging.AuditData",
+        "policyDelta": {
+          "auditConfigDeltas": [
+            {
+              "action": "REMOVE",
+              "service": "allServices",
+              "logType": "DATA_READ"
+            },
+            {
+              "action": "REMOVE",
+              "service": "allServices",
+              "logType": "DATA_WRITE"
+            }
+          ]
+        }
+      }
+    }
+  }
+]

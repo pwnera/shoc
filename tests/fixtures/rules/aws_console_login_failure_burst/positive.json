@@ -1,0 +1,65 @@
+[
+  {
+    "eventVersion": "1.08",
+    "eventID": "ct-ConsoleLogin-failed",
+    "eventName": "ConsoleLogin",
+    "eventSource": "signin.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.77",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "accountId": "123456789012",
+      "accessKeyId": "",
+      "userName": "alice",
+      "principalId": "AIDAEXAMPLEALICE"
+    },
+    "requestParameters": null,
+    "responseElements": {
+      "ConsoleLogin": "Failure"
+    },
+    "additionalEventData": {
+      "LoginTo": "https://console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true",
+      "MobileVersion": "No",
+      "MFAUsed": "No"
+    },
+    "readOnly": false,
+    "eventType": "AwsConsoleSignIn",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "errorMessage": "Failed authentication",
+    "_repeat": 4
+  },
+  {
+    "eventVersion": "1.08",
+    "eventID": "ct-ConsoleLogin-unknown-user",
+    "eventName": "ConsoleLogin",
+    "eventSource": "signin.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.77",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "accountId": "123456789012",
+      "accessKeyId": "",
+      "userName": "HIDDEN_DUE_TO_SECURITY_REASONS"
+    },
+    "requestParameters": null,
+    "responseElements": {
+      "ConsoleLogin": "Failure"
+    },
+    "additionalEventData": {
+      "LoginTo": "https://console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true",
+      "MobileVersion": "No",
+      "MFAUsed": "No"
+    },
+    "readOnly": false,
+    "eventType": "AwsConsoleSignIn",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "errorMessage": "No username found in supplied account",
+    "_repeat": 2
+  }
+]

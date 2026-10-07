@@ -1,0 +1,21 @@
+id: m365_anonymous_sharing_link_created
+title: Anonymous sharing link created
+description: >
+  A file or folder was shared with a link that needs no sign-in. Anyone who
+  gets the link gets the data.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: medium
+confidence: 0.55
+attack: [T1567.002]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation: [AnonymousLinkCreated, AnonymousLinkUpdated]
+  condition: selection
+  timeframe: 30m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid]

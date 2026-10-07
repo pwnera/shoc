@@ -1,0 +1,41 @@
+id: contain_gitlab_tampering
+title: Contain tampering with a GitLab group or project
+description: >
+  A member was made an Owner, or a deploy key or group or project token was
+  created. Each one keeps access to the code after a password reset. Blocking
+  the account that made the change ends its sessions and tokens and is
+  reversible, but it needs an admin token and waits for a human; the new Owner
+  or token itself is removed by a human, who is paged.
+rules:
+  - gitlab_member_made_owner
+  - gitlab_access_token_created
+questions:
+  - id: actor
+    ask: Who made the change, from which address, and is that account an Owner who normally manages members or tokens?
+  - id: grantee
+    ask: Who or what received access, is it a person the company knows, and what scope or role does it have?
+  - id: after
+    ask: What did the new Owner, key or token do next, pushes, pipeline runs or CI variable changes?
+benign_when:
+  - A group Owner added a co-founder or a team lead and said so.
+  - The token or key was made for a deploy or a bot the team set up, with the scopes that job needs.
+example: |
+  claim (grantee): "backup-admin was added to acme/platform as Owner by mallory@example.com from 203.0.113.55", citing the member_created event.
+  checked and absent: "an earlier sign-in or push by backup-admin in this group (90d)", which rules out a returning member.
+  disposition: suspicious, because an account nobody has seen before became Owner.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: block the account that made the change
+    action: gitlab.block_user
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: GitLab access granted by {{ entity.user }}, check it: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"

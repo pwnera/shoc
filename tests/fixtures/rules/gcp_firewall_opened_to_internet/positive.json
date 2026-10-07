@@ -1,0 +1,56 @@
+[
+  {
+    "insertId": "gcp-fw-ssh-any",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_firewall_rule",
+      "labels": {
+        "project_id": "example-prod",
+        "firewall_rule_id": "8812094417302618410"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.firewalls.insert",
+      "resourceName": "projects/example-prod/global/firewalls/allow-ssh-any",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.81",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.firewalls.insert",
+        "name": "allow-ssh-any",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-prod/global/networks/default",
+        "direction": "INGRESS",
+        "priority": 1000,
+        "sourceRanges": [
+          "0.0.0.0/0"
+        ],
+        "alloweds": [
+          {
+            "IPProtocol": "tcp",
+            "ports": [
+              "22"
+            ]
+          }
+        ]
+      },
+      "response": {
+        "@type": "type.googleapis.com/operation",
+        "operationType": "insert",
+        "status": "RUNNING",
+        "targetLink": "https://www.googleapis.com/compute/v1/projects/example-prod/global/firewalls/allow-ssh-any"
+      }
+    },
+    "operation": {
+      "id": "operation-gcp-fw-ssh-any",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  }
+]

@@ -1,0 +1,51 @@
+id: cloudflare_gateway_threat_domain_lookup
+title: A device looked up a domain Cloudflare classes as malware or command and control
+description: >
+  Cloudflare Gateway classed a name this device asked for as command and
+  control, malware, DGA, DNS tunnelling, spyware or cryptomining. Blocked or
+  not, a laptop that keeps asking for such a name is usually infected, and this
+  covers Macs, phones and laptops that have no EDR.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.75
+attack: [T1071.004, T1568.002, T1572]
+sources:
+  - name: Elastic
+    title: "CrowdStrike External Alerts"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/promotions/crowdstrike_external_alerts.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: "Low Reputation Effective Top-Level Domain (eTLD)"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/network/net_dns_low_reputation_etld.yml
+    author: "Norbert Jaśniewicz (AlphaSOC)"
+    license: DRL-1.1
+    relation: inspired
+  - name: Cloudflare
+    title: Domain categories
+    url: https://developers.cloudflare.com/cloudflare-one/traffic-policies/domain-categories/
+    relation: inspired
+logsource:
+  product: cloudflare
+  service: logpush
+detection:
+  # QueryCategoryNames classes the name asked for, policy or not. Cloudflare
+  # names category 176 both "DGA Domains" and "Domain Generation Algorithm".
+  selection:
+    class_uid: 4003
+    raw.QueryCategoryNames|contains:
+      - Command and Control
+      - Malware
+      - DGA Domains
+      - Domain Generation Algorithm
+      - DNS Tunneling
+      - Spyware
+      - Cryptomining
+  condition: selection
+  timeframe: 1h
+# A resolver query from a network location has no device: the user, then the address.
+entity: [device.hostname, actor.user.name, src_endpoint.ip]
+fields: [device.hostname, actor.user.name, query.hostname, status, src_endpoint.ip,
+         raw.QueryCategoryNames]

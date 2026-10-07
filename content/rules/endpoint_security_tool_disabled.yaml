@@ -1,0 +1,92 @@
+id: endpoint_security_tool_disabled
+title: A command turned off antivirus, the EDR or Gatekeeper
+description: >
+  A command switched off Defender's real-time protection, by cmdlet or by policy
+  value, stopped or unloaded the EDR's service, or turned Gatekeeper off.
+  Intruders and ransomware crews do this before anything else; tamper protection
+  often blocks it, and the attempt is still the signal.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1562.001]
+sources:
+  - name: Elastic
+    title: "Disabling Windows Defender Security Settings via PowerShell"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/defense_evasion_disabling_windows_defender_powershell.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: "Attempt to Disable Gatekeeper"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/macos/defense_evasion_attempt_to_disable_gatekeeper.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: "Powershell Defender Disable Scan Feature"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_defender_disable_feature.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Disable Security Tools"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/macos/process_creation/proc_creation_macos_disable_security_tools.yml
+    author: "Daniil Yugoslavskiy, oscd.community"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Service StartupType Change Via Sc.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_sc_disable_service.yml
+    author: "Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: inspired
+  - name: The DFIR Report
+    title: "IcedID to XingLocker Ransomware in 24 hours"
+    url: https://thedfirreport.com/2021/10/18/icedid-to-xinglocker-ransomware-in-24-hours/
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+  sel_mp_cmdlet:
+    process.cmd_line|contains: [Set-MpPreference, Add-MpPreference]
+  sel_mp_setting:
+    process.cmd_line|contains: [DisableRealtimeMonitoring, DisableBehaviorMonitoring,
+                                DisableIOAVProtection, DisableBlockAtFirstSeen,
+                                DisableScriptScanning, DisableAntiSpyware, DisableAntiVirus,
+                                DisableOnAccessProtection]
+  sel_mp_true:
+    process.cmd_line|contains: ['$true', ' 1']
+  sel_sc_name:
+    process.name: [sc.exe, net.exe, net1.exe]
+  sel_sc_verb:
+    process.cmd_line|contains: [' stop ', ' delete ', ' config ']
+  sel_sc_target:
+    process.cmd_line|contains: [WinDefend, WdNisSvc, Sense, CSFalconService, SentinelAgent,
+                                WazuhSvc]
+  sel_gatekeeper:
+    process.name: spctl
+    process.cmd_line|contains: [--master-disable, --global-disable]
+  sel_unload_verb:
+    process.name: [launchctl, systemctl, service]
+    process.cmd_line|contains: [unload, bootout, ' stop', ' disable ', ' mask ']
+  sel_unload_target:
+    process.cmd_line|contains: [com.crowdstrike, falcon-sensor, com.sentinelone, sentinelone,
+                                com.microsoft.wdav, mdatp, wazuh-agent]
+  sel_vendor_cli:
+    process.cmd_line|contains: [falconctl uninstall, sentinelctl unload,
+                                real-time-protection --value disabled]
+  # The same Defender policy values written with reg.exe or a .bat file.
+  sel_reg:
+    process.name: reg.exe
+    process.cmd_line|contains: Windows Defender
+  sel_reg_on:
+    process.cmd_line|contains: ['/d 1', '/d "1"']
+  condition: selection_process and ((sel_mp_cmdlet and sel_mp_setting and sel_mp_true) or (sel_sc_name and sel_sc_verb and sel_sc_target) or sel_gatekeeper or (sel_unload_verb and sel_unload_target) or sel_vendor_cli or (sel_reg and sel_mp_setting and sel_reg_on))
+  timeframe: 15m
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         process.parent_process.name, process.file.path]

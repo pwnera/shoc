@@ -1,0 +1,42 @@
+[
+  {
+    "_document_id": "gh-repo.access",
+    "action": "repo.access",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/s1ngularity-repository-abcde",
+    "public_repo": true,
+    "visibility": "public",
+    "previous_visibility": "private",
+    "programmatic_access_type": "OAuth access token",
+    "hashed_token": "kQ8b2examplehashedtoken=",
+    "user_agent": "python-requests/2.32.4",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "github-webhook-repo-publicized",
+    "action": "repo.access",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "org": "acme",
+    "repo": "acme/payments",
+    "repository": {
+      "full_name": "acme/payments",
+      "private": false,
+      "visibility": "public"
+    },
+    "organization": {
+      "login": "acme"
+    },
+    "sender": {
+      "login": "mallory",
+      "id": 4242
+    },
+    "webhook": {
+      "event": "repository",
+      "action": "publicized"
+    }
+  }
+]

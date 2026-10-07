@@ -1,0 +1,39 @@
+{{- if .Values.migrate.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "shoc.fullname" . }}-migrate
+  labels:
+    {{- include "shoc.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        {{- include "shoc.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: migrate
+          image: {{ include "shoc.image" . }}
+          args: ["migrate"]
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            {{- include "shoc.env" . | nindent 12 }}
+          envFrom:
+            - secretRef:
+                name: {{ include "shoc.secretName" . }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "hunt-entra-mfa-new-ip",
+    "activityDisplayName": "User registered security info",
+    "category": "UserManagement",
+    "loggedByService": "Authentication Methods",
+    "result": "success",
+    "resultReason": "User registered Authenticator App with Notification and Code",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "jane@example.com",
+        "id": "u-1",
+        "ipAddress": "203.0.113.200"
+      }
+    },
+    "targetResources": [
+      { "type": "User", "userPrincipalName": "jane@example.com", "id": "u-1" }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

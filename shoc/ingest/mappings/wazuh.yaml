@@ -1,0 +1,44 @@
+# Wazuh alerts, read from the indexer -> OCSF Detection Finding (2004). ING-1, ING-3.
+source: wazuh
+ocsf_version: "1.3.0"
+# The rule logsources this source answers to (ING-4).
+logsource: [edr, edr/alerts]
+
+constants:
+  category_uid: 2
+  class_uid: 2004
+  class_name: Detection Finding
+  type_uid: 200401
+  activity_id: 1
+  activity_name: Create
+  severity_id: 2
+  status: Success
+  cloud_provider: Wazuh
+  metadata_product: Wazuh
+  api_service_name: wazuh
+
+fields:
+  event_uid: { paths: [id, "rule.id"] }
+  time: { paths: [timestamp, "@timestamp"], transform: iso8601 }
+  api_operation: { path: "rule.groups[0]" }
+  message: { path: "rule.description" }
+  actor_user_name: { paths: ["data.srcuser", "data.dstuser"] }
+  src_endpoint_ip: { paths: ["data.srcip", "agent.ip"] }
+  src_endpoint_domain: { path: "agent.name" }
+  resource_type: { const: host }
+  resource_uid: { path: "agent.id" }
+  status_code: { path: "decoder.name" }
+
+derive:
+  # Wazuh rule levels run 0-15; fold them into the five OCSF severities.
+  # Later rules win, so the bands are listed from lowest to highest.
+  - when: { "rule.level": { gte: 7 } }
+    set: { severity_id: 3 }
+  - when: { "rule.level": { gte: 10 } }
+    set: { severity_id: 4 }
+  - when: { "rule.level": { gte: 12 } }
+    set: { severity_id: 5 }
+
+observables:
+  - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
+  - { column: resource_uid, name: device.uid, type: Device }

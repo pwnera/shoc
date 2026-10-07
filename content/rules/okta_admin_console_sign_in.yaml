@@ -1,0 +1,58 @@
+id: okta_admin_console_sign_in
+title: Okta admin console sign-in from a new device or place
+description: >
+  Someone signed in to the identity provider's admin console, and Okta marked
+  the device, country, location or travel speed as new for that person. An
+  attacker who took over an administrator opens the console first; the admin's
+  daily sign-ins from their usual laptop stay quiet. When no policy uses these
+  verdicts Okta logs them in a second field, so both fields are read.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: high
+confidence: 0.65
+attack: [T1078.004]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  # Only the policy evaluation names the app; user.session.start has no app target.
+  selection_console:
+    api.operation: policy.evaluate_sign_on
+    resource.uid|contains: Okta Admin Console
+  selection_new:
+    raw.debugContext.debugData.behaviors|contains:
+      - New Device=POSITIVE
+      - New Country=POSITIVE
+      - New Geo-Location=POSITIVE
+      - Velocity=POSITIVE
+  selection_new_log_only:
+    raw.debugContext.debugData.logOnlySecurityData|contains:
+      - '"New Device":"POSITIVE"'
+      - '"New Country":"POSITIVE"'
+      - '"New Geo-Location":"POSITIVE"'
+      - '"Velocity":"POSITIVE"'
+  condition: selection_console and (selection_new or selection_new_log_only)
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.location.country, raw.debugContext.debugData.behaviors,
+         raw.debugContext.debugData.logOnlySecurityData]
+sources:
+  - name: Sigma
+    title: Okta New Admin Console Behaviours
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_new_behaviours_admin_console.yml
+    author: kelnage
+    license: DRL-1.1
+    relation: adapted
+  - name: Okta
+    title: Risk scoring
+    url: https://help.okta.com/en-us/content/topics/security/security_risk_scoring.htm
+    relation: inspired
+  - name: Okta
+    title: Cross-Tenant Impersonation - Prevention and Detection
+    url: https://sec.okta.com/articles/2023/08/cross-tenant-impersonation-prevention-and-detection
+    relation: inspired
+  - name: Okta
+    title: Event types catalogue (data behind the Event Types reference)
+    url: https://github.com/okta/okta-developer-docs/blob/master/packages/@okta/vuepress-site/data/event-types.json
+    relation: inspired

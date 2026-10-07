@@ -1,0 +1,56 @@
+id: aws_bulk_data_export
+title: Database snapshot, machine image or bucket exported or mirrored out
+description: >
+  An instance or image was exported, an RDS snapshot exported to S3, network
+  traffic mirrored, or a bucket set to replicate into another account. Each
+  copies a whole system or data set in one call. Failed exports count: they
+  show intent.
+status: experimental
+date: 2026-10-02
+severity: high
+confidence: 0.7
+attack: [T1537, T1567.002, T1040]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_ec2:
+    api.operation: [CreateInstanceExportTask, ExportImage, CreateStoreImageTask, CreateTrafficMirrorSession]
+  selection_rds:
+    api.service.name: rds.amazonaws.com
+    api.operation: StartExportTask
+  selection_replication:
+    api.operation: PutBucketReplication
+    raw.requestParameters.ReplicationConfiguration|contains: '"account"'
+    status: Success
+  condition: selection_*
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, status, resource.uid]
+sources:
+  - name: Elastic
+    title: AWS EC2 Export Task
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_ec2_export_task
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS RDS Snapshot Export
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_rds_snapshot_export
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS S3 Bucket Replicated to Another Account
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_s3_bucket_replicated_to_external_account
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS EC2 Full Network Packet Capture Detected
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_ec2_full_network_packet_capture_detected
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: AWS EC2 VM Export Failure
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_ec2_vm_export_failure.yml
+    author: Diogo Braz
+    license: DRL-1.1
+    relation: inspired

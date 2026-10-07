@@ -1,0 +1,96 @@
+[
+  {
+    "uuid": "okta-admin-reset",
+    "eventType": "user.account.reset_password",
+    "displayMessage": "Fired when the user's Okta password is reset",
+    "severity": "INFO",
+    "actor": {
+      "id": "00uA",
+      "type": "User",
+      "alternateId": "it-admin@example.com",
+      "displayName": "IT Admin"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "zone": "null",
+      "device": "Computer",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Mac OS X",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France",
+        "city": "Paris"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102AdminSess01"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/api/v1/users/00u-jane/lifecycle/reset_password"
+      }
+    },
+    "transaction": {
+      "type": "WEB",
+      "id": "reqAdminReset0001",
+      "detail": {}
+    },
+    "target": [
+      {
+        "id": "00u-jane",
+        "type": "User",
+        "alternateId": "jane@example.com",
+        "displayName": "Jane Doe"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-support-reset",
+    "eventType": "user.account.reset_password",
+    "displayMessage": "Fired when the user's Okta password is reset",
+    "severity": "INFO",
+    "actor": {
+      "id": "0oa1system",
+      "type": "SystemPrincipal",
+      "alternateId": "system@okta.com",
+      "displayName": "Okta System"
+    },
+    "client": {
+      "ipAddress": null,
+      "zone": null,
+      "device": null,
+      "userAgent": null,
+      "geographicalContext": null
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "transaction": {
+      "type": "WEB",
+      "id": "unknown",
+      "detail": {}
+    },
+    "target": [
+      {
+        "id": "00u-bob",
+        "type": "User",
+        "alternateId": "bob@example.com",
+        "displayName": "Bob Martin"
+      }
+    ]
+  }
+]

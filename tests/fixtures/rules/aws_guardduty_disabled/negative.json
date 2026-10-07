@@ -1,0 +1,146 @@
+[
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-ListDetectors",
+    "eventName": "ListDetectors",
+    "eventSource": "guardduty.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-UpdateDetector",
+    "eventName": "UpdateDetector",
+    "eventSource": "guardduty.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "detectorId": "12abc34d567e8fa901bc2d34e56789f0",
+      "enable": true,
+      "findingPublishingFrequency": "FIFTEEN_MINUTES"
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateFilter",
+    "eventName": "CreateFilter",
+    "eventSource": "guardduty.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "detectorId": "12abc34d567e8fa901bc2d34e56789f0",
+      "name": "tag",
+      "action": "NOOP",
+      "findingCriteria": {
+        "criterion": {
+          "severity": {
+            "gte": 1
+          }
+        }
+      }
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateIPSet",
+    "eventName": "CreateIPSet",
+    "eventSource": "guardduty.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "detectorId": "12abc34d567e8fa901bc2d34e56789f0",
+      "name": "office",
+      "format": "TXT",
+      "location": "https://s3.amazonaws.com/acme/ips.txt",
+      "activate": false
+    }
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-DeleteDetector-denied",
+    "eventName": "DeleteDetector",
+    "eventSource": "guardduty.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "detectorId": "12abc34d567e8fa901bc2d34e56789f0"
+    },
+    "errorCode": "AccessDenied",
+    "errorMessage": "User is not authorized to perform this operation"
+  },
+  {
+    "eventVersion": "1.09",
+    "eventID": "ct-CreateTrustedEntitySet-inactive",
+    "eventName": "CreateTrustedEntitySet",
+    "eventSource": "guardduty.amazonaws.com",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.10",
+    "userAgent": "aws-cli/2.15.0 Python/3.12",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "detectorId": "12abc34d567e8fa901bc2d34e56789f0",
+      "name": "office",
+      "format": "TXT",
+      "location": "https://s3.amazonaws.com/example-bucket/office.txt",
+      "activate": false
+    }
+  }
+]

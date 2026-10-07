@@ -1,0 +1,23 @@
+# One laptop, two sources, two users and two device ids on one case (RSP-2).
+id: endpoint_alert_two_users
+title: A trojan on a laptop that also looked up a command-and-control domain
+description: >
+  SentinelOne convicts invoice_viewer.exe, run by jdoe on LAPTOP-0042, and does
+  not stop it. Cloudflare Gateway sees the same laptop, signed in to WARP as
+  jane.doe@example.com, resolve c2.example.net. The case holds the agent's UUID
+  and the WARP device id; only the first is a device the EDR can isolate, and
+  the WARP id sorts first.
+source: sentinelone
+entity: LAPTOP-0042
+expected_rules:
+  - edr_high_severity_detection
+  - cloudflare_gateway_threat_domain_lookup
+expected_verdict: malicious
+minimum_confidence: 0.6
+min_cases: 1
+max_cases: 1
+playbook_targets:
+  contain_endpoint_compromise:
+    isolate the host in SentinelOne: {device_id: 5e4482b45d134ae8bf4901cb52b65e88}
+    block the file the EDR convicted in SentinelOne:
+      hash: a3f1c2d4e5b60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90

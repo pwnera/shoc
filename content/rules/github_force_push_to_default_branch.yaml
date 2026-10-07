@@ -1,0 +1,45 @@
+id: github_force_push_to_default_branch
+title: Force push to main or master
+description: >
+  The default branch's history was rewritten. It can hide a malicious commit
+  behind a clean-looking log or destroy work, and branch protection normally
+  forbids it. A webhook reports every forced push; the audit log only one that
+  overrode branch protection.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.55
+attack: [T1565.001, T1195.002]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  selection:
+    api.operation: push
+    raw.forced: "true"
+    message: [refs/heads/main, refs/heads/master]
+  # An admin's force push past protection, with force_push among the reasons.
+  selection_override:
+    api.operation: protected_branch.policy_override
+    raw.reasons|contains: force_push
+    raw.branch: [refs/heads/main, refs/heads/master]
+  condition: selection or selection_override
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, resource.uid, message, http_request.url.url_string, raw.branch]
+sources:
+  - name: Elastic
+    title: High Number of Protected Branch Force Pushes by User
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/impact_high_number_of_protected_branch_force_pushes_by_user
+    license: Elastic-2.0
+    relation: adapted
+  - name: Panther
+    title: GitHub Branch Protection Policy Override
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/github_rules/github_branch_policy_override.yml
+    license: Apache-2.0
+    relation: inspired
+  - name: GitHub
+    title: Audit log events for your organization
+    url: https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization
+    relation: inspired

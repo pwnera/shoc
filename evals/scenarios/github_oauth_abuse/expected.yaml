@@ -1,0 +1,23 @@
+# Expected outcome for the GitHub OAuth-abuse scenario (AGT-6).
+id: github_oauth_abuse
+title: Malicious OAuth app, branch protection removed, repository made public
+description: >
+  A compromised maintainer account authorises an OAuth application, removes
+  branch protection and flips a private repository to public — source code and
+  anything committed to it leave the company in seconds. For three weeks the
+  account only pushed, from one address with git; this burst comes from another
+  address with a scripting library's user agent.
+source: github
+entity: mallory
+expected_rules:
+  - github_oauth_app_authorized
+  - github_protected_branch_removed
+  - github_repo_made_public
+# Generating the app's client secret is part of the same story, and
+# github_oauth_app_authorized reads it; it is not a CI secret.
+must_not_fire:
+  - github_secret_changed
+  - okta_mfa_push_fatigue
+  - aws_s3_mass_object_read
+expected_verdict: malicious
+minimum_confidence: 0.6

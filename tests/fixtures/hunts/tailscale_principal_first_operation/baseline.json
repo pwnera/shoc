@@ -1,0 +1,20 @@
+[
+  {
+    "action": "UPDATE",
+    "actor": {
+      "displayName": "mallory@example.com",
+      "id": "u777CNTRL",
+      "loginName": "mallory@example.com",
+      "type": "USER"
+    },
+    "origin": "ADMIN_CONSOLE",
+    "target": {
+      "id": "T1234CNTRL",
+      "name": "target",
+      "type": "TAILNET"
+    },
+    "type": "CONFIG",
+    "event": "TAILNET.UPDATE.ACL",
+    "tailnet": "T1234CNTRL"
+  }
+]

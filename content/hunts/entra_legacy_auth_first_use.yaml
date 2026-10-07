@@ -1,0 +1,57 @@
+id: entra_legacy_auth_first_use
+title: A user signs in with a legacy mail protocol for the first time
+hypothesis: >
+  IMAP, POP, SMTP AUTH, ActiveSync and the other basic-auth protocols cannot do
+  MFA, so password sprayers and mail-stealing tools use them. A printer or a
+  scanner that sends mail settles into the baseline after its first day; a user
+  who never used IMAP and suddenly does is worth a look.
+attack: [T1078.004]
+logsource:
+  product: entra
+  service: sign_ins
+window: 1d
+cadence_days: 7
+detection:
+  selection:
+    status: Success
+    raw.clientAppUsed:
+      - IMAP4
+      - POP3
+      - Authenticated SMTP
+      - Exchange ActiveSync
+      - Exchange Web Services
+      - MAPI Over HTTP
+      - Outlook Anywhere (RPC over HTTP)
+      - Offline Address Book
+      - Autodiscover
+      - Other clients
+  condition: selection
+baseline:
+  first_seen: [actor.user.name, raw.clientAppUsed]
+  lookback: 30d
+pivot: [actor.user.name, raw.clientAppUsed, src_endpoint.ip, src_endpoint.location.country]
+triage: >
+  Is this a device the company set up, such as a printer, a scanner or an old
+  phone mail app, signing in from the office? A legacy sign-in from a hosting
+  network or another country is someone else using the password.
+follow_up:
+  - Does conditional access block legacy authentication, and if so why did this one succeed?
+  - Did the same address fail sign-ins for other users?
+sources:
+  - name: Elastic
+    title: Entra ID User Sign-In via Unusual Legacy Authentication Client
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_unusual_legacy_auth_client_signin
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: Use of Legacy Authentication Protocols
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_legacy_authentication_protocols.yml
+    author: Yochana Henderson, '@Yochana-H'
+    license: DRL-1.1
+    relation: inspired
+  - name: Sigma
+    title: Potential MFA Bypass Using Legacy Client Authentication
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_ad_suspicious_signin_bypassing_mfa.yml
+    author: Harjot Singh, '@cyb3rjy0t'
+    license: DRL-1.1
+    relation: inspired

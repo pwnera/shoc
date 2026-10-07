@@ -1,0 +1,19 @@
+[
+  {
+    "_document_id": "gh-rejected-force",
+    "action": "protected_branch.rejected_ref_update",
+    "actor": "dana",
+    "actor_id": 4242,
+    "actor_ip": "192.0.2.9",
+    "org": "acme",
+    "repo": "acme/payments",
+    "branch": "refs/heads/main",
+    "operation_type": "modify",
+    "reasons": [
+      {
+        "code": "force_push",
+        "message": "Cannot force-push to this branch"
+      }
+    ]
+  }
+]

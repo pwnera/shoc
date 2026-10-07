@@ -1,0 +1,42 @@
+[
+  {
+    "action": "DISABLE",
+    "actor": {
+      "displayName": "Mallory",
+      "id": "u999CNTRL",
+      "loginName": "mallory@example.com",
+      "type": "USER"
+    },
+    "eventGroupID": "6dae044c7a8998599e94657b511d0c01",
+    "origin": "ADMIN_CONSOLE",
+    "target": {
+      "id": "n654321CNTRL",
+      "name": "alice-laptop.example-tailnet.ts.net",
+      "type": "NODE",
+      "property": "KEY_EXPIRY"
+    },
+    "type": "CONFIG",
+    "event": "NODE.DISABLE.KEY_EXPIRY",
+    "tailnet": "example.com"
+  },
+  {
+    "action": "DISABLE",
+    "actor": {
+      "displayName": "Mallory",
+      "id": "u999CNTRL",
+      "loginName": "mallory@example.com",
+      "type": "USER"
+    },
+    "eventGroupID": "6dae044c7a8998599e94657b511d0c02",
+    "origin": "CONFIG_API",
+    "target": {
+      "id": "n765432CNTRL",
+      "name": "bob-laptop.example-tailnet.ts.net",
+      "type": "NODE",
+      "property": "KEY_EXPIRY"
+    },
+    "type": "CONFIG",
+    "event": "NODE.DISABLE.KEY_EXPIRY",
+    "tailnet": "example.com"
+  }
+]

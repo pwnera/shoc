@@ -1,0 +1,67 @@
+id: aws_ebs_snapshot_shared
+title: EC2 or RDS snapshot, or machine image, shared outside the account
+description: >
+  A disk snapshot, a machine image or a database snapshot was shared with
+  another account or made public. It is a quiet way to copy a whole server or
+  the company's database out. Removing a share, an empty addition and a share
+  made by an AWS service for the company, such as AWS Backup or Image Builder,
+  are not a match.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1537]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_ebs:
+    api.operation: ModifySnapshotAttribute
+    raw.requestParameters.createVolumePermission.add.items|exists: true
+  selection_ami:
+    api.operation: ModifyImageAttribute
+    raw.requestParameters.launchPermission.add.items|exists: true
+  selection_rds:
+    api.operation: [ModifyDBSnapshotAttribute, ModifyDBClusterSnapshotAttribute]
+    raw.requestParameters.attributeName: restore
+    raw.requestParameters.valuesToAdd|exists: true
+  # AWS Backup, Image Builder and Marketplace sharing on the company's behalf.
+  filter_aws:
+    actor.invoked_by|exists: true
+  success:
+    status: Success
+  condition: success and selection_* and not filter_aws
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, raw.requestParameters.snapshotId, raw.requestParameters.imageId, raw.requestParameters.dBSnapshotIdentifier]
+sources:
+  - name: Elastic
+    title: AWS EC2 EBS Snapshot Shared or Made Public
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_ec2_ebs_snapshot_shared_with_another_account
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS EC2 AMI Shared with Another Account
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_ec2_ami_shared_with_separate_account
+    license: Elastic-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS RDS DB Snapshot Shared with Another Account
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_rds_snapshot_shared_with_another_account
+    license: Elastic-2.0
+    relation: adapted
+  - name: Sigma
+    title: AWS Snapshot Backup Exfiltration
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_snapshot_backup_exfiltration.yml
+    author: Darin Smith
+    license: DRL-1.1
+    relation: adapted
+  - name: Splunk attack_data
+    title: T1537 aws_snapshot_exfil CloudTrail events
+    url: https://media.githubusercontent.com/media/splunk/attack_data/master/datasets/attack_techniques/T1537/aws_snapshot_exfil/aws_cloudtrail_events.json
+    relation: inspired
+  - name: Datadog
+    title: Amazon EC2 AMI exfiltration attempt by IAM user
+    url: https://docs.datadoghq.com/security/default_rules/def-000-g55/
+    relation: inspired

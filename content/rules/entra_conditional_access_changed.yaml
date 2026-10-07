@@ -1,0 +1,45 @@
+id: entra_conditional_access_changed
+title: Conditional access policy changed
+description: >
+  Conditional access is where MFA and device rules live. Changing or disabling
+  a policy removes the control everything else assumes.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: high
+confidence: 0.75
+attack: [T1562.001, T1556.009]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection:
+    api.operation|contains: conditional access policy
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid]
+sources:
+  - name: Elastic
+    title: Entra ID Conditional Access Policy (CAP) Modified
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_conditional_access_policy_modified
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: CA Policy Updated by Non Approved Actor
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_aad_secops_ca_policy_updatedby_bad_actor.yml
+    author: Corissa Koopmans, '@corissalea'
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: New CA Policy by Non-approved Actor
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_aad_secops_new_ca_policy_addedby_bad_actor.yml
+    author: Corissa Koopmans, '@corissalea'
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: CA Policy Removed by Non Approved Actor
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_aad_secops_ca_policy_removedby_bad_actor.yml
+    author: Corissa Koopmans, '@corissalea'
+    license: DRL-1.1
+    relation: adapted

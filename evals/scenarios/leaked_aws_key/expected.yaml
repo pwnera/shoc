@@ -1,0 +1,37 @@
+# Expected outcome for the leaked-AWS-key scenario (v0.1 exit criterion).
+id: leaked_aws_key
+title: Leaked AWS access key used from an unknown address
+description: >
+  A CI access key for deploy-ci leaks. The attacker enumerates the account from
+  203.0.113.55, hits permission walls, copies 64 objects out of an S3 bucket,
+  creates a second access key and finally stops CloudTrail logging. shoc must
+  detect every stage from CloudTrail alone. The S3 reads are data events: on a
+  real account that stage is seen only through a trail bucket that records S3
+  data events, never through LookupEvents.
+source: aws_cloudtrail
+entity: AKIAIOSFODNN7EXAMPLE
+expected_rules:
+  - aws_discovery_burst
+  - aws_access_denied_burst
+  - aws_s3_mass_object_read
+  - aws_access_key_created
+  - aws_cloudtrail_logging_disabled
+must_not_fire:
+  - aws_root_account_activity
+  - okta_mfa_push_fatigue
+  - github_repo_made_public
+minimum_severity: critical
+expected_verdict: malicious
+minimum_confidence: 0.6
+# The leaked key is the one thing that stops it; an address block does not.
+must_propose:
+  - {type: aws.disable_access_key, target: AKIAIOSFODNN7EXAMPLE}
+# Nothing connected sends CloudTrail in a replay, so no AWS pack may run and
+# none may call itself "clear" (RFC 0022).
+expected_hunts:
+  aws_identity_first_api_call: not_applicable
+  aws_rare_api_operation: not_applicable
+# What the operator asks the morning after, through the Manager (RFC 0015).
+ask:
+  - question: What happened with the deploy-ci access key AKIAIOSFODNN7EXAMPLE?
+    must_mention: ["203.0.113.55", "CloudTrail|StopLogging|logging"]

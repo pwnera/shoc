@@ -1,0 +1,64 @@
+[
+  {
+    "id": "en-member-guest",
+    "activityDisplayName": "Update user",
+    "category": "UserManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "it@acme.com",
+        "id": "u-admin",
+        "ipAddress": "198.51.100.20"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "userPrincipalName": "old@acme.com",
+        "id": "u-target",
+        "modifiedProperties": [
+          {
+            "displayName": "UserType",
+            "oldValue": "[\"Member\"]",
+            "newValue": "[\"Guest\"]"
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-guest-title",
+    "activityDisplayName": "Update user",
+    "category": "UserManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "it@acme.com",
+        "id": "u-admin",
+        "ipAddress": "198.51.100.20"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "userPrincipalName": "partner_example.org#EXT#@acme.onmicrosoft.com",
+        "id": "u-target",
+        "modifiedProperties": [
+          {
+            "displayName": "JobTitle",
+            "oldValue": "[\"Consultant\"]",
+            "newValue": "[\"Partner\"]"
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  }
+]

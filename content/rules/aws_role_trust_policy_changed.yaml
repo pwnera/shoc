@@ -1,0 +1,40 @@
+id: aws_role_trust_policy_changed
+title: IAM role trust policy changed, or a role created that an account can assume
+description: >
+  Changing who may assume a role is the cleanest privilege escalation in AWS:
+  add an external account to the trust policy and walk in. A new role counts
+  only when its trust names an AWS account, a user or anyone, not when it
+  trusts an AWS service as infrastructure-as-code roles do.
+status: stable
+date: 2026-09-24
+modified: 2026-10-02
+severity: high
+confidence: 0.65
+attack: [T1098.003]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_update:
+    api.operation: UpdateAssumeRolePolicy
+  selection_create:
+    api.operation: CreateRole
+    raw.requestParameters.assumeRolePolicyDocument|re: '"AWS"\s*:|"Principal"\s*:\s*"\*"'
+  scope:
+    api.service.name: iam.amazonaws.com
+    status: Success
+  condition: scope and (selection_update or selection_create)
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, raw.requestParameters.roleName]
+sources:
+  - name: Elastic hunting
+    title: IAM Assume Role Creation with Attached Policy
+    url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/iam_assume_role_creation_with_attached_policy.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS IAM Assume Role Policy Update
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_update_assume_role_policy
+    license: Elastic-2.0
+    relation: adapted

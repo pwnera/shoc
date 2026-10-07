@@ -1,0 +1,46 @@
+id: gcp_firewall_opened_to_internet
+title: GCP firewall rule allows inbound traffic from anywhere
+description: >
+  A VPC firewall rule was created or changed to accept traffic from 0.0.0.0/0
+  or ::/0. An SSH, RDP or database port open to the internet is found and
+  brute-forced within hours; a web server's 80 and 443 are the usual exception.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-02
+severity: high
+confidence: 0.5
+attack: [T1562.007]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  # Compute logs an operation twice; only the first entry carries the request.
+  selection:
+    api.operation|endswith: [compute.firewalls.insert, compute.firewalls.patch, compute.firewalls.update]
+    raw.protoPayload.request.sourceRanges|contains: ["0.0.0.0/0", "::/0"]
+  filter_egress:
+    raw.protoPayload.request.direction: EGRESS
+  # GKE opens its load balancers' health checks and node ports itself.
+  filter_google_agent:
+    actor.user.name|endswith: [container-engine-robot.iam.gserviceaccount.com, cloudservices.gserviceaccount.com]
+  condition: selection and not filter_egress and not filter_google_agent
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, resource.uid, cloud.account.uid, raw.protoPayload.request.alloweds]
+sources:
+  - name: Elastic
+    title: GCP Firewall Rule Creation
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/defense_evasion_gcp_firewall_rule_created
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: GCP Firewall Rule Modification
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/defense_evasion_gcp_firewall_rule_modified
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: Google Cloud Firewall Modified or Deleted
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/gcp/audit/gcp_firewall_rule_modified_or_deleted.yml
+    author: Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: inspired

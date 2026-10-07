@@ -1,0 +1,397 @@
+# Autonomy policy (RSP-3). This file decides what shoc may do on its own.
+#
+# L0  notify only: no action is ever taken
+# L1  act automatically, but only reversible actions, and only when the
+#     conditions below are met
+# L2  a human approves, in Slack or any client. An agent can never approve one.
+#
+# `dry_run: true` (the default for a new install) means every action is planned,
+# recorded and shown, but nothing is executed anywhere.
+version: 1
+
+defaults:
+  autonomy: L2
+  dry_run: true
+  min_confidence: 0.8
+  severity_at_least: high
+
+principals:
+  # The ceiling per caller kind. Nothing below can raise these.
+  agent: L1
+  external_agent: L0
+  service: L1
+  human: L2
+
+actions:
+  aws.disable_access_key:
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.85
+    severity_at_least: high
+
+  aws.quarantine_user:
+    # It denies the user's other writes too, which production may rely on.
+    autonomy: L2
+    reversible: true
+
+  aws.isolate_instance:
+    # Whatever the instance serves goes down with it.
+    autonomy: L2
+    reversible: true
+
+  okta.revoke_sessions:
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.8
+    severity_at_least: high
+
+  entra.revoke_sessions:
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.8
+    severity_at_least: high
+
+  cloudflare.block_ip:
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.8
+    severity_at_least: medium
+    ttl_minutes: 120
+    # Blocking the wrong address takes the company offline rather than the
+    # attacker. Before this runs on its own the target must be researched
+    # (RSP-5) and the crew must review it (RSP-6). Either gate failing makes it
+    # L2, where a human approves with the objections in front of them.
+    research_before_action: true
+    review_before_action: true
+
+  okta.suspend_user:
+    # Locking a person out of everything is not something a model decides.
+    autonomy: L2
+    reversible: true
+
+  entra.suspend_user:
+    # Locking a person out of everything is not something a model decides.
+    autonomy: L2
+    reversible: true
+
+  okta.reset_password:
+    # The old password cannot be given back, and the user has to set a new one.
+    autonomy: L2
+    reversible: false
+
+  entra.reset_password:
+    # The old password cannot be given back, and the user has to set a new one.
+    autonomy: L2
+    reversible: false
+
+  github.make_repo_private:
+    autonomy: L2
+    reversible: true
+
+  crowdstrike.isolate_host:
+    # Reversible, but it takes a laptop off the network mid-meeting.
+    autonomy: L2
+    reversible: true
+    review_before_action: true
+
+  sentinelone.isolate_host:
+    # Reversible, but it takes a laptop off the network mid-meeting.
+    autonomy: L2
+    reversible: true
+    review_before_action: true
+
+  defender.isolate_host:
+    # Reversible, but it takes a laptop off the network mid-meeting.
+    autonomy: L2
+    reversible: true
+    review_before_action: true
+
+  aws.revoke_role_sessions:
+    autonomy: L2
+    reversible: true
+
+  okta.remove_admin_role:
+    # Takes back one role assignment and records it, so undo gives it back.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.85
+    severity_at_least: high
+
+  entra.remove_admin_role:
+    # Takes back one role assignment and records it, so undo gives it back.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.85
+    severity_at_least: high
+
+  m365.delete_inbox_rule:
+    # A forwarding rule keeps sending mail out every minute it exists. The rule
+    # is kept in the action record and recreated on undo.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.8
+    severity_at_least: medium
+
+  m365.revoke_app_consent:
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.85
+    severity_at_least: high
+
+  google.revoke_sessions:
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.8
+    severity_at_least: high
+
+  google.suspend_user:
+    autonomy: L2
+    reversible: true
+
+  google.reset_password:
+    autonomy: L2
+    reversible: false
+
+  google.revoke_app_token:
+    # The user can grant it again; shoc cannot.
+    autonomy: L2
+    reversible: false
+
+  crowdstrike.block_hash:
+    # Company-wide: a wrong hash stops a real tool on every laptop at once.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.9
+    severity_at_least: high
+    review_before_action: true
+
+  sentinelone.block_hash:
+    # Company-wide: a wrong hash stops a real tool on every laptop at once.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.9
+    severity_at_least: high
+    review_before_action: true
+
+  defender.block_hash:
+    # Company-wide: a wrong hash stops a real tool on every laptop at once.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.9
+    severity_at_least: high
+    review_before_action: true
+
+  wazuh.block_ip:
+    # Wazuh's API can start a firewall drop on its agents and cannot lift it.
+    autonomy: L2
+    reversible: false
+
+  aws.detach_user_policy:
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.85
+    severity_at_least: high
+
+  aws.detach_role_policy:
+    # A role is usually production's; the same reasoning as revoking its sessions.
+    autonomy: L2
+    reversible: true
+
+  github.demote_org_owner:
+    autonomy: L2
+    reversible: true
+
+  github.remove_collaborator:
+    autonomy: L2
+    reversible: true
+
+  github.remove_deploy_key:
+    # A deploy that uses the key fails until it is added back.
+    autonomy: L2
+    reversible: true
+
+  github.enable_secret_scanning:
+    # On a private repository it needs a licence the company may not pay for.
+    autonomy: L2
+    reversible: true
+
+  gitlab.block_user:
+    autonomy: L2
+    reversible: true
+
+  azure.stop_vm:
+    # Reversible, but whatever the VM serves is down until someone starts it.
+    autonomy: L2
+    reversible: true
+
+  gcp.disable_service_account_key:
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.85
+    severity_at_least: high
+
+  gcp.disable_service_account:
+    autonomy: L2
+    reversible: true
+
+  gcp.disable_firewall_rule:
+    # The rule may be what lets customers reach the web server.
+    autonomy: L2
+    reversible: true
+
+  cloudflare.disable_api_token:
+    # Enabling it again restores it as it was. A deploy that uses it fails
+    # until then, which is the cost of stopping someone who holds it.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.85
+    severity_at_least: high
+
+  tailscale.deauthorize_device:
+    # A subnet router or exit node takes everyone's routes down with it.
+    autonomy: L2
+    reversible: true
+
+  tailscale.suspend_user:
+    autonomy: L2
+    reversible: true
+
+  tailscale.revoke_key:
+    # Revoked keys cannot be restored.
+    autonomy: L2
+    reversible: false
+
+  stripe.block_charge_card:
+    # One card fingerprint and one email the issuer already called fraud.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.7
+    severity_at_least: medium
+
+  anthropic.disable_api_key:
+    # Same reasoning as a leaked cloud key: reversible, and it stops the bill.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.85
+    severity_at_least: high
+
+  openai.delete_api_key:
+    # OpenAI has no disable; a deleted key is gone.
+    autonomy: L2
+    reversible: false
+
+  aws.revoke_sessions:
+    # On an IAM user it ends what a leaked key minted with GetSessionToken or
+    # GetFederationToken. On a role it also ends the sessions production holds
+    # until they refresh, as aws.revoke_role_sessions does, so a human decides.
+    autonomy: L2
+    reversible: true
+
+  aws.start_cloudtrail_logging:
+    # Turning a defence back on costs a little money and breaks nothing.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.8
+    severity_at_least: high
+
+  aws.start_config_recorder:
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.8
+    severity_at_least: high
+
+  aws.enable_guardduty:
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.8
+    severity_at_least: high
+
+  aws.block_s3_public_access:
+    # A bucket that serves a website goes dark, so the crew reviews it first.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.85
+    severity_at_least: high
+    review_before_action: true
+
+  aws.cancel_key_deletion:
+    # A deleted key takes every object encrypted with it.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.8
+    severity_at_least: high
+
+  aws.unshare_snapshot:
+    # The grants are kept and added back on undo.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.85
+    severity_at_least: high
+
+  m365.revoke_sessions:
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.8
+    severity_at_least: high
+
+  okta.remove_factor:
+    # Only the user can enrol a factor again, and the newest factor is a guess.
+    autonomy: L2
+    reversible: false
+
+  entra.remove_factor:
+    # Only the user can enrol a factor again, and the newest factor is a guess.
+    autonomy: L2
+    reversible: false
+
+  google.disable_mail_forwarding:
+    # Same reasoning as a forwarding inbox rule: mail leaves every minute it is on.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.8
+    severity_at_least: medium
+
+  tailscale.enable_key_expiry:
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.7
+    severity_at_least: medium
+
+  openai.limit_project:
+    # Every key in the project slows down, production's too, until it is undone.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.85
+    severity_at_least: high
+
+  notify.page:
+    # Waking somebody is the one thing that has to work when the crew is unsure:
+    # "something is happening on a critical case and I cannot tell what" is
+    # precisely when the company's only technical person is needed. So there is
+    # no confidence floor here — severity alone decides, and a page is what
+    # `shoc/cases/unattended.py` falls back to when an approval never comes.
+    autonomy: L1
+    reversible: true
+    min_confidence: 0.0
+    severity_at_least: high
+
+guards:
+  # Targets nothing may act on automatically, whatever the policy above says.
+  # Glob patterns, matched against "<kind>:<target>".
+  protected_targets:
+    - "user:*admin*"
+    - "user:*root*"
+    - "role:prod-*"
+    - "repo:*/infrastructure"
+  # Our own addresses. A blocking action, or one marked research_before_action,
+  # never runs automatically against one of these, however bad the traffic from
+  # it looks: it is the office, the VPN pool or the CI runners. Globs are
+  # allowed. The addresses shoc has recorded as the company's own (`own.list`)
+  # count as well, so this list is only for ones it has not seen.
+  known_egress: []
+    # - "203.0.113.10"
+    # - "198.51.100.*"
+  # Refuse an action whose case has no cited evidence (principle 6).
+  require_citations: true
+  # Never run more than this many automatic actions for one case.
+  max_auto_actions_per_case: 3

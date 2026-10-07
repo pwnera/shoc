@@ -1,0 +1,35 @@
+id: contain_stripe_account_takeover
+title: Contain a change to who controls the Stripe account
+description: >
+  A secret key was created or read, or someone was made an administrator.
+  Stripe's API cannot revoke a key, remove a member or hold payouts for the
+  account itself, so the crew finds out what happened and a human is paged to
+  do it in the dashboard.
+rules:
+  - stripe_admin_access_granted
+  - stripe_secret_key_created_or_viewed
+questions:
+  - id: actor
+    ask: Which team member did it, and did the same person create keys, invite people or change roles before, in the last 90 days?
+  - id: key
+    ask: Is the key new or was an existing one viewed, and is it restricted to IP addresses?
+  - id: others
+    ask: Were other keys created or roles changed by the same person in the same hour?
+benign_when:
+  - An administrator created a key for a new deployment and announced it.
+  - The role was given to a person the company just hired.
+example: |
+  claim (actor): "mallory@example.com gave backup@example.net the admin role, the first role change this account has seen", citing the change.
+  checked and absent: "an invite to backup@example.net accepted earlier (90d)", which rules out a colleague being promoted.
+  disposition: suspicious, because an outside address became an administrator of the payments account.
+trigger:
+  verdict: [malicious, suspicious]
+  severity_at_least: high
+  min_confidence: 0.6
+steps:
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: Stripe account changed by {{ entity.user }}, check keys and team in the dashboard"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"

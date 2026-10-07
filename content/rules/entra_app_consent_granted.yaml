@@ -1,0 +1,52 @@
+id: entra_app_consent_granted
+title: Application consent granted in Entra ID
+description: >
+  A user or admin consented to an application's permissions, an admin granted
+  an app permissions for every user, or someone registered a service principal
+  by hand. A malicious app with Mail.Read keeps reading long after a password
+  change. Assigning a user to an existing app is left out.
+status: stable
+date: 2026-09-24
+modified: 2026-10-03
+severity: high
+confidence: 0.7
+attack: [T1528]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection_consent:
+    api.operation|contains: consent to application
+  selection_grant:
+    api.operation|contains: [add app role assignment to service principal, add delegated permission grant]
+  selection_sp:
+    api.operation|contains: add service principal
+  filter_sp_credentials:
+    api.operation|contains: add service principal credentials
+  # A person's change can also name the app they made it in, so only an app
+  # with no person behind it is left out.
+  filter_sp_by_app:
+    actor.user.type: ServicePrincipal
+    raw.initiatedBy.user.userPrincipalName|exists: false
+  condition: selection_consent or selection_grant or (selection_sp and not filter_sp_credentials and not filter_sp_by_app)
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid]
+sources:
+  - name: Sigma
+    title: App Granted Privileged Delegated Or App Permissions
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_app_privileged_permissions.yml
+    author: Bailey Bercik '@baileybercik', Mark Morowczynski '@markmorow'
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: Delegated Permissions Granted For All Users
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_app_delegated_permissions_all_users.yml
+    author: Bailey Bercik '@baileybercik', Mark Morowczynski '@markmorow'
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: Entra ID Service Principal Created
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_service_principal_created
+    license: Elastic-2.0
+    relation: inspired

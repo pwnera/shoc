@@ -1,0 +1,21 @@
+[
+  {
+    "Id": "m365-UserLoggedIn-officehome-browser",
+    "Operation": "UserLoggedIn",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Success",
+    "UserKey": "u-1",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.7",
+    "ObjectId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "ExtendedProperties": [
+      { "Name": "UserAgent", "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0" },
+      { "Name": "RequestType", "Value": "Login:login" }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  }
+]

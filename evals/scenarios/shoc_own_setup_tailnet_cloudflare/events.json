@@ -1,0 +1,97 @@
+{
+  "tailscale": [
+    {
+      "action": "CREATE",
+      "actor": {
+        "displayName": "operator@example.com",
+        "id": "u1EXAMPLE",
+        "loginName": "operator@example.com",
+        "type": "USER"
+      },
+      "origin": "ADMIN_CONSOLE",
+      "target": {
+        "id": "kSHOCCLIENT",
+        "name": "kSHOCCLIENT",
+        "type": "OAUTH_CLIENT"
+      },
+      "type": "CONFIG",
+      "new": {
+        "capabilities": {
+          "devices": {
+            "create": {
+              "reusable": false,
+              "preauthorized": true,
+              "tags": [
+                "tag:server"
+              ]
+            }
+          }
+        }
+      },
+      "event": "API_KEY.CREATE",
+      "tailnet": "T0EXAMPLE",
+      "eventGroupID": "t-shoc"
+    },
+    {
+      "action": "CREATE",
+      "actor": {
+        "displayName": "amine@example.com",
+        "id": "u2EXAMPLE",
+        "loginName": "amine@example.com",
+        "type": "USER"
+      },
+      "origin": "ADMIN_CONSOLE",
+      "target": {
+        "id": "kAMINEKEY",
+        "name": "kAMINEKEY",
+        "type": "API_KEY"
+      },
+      "type": "CONFIG",
+      "new": {
+        "capabilities": {
+          "devices": {
+            "create": {
+              "reusable": false,
+              "preauthorized": true,
+              "tags": [
+                "tag:server"
+              ]
+            }
+          }
+        }
+      },
+      "event": "API_KEY.CREATE",
+      "tailnet": "T0EXAMPLE",
+      "eventGroupID": "t-amine"
+    }
+  ],
+  "cloudflare": [
+    {
+      "id": "cf-create-shoc",
+      "action": {
+        "time": "",
+        "type": "create",
+        "description": "create token",
+        "result": "success"
+      },
+      "actor": {
+        "email": "operator@example.com",
+        "ip_address": "203.0.113.20",
+        "type": "user"
+      },
+      "account": {
+        "id": "acc-0example"
+      },
+      "resource": {
+        "product": "api_tokens",
+        "response": {
+          "id": "cf-token-shoc"
+        }
+      },
+      "raw": {
+        "method": "POST",
+        "uri": "/accounts/acc-0example/tokens"
+      }
+    }
+  ]
+}

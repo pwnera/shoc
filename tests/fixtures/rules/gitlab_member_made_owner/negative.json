@@ -1,0 +1,74 @@
+[
+  {
+    "id": 9103,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "member_updated",
+    "details": {
+      "event_name": "member_updated",
+      "custom_message": "Membership updated",
+      "author_name": "Mallory",
+      "author_class": "User",
+      "author_email": "mallory@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform",
+      "change": "access_level",
+      "from": "Default role: Reporter",
+      "to": "Default role: Developer",
+      "as": "Default role: Developer",
+      "member_id": 313,
+      "target_id": 101,
+      "target_type": "User",
+      "target_details": "New Hire"
+    }
+  },
+  {
+    "id": 9104,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "member_created",
+    "details": {
+      "event_name": "member_created",
+      "custom_message": "Membership created",
+      "author_name": "Mallory",
+      "author_class": "User",
+      "author_email": "mallory@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform",
+      "add": "user_access",
+      "as": "Default role: Developer",
+      "member_id": 314,
+      "target_id": 102,
+      "target_type": "User",
+      "target_details": "Intern"
+    }
+  },
+  {
+    "id": 9106,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "member_updated",
+    "details": {
+      "event_name": "member_updated",
+      "custom_message": "Membership updated",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.56",
+      "entity_path": "acme/platform",
+      "change": "access_level",
+      "from": "Default role: Owner",
+      "to": "Default role: Owner",
+      "as": "Default role: Owner",
+      "expiry_from": "2026-10-31",
+      "expiry_to": "2026-12-31",
+      "member_id": 315,
+      "target_id": 103,
+      "target_type": "User",
+      "target_details": "Existing Owner"
+    }
+  }
+]

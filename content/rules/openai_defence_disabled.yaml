@@ -1,0 +1,40 @@
+id: openai_defence_disabled
+title: OpenAI IP allowlist or SCIM switched off
+description: >
+  The organisation's IP allowlist was deleted, deactivated or opened to every
+  address, or SCIM provisioning was disabled. Without the allowlist a stolen
+  session works from anywhere; without SCIM a person removed from the IdP keeps
+  their account.
+status: experimental
+date: 2026-10-02
+modified: 2026-10-03
+severity: high
+confidence: 0.6
+attack: [T1562.007, T1556]
+logsource:
+  product: openai
+  service: audit_log
+detection:
+  selection:
+    api.operation: [ip_allowlist.deleted, ip_allowlist.config.deactivated, scim.disabled]
+  selection_opened:
+    api.operation: ip_allowlist.updated
+    raw.details.allowed_ips|contains: ["0.0.0.0/0", "::/0"]
+  condition: selection or selection_opened
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, api.operation, raw.details.allowed_ips]
+sources:
+  - name: Elastic
+    title: Anthropic Organization IP Restriction Deleted
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/defense_evasion_anthropic_organization_ip_restriction_deleted.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Monad
+    title: Detection Engineering for OpenAI Enterprise Audit Logs
+    url: https://www.monad.com/blog/openai-enterprise-audit-log-detections
+    relation: adapted
+  - name: OpenAI
+    title: OpenAI API OpenAPI specification (AuditLog)
+    url: https://github.com/openai/openai-openapi/blob/main/openapi.yaml
+    relation: inspired
