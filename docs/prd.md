@@ -399,7 +399,6 @@ The biggest risk is trust: a wrong verdict or a bad automatic action early on wo
 **Open questions**
 
 - [ ] Final project name and trademark availability (working name: shoc)
-- [ ] Apache 2.0 or AGPL for the kernel (this draft assumes Apache 2.0)
 - [ ] Which 3 design partners, and on which backend each
 - [ ] Default LLM for the quick start: a hosted API or a local model
 - [ ] Does the console ship in 2027, or do Slack and MCP clients cover v1.0 users

@@ -15,7 +15,7 @@ Decisions made while designing and building shoc (September 2026). D1–D17 come
 | D9 | Evidence or nothing: verdicts must cite event IDs | Reduce hallucinated verdicts; make answers auditable | Uncited verdicts downgraded to "needs human"; citations validated in evals |
 | D10 | Python 3.12 single package | SQLGlot and the MCP SDK are Python; one language for kernel and content tooling | Node only at build time for the optional console |
 | D11 | Own agent loop, own Sigma-subset compiler, two thin LLM clients | Avoid framework lock-in and heavy deps | We maintain a few hundred lines each; LLM providers: Anthropic + any OpenAI-compatible endpoint (covers Databricks model serving, vLLM, Ollama) |
-| D12 | Apache 2.0 + DCO, no CLA (pending confirmation; AGPL was considered) | Easy adoption by companies and partners, low contributor friction | Can't relicense contributions later; SaaS must add operations, never remove OSS features |
+| D12 | Apache 2.0 + DCO, no CLA (confirmed 2026-10-07 before the repository went public; AGPL was considered) | Easy adoption by companies and partners, low contributor friction | Can't relicense contributions later; SaaS must add operations, never remove OSS features |
 | D13 | Public promise: no feature moves from OSS to paid | Trust with the community | Open-core boundary table in `prd.md` |
 | D14 | Monorepo, trunk-based, Conventional Commits, release-please, SemVer, 6–8 week minors | Predictable, automated releases | Public contract frozen at v0.4, stable at v1.0 |
 | D15 | Signed supply chain: PyPI Trusted Publishing, cosign-signed multi-arch images, provenance, SBOM, OpenSSF Scorecard ≥ 8 | A security product must have a secure supply chain | Release pipeline in `prd.md`; actions pinned by SHA |
