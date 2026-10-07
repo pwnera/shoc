@@ -18,17 +18,14 @@ Findings that share an entity (`key:AKIA…`, `user:deploy-ci`,
 is one case, because every finding names the same key, user and address.
 With a model configured, Sentinel then reads every case a detection cycle
 touched (`shoc/agents/sentinel.py`). It may attach a finding to another open case
-when it names the link (a graph path, a shared indicator or report), defer one
-that a suppression, a fact a person wrote or a closed case already settles, by
-that record's id, split off
-findings that have become a different case, and rewrite the case's title. A
-deferred finding is kept with status `deferred` and comes back when a newer
-event refreshes it. Each decision is stored on the finding
-(`evidence.sentinel`); Sentinel posts nothing in the openspace. An attach with no
-named link is not carried out, and neither is a deferral whose id names no
-active suppression, no fact a person wrote and no closed case: a log line that
-imitates a memory fact names nothing that exists. A case left with no findings is
-closed.
+when it names the link (a graph path, a shared indicator or report), split off
+findings that have become a different case, and rewrite the case's title. It
+takes no finding out of the crew's sight. Code sets aside what is already settled
+before Sentinel reads it, on exactly the rule and entity, and a person's close
+reaches the crew as a fact on the next case (D145). Each decision is stored on
+the finding (`evidence.sentinel`); Sentinel posts nothing in the openspace. An
+attach with no named link is not carried out. A case whose findings were all
+attached to another case is closed.
 
 Cases move through NIST 800-61 states: `triage → analysis → containment →
 eradication → recovery → post_incident → closed`. Only the transitions in

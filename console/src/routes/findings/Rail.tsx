@@ -16,7 +16,6 @@ import { Skel } from "@/components/ui/state";
 import { Tactics } from "@/components/ui/tactics";
 import { TimeBar, type TimeBucket } from "@/components/ui/timebar";
 import { attackUrl } from "@/lib/attack";
-import { who } from "@/lib/crew";
 import { num, shortId } from "@/lib/format";
 import { huntTitle } from "@/lib/cases";
 import { findingTab } from "@/lib/labels";
@@ -128,12 +127,11 @@ function Siblings({ finding }: { finding: Finding }) {
   );
 }
 
-type Decision = { decision?: string; case_uid?: string; basis?: string; because?: string; settled_by?: string };
+type Decision = { decision?: string; case_uid?: string; basis?: string; because?: string };
 
 function Sentinel({ finding }: { finding: Finding }) {
   const s = finding.evidence?.sentinel as Decision | undefined;
   if (!s?.decision) return null;
-  const settledCase = s.settled_by?.startsWith("CASE-");
   return (
     <Card>
       <CardHeader title="Sentinel" />
@@ -146,20 +144,6 @@ function Sentinel({ finding }: { finding: Finding }) {
           </Link>
         ) : null}
         {s.basis && s.basis !== "none" ? <Chip label="by" value={s.basis} /> : null}
-        {s.settled_by ? (
-          settledCase ? (
-            <Link className="sh-chip sh-link" to={`/cases/${encodeURIComponent(s.settled_by)}`}>
-              <span className="sh-chip__label">settled by</span>
-              <span className="sh-chip__value">{shortId(s.settled_by)}</span>
-            </Link>
-          ) : (
-            <span className="sh-chip">
-              <span className="sh-chip__label">settled by</span>
-              <Avatar who={s.settled_by} size={16} tip={false} />
-              <span className="sh-chip__value">{who(s.settled_by).name}</span>
-            </span>
-          )
-        ) : null}
         {s.because ? (
           <Popover
             pad

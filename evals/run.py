@@ -77,7 +77,6 @@ class ScenarioReport:
     false_positives: list[str] = field(default_factory=list)
     recall: float = 1.0
     cases_opened: int = 0
-    deferred: list[str] = field(default_factory=list)
     uncited_findings: list[str] = field(default_factory=list)
     verdict: str = ""
     expected_verdict: str = ""
@@ -193,12 +192,6 @@ def replay(
         expected_verdict=expected.get("expected_verdict", ""),
     )
 
-    # Sentinel may defer a finding on what settles it. On an attack, deferring
-    # one of its stages is how a real attack dies quietly.
-    report.deferred = _deferred(ctx)
-    if _side(engine_verdict(expected)) == "attack":
-        report.footprint += [f"Sentinel deferred {r}" for r in report.deferred if r in want]
-
     opened = len(detected.data.cases_opened)
     if "max_cases" in expected and opened > int(expected["max_cases"]):
         report.footprint.append(
@@ -243,22 +236,6 @@ def engine_verdict(expected: dict[str, Any]) -> str:
     from shoc.cases import engine
 
     return engine.normalise_verdict(expected.get("expected_verdict", ""))
-
-
-def _deferred(ctx: Any) -> list[str]:
-    from shoc.db.pool import fetch_all
-
-    return sorted(
-        {
-            str(r["rule_id"])
-            for r in fetch_all(
-                ctx.db,
-                "SELECT rule_id FROM shoc.findings WHERE tenant_id = %s "
-                "AND evidence->'sentinel'->>'decision' = 'defer'",
-                (ctx.tenant_id,),
-            )
-        }
-    )
 
 
 def _answers(ctx: Any, expected: dict[str, Any]) -> list[str]:

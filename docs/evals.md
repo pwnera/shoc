@@ -24,7 +24,7 @@ should come out (`expected.yaml`).
 | Field | Scores | Role |
 | --- | --- | --- |
 | `expected_rules`, `must_not_fire` | Which rules fire, and which must not | Detections |
-| `min_cases`, `max_cases` | How the findings were grouped; an attack stage Sentinel deferred fails the run | Sentinel |
+| `min_cases`, `max_cases` | How the findings were grouped | Sentinel |
 | `expected_verdict`, `minimum_confidence` | The disposition, and the measured confidence behind it | Investigator, Challenger, claim check |
 | `minimum_severity` | The severity the Investigator set | Investigator |
 | `must_look_up` | Tools an analyst would have had to call | Investigator, peers |

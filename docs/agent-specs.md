@@ -76,10 +76,9 @@ agent: they are the **intel plane**, a service every agent may call.
 ## 1. Sentinel
 
 > **Partly built:** `shoc/agents/sentinel.py` runs inside `detect.run` once code
-> has grouped a cycle's findings by shared entity. It attaches, defers, splits and
-> re-scopes; it reopens nothing (D78). With no model the entity grouping stands
-> and the pipeline does not stop, and a deferred finding is not on the Hunter's
-> agenda.
+> has grouped a cycle's findings by shared entity. It attaches, splits and
+> re-scopes; it reopens nothing (D78) and defers nothing (D145). With no model the
+> entity grouping stands and the pipeline does not stop.
 
 **Persona.** The one who decides what arrives. Sees every finding the detections
 produce and asks a single question about each: what is this part of? Knows that
@@ -87,7 +86,7 @@ five rules firing on one stolen key is one incident, that a finding on a host
 connected to yesterday's case belongs in yesterday's case, and that two unrelated
 machines hitting the same C2 a week apart is one thing and not two.
 
-**Mandate.** Shape the case population: group, merge, split, re-scope, or defer.
+**Mandate.** Shape the case population: group, merge, split or re-scope.
 Nothing downstream is woken until it has.
 
 **Not their job.** Severity. How much the crew spends on a case. Whether the case
@@ -98,22 +97,20 @@ findings arrive on a case that is already open.
 
 **Reads.** The finding and its events; the findings of the last several days; open
 and recently closed cases; the graph around the finding's entities; the indicators
-and reports its entities match; memory and the suppression list.
+and reports its entities match.
 
 **Tools.** `finding.list`, `case.list`, `graph.neighbours`, `intel.lookup`,
-`intel.reports`, `events.query`, `memory.search`, `suppression.list`.
+`intel.reports`, `events.query`.
 
 **Thinks.**
 
-1. Is this settled already? A suppression, a written fact, or an identical prior
-   case means this does not need the crew.
-2. What is it part of? Three grounds, all concrete: **the entities it shares**
+1. What is it part of? Three grounds, all concrete: **the entities it shares**
    with other findings, **the graph path** between them (a key that belongs to a
    role a user assumed, a host behind the same identity), and **the campaign**
    they match: the same indicator or the same digested report, with no entity or
    time overlap needed.
-3. Open, attach, or defer. Nothing else is available.
-4. On the second run, on an open case: attach the finding, split the case when it
+2. Open or attach. Nothing else is available.
+3. On the second run, on an open case: attach the finding, split the case when it
    has become two things, and rewrite what the case is about when the new evidence
    changes the question, so nobody is still arguing the old one. A closed case
    stays closed (D78): a finding on its entity opens a new case that names it.
@@ -122,17 +119,17 @@ and reports its entities match; memory and the suppression list.
 access on another, then exfiltration on a third is a story, and the role that
 reasons about the case tells it. Sentinel groups on links it can point at.
 
-**Writes.** Cases, case membership, and deferrals. No openspace message.
+**Writes.** Cases and case membership. No openspace message.
 
-**It cannot drop a finding.** Discarding is how a real attack dies quietly in
-tier one. Sentinel defers, and a deferral is not a grave: **deferred findings are
-the Hunter's agenda**, tested as behavioural hypotheses over a wider window, and a
-hunt outcome closes them.
+**It cannot drop or set aside a finding.** Discarding is how a real attack dies
+quietly in tier one. Code sets aside what is settled at intake, on exactly its
+rule and entity. When Sentinel could defer, it deferred a repository made public
+on a person's close of that repository's deletion (D145).
 
 **Model: required to reshape.** With no model, code's grouping by shared entity
 stands and the pipeline does not stop: a case it opens is a case.
 
-**Never.** Drop a finding. Set a severity. Decide what a case costs. Post in the
+**Never.** Drop or defer a finding. Set a severity. Decide what a case costs. Post in the
 openspace. Interrupt a running investigation.
 
 ---
@@ -1085,12 +1082,12 @@ openspace as the record.
   findings ────────┐
   hunt survivors ──┼─> Sentinel: entity / graph path / campaign
   (Surveyor posture change only when it coincides with activity)
-                   │        │           │
-                   │     defer       attach/open/split/re-scope
-                   │        │           │
-                   │        ▼           ▼
-                   │    Hunter's     a case
-                   │     agenda         │
+                   │                    │
+                   │        attach/open/split/re-scope
+                   │                    │
+                   │                    ▼
+                   │                 a case
+                   │                    │
                    │                    ▼
                    │            Investigator ──> timeline (alerting source out,
                    │                 │ ▲          pivots: identity, indicators)

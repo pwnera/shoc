@@ -157,7 +157,7 @@ Ten roles and the Integrator. Every role uses a model, and the Integrator is cod
 
 | Agent | Trigger | Posts / produces | Autonomy |
 | --- | --- | --- | --- |
-| Sentinel | Every finding, and again on new findings for an open case | Cases: opened, attached, split, re-scoped or deferred | L0 |
+| Sentinel | Every finding, and again on new findings for an open case | Cases: opened, attached, split or re-scoped | L0 |
 | Investigator | Every case | The timeline, the scope, the severity, a cited disposition, the case record | L0 (+ evidence preservation) |
 | Challenger | Every case, once | The side the verdict did not take, and a suppression draft when it wins | L0 |
 | IR Commander | Malicious, suspicious, or anything still happening | Forensic collection, proposals with a cited blast radius, L2 fallbacks, verification | L0 |

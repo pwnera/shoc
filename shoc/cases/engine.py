@@ -368,27 +368,6 @@ def move(conn: Conn, tenant_id: str, finding_uids: list[str], into: str = "") ->
     return into
 
 
-def defer(conn: Conn, tenant_id: str, finding_uid: str, because: str) -> None:
-    """Take a finding out of its case and keep it, marked deferred (D43, D44).
-
-    Like a `self` or `suppressed` mark, the deferral is read again when new
-    events refresh the finding.
-    """
-    row = fetch_one(
-        conn,
-        "SELECT case_uid FROM shoc.findings WHERE tenant_id = %s AND finding_uid = %s",
-        (tenant_id, finding_uid),
-    )
-    execute(
-        conn,
-        "UPDATE shoc.findings SET case_uid = NULL WHERE tenant_id = %s AND finding_uid = %s",
-        (tenant_id, finding_uid),
-    )
-    _intake(conn, tenant_id, finding_uid, "deferred", because)
-    if row and row["case_uid"]:
-        refresh(conn, tenant_id, str(row["case_uid"]))
-
-
 def refresh(conn: Conn, tenant_id: str, case_uid: str) -> None:
     """Make a case's findings, techniques and entities what its findings say.
 
