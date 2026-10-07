@@ -115,9 +115,9 @@ each on when you are ready.
 ## Configuration
 
 Everything is environment variables, so one image works everywhere. Compose
-passes on only the variables in `x-shoc-env` at the top of `docker-compose.yml`
-and fixes `SHOC_BACKEND` to `postgres`; add any other variable to that block,
-not only to `.env`.
+passes on only the variables in `x-shoc-env` at the top of `docker-compose.yml`,
+which covers Postgres and Databricks; add any other variable to that block, not
+only to `.env`.
 
 | Variable | What it does |
 | --- | --- |
@@ -238,8 +238,9 @@ and the audit log names the caller for every step.
 
 Postgres stays required with a warehouse: findings, cases, jobs, cursors,
 indicators and memory live there, and only `ocsf_events` moves. Databricks and
-Snowflake need the `shoc[databricks]` or `shoc[snowflake]` extra, which the
-image does not install; Redshift and BigQuery need none (D131).
+Snowflake need the `shoc[databricks]` or `shoc[snowflake]` extra. The image
+installs it when built with `SHOC_EXTRAS=databricks` (or `snowflake`) in
+`.env`; Redshift and BigQuery need none (D131).
 
 A warehouse bills for the minutes it is awake. Every schedule starts on a clock
 multiple of its interval, so the source polls and the detection cycle wake it

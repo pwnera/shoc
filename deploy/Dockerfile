@@ -20,7 +20,9 @@ LABEL org.opencontainers.image.title="shoc" \
 ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 RUN useradd --system --create-home --uid 10001 shoc
 COPY --from=build /src/dist/*.whl /tmp/
-RUN pip install --no-cache-dir /tmp/*.whl && rm /tmp/*.whl
+# SHOC_EXTRAS=databricks or snowflake adds that warehouse's connector (D131).
+ARG SHOC_EXTRAS=""
+RUN pip install --no-cache-dir "$(ls /tmp/*.whl)${SHOC_EXTRAS:+[$SHOC_EXTRAS]}" && rm /tmp/*.whl
 USER shoc
 WORKDIR /home/shoc
 EXPOSE 8080

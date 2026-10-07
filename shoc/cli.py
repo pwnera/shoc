@@ -274,7 +274,8 @@ def cmd_migrate(args: argparse.Namespace, cfg: Config) -> int:
     with conn.cursor() as cur:
         cur.execute(
             """INSERT INTO shoc.tenants (tenant_id, name, backend, schema_name)
-               VALUES (%s,%s,%s,%s) ON CONFLICT (tenant_id) DO NOTHING""",
+               VALUES (%s,%s,%s,%s)
+               ON CONFLICT (tenant_id) DO UPDATE SET backend = EXCLUDED.backend""",
             (cfg.tenant_id, cfg.tenant_id, cfg.backend, cfg.tenant_schema()),
         )
     store = open_store(cfg)

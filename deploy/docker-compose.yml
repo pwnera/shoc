@@ -3,13 +3,26 @@
 # half-built schema.
 name: shoc
 
+x-shoc-build: &shoc-build
+  context: ..
+  dockerfile: deploy/Dockerfile
+  args:
+    SHOC_EXTRAS: ${SHOC_EXTRAS:-}
+
 x-shoc-env: &shoc-env
   # serve and worker connect as shoc_app, which does not own the schema, so
   # they cannot disable the audit log's triggers or delete its rows. Only the
   # migrate service holds the owner's DSN (RFC 0024).
   SHOC_DSN: ${SHOC_DSN:-postgresql://shoc_app:${SHOC_APP_DB_PASSWORD:-shoc_app}@postgres:5432/shoc}
   SHOC_TENANT: ${SHOC_TENANT:-default}
-  SHOC_BACKEND: postgres
+  # Where events live: postgres, or a warehouse with SHOC_EXTRAS set to match
+  # for databricks and snowflake. Everything else stays in Postgres.
+  SHOC_BACKEND: ${SHOC_BACKEND:-postgres}
+  SHOC_DATABRICKS_HOST: ${SHOC_DATABRICKS_HOST:-}
+  SHOC_DATABRICKS_HTTP_PATH: ${SHOC_DATABRICKS_HTTP_PATH:-}
+  SHOC_DATABRICKS_TOKEN: ${SHOC_DATABRICKS_TOKEN:-}
+  SHOC_DATABRICKS_READONLY_TOKEN: ${SHOC_DATABRICKS_READONLY_TOKEN:-}
+  SHOC_DATABRICKS_READONLY_PRINCIPAL: ${SHOC_DATABRICKS_READONLY_PRINCIPAL:-}
   SHOC_MASTER_KEY: ${SHOC_MASTER_KEY:?run "shoc keygen" and put the value in .env}
   SHOC_DRY_RUN: ${SHOC_DRY_RUN:-1}
   # How long events are kept. The nightly job drops whole monthly partitions
@@ -76,9 +89,7 @@ services:
     # cycle against tables that do not exist yet and reports fifty broken rules
     # on a healthy install.
     image: ghcr.io/pwnera/shoc:${SHOC_VERSION:-edge}
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
+    build: *shoc-build
     command: ["migrate"]
     # The schema owner, for `migrate` and `rotate-key`:
     #   docker compose run --rm migrate rotate-key
@@ -92,9 +103,7 @@ services:
 
   shoc:
     image: ghcr.io/pwnera/shoc:${SHOC_VERSION:-edge}
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
+    build: *shoc-build
     command: ["serve", "--host", "0.0.0.0", "--port", "8080"]
     environment: *shoc-env
     ports:
@@ -111,9 +120,7 @@ services:
 
   worker:
     image: ghcr.io/pwnera/shoc:${SHOC_VERSION:-edge}
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
+    build: *shoc-build
     command: ["worker"]
     environment: *shoc-env
     # The image's check probes /healthz, which only `serve` answers, so an
