@@ -12,7 +12,7 @@ import pytest
 from shoc.detect import rules as ruleset
 from shoc.detect.compiler import compile_rule
 from shoc.errors import ConfigError
-from shoc.store.sql import bind, translate
+from shoc.store.sql import bind, prepare, translate
 
 RULES = ruleset.load()
 
@@ -63,8 +63,12 @@ def test_table_names_are_qualified_with_the_tenant_catalog():
     from shoc.store.databricks import DatabricksStore
 
     store = DatabricksStore("h", "/p", "t", "acme", "shoc_acme")
-    qualified = store._qualify("SELECT event_uid FROM ocsf_events WHERE tenant_id = :tenant_id")
-    assert "`shoc_acme`.`shoc`.ocsf_events" in qualified
+    sql, _ = prepare(
+        store._qualify("SELECT event_uid FROM ocsf_events WHERE tenant_id = :tenant_id"),
+        {"tenant_id": "acme"},
+        "databricks",
+    )
+    assert "`shoc_acme`.`shoc`.ocsf_events" in sql
     assert store.volume_path == "/Volumes/shoc_acme/shoc/batches"
 
 

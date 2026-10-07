@@ -36,6 +36,12 @@ _DBX_TYPES = {
 }
 
 
+def _utc(value: Any) -> Any:
+    if isinstance(value, datetime) and value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value
+
+
 def _ddl_columns() -> str:
     return ",\n  ".join(f"`{name}` {_DBX_TYPES[tp]}" for name, tp in ocsf.COLUMNS)
 
@@ -88,6 +94,7 @@ class DatabricksStore:
                 http_path=self.http_path,
                 access_token=self.access_token,
                 staging_allowed_local_path=self._staging_dir,
+                session_configuration={"timezone": "UTC"},
             )
         return self._conn
 
@@ -102,7 +109,11 @@ class DatabricksStore:
             if cur.description is None:
                 return []
             names = [d[0] for d in cur.description]
-            return [dict(zip(names, row, strict=False)) for row in cur.fetchall()]
+            # TIMESTAMP comes back naive, in the session's zone, pinned to UTC
+            # above; every other backend returns it aware.
+            return [
+                {n: _utc(v) for n, v in zip(names, row, strict=False)} for row in cur.fetchall()
+            ]
 
     @property
     def table(self) -> str:
@@ -228,8 +239,13 @@ class DatabricksStore:
         )
 
     def _qualify(self, canonical_sql: str) -> str:
-        """Canonical SQL names bare tables; Databricks needs catalog.schema."""
-        return canonical_sql.replace(ocsf.EVENTS_TABLE, self.table)
+        """Canonical SQL names bare tables; Databricks needs catalog.schema.
+
+        Quoted the canonical way: SQLGlot writes the backticks when it translates.
+        """
+        return canonical_sql.replace(
+            ocsf.EVENTS_TABLE, f'"{self.catalog}"."{self.schema}".{ocsf.EVENTS_TABLE}'
+        )
 
     # -- housekeeping ---------------------------------------------------
     def apply_retention(self, policy: RetentionPolicy) -> int:
