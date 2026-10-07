@@ -298,9 +298,55 @@ export function Fields({
 
 const TOKEN = /("[^"]*")(\s*:)?|(-?\d+(?:\.\d+)?)|(true|false|null)/g;
 
+/** JSON text indented by two, token for token: a parse round trip would round 64-bit IDs. */
+function indent(text: string): string {
+  let out = "";
+  let depth = 0;
+  let inString = false;
+  const pad = () => "\n" + "  ".repeat(depth);
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charAt(i);
+    if (inString) {
+      out += c;
+      if (c === "\\") out += text.charAt(++i);
+      else if (c === '"') inString = false;
+    } else if (c === '"') {
+      out += c;
+      inString = true;
+    } else if (c === "{" || c === "[") {
+      const close = text.slice(i + 1).trimStart()[0];
+      if (close === "}" || close === "]") {
+        out += c + close;
+        i = text.indexOf(close, i + 1);
+      } else {
+        depth++;
+        out += c + pad();
+      }
+    } else if (c === "}" || c === "]") {
+      depth--;
+      out += pad() + c;
+    } else if (c === ",") out += c + pad();
+    else if (c === ":") out += ": ";
+    else if (!/\s/.test(c)) out += c;
+  }
+  return out;
+}
+
+/** A string that holds a JSON object or array, else null. */
+function jsonText(value: string): string | null {
+  if (!/^\s*[[{]/.test(value)) return null;
+  try {
+    JSON.parse(value);
+    return indent(value);
+  } catch {
+    return null;
+  }
+}
+
 /** Raw kernel output: numbered lines, keys, strings and numbers told apart. */
 export function Json({ value }: { value: unknown }) {
-  const text = typeof value === "string" ? value : (JSON.stringify(value, null, 2) ?? "");
+  const text =
+    typeof value === "string" ? (jsonText(value) ?? value) : (JSON.stringify(value, null, 2) ?? "");
   return (
     <pre className="sh-json scrollbar-thin">
       {text.split("\n").map((line, index) => {

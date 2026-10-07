@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { platformOf } from "@/components/brands";
 import { Clamped } from "@/components/ui/clamped";
 import { HuntFlow } from "@/components/Workflows";
-import { Dialog } from "@/components/ui/dialog";
+import { Dialog, Json } from "@/components/ui/dialog";
 import { Announcer, ErrorNote, Tabs } from "@/components/ui/misc";
 import { Prose } from "@/components/ui/prose";
 import { Strip } from "@/components/ui/strip";
@@ -325,5 +325,33 @@ describe("the front page's played cards", () => {
     fireEvent.click(screen.getByRole("button", { name: "Replay" }));
     expect(document.querySelector(".sh-play__run")).toBeNull();
     expect(screen.getByRole("button", { name: "Skip" })).toBeInTheDocument();
+  });
+});
+
+describe("Json", () => {
+  it("indents a record that arrived as JSON text, keeping every digit", () => {
+    const { container } = render(
+      <Json value={'{"id":12345678901234567890,"tags":[],"msg":"a, b: {c}","o":{"k":[1,"x\\"y"]}}'} />,
+    );
+    expect(container.querySelector("pre")?.textContent).toBe(
+      [
+        "{",
+        '  "id": 12345678901234567890,',
+        '  "tags": [],',
+        '  "msg": "a, b: {c}",',
+        '  "o": {',
+        '    "k": [',
+        "      1,",
+        '      "x\\"y"',
+        "    ]",
+        "  }",
+        "}",
+      ].join(""),
+    );
+  });
+
+  it("leaves text that is not JSON as it came", () => {
+    const { container } = render(<Json value="<34>Oct 7 sshd: {bad" />);
+    expect(container.querySelector("pre")?.textContent).toBe("<34>Oct 7 sshd: {bad");
   });
 });
