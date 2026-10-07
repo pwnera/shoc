@@ -31,4 +31,4 @@ sources:
     title: Anthropic MCP Server Created
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/anthropic/persistence_anthropic_mcp_server_created
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

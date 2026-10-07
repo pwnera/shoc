@@ -41,7 +41,7 @@ sources:
     title: AWS IAM SAML Provider Created
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_saml_provider_created
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS IAM OIDC Provider Created by Rare User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_oidc_provider_created
@@ -51,7 +51,7 @@ sources:
     title: AWS IAM SAML Provider Updated
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_saml_provider_updated
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS IAM Roles Anywhere Trust Anchor Created with External CA
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_roles_anywhere_trusted_anchor_created_with_external_ca

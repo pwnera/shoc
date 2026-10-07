@@ -290,11 +290,20 @@ def open_for_findings(
 
 
 def _token_cap(group: list[dict[str, Any]]) -> int | None:
-    """A case only hunts opened is low and gets a lifetime token ceiling (RFC 0022)."""
+    """A case only hunts opened is low and gets a lifetime token ceiling (RFC 0022),
+    and so does one opened only by indicators below the lead line: a report's or
+    an agent's value is a lead, not a warrant (DET-4)."""
     from shoc.agents.hunter import HUNT_CASE_TOKENS
+    from shoc.detect.intel import LEAD_BELOW
 
     rules = [str(f.get("rule_id") or "") for f in group]
-    return HUNT_CASE_TOKENS if rules and all(r.startswith("hunt:") for r in rules) else None
+    if rules and all(r.startswith("hunt:") for r in rules):
+        return HUNT_CASE_TOKENS
+    leads = all(
+        r.startswith("ioc_") and float(f.get("confidence") or 0) < LEAD_BELOW
+        for r, f in zip(rules, group, strict=True)
+    )
+    return HUNT_CASE_TOKENS if rules and leads else None
 
 
 def _not_closed(conn: Conn, tenant_id: str, uid: str, label: str, day: str) -> tuple[str, str]:
@@ -650,6 +659,11 @@ def set_verdict(
         case_uid,
         {"verdict": verdict, "confidence": confidence, "citations": citations[:20]},
     )
+    if verdict == "malicious":
+        # A high one that nothing contains in time pages (RFC 0015).
+        from shoc.agents import manager
+
+        manager.uncontained(conn, tenant_id, case_uid)
     return row or {}
 
 

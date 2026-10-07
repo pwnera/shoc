@@ -27,4 +27,4 @@ sources:
     title: Entra ID User Reported Suspicious Activity
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_user_reported_risk
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

@@ -72,6 +72,16 @@ def test_the_commander_is_only_shown_actions_for_the_case_platform():
     assert "github.make_repo_private" not in names
 
 
+def test_an_action_without_a_credential_says_it_cannot_run():
+    from shoc.cases.actions import catalogue
+    from shoc.cases.credentials import Scope
+
+    bare = {a["action"]: a for a in catalogue(scope=Scope({"aws"}, None, {"aws"}, set()))}
+    assert bare["aws.disable_access_key"]["can_run"] == "no aws credential"
+    held = {a["action"]: a for a in catalogue(scope=Scope({"aws"}, None, {"aws"}, {"aws"}))}
+    assert "can_run" not in held["aws.disable_access_key"]
+
+
 def test_the_commander_is_only_shown_the_vendor_the_case_came_from():
     """RFC 0031: a SentinelOne alert is contained in SentinelOne, and an
     infostealer's login is signed out in the IdP the company uses."""

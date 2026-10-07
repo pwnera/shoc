@@ -24,12 +24,12 @@ sources:
     title: AWS Route 53 Domain Transfer Lock Disabled
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_route_53_domain_transfer_lock_disabled
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS Route 53 Domain Transferred to Another Account
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_route_53_domain_transferred_to_another_account
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: AWS Route 53 Domain Transfer Lock Disabled
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_route_53_domain_transferred_lock_disabled.yml

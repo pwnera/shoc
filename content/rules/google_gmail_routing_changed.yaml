@@ -30,7 +30,7 @@ sources:
     title: Google Workspace Gmail Routing or Forwarding Rule Created or Modified
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/collection_google_workspace_custom_gmail_route_created_or_modified
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Google Workspace integration, admin audit sample with SETTING_METADATA
     url: https://github.com/elastic/integrations/blob/main/packages/google_workspace/data_stream/admin/_dev/test/pipeline/test-admin-updated.log

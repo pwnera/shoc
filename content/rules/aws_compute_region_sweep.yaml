@@ -34,7 +34,7 @@ sources:
     title: AWS Service Quotas Multi-Region GetServiceQuota Requests
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_servicequotas_multi_region_service_quota_requests
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic hunting
     title: High Frequency of EC2 Multi-Region `DescribeInstances` API Calls
     url: https://github.com/elastic/detection-rules/blob/main/hunting/aws/queries/ec2_discovery_multi_region_describe_instance_calls.toml

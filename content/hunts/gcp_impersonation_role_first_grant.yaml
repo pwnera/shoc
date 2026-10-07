@@ -38,4 +38,4 @@ sources:
     title: GCP IAM Service Account Impersonation Role Granted
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/persistence_gcp_service_account_impersonation_role_grant
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

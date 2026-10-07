@@ -308,6 +308,29 @@ def test_a_fact_a_person_wrote_is_a_basis(ctx, store, config, clean, now):
     assert run.outcome == "explained"
 
 
+def test_a_fact_about_someone_else_is_no_basis(ctx, store, config, clean, now):
+    from shoc.agents import memory
+
+    fact = memory.add(
+        ctx.db,
+        config.tenant_id,
+        "the backup job reads secrets every night",
+        subject="backup-job",
+        source="human",
+    )
+    _connect(ctx, config, FIRST)
+    _ingest(store, config.tenant_id, FIRST, "surfaced", now)
+    run = hunter.run_pack(
+        ctx.db,
+        store,
+        config.tenant_id,
+        FIRST,
+        client=Hunter("explained", "human_fact", fact),
+        config=config,
+    )
+    assert run.outcome == "inconclusive", "a live fact used to explain any tuple (SEC-2)"
+
+
 def test_an_explanation_that_cites_nothing_is_inconclusive(ctx, store, config, clean, now):
     from shoc.agents import memory
 

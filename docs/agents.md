@@ -349,9 +349,11 @@ and a pending L2 leaves one too.
 **Whether anybody is woken is a query.** Notices are grouped by incident (the
 same case, or cases on the same entity), and a group pages only on a named
 condition: a critical case, activity that cannot be contained, coverage dark (a
-source for a day, or the whole schedule for an hour), or a deadline that expired
-twice. It pages at most once a day per incident. A notice with no condition waits
-for the weekly.
+source for a day, or the whole schedule for an hour), a deadline that expired
+twice, an audit log that no longer verifies, or a high or critical malicious case
+that no action has contained for real, checked 15 minutes after its verdict and
+when its playbook ends. It pages at most once a day per incident. A notice with
+no condition waits for the weekly.
 
 **The Manager writes the page, not the decision.** Given the group, the model
 writes one message with its citations. With no model, a failure, or a citation

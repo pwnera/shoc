@@ -28,11 +28,14 @@ dangerous one, because nobody notices a detection that stopped working.
 from __future__ import annotations
 
 import contextlib
+import functools
 import hashlib
 import json
 import re
+import statistics
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from shoc.agents import ops
@@ -116,8 +119,8 @@ def intake(conn: Conn, tenant_id: str, config: Any = None) -> list[BacklogItem]:
     """The nightly sweep. Cases route themselves when they close; this is the rest."""
     from shoc.cases import routing
 
-    out = _from_intel(conn, tenant_id, config) + _from_health(conn, tenant_id, config)
     delivering = _delivering(conn, tenant_id)
+    out = _from_intel(conn, tenant_id, config, delivering) + _from_health(conn, tenant_id, config)
     score_observability(conn, tenant_id, out, config, delivering)
     for item in out:
         add(conn, tenant_id, item)
@@ -128,19 +131,35 @@ def intake(conn: Conn, tenant_id: str, config: Any = None) -> list[BacklogItem]:
 
 
 def _from_intel(
-    conn: Conn, tenant_id: str, config: Any = None, limit: int = 20
+    conn: Conn,
+    tenant_id: str,
+    config: Any = None,
+    delivering: set[str] | None = None,
+    limit: int = 20,
 ) -> list[BacklogItem]:
-    """A technique we have read about and cannot look for."""
+    """A technique we have read about, could see, and cannot look for.
+
+    Only reports from a configured source or handed in by a person count, as
+    for the Hunter's backlog (D79): a read an agent started inside a case is
+    the case's. A technique none of whose ATT&CK platforms a delivering product
+    can show is left off rather than worked to `source_gap` by the model; the
+    sweep runs nightly over 90 days of reports, so it arrives once a source
+    that can see it connects.
+    """
     from shoc.detect import rules as ruleset
+    from shoc.store import ocsf as layout
 
     covered: set[str] = set()
     with contextlib.suppress(Exception):
         for rule in ruleset.load(config, conn, tenant_id):
             covered |= {str(t).upper() for t in (rule.attack or [])}
+    known = _technique_platforms(config)
+    seen = layout.platforms(_delivering(conn, tenant_id) if delivering is None else delivering)
     rows = fetch_all(
         conn,
         """SELECT report_uid, title, techniques, procedures FROM shoc.intel_reports
            WHERE tenant_id = %s AND digested_at > now() - interval '90 days'
+             AND (source <> '' OR digested_by LIKE 'human:%%')
            ORDER BY digested_at DESC LIMIT 20""",
         (tenant_id,),
     )
@@ -152,6 +171,9 @@ def _from_intel(
         for technique in (row["techniques"] or [])[:limit]:
             code = str(technique).upper()
             if code in covered or code.split(".", 1)[0] in covered:
+                continue
+            on = known.get(code) or known.get(code.split(".", 1)[0])
+            if on is not None and not set(on) & seen:
                 continue
             uid = item_uid(tenant_id, "cti", code)
             procedure = said.get(code, {})
@@ -174,6 +196,22 @@ def _from_intel(
                 ),
             )
     return list(out.values())
+
+
+@functools.cache
+def _platforms_file(path: Path) -> dict[str, list[str]]:
+    try:
+        return dict(json.loads(path.read_text(encoding="utf-8"))["platforms"])
+    except (OSError, ValueError, KeyError):
+        return {}
+
+
+def _technique_platforms(config: Any = None) -> dict[str, list[str]]:
+    """ATT&CK technique -> its platforms, from content/attack_platforms.json
+    (scripts/attack_platforms.py writes it). A technique it lacks is kept."""
+    from shoc.config import Config
+
+    return _platforms_file((config or Config.load()).content_dir / "attack_platforms.json")
 
 
 def _from_health(conn: Conn, tenant_id: str, config: Any = None) -> list[BacklogItem]:
@@ -1176,13 +1214,21 @@ def work(
     if not items:
         return {"worked": 0, "outcomes": counted, "why": "the backlog is empty"}
     spent = _spent_today(conn, tenant_id)
+    typical = _typical_item(conn, tenant_id)
     tokens, reasoning, worked = 0, [], 0
     context = _context(conn, tenant_id, cfg)
     for item in items:
-        if spent + tokens >= DAILY_TOKENS:
-            reasoning.append(f"stopped at the daily ceiling of {DAILY_TOKENS} tokens")
+        # The ceiling is checked before an item starts, and one item can spend
+        # 200,000 tokens: an item that would not fit waits for tomorrow. The
+        # first of the day always starts, so a costly history cannot stall it.
+        if spent + tokens and spent + tokens + typical >= DAILY_TOKENS:
+            reasoning.append(
+                f"stopped before the daily ceiling of {DAILY_TOKENS} tokens: "
+                f"an item costs about {typical}"
+            )
             break
-        outcome, because, used = _work_one(conn, store, tenant_id, cfg, client, item, context)
+        left = DAILY_TOKENS - spent - tokens
+        outcome, because, used = _work_one(conn, store, tenant_id, cfg, client, item, context, left)
         tokens += used
         worked += 1
         counted[outcome] = counted.get(outcome, 0) + 1
@@ -1207,6 +1253,18 @@ def _spent_today(conn: Conn, tenant_id: str) -> int:
         or {}
     )
     return int(row.get("n") or 0)
+
+
+def _typical_item(conn: Conn, tenant_id: str) -> int:
+    """The median cost of the last ten items worked, 0 before there are any."""
+    rows = fetch_all(
+        conn,
+        """SELECT (evidence->>'tokens_today')::int AS n FROM shoc.detection_backlog
+           WHERE tenant_id = %s AND evidence ? 'tokens_today'
+           ORDER BY evidence->>'worked_at' DESC LIMIT 10""",
+        (tenant_id,),
+    )
+    return int(statistics.median(int(r["n"]) for r in rows)) if rows else 0
 
 
 def _code_first(conn: Conn, tenant_id: str, config: Any) -> dict[str, int]:
@@ -1369,6 +1427,7 @@ def _work_one(
     client: Any,
     item: dict[str, Any],
     context: str,
+    budget: int = 0,
 ) -> tuple[str, str, int]:
     """One model turn for one item, and what code records about it."""
     from shoc.agents import roles, safety, tools
@@ -1410,6 +1469,7 @@ def _work_one(
             ),
             max_steps=STEPS_PER_ITEM,
             max_calls=CALLS_PER_ITEM,
+            token_budget=budget,
         )
     except Exception as exc:
         with contextlib.suppress(Exception):

@@ -33,7 +33,7 @@ sources:
   - name: Monad
     title: Detection Engineering for OpenAI Enterprise Audit Logs
     url: https://www.monad.com/blog/openai-enterprise-audit-log-detections
-    relation: adapted
+    relation: inspired
   - name: OpenAI
     title: OpenAI API OpenAPI specification (AuditLog)
     url: https://github.com/openai/openai-openapi/blob/main/openapi.yaml

@@ -30,7 +30,7 @@ sources:
     title: Entra ID Guest Account Promoted to Member
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_guest_account_promoted_to_member
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: User State Changed From Guest To Member
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_guest_to_member.yml

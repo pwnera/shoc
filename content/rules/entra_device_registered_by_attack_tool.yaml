@@ -34,12 +34,12 @@ sources:
     title: Entra ID Device Registration with Phishing Kit Default OS Build
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_phishing_kit_default_os_build_device_registration
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Entra ID Device Registration with ROADtools Default OS Build
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_roadtools_default_device_registration
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Entra ID Unusual Cloud Device Registration
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/azure/persistence_entra_id_suspicious_cloud_device_registration.toml

@@ -42,6 +42,10 @@ The scenarios ship inside the image, so those three commands work as written
 whether you are in Docker or in a checkout (drop the `docker compose run --rm`
 prefix for the latter).
 
+Once a source is connected, `shoc replay` refuses its tenant, because replayed
+events there open real cases. Replay into a tenant of its own (`shoc --tenant
+lab migrate`, then `shoc --tenant lab replay …`), or pass `--force`.
+
 You should see five findings: a discovery burst, a wall of AccessDenied errors,
 64 S3 object reads, a second access key created, and CloudTrail logging stopped.
 Every one of them cites the event IDs behind it.

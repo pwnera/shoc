@@ -2,16 +2,26 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
 import httpx
 import pytest
 
 from shoc.detect import intel
 from shoc.errors import ConfigError
 
-FEODO_CSV = """# Feodo Tracker
-# first_seen_utc,dst_ip,dst_port,c2_status,malware
-2026-09-01 10:00:00,203.0.113.10,443,online,Dridex
-2026-09-02 11:00:00,198.51.100.22,8080,online,QakBot
+_DAY = timedelta(days=1)
+_RECENT = (datetime.now(UTC) - 5 * _DAY).strftime("%Y-%m-%d")
+_OLD = (datetime.now(UTC) - 60 * _DAY).strftime("%Y-%m-%d")
+# The file's own shape: a commented banner, then a quoted header line (DET-4).
+FEODO_CSV = f"""################################################################
+# abuse.ch Feodo Tracker Botnet C2 IP Blocklist (CSV)          #
+################################################################
+#
+"first_seen_utc","dst_ip","dst_port","c2_status","last_online","malware"
+"2026-09-01 10:00:00","203.0.113.10","443","online","{_RECENT}","Dridex"
+"2026-09-02 11:00:00","198.51.100.22","8080","offline","{_RECENT}","QakBot"
+"2026-03-04 14:28:39","198.51.100.23","443","offline","{_OLD}","QakBot"
 """
 
 URLHAUS = """# urlhaus
@@ -42,10 +52,15 @@ def mock_http(monkeypatch):
 def test_feodo_becomes_high_confidence_c2_addresses(mock_http):
     mock_http(FEODO_CSV)
     indicators = intel.feodo({}, {})
-    assert [i.value for i in indicators] == ["203.0.113.10", "198.51.100.22"]
+    assert [i.value for i in indicators] == ["203.0.113.10", "198.51.100.22"], (
+        "the header is not an address, and a C2 last online two months ago is not kept"
+    )
     assert all(i.type == "ip" and i.severity == "high" for i in indicators)
-    assert "dridex" in indicators[0].tags
-    assert indicators[0].expires_at is not None, "a C2 address goes stale; it must expire"
+    assert "dridex" in indicators[0].tags and indicators[1].description.startswith("QakBot")
+    offline = indicators[1].expires_at
+    assert offline is not None and offline < datetime.now(UTC) + 26 * _DAY, (
+        "an offline C2 expires 30 days after it was last seen online"
+    )
 
 
 def test_urlhaus_stores_each_url_as_a_url_never_its_host(mock_http):

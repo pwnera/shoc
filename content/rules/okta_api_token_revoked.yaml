@@ -23,7 +23,7 @@ sources:
     title: Attempt to Revoke Okta API Token
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/impact_attempt_to_revoke_okta_api_token
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Okta API Token Revoked
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_api_token_revoked.yml

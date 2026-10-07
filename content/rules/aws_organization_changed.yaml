@@ -29,14 +29,14 @@ sources:
     title: AWS Attempt to Leave Organization
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_organizations_leave_organization
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS Account Closed
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_aws_account_closed
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS Organizations Delegated Administrator Registered
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_organizations_delegated_admin_registered
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

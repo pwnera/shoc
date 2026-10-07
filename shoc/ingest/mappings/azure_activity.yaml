@@ -12,6 +12,8 @@ source: azure_activity
 ocsf_version: "1.3.0"
 # The rule logsources this source answers to (ING-4).
 logsource: [azure]
+# The ATT&CK platforms whose techniques these events can show (DET-2).
+attack_platforms: [IaaS]
 
 constants:
   category_uid: 6

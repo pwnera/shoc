@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from shoc.db.pool import fetch_one
+from shoc.db.pool import execute, fetch_one
 from shoc.ingest.connectors.base import read_state, run
 from tests.support import ROOT
 
@@ -198,3 +198,25 @@ def test_a_snapshot_replaces_what_the_source_listed_before(conn, ctx, config, cl
 
     rows = call("snapshot.list", ctx, {"source": "okta"}).data.rows
     assert [r["entity"] for r in rows] == ["user:a@example.com"]
+
+
+def test_a_replay_into_a_tenant_with_a_live_source_is_refused_unless_forced(conn, config, clean):
+    """Lab data replayed into the main instance's tenant opened real cases there."""
+    from shoc.cli import build_parser, cmd_replay
+    from shoc.errors import ConfigError
+
+    words = ["replay", "--scenario", "leaked_aws_key"]
+    execute(
+        conn,
+        "INSERT INTO shoc.connector_config (tenant_id, source, enabled) VALUES (%s, 'okta', false)",
+        (config.tenant_id,),
+    )
+    assert cmd_replay(build_parser().parse_args(words), config) == 0, "disabled is not live"
+    execute(
+        conn,
+        "UPDATE shoc.connector_config SET enabled = true WHERE tenant_id = %s",
+        (config.tenant_id,),
+    )
+    with pytest.raises(ConfigError, match="--tenant"):
+        cmd_replay(build_parser().parse_args(words), config)
+    assert cmd_replay(build_parser().parse_args([*words, "--force"]), config) == 0

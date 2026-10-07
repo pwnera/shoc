@@ -153,6 +153,19 @@ def products() -> dict[tuple[str, str], tuple[str, ...]]:
     return {key: tuple(names) for key, names in found.items()}
 
 
+def platforms(names: set[str]) -> set[str]:
+    """The ATT&CK platforms the `metadata.product.name` values named can show,
+    from each mapping's `attack_platforms` (DET-2)."""
+    from shoc.ingest import ocsf as mappings
+
+    seen: set[str] = set()
+    for source in mappings.available_sources():
+        mapping = mappings.load_mapping(source)
+        if str(mapping.constants.get("metadata_product") or "") in names:
+            seen |= set(mapping.attack_platforms)
+    return seen
+
+
 def products_for(product: str, service: str = "") -> tuple[str, ...]:
     """Which `metadata.product.name` values a logsource covers; none for a
     product no mapping answers to."""

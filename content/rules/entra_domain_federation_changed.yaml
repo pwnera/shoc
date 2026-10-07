@@ -28,7 +28,7 @@ sources:
     title: Entra ID Domain Federation Configuration Change
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/privilege_escalation_entra_id_tenant_domain_federation_via_audit_logs
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Azure Domain Federation Settings Modified
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_federation_modified.yml

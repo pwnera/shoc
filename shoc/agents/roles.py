@@ -250,11 +250,11 @@ class SuppressionDraft:
     rule_id: str = f("", doc="The rule to quieten. One rule, not all of them")
     entity: str = f(
         "",
-        doc="The entity this is scoped to, as the case keys it: user:…, key:…, "
-        "ip:…, host:…. A suppression with no entity is a rule change and is "
-        "not yours to make",
+        doc="The entity this is scoped to, exactly as the case's finding keys it "
+        "(the bare value, alice@example.com or AKIA…, no user: or key: prefix). "
+        "A suppression with no entity is a rule change and is not yours to make",
     )
-    ttl_days: int = f(30, doc="How long it lasts. Nothing is suppressed for ever")
+    ttl_days: int = f(7, doc="How long it lasts, at most 7 days. Nothing is suppressed for ever")
     because: str = f("", doc="Why this activity is normal here, in one sentence")
 
 
@@ -489,7 +489,7 @@ class CtiDigestOutput:
         "", doc="Why a 20-500 person company with no security team should or should not care"
     )
     keep: bool = f(
-        True,
+        False,
         doc="False when this report does not apply to this company at all. A "
         "discarded report keeps the store small enough that a match means "
         "something. When false, leave every list below empty",
@@ -1218,7 +1218,6 @@ CTI = Role(
     summary="Reads, curates the indicator store, and answers what is known",
     model_hint="strong",
     tools=(
-        "intel.digest",
         "intel.lookup",
         "intel.list",
         "intel.reports",

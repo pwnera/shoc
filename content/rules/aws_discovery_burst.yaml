@@ -42,4 +42,4 @@ sources:
     title: AWS Discovery API Calls via CLI from a Single Resource
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_multiple_discovery_api_calls_via_cli
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

@@ -26,9 +26,9 @@ sources:
     title: Anthropic Admin API Key Created
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/persistence_anthropic_admin_api_key_created.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Anthropic Compliance API Key Created
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/persistence_anthropic_compliance_api_key_created.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

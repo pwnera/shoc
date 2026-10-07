@@ -446,6 +446,7 @@ def _first_seen(rule: Any, where: str, population: str) -> str:
     The history is the rule's own selection, so a failed attempt from an
     address does not make the successful one look familiar. Until the product
     has events older than the lookback, nothing is new: every tuple would be.
+    A rule that says `while_learning: fire` fires on every match until then.
     """
     cols = [_column(f, rule.id) for f in rule.first_seen]
     if not set(cols) & set(INDEXED):
@@ -462,6 +463,8 @@ def _first_seen(rule: Any, where: str, population: str) -> str:
         f"(SELECT MIN(o.time) FROM {layout.EVENTS_TABLE} o WHERE o.tenant_id = :tenant_id "
         f"AND {_qualify(population, 'o')}) <= e.time - {lookback}"
     )
+    if rule.while_learning == "fire":
+        return f"({_not_seen(cols, history)} OR NOT ({learned}))"
     return f"{_not_seen(cols, history)} AND {learned}"
 
 
@@ -495,12 +498,16 @@ def compile_rule(rule: Any, learning: dict[str, Any] | None = None) -> CompiledR
         exists, extra["sequence_first"], late = _sequence(rule, first, where)
         where = f"{where} AND {exists}"
     if rule.first_seen:
-        where = f"{where} AND {_first_seen(rule, where, population)}"
-        for account, ready_at in sorted((learning or {}).items()):
-            where += (
-                f" AND NOT (COALESCE(cloud_account_uid, '') = {params.add(account)}"
-                f" AND time < {params.add(ready_at)})"
-            )
+        seen = _first_seen(rule, where, population)
+        young = [
+            f"(COALESCE(cloud_account_uid, '') = {params.add(account)}"
+            f" AND time < {params.add(ready_at)})"
+            for account, ready_at in sorted((learning or {}).items())
+        ]
+        if rule.while_learning == "fire":
+            where = f"{where} AND ({' OR '.join([seen, *young])})"
+        else:
+            where = f"{where} AND {seen}" + "".join(f" AND NOT {y}" for y in young)
     full_where = f"{scope} AND {where}"
 
     selected = {**_selected(*rule.fields, *det.group_by, *rule.entity), **extra}

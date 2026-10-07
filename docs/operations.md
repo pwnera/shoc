@@ -51,7 +51,7 @@ resting state was an approval, and it is the reason a running install needs no
 clicks. Both are idempotent, and both stand down while the model provider is
 failing rather than spending a case's retries on an outage.
 
-There is no shift report (D52). The Manager pages on five typed conditions, and
+There is no shift report (D52). The Manager pages on six typed conditions, and
 what it did not page for is held for the weekly report (RFC 0015).
 
 ## Health

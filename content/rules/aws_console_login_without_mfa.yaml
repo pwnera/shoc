@@ -28,7 +28,7 @@ sources:
     title: AWS IAM User Console Login Without MFA
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/initial_access_iam_user_console_login_without_mfa
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: AWS Successful Console Login Without MFA
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_cloudtrail_console_login_success_without_mfa.yml

@@ -42,7 +42,7 @@ EVIDENCE_REASON_CHARS = 500
 
 # Pseudo-rules whose closures belong to another role: a hunt pack is the
 # Hunter's to tune, an indicator match is CTI's.
-NOT_DETECTION = ("hunt:", "ioc_match")
+NOT_DETECTION = ("hunt:", "ioc_")
 
 
 @dataclass
@@ -206,7 +206,9 @@ def suppress_draft(
     """
     from shoc.cases import own
 
-    if own.is_person(conn, tenant_id, entity):
+    # One form for every author: a typed `user:…` row never matched a finding.
+    entity = own.bare(entity)
+    if not entity or own.is_person(conn, tenant_id, entity):
         return ""
     days = ttl_days if 1 <= ttl_days <= SUPPRESSION_DAYS else SUPPRESSION_DAYS
     expires = datetime.now(UTC) + timedelta(days=days)
@@ -456,12 +458,14 @@ def active_suppressions(
 
 def suppressed(conn: Conn, tenant_id: str, rule_id: str, entity: str) -> str:
     """The live suppression for exactly this rule and entity, or ''."""
+    from shoc.cases import own
+
     row = fetch_one(
         conn,
         """SELECT suppression_uid FROM shoc.suppressions
            WHERE tenant_id = %s AND rule_id = %s AND entity = %s
              AND state = 'active' AND expires_at > now()""",
-        (tenant_id, rule_id, entity),
+        (tenant_id, rule_id, own.bare(entity)),
     )
     return str(row["suppression_uid"]) if row else ""
 

@@ -10,7 +10,7 @@ date: 2026-10-02
 modified: 2026-10-03
 severity: high
 confidence: 0.6
-attack: [T1204.004, T1059.001, T1218.005]
+attack: [T1204.004, T1059.001, T1218.005, T1189]
 sources:
   - name: Elastic
     title: "Potential Fake CAPTCHA Phishing Attack"
@@ -21,7 +21,7 @@ sources:
     title: "Potential ClickFix Command via Windows Run Dialog"
     url: https://github.com/elastic/detection-rules/blob/main/rules/windows/execution_windows_clickfix_runmru.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: "Command Executed Via Run Dialog Box - Registry"
     url: https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/windows/registry/registry_set/registry_set_runmru_command_execution.yml
@@ -32,7 +32,7 @@ sources:
     title: "Think before you Click(Fix): Analyzing the ClickFix social engineering technique"
     url: https://www.microsoft.com/en-us/security/blog/2025/08/21/think-before-you-clickfix-analyzing-the-clickfix-social-engineering-technique/
     author: "Microsoft Threat Intelligence"
-    relation: adapted
+    relation: inspired
 logsource:
   product: edr
   service: telemetry

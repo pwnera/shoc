@@ -39,7 +39,7 @@ sources:
     title: AWS IAM User Created Access Keys For Another User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_user_created_access_keys_for_another_user
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: AWS IAM Backdoor Users Keys
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_iam_backdoor_users_keys.yml

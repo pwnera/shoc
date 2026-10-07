@@ -1067,13 +1067,18 @@ def _finish_step(conn: Conn, run: str, index: int, state: str, result: dict[str,
 def _set_run(
     conn: Conn, tenant_id: str, run: str, state: str, index: int, error: str | None
 ) -> None:
-    execute(
+    row = fetch_one(
         conn,
         """UPDATE shoc.playbook_runs SET state=%s, step_index=%s, error=%s, updated_at=now(),
                finished_at = CASE WHEN %s IN ('done','failed','cancelled') THEN now() END
-           WHERE tenant_id=%s AND run_uid=%s""",
+           WHERE tenant_id=%s AND run_uid=%s RETURNING case_uid""",
         (state, index, error, state, tenant_id, run),
     )
+    if state in ("done", "failed", "cancelled") and row and row["case_uid"]:
+        # The run has done what it could: a malicious case it left uncontained pages (RFC 0015).
+        from shoc.agents import manager
+
+        manager.uncontained(conn, tenant_id, str(row["case_uid"]))
 
 
 def steps_of(conn: Conn, run: str) -> list[dict[str, Any]]:

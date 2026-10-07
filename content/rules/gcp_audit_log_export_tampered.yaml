@@ -35,14 +35,14 @@ sources:
     title: GCP Logging Sink Deletion
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/defense_evasion_gcp_logging_sink_deletion
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: GCP Logging Bucket Deletion
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/defense_evasion_gcp_logging_bucket_deletion
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: GCP Logging Sink Modification
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/exfiltration_gcp_logging_sink_modification
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

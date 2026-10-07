@@ -63,4 +63,4 @@ sources:
     title: Entra ID Privileged Identity Management (PIM) Role Modified
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_privileged_identity_management_role_modified
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

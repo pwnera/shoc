@@ -33,10 +33,12 @@ sys.path.insert(0, str(ROOT))
 import yaml  # noqa: E402
 
 from shoc.config import Config  # noqa: E402
+from shoc.db.pool import connect, set_tenant  # noqa: E402
+from shoc.errors import ConfigError  # noqa: E402
 from shoc.ingest import batch as batchwriter  # noqa: E402
 from shoc.ingest import ocsf  # noqa: E402
 from shoc.ingest.connectors.file import read_records, unwrap  # noqa: E402
-from shoc.ingest.replay import shift_time  # noqa: E402
+from shoc.ingest.replay import refuse_live, shift_time  # noqa: E402
 from shoc.store import open_store  # noqa: E402
 
 MANIFEST = ROOT / "datasets" / "manifest.yaml"
@@ -187,6 +189,9 @@ def main() -> int:
         "--margin-hours", type=int, default=2, help="land the newest event this long before now"
     )
     parser.add_argument("--dry-run", action="store_true", help="report the shift, load nothing")
+    parser.add_argument(
+        "--force", action="store_true", help="load even into a tenant that reads live sources"
+    )
     args = parser.parse_args()
 
     entries = yaml.safe_load(MANIFEST.read_text())["datasets"]
@@ -199,6 +204,14 @@ def main() -> int:
         return 1
 
     cfg = Config.load()
+    if not args.dry_run:
+        conn = connect(cfg)
+        set_tenant(conn, cfg.tenant_id)
+        try:
+            refuse_live(conn, cfg.tenant_id, args.force)
+        except ConfigError as exc:
+            print(exc, file=sys.stderr)
+            return 1
     for entry in entries:
         if free_gb() < DISK_FLOOR_GB:
             print(f"under {DISK_FLOOR_GB}GB free, stopping")

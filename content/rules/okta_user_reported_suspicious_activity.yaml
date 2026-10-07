@@ -26,7 +26,7 @@ sources:
     title: Suspicious Activity Reported by Okta User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/initial_access_suspicious_activity_reported_by_okta_user
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Okta Suspicious Activity Reported by End-user
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_suspicious_activity_enduser_report.yml

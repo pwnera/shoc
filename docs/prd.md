@@ -346,6 +346,9 @@ repository settings.
 | RSP-6 | An L1 playbook step on a target that is not blocked (a key, a user) is never reviewed |
 | AGT-13 | Four tools the role specs name do not exist yet (`roles.NOT_BUILT`): `evidence.preserve`, `indicator.exclude`, `budget.get` and `budget.set` |
 | AGT-13 (D78) | On Tailscale, whose log carries no address, matching shoc's own token requests by time is the only test |
+| DET-11 | Hunt metrics count open backlog items as `gaps_open` and count every hunt promotion in any state with no window, and readiness checks the product but not whether a pack's fields arrive: a GitHub pack turns ready on 2026-11-01 over events whose source address is always empty |
+| OPS-1 | Time to contain counts dry-run actions and page steps as containment |
+| RSP-7 | `SHOC_DRY_RUN=0` does not turn response on: the policy's default `dry_run: true` wins over the environment |
 | Phase 0 | CodeQL and Scorecard skip while the repository is private; rulesets, 2FA, private vulnerability reporting, secret scanning and Renovate are repository settings not yet set. The release workflow has had no `0.0.1` dry run |
 
 Both v0.1 exit criteria are met in CI. `tests/test_scenarios.py` replays the

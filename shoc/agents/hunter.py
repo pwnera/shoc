@@ -34,6 +34,7 @@ import contextlib
 import hashlib
 import json
 import re
+import statistics
 import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -670,19 +671,32 @@ def check(
             f"explained without citing the events it explains: {verdict.reasoning}"[:500],
         )
     if outcome == "explained":
+        # The basis has to be about this tuple: a person's fact naming its actor
+        # or value, its own credential, an older event with its values. Any live
+        # fact, own value or older event used to explain any tuple (SEC-2).
         basis = str(verdict.basis)
-        if basis == "human_fact" and fetch_one(
+        mine = {
+            own.bare(v).lower()
+            for v in [*(item.get("values") or {}).values(), *(item.get("actors") or {}).values()]
+            if len(str(v)) >= 3
+        }
+        fact = fetch_one(
             conn,
-            """SELECT 1 FROM shoc.memory WHERE tenant_id = %s AND memory_id = %s
-                 AND source = 'human' AND (expires_at IS NULL OR expires_at > now())""",
+            """SELECT lower(subject || ' ' || body) AS text FROM shoc.memory
+               WHERE tenant_id = %s AND memory_id = %s AND source = 'human'
+                 AND (expires_at IS NULL OR expires_at > now())""",
             (tenant_id, ref),
-        ):
+        )
+        if basis == "human_fact" and fact and any(v in fact["text"] for v in mine):
             return "explained", f"a person said so ({ref}): {verdict.reasoning}"[:500]
-        if basis == "own_credential" and own.bare(ref).lower() in own.values(
-            conn, tenant_id, "credential", "automation", "address"
+        if (
+            basis == "own_credential"
+            and own.bare(ref).lower() in mine
+            and own.bare(ref).lower()
+            in own.values(conn, tenant_id, "credential", "automation", "address")
         ):
             return "explained", f"{ref} is shoc's own or the company's automation"
-        if basis == "older_event" and _older(store, tenant_id, ref, run):
+        if basis == "older_event" and _older(store, tenant_id, ref, run, item.get("values")):
             return "explained", f"routine before this window ({ref}): {verdict.reasoning}"[:500]
         return "inconclusive", f"explained without a basis shoc can check: {verdict.reasoning}"[
             :500
@@ -690,15 +704,24 @@ def check(
     return "inconclusive", (str(verdict.missing or verdict.reasoning) or "not settled")[:500]
 
 
-def _older(store: Any, tenant_id: str, event_uid: str, run: Run) -> bool:
+def _older(
+    store: Any, tenant_id: str, event_uid: str, run: Run, values: dict[str, str] | None = None
+) -> bool:
+    """An event ingested before the window that carries the tuple's own values."""
     from shoc.store import ocsf as layout
 
     if not event_uid or run.ingested_from is None:
         return bool(event_uid) and run.ingested_from is None
+    same = {k: v for k, v in (values or {}).items() if k in layout.COLUMN_NAMES}
+    if not same:
+        return False
+    params: dict[str, Any] = {"tenant_id": tenant_id, "uid": event_uid, "before": run.ingested_from}
+    params.update({f"v{i}": v for i, v in enumerate(same.values())})
     rows = store.query(
         f"SELECT event_uid FROM {layout.EVENTS_TABLE} WHERE tenant_id = :tenant_id "
-        "AND event_uid = :uid AND ingested_at < :before",
-        {"tenant_id": tenant_id, "uid": event_uid, "before": run.ingested_from},
+        "AND event_uid = :uid AND ingested_at < :before"
+        + "".join(f" AND {k} = :v{i}" for i, k in enumerate(same)),
+        params,
         1,
     ).rows
     return bool(rows)
@@ -1617,25 +1640,37 @@ def work_backlog(
     client = client if client is not None else from_config(cfg, conn, tenant_id)
     if isinstance(client, NoLLM) or not getattr(client, "available", True):
         return {"worked": 0, "outcomes": counted, "why": "no model is configured"}
-    items = fetch_all(
+    items = _runnable_first(
         conn,
-        """SELECT item_uid, trigger, title, hypothesis, would_confirm, data_needed, why_now,
-                  attack, priority, evidence
-           FROM shoc.hunt_backlog WHERE tenant_id = %s AND state = 'open'
-           ORDER BY priority, evidence->>'worked_at' NULLS FIRST, created_at
-           LIMIT %s""",
-        (tenant_id, max(1, limit)),
-    )
+        tenant_id,
+        fetch_all(
+            conn,
+            """SELECT item_uid, trigger, title, hypothesis, would_confirm, data_needed, why_now,
+                      attack, priority, evidence
+               FROM shoc.hunt_backlog WHERE tenant_id = %s AND state = 'open'
+               ORDER BY priority, evidence->>'worked_at' NULLS FIRST, created_at""",
+            (tenant_id,),
+        ),
+    )[: max(1, limit)]
     if not items:
         return {"worked": 0, "outcomes": counted, "why": "the backlog is empty"}
     spent = _pack_tokens_today(conn, tenant_id)
+    typical = _typical_item(conn, tenant_id)
     tokens, worked, reasoning = 0, 0, []
     context = _pack_context(conn, tenant_id, cfg)
     for item in items:
-        if spent + tokens >= PACK_TOKENS_PER_DAY:
-            reasoning.append(f"stopped at the daily ceiling of {PACK_TOKENS_PER_DAY} tokens")
+        # Checked before an item starts, as the Detection Engineer does: an item
+        # that would not fit waits for tomorrow, and the first of the day starts.
+        if spent + tokens and spent + tokens + typical >= PACK_TOKENS_PER_DAY:
+            reasoning.append(
+                f"stopped before the daily ceiling of {PACK_TOKENS_PER_DAY} tokens: "
+                f"an item costs about {typical}"
+            )
             break
-        outcome, because, used = _work_item(conn, store, tenant_id, cfg, client, item, context)
+        left = PACK_TOKENS_PER_DAY - spent - tokens
+        outcome, because, used = _work_item(
+            conn, store, tenant_id, cfg, client, item, context, left
+        )
         tokens += used
         worked += 1
         counted[outcome] = counted.get(outcome, 0) + 1
@@ -1660,6 +1695,42 @@ def _pack_tokens_today(conn: Conn, tenant_id: str) -> int:
         or {}
     )
     return int(row.get("n") or 0)
+
+
+def _typical_item(conn: Conn, tenant_id: str) -> int:
+    """The median cost of the last ten items worked, 0 before there are any."""
+    rows = fetch_all(
+        conn,
+        """SELECT (evidence->>'tokens_today')::int AS n FROM shoc.hunt_backlog
+           WHERE tenant_id = %s AND evidence ? 'tokens_today'
+           ORDER BY evidence->>'worked_at' DESC LIMIT 10""",
+        (tenant_id,),
+    )
+    return int(statistics.median(int(r["n"]) for r in rows)) if rows else 0
+
+
+def _runnable_first(
+    conn: Conn, tenant_id: str, items: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Within a priority, items that name a product we receive come first.
+
+    A report can queue a dozen hunts for telemetry nobody here sends; oldest
+    first put them ahead of the one the tenant's own logs could answer.
+    """
+    from shoc.detect import intake
+
+    patterns = [
+        p for name in intake.profile(conn, tenant_id).products for p in intake.PRODUCTS[name][1]
+    ]
+
+    def names_ours(item: dict[str, Any]) -> bool:
+        text = " ".join(
+            str(item.get(k) or "") for k in ("title", "hypothesis", "data_needed")
+        ).lower()
+        return any(re.search(p, text) for p in patterns)
+
+    # sorted() is stable: the query's order stands within each group.
+    return sorted(items, key=lambda i: (i["priority"], not names_ours(i)))
 
 
 def _reopen_gaps(conn: Conn, tenant_id: str) -> int:
@@ -1745,6 +1816,7 @@ def _work_item(
     client: Any,
     item: dict[str, Any],
     context: str,
+    budget: int = 0,
 ) -> tuple[str, str, int]:
     """One model turn for one item, and what code records about it."""
     from shoc.agents import ops, roles, safety, tools
@@ -1779,6 +1851,7 @@ def _work_item(
             ),
             max_steps=PACK_STEPS,
             max_calls=PACK_CALLS,
+            token_budget=budget,
         )
     except Exception as exc:
         with contextlib.suppress(Exception):

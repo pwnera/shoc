@@ -33,7 +33,7 @@ sources:
     title: Entra ID Service Principal with Unusual Source ASN
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_service_principal_signin_unusual_source_asn
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic hunting
     title: Microsoft Entra ID Rare Service Principal Activity from Multiple IPs
     url: https://github.com/elastic/detection-rules/blob/main/hunting/azure/queries/entra_rare_actions_by_service_principal.toml

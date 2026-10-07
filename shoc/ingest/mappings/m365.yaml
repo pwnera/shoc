@@ -15,6 +15,8 @@
 #                                                   API Activity (6003)
 source: m365
 ocsf_version: "1.3.0"
+# The ATT&CK platforms whose techniques these events can show (DET-2).
+attack_platforms: [Office Suite, SaaS]
 
 # Lists of named items, read by name from a rule (RFC 0023): a cmdlet's
 # parameters (`unmapped.params.ForwardingSmtpAddress`), an Outlook rule's

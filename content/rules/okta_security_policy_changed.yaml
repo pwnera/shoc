@@ -36,7 +36,7 @@ sources:
     title: Modification or Removal of an Okta Application Sign-On Policy
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/persistence_okta_attempt_to_modify_or_delete_application_sign_on_policy
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Okta Application Sign-On Policy Modified or Deleted
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_application_sign_on_policy_modified_or_deleted.yml

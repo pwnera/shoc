@@ -34,4 +34,4 @@ sources:
     title: AWS STS GetCallerIdentity API Called for the First Time
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_new_terms_sts_getcalleridentity
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

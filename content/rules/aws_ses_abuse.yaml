@@ -48,12 +48,12 @@ sources:
     title: AWS SES Enumeration via Long-Term Access Key
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_ses_enumeration_via_long_term_access_key
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS SES Account Email Sending Enabled
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/resource_development_ses_account_sending_enabled
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS SES Full Access Policy Attached to IAM Entity by Unusual User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_ses_fullaccess_policy_attached_by_unusual_user

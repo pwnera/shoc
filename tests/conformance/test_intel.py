@@ -415,3 +415,91 @@ def test_the_company_own_domain_and_address_cannot_be_added(ctx, config, clean):
     )
     assert [a["value"] for a in out.data.added] == ["evil.example.test"]
     assert len(out.data.rejected) == 3
+
+
+def _lead(conn, tenant, value: str, confidence: float = 0.55, source: str = "report:example.test"):
+    intel.store_indicators(
+        conn,
+        tenant,
+        [
+            intel.Indicator(
+                type="ip",
+                value=value,
+                source=source,
+                confidence=confidence,
+                severity="high",
+                description="from a report",
+            )
+        ],
+    )
+
+
+def test_a_full_feed_does_not_crowd_out_another_sources_indicator(ctx, store, config, clean, now):
+    """One top 5,000 across sources let a URL feed at 0.75 decide what was matched (DET-4)."""
+    from shoc.db.pool import execute
+
+    execute(
+        ctx.db,
+        """INSERT INTO shoc.iocs (tenant_id, type, value, source, confidence, severity)
+           SELECT %s, 'url', 'https://feed.example.test/' || g, 'abuse.ch/urlhaus', 0.75, 'high'
+           FROM generate_series(1, 5001) g""",
+        (config.tenant_id,),
+    )
+    _lead(ctx.db, config.tenant_id, BAD_IP)
+    batch.load(store, _events(config.tenant_id, now))
+    hits = intel.match_window(ctx.db, store, config.tenant_id, now - timedelta(hours=1))
+    assert {h["indicator"]["value"] for h in hits} == {BAD_IP}
+
+
+def test_a_noisy_value_does_not_hide_a_quiet_one_in_its_batch(ctx, store, config, clean, now):
+    noisy, quiet = "198.51.100.40", "198.51.100.41"
+    batch.load(store, _events(config.tenant_id, now, ip=noisy, count=intel.ROWS))
+    batch.load(store, _events(config.tenant_id, now - timedelta(minutes=30), ip=quiet, count=1))
+    _indicator(ctx.db, config.tenant_id, noisy)
+    _indicator(ctx.db, config.tenant_id, quiet)
+    hits = intel.match_window(ctx.db, store, config.tenant_id, now - timedelta(hours=2))
+    assert quiet in {h["indicator"]["value"] for h in hits}
+
+
+def test_a_leads_finding_is_low_and_says_who_listed_it(ctx, store, config, clean, now):
+    """A report's or an agent's severity does not open a high case (DET-4)."""
+    batch.load(store, _events(config.tenant_id, now))
+    _lead(ctx.db, config.tenant_id, BAD_IP)
+    hits = intel.match_window(ctx.db, store, config.tenant_id, now - timedelta(hours=1))
+    uid = intel.findings_from_hits(ctx.db, config.tenant_id, hits)[0]
+    row = fetch_one(ctx.db, "SELECT * FROM shoc.findings WHERE finding_uid = %s", (uid,))
+    assert row and row["severity"] == "low"
+    assert row["title"] == f"An address listed by report:example.test: {BAD_IP}"
+    assert row["evidence"]["columns"] == ["src_endpoint_ip"]
+    assert row["attack"] == [], "a source address on an API call is not command-and-control"
+
+
+def test_a_value_not_in_its_reports_text_is_not_matched(ctx, store, config, clean, now):
+    from shoc.db.pool import execute
+
+    batch.load(store, _events(config.tenant_id, now))
+    _lead(ctx.db, config.tenant_id, BAD_IP)
+    execute(
+        ctx.db, "UPDATE shoc.iocs SET unverified = true WHERE tenant_id = %s", (config.tenant_id,)
+    )
+    assert intel.match_window(ctx.db, store, config.tenant_id, now - timedelta(hours=1)) == []
+    assert intel.retro_hunt(ctx.db, store, config.tenant_id)["indicators"] == 0
+
+
+def test_a_value_everybody_touches_is_held_not_raised(ctx, store, config, clean, now):
+    """The office egress named in a report would open a finding on every user (DET-4)."""
+    rows = []
+    for n in range(intel.PREVALENT_ACTORS + 1):
+        for row in _events(config.tenant_id, now, count=1):
+            row["actor_user_name"] = f"person-{n}"
+            row["event_uid"] = f"{row['event_uid']}-{n}"
+            rows.append(row)
+    batch.load(store, rows)
+    _indicator(ctx.db, config.tenant_id)
+    hits = intel.match_window(ctx.db, store, config.tenant_id, now - timedelta(hours=1))
+    assert intel.findings_from_hits(ctx.db, config.tenant_id, hits) == []
+    tags = fetch_one(ctx.db, "SELECT tags FROM shoc.iocs WHERE tenant_id = %s", (config.tenant_id,))
+    assert tags and "prevalent" in tags["tags"]
+    assert intel.indicators_for(ctx.db, config.tenant_id) == []
+    call("intel.add", ctx, {"values": [BAD_IP], "retro_hunt": False})
+    assert intel.indicators_for(ctx.db, config.tenant_id), "a person releases it"

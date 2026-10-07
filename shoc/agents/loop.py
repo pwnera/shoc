@@ -895,9 +895,6 @@ def run_case(
         citations,
     )
     report.verdict = case_row.get("verdict", verdict)
-    if not broke and next_state == "closed" and report.verdict == "benign_expected":
-        # The Challenger's draft is stored only when the benign side won.
-        _suppression(conn, tenant_id, case_uid, challenge, report)
     # Every disposition goes somewhere: a suppression, a detection defect, the
     # Commander or a person. The verdict that was actually recorded is the one
     # that routes — an uncited verdict was downgraded and owes a human, not a
@@ -906,6 +903,10 @@ def run_case(
         report.routed = _route(conn, tenant_id, case_row or case, "needs_human", report, reasoning)
     elif next_state == "closed" or report.verdict in ("needs_human", "malicious", "suspicious"):
         report.routed = _route(conn, tenant_id, case_row or case, report.verdict, report, reasoning)
+    if not broke and next_state == "closed" and report.verdict == "benign_expected":
+        # The Challenger's draft is stored only when the benign side won, and
+        # only words the closure's own row: its rule and entity, its week.
+        _suppression(conn, tenant_id, case_uid, challenge, report)
     report.confidence = case_row.get("confidence", confidence)
     if next_state and next_state != case_row.get("state"):
         try:
@@ -1056,6 +1057,19 @@ def _suppression(
     if not draft.rule_id.strip() or not draft.entity.strip():
         report.errors.append("Challenger: suppression draft with no rule or no entity, ignored")
         return
+    from shoc.cases import own
+
+    raised = {
+        (str(p["rule_id"]), own.bare(str(p["entity_key"] or "")))
+        for p in routing._pairs(conn, tenant_id, case_uid)
+        if routing._detection(str(p["rule_id"]))
+    }
+    if (draft.rule_id.strip(), own.bare(draft.entity)) not in raised:
+        report.errors.append(
+            f"Challenger: suppression draft for {draft.rule_id.strip()} and "
+            f"{draft.entity.strip()[:80]}, which this case did not raise, ignored"
+        )
+        return
     try:
         routing.suppress_draft(
             conn,
@@ -1156,7 +1170,8 @@ def _changed(conn: Conn, tenant_id: str, case: dict[str, Any], prior: list[dict[
 
     Reading the same detections out a second time is how a resumed case looked
     exactly like a restarted one. What matters on the way back in is the
-    difference: a new detection, an action that finished and how (AGT-12), or
+    difference: a new detection, an action that finished and how (AGT-12), a
+    proposal a person turned down and why, or
     somebody telling the crew that the human it was waiting for is not coming.
     """
     since = case.get("worked_at")
@@ -1185,7 +1200,9 @@ def _changed(conn: Conn, tenant_id: str, case: dict[str, Any], prior: list[dict[
             """SELECT action_uid, type, target, state, error, result->>'detail' AS detail
                FROM shoc.actions
                WHERE tenant_id = %s AND case_uid = %s AND updated_at > %s
-                 AND state IN ('done', 'failed', 'rolled_back') AND type NOT LIKE 'notify.%%'
+                 AND (state IN ('done', 'failed', 'rolled_back')
+                      OR (state = 'rejected' AND approved_by LIKE 'human:%%'))
+                 AND type NOT LIKE 'notify.%%'
                ORDER BY updated_at LIMIT 10""",
             (tenant_id, case["case_uid"], since),
         )
@@ -1196,8 +1213,8 @@ def _changed(conn: Conn, tenant_id: str, case: dict[str, Any], prior: list[dict[
         parts.append(
             "Finished since the crew last looked: "
             + "; ".join(
-                f"{a['type']} on {a['target'] or 'no target'} ({a['action_uid']}) ended "
-                f"{a['state']}"
+                f"{a['type']} on {a['target'] or 'no target'} ({a['action_uid']}) "
+                + ("was rejected by a human" if a["state"] == "rejected" else f"ended {a['state']}")
                 + (f": {str(a['error'] or a['detail'])[:200]}" if a["error"] or a["detail"] else "")
                 for a in ended
             )

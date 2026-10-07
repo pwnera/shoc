@@ -44,17 +44,17 @@ sources:
     title: AWS S3 Object Versioning Suspended
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_s3_object_versioning_disabled
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS S3 Bucket MFA Delete Disabled
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_s3_mfa_delete_disabled
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS Backup Vault Deleted or Vault Lock Removed
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_backup_vault_deleted_or_lock_removed
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS Backup Recovery Point Deleted by Unusual User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_backup_recovery_point_deleted

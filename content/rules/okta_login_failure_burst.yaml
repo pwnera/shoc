@@ -38,7 +38,7 @@ sources:
     title: Potential Okta Password Spray (Single Source)
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_password_spray_single_source
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Potential Okta Credential Stuffing (Single Source)
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_credential_stuffing_single_source

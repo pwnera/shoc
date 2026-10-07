@@ -40,17 +40,17 @@ sources:
     title: AWS IAM AdministratorAccess Policy Attached to User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_administratoraccess_policy_attached_to_user
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS IAM AdministratorAccess Policy Attached to Role
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_administratoraccess_policy_attached_to_role
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS IAM AdministratorAccess Policy Attached to Group
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_administratoraccess_policy_attached_to_group
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS IAM Inline Policy Added to a Group
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_inline_policy_added_to_group
@@ -65,9 +65,9 @@ sources:
     title: AWS IAM Permissions Boundary Modified or Removed
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_iam_permissions_boundary_modified
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS CloudTrail Log Evasion
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_cloudtrail_logging_evasion
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

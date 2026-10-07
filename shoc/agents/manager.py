@@ -12,7 +12,7 @@ So nobody else talks to the operator. A role hands the Manager a notice, and
 the Manager decides what one person reads:
 
 - **The gate is a query.** Pages are grouped by incident — the same case, or
-  cases on the same entity — and a group pages only on one of five typed
+  cases on the same entity — and a group pages only on one of six typed
   conditions, at most once in `PAGE_AT_MOST_EVERY_HOURS`. A model is never asked
   whether to wake somebody, so a model misled by log content can change a page's
   wording and cannot stop it.
@@ -41,18 +41,32 @@ from shoc.cases.unattended import PAGE_AT_MOST_EVERY_HOURS
 from shoc.db.pool import Conn, execute, fetch_all, fetch_one
 
 # The only reasons the operator is woken. The Commander names the first two
-# (docs/agents.md), Ops the third, `unattended.py` the fourth, and the hourly
-# audit check the fifth.
+# (docs/agents.md), Ops the third, `unattended.py` the fourth, the hourly
+# audit check the fifth, and `uncontained` below the sixth.
 PAGE_CONDITIONS = (
     "critical_severity",
     "uncontainable_and_active",
     "coverage_dark",
     "deadline_expired",
     "audit_broken",
+    "malicious_uncontained",
 )
 
 # "Active" means a finding on the case was seen this recently.
 ACTIVE_WITHIN_HOURS = 1
+
+# How long a malicious case has to be contained before it pages. The verdict is
+# recorded before the Commander proposes, and what the policy lets run alone
+# runs in its own job after that.
+CONTAIN_WITHIN_MINUTES = 15
+
+# An action on the case that ran for real. A page contains nothing, and a dry
+# run changed nothing: neither the action's row nor its result may say dry run.
+CONTAINED = """EXISTS (
+    SELECT 1 FROM shoc.actions a
+    WHERE a.tenant_id = c.tenant_id AND a.case_uid = c.case_uid AND a.state = 'done'
+      AND a.type NOT LIKE 'notify.%%' AND NOT a.dry_run
+      AND coalesce(a.result->>'dry_run', 'false') <> 'true')"""
 
 # A source dark this long is material: a day of an identity provider is a day of
 # logins nobody saw.
@@ -168,22 +182,25 @@ def deliver(conn: Conn, tenant_id: str, config: Any = None, store: Any = None) -
     out = Delivered()
     pending = fetch_all(
         conn,
-        """SELECT n.*, c.severity AS case_severity, c.state AS case_state,
-                  (SELECT max(f.last_seen) FROM shoc.findings f
-                    WHERE f.tenant_id = n.tenant_id AND f.case_uid = n.case_uid) AS case_last_seen
-           FROM shoc.notices n
-           LEFT JOIN shoc.cases c ON c.tenant_id = n.tenant_id AND c.case_uid = n.case_uid
-           WHERE n.tenant_id = %s AND n.kind = 'page' AND n.delivered_at IS NULL
-           ORDER BY n.created_at LIMIT 200""",
-        (tenant_id,),
+        f"""SELECT n.*, c.severity AS case_severity, c.state AS case_state,
+                   c.verdict AS case_verdict, {CONTAINED} AS case_contained,
+                   n.created_at > now() - %s * interval '1 minute' AS held,
+                   (SELECT max(f.last_seen) FROM shoc.findings f
+                     WHERE f.tenant_id = n.tenant_id AND f.case_uid = n.case_uid) AS case_last_seen
+            FROM shoc.notices n
+            LEFT JOIN shoc.cases c ON c.tenant_id = n.tenant_id AND c.case_uid = n.case_uid
+            WHERE n.tenant_id = %s AND n.kind = 'page' AND n.delivered_at IS NULL
+            ORDER BY n.created_at LIMIT 200""",
+        (CONTAIN_WITHIN_MINUTES, tenant_id),
     )
     groups: dict[str, list[dict[str, Any]]] = {}
     fresh = datetime.now(UTC) - timedelta(hours=ACTIVE_WITHIN_HOURS)
     for row in pending:
         # "Critical" is the case's severity now, not what somebody said it was;
-        # a closed case wakes nobody; and "still active" means a detection
-        # fired within the hour, not that a model said so. These are queries,
-        # so log content can change none of them (RFC 0015).
+        # a closed case wakes nobody; "still active" means a detection fired
+        # within the hour, not that a model said so; and "uncontained" is the
+        # case's verdict, severity and actions now. These are queries, so log
+        # content can change none of them (RFC 0015).
         stale = (
             (row["condition"] == "critical_severity" and row["case_severity"] != "critical")
             or (row["case_uid"] and row["case_state"] == "closed")
@@ -191,11 +208,19 @@ def deliver(conn: Conn, tenant_id: str, config: Any = None, store: Any = None) -
                 row["condition"] == "uncontainable_and_active"
                 and not (row["case_last_seen"] and row["case_last_seen"] >= fresh)
             )
+            or (
+                row["condition"] == "malicious_uncontained"
+                and not _malicious_uncontained(
+                    row["case_verdict"], row["case_severity"], row["case_contained"]
+                )
+            )
         )
         if stale:
             _settle(conn, tenant_id, [row], "digest")
             out.digest += 1
             continue
+        if row["condition"] == "malicious_uncontained" and row["held"]:
+            continue  # containment gets its chance; the job `uncontained` queued comes back
         groups.setdefault(str(row["group_key"]), []).append(row)
 
     for key, rows in groups.items():
@@ -433,6 +458,63 @@ def coverage(conn: Conn, tenant_id: str) -> int:
         )
         told += 1
     return told
+
+
+def _malicious_uncontained(verdict: Any, severity: Any, contained: Any) -> bool:
+    return verdict == "malicious" and severity in ("high", "critical") and not contained
+
+
+def uncontained(conn: Conn, tenant_id: str, case_uid: str) -> bool:
+    """Page for a malicious high or critical case that nothing has contained.
+
+    Called when a malicious verdict is recorded and when a playbook run on the
+    case ends. Below critical, a playbook's page step reaches the weekly, and
+    `uncontainable_and_active` wants a finding within the hour, so a case that
+    dry run or a missing credential left alone woke nobody. Told once per case,
+    and delivered after `CONTAIN_WITHIN_MINUTES`; the gate asks again then.
+    Returns whether this was news.
+    """
+    case = fetch_one(
+        conn,
+        f"""SELECT c.verdict, c.severity, c.state, {CONTAINED} AS contained
+            FROM shoc.cases c WHERE c.tenant_id = %s AND c.case_uid = %s""",
+        (tenant_id, case_uid),
+    )
+    if not case or case["state"] == "closed":
+        return False
+    if not _malicious_uncontained(case["verdict"], case["severity"], case["contained"]):
+        return False
+    if fetch_one(
+        conn,
+        """SELECT 1 AS told FROM shoc.notices WHERE tenant_id = %s AND case_uid = %s
+             AND condition = 'malicious_uncontained' LIMIT 1""",
+        (tenant_id, case_uid),
+    ):
+        return False
+    from shoc.db import jobs
+
+    uid = tell(
+        conn,
+        tenant_id,
+        "shoc",
+        "page",
+        "This case is malicious and no response action has run on it for real, "
+        "so nothing has contained it.",
+        case_uid=case_uid,
+        condition="malicious_uncontained",
+        deliver=False,
+    )
+    jobs.enqueue(
+        conn,
+        tenant_id,
+        "manager.deliver",
+        {},
+        # A minute past the hold: with this host's clock a little behind the
+        # database's, the job would otherwise come while the gate still holds it.
+        run_at=datetime.now(UTC) + timedelta(minutes=CONTAIN_WITHIN_MINUTES + 1),
+        idempotency_key=f"deliver:{uid}",
+    )
+    return True
 
 
 def audit_broken(conn: Conn, tenant_id: str, detail: str) -> bool:

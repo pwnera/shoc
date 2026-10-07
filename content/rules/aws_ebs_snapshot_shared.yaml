@@ -40,17 +40,17 @@ sources:
     title: AWS EC2 EBS Snapshot Shared or Made Public
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_ec2_ebs_snapshot_shared_with_another_account
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS EC2 AMI Shared with Another Account
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_ec2_ami_shared_with_separate_account
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS RDS DB Snapshot Shared with Another Account
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_rds_snapshot_shared_with_another_account
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: AWS Snapshot Backup Exfiltration
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_snapshot_backup_exfiltration.yml

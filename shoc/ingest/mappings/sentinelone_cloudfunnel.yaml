@@ -17,6 +17,8 @@ source: sentinelone_cloudfunnel
 ocsf_version: "1.3.0"
 # The rule logsources this source answers to (ING-4).
 logsource: [edr, edr/telemetry, dns]
+# The ATT&CK platforms whose techniques these events can show (DET-2).
+attack_platforms: [Windows, macOS, Linux]
 
 constants:
   # Every record names the process behind it, so an unknown category is a

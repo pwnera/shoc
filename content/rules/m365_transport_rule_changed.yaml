@@ -27,9 +27,9 @@ sources:
     title: M365 Exchange Mail Flow Transport Rule Created
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/exfiltration_exchange_transport_rule_creation
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: M365 Exchange Mail Flow Transport Rule Modified
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/exfiltration_exchange_transport_rule_modification
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

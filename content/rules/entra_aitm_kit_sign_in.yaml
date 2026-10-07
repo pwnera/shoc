@@ -31,7 +31,7 @@ sources:
     title: Entra ID Potential AiTM Sign-In via OfficeHome (Tycoon2FA)
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_tycoon_entra_id
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Azure Sign-In With Axios User Agent
     url: https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/cloud/azure/signin_logs/azure_ad_signin_axios_user_agent.yml

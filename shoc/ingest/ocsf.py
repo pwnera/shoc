@@ -156,6 +156,9 @@ class Mapping:
     # The rule logsources (`product` or `product/service`) this source's events
     # answer to; none means its own name (ING-4).
     logsource: list[str] = field(default_factory=list)
+    # The ATT&CK platforms (`SaaS`, `Windows`, ...) whose techniques these events
+    # can show: a report's technique on no platform we see is no backlog item (DET-2).
+    attack_platforms: list[str] = field(default_factory=list)
     # `unmapped.<path>` or `raw.<path>`: where this source's events name the
     # identity-provider login their actor signed in with (RFC 0027).
     login: str = ""
@@ -178,6 +181,7 @@ class Mapping:
                 observables=data.get("observables", []) or [],
                 keyed=data.get("keyed", {}) or {},
                 logsource=[str(k) for k in data.get("logsource") or []],
+                attack_platforms=[str(p) for p in data.get("attack_platforms") or []],
                 login=str(data.get("login") or ""),
             )
         except KeyError as exc:

@@ -46,7 +46,7 @@ sources:
     title: AWS CloudTrail Management Events Disabled via PutEventSelectors
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_cloudtrail_management_events_disabled_via_eventselectors
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS CloudTrail Log Updated
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_cloudtrail_logging_updated

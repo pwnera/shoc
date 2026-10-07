@@ -29,17 +29,17 @@ sources:
     title: AWS VPC Flow Logs Deletion
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_ec2_flow_log_deletion
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS Route 53 Resolver Query Log Configuration Deleted
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_route53_dns_query_resolver_config_deletion
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS S3 Bucket Server Access Logging Disabled
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_s3_bucket_server_access_logging_disabled
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS Bedrock Model Invocation Logging Disabled or Modified
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_bedrock_model_invocation_logging_disabled_or_modified

@@ -24,4 +24,4 @@ sources:
     title: Application Added to Google Workspace Domain
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/persistence_application_added_to_google_workspace_domain
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

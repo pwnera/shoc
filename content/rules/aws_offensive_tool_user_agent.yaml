@@ -31,7 +31,7 @@ sources:
     title: AWS Suspicious User Agent Fingerprint
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/initial_access_suspicious_user_agent_detected_in_cloudtrail
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: PUA - AWS TruffleHog Execution
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_cloudtrail_pua_trufflehog.yml

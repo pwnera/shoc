@@ -33,9 +33,9 @@ sources:
     title: GitHub Owner Role Granted To User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/persistence_organization_owner_role_granted
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: New GitHub Owner Added
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/persistence_github_org_owner_added
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

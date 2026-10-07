@@ -482,6 +482,7 @@ class Scope:
     platforms: set[str]
     products: set[str] | None  # what its cited events come from; None when unread
     using: set[str]  # the providers the tenant holds a credential of or reads a source for
+    held: set[str] | None = None  # the providers it holds a credential of; None when unread
 
     @classmethod
     def of(cls, conn: Conn, tenant_id: str, case_uid: str, config: Any = None) -> Scope:
@@ -491,6 +492,7 @@ class Scope:
             engine.platforms(conn, tenant_id, case_uid, config),
             products_behind(conn, tenant_id, case_uid, config),
             in_use(conn, tenant_id),
+            {provider_of(n) for n in providers(conn, tenant_id)},
         )
 
     def excludes(self, action: Any) -> str:

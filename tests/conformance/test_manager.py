@@ -211,6 +211,101 @@ def test_the_template_is_enough_without_a_model(conn, config, case):
     assert case["case_uid"] in text and "the key is still in use" in text
 
 
+# -- a malicious case nothing contained ----------------------------------------
+def _malicious(conn, config, case, severity: str) -> None:
+    """The crew's verdict on a case whose findings stopped three hours ago."""
+    tenant, uid = config.tenant_id, case["case_uid"]
+    execute(
+        conn,
+        """UPDATE shoc.findings SET first_seen = now() - interval '3 hours',
+                                    last_seen = now() - interval '3 hours'
+           WHERE tenant_id = %s AND case_uid = %s""",
+        (tenant, uid),
+    )
+    engine.set_severity(conn, tenant, uid, severity, "for this test")
+    cited = fetch_all(
+        conn,
+        "SELECT event_uids FROM shoc.findings WHERE tenant_id=%s AND case_uid=%s",
+        (tenant, uid),
+    )[0]["event_uids"]
+    engine.set_verdict(conn, tenant, uid, "malicious", 0.9, "stolen key", list(cited))
+
+
+def _acted(conn, config, case, dry_run: bool) -> None:
+    key = f"{config.tenant_id}-{dry_run}"
+    execute(
+        conn,
+        """INSERT INTO shoc.actions (action_uid, tenant_id, case_uid, type, target, params,
+               autonomy, state, reversible, dry_run, rationale, requested_by, idempotency_key)
+           VALUES (%s,%s,%s,'aws.disable_access_key','AKIAIOSFODNN7EXAMPLE','{}','L1','done',
+                   true,%s,'','test',%s)""",
+        (f"ACT-{key}", config.tenant_id, case["case_uid"], dry_run, key),
+    )
+
+
+def _uncontained(conn, config) -> list[dict]:
+    return fetch_all(
+        conn,
+        """SELECT outcome FROM shoc.notices
+           WHERE tenant_id=%s AND condition='malicious_uncontained'""",
+        (config.tenant_id,),
+    )
+
+
+def _hold_ends(conn, config) -> None:
+    execute(
+        conn,
+        """UPDATE shoc.notices SET created_at = now() - interval '1 hour'
+           WHERE tenant_id=%s AND condition='malicious_uncontained'""",
+        (config.tenant_id,),
+    )
+
+
+def test_a_malicious_case_only_dry_run_touched_pages_however_old_its_findings(conn, config, case):
+    """Dry run and no credential left a high case alone, and nothing paged: the
+    playbook's page step was a digest below critical, and its findings were
+    older than the hour `uncontainable_and_active` wants."""
+    _acted(conn, config, case, dry_run=True)
+    _malicious(conn, config, case, "high")
+    assert not manager.uncontained(conn, config.tenant_id, case["case_uid"]), "told once"
+    assert fetch_all(
+        conn,
+        """SELECT 1 FROM shoc.jobs WHERE tenant_id=%s AND kind='manager.deliver'
+             AND run_at > now() + %s * interval '1 minute'""",
+        (config.tenant_id, manager.CONTAIN_WITHIN_MINUTES),
+    ), "delivered once containment had its chance"
+    assert not manager.deliver(conn, config.tenant_id, config).paged
+    assert _uncontained(conn, config) == [{"outcome": None}], "held, not settled"
+    _hold_ends(conn, config)
+    done = manager.deliver(conn, config.tenant_id, config)
+    assert len(done.paged) == 1 and not done.failed
+    assert [p["requested_by"] for p in pages(conn, config.tenant_id)] == ["manager"]
+    assert _uncontained(conn, config) == [{"outcome": "paged"}]
+
+
+def test_a_case_contained_for_real_since_does_not_page(conn, config, case):
+    _malicious(conn, config, case, "high")
+    _acted(conn, config, case, dry_run=False)
+    _hold_ends(conn, config)
+    assert not manager.deliver(conn, config.tenant_id, config).paged
+    assert _uncontained(conn, config) == [{"outcome": "digest"}]
+    assert not pages(conn, config.tenant_id)
+
+
+def test_a_malicious_case_below_high_does_not_page(conn, config, case):
+    _malicious(conn, config, case, "medium")
+    assert not _uncontained(conn, config)
+    assert not manager.deliver(conn, config.tenant_id, config).paged
+
+
+def test_a_pending_uncontained_page_settles_once_the_case_is_closed(conn, config, case):
+    _malicious(conn, config, case, "critical")
+    engine.transition(conn, config.tenant_id, case["case_uid"], "closed", "for this test")
+    _hold_ends(conn, config)
+    assert not manager.deliver(conn, config.tenant_id, config).paged
+    assert _uncontained(conn, config) == [{"outcome": "digest"}]
+
+
 def test_ask_is_answered_by_the_manager_and_audited(ctx, conn, config, case, monkeypatch):
     """AGT-14: the Manager's answer reaches past the caller's scopes, so the call is on record."""
     import json
@@ -272,10 +367,11 @@ def test_log_content_cannot_ping_the_workspace():
 
 # -- the exception report (D52) -----------------------------------------------
 def test_the_exception_report_carries_only_what_needs_a_person_and_says_it_once(
-    conn, store, config, case
+    conn, store, config, case, monkeypatch
 ):
     from shoc.agents import reporter
 
+    monkeypatch.setattr(config, "dry_run", False)  # dry run has a test of its own
     assert reporter.send_exceptions(conn, store, config.tenant_id, config) == (
         "exception report: nothing needs a person"
     ), "silence is the product working"
@@ -313,10 +409,13 @@ def test_the_exception_report_carries_only_what_needs_a_person_and_says_it_once(
     ), "a decision is sent once"
 
 
-def test_reading_the_exception_report_does_not_count_as_sending_it(ctx, conn, store, config, clean):
+def test_reading_the_exception_report_does_not_count_as_sending_it(
+    ctx, conn, store, config, clean, monkeypatch
+):
     from shoc.agents import reporter
     from shoc.capabilities.registry import call
 
+    monkeypatch.setattr(config, "dry_run", False)
     execute(
         conn,
         """INSERT INTO shoc.source_onboarding (tenant_id, source, step, scopes, click_path)
@@ -327,6 +426,26 @@ def test_reading_the_exception_report_does_not_count_as_sending_it(ctx, conn, st
     assert reporter.send_exceptions(conn, store, config.tenant_id, config).endswith(
         "1 decision(s)"
     ), "the operator opening the console is not the operator being told"
+
+
+def test_the_exception_report_names_dry_run_and_a_vendor_shoc_cannot_act_in(
+    conn, config, clean, monkeypatch
+):
+    """Nothing contained a malicious case on the main instance, and nothing said why."""
+    from shoc.agents import reporter
+    from shoc.cases import credentials
+
+    monkeypatch.setattr(config, "dry_run", True)
+    execute(
+        conn,
+        "INSERT INTO shoc.connector_config (tenant_id, source) VALUES (%s, 'okta')",
+        (config.tenant_id,),
+    )
+    items = reporter.exceptions(conn, config.tenant_id, config)
+    assert {i["reference"] for i in items} == {"dry_run", "response:okta"}
+    credentials.store(conn, config.tenant_id, "okta", {}, {"api_token": "test"}, config.master_key)
+    monkeypatch.setattr(config, "dry_run", False)
+    assert not reporter.exceptions(conn, config.tenant_id, config)
 
 
 def test_the_weekly_no_longer_holds_decisions(conn, store, config, case):

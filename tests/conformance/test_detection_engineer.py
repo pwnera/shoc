@@ -25,18 +25,42 @@ def tenant(ctx, config, clean):
     return config.tenant_id
 
 
-def _report(ctx, tenant: str, techniques: list[str], procedures: list[dict] | None = None) -> None:
+def _report(
+    ctx,
+    tenant: str,
+    techniques: list[str],
+    procedures: list[dict] | None = None,
+    source: str = "huntress",
+    by: str = "",
+    deliver: str = "AWS CloudTrail",
+) -> None:
+    """A report read from a feed, while a source that can see its techniques sends."""
+    if deliver:
+        _delivering(ctx, tenant, deliver)
     execute(
         ctx.db,
-        """INSERT INTO shoc.intel_reports (report_uid, tenant_id, title, techniques, procedures)
-           VALUES (%s,%s,%s,%s,%s)""",
+        """INSERT INTO shoc.intel_reports
+               (report_uid, tenant_id, title, techniques, procedures, source, digested_by)
+           VALUES (%s,%s,%s,%s,%s,%s,%s)""",
         (
             f"REP-{tenant}",
             tenant,
             "A campaign against small SaaS companies",
             techniques,
             json.dumps(procedures or []),
+            source,
+            by or "service:worker",
         ),
+    )
+
+
+def _delivering(ctx, tenant: str, product: str) -> None:
+    """A connected source that loaded `product` events today."""
+    execute(
+        ctx.db,
+        """INSERT INTO shoc.source_history (tenant_id, source, products)
+           VALUES (%s, %s, %s) ON CONFLICT (tenant_id, source) DO NOTHING""",
+        (tenant, product.lower().replace(" ", "_"), [product]),
     )
 
 
@@ -87,7 +111,7 @@ def test_a_coverage_gap_says_what_would_show_it_and_whether_we_receive_it(ctx, t
         "evidence": "curl fetched the second stage into the temp folder",
         "seen_in": ["process", "admin_api"],
     }
-    _report(ctx, tenant, ["T1105"], [said])
+    _report(ctx, tenant, ["T1105"], [said], deliver="CrowdStrike Falcon")
     execute(
         ctx.db,
         "INSERT INTO shoc.source_history (tenant_id, source, products) VALUES (%s,'aws',%s)",
@@ -104,6 +128,28 @@ def test_a_coverage_gap_says_what_would_show_it_and_whether_we_receive_it(ctx, t
     assert "crowdstrike" not in carriers, "an alert feed is not telemetry"
     assert shows["process"]["received"] == []
     assert shows["admin_api"]["received"] == ["AWS CloudTrail"]
+
+
+def test_a_technique_no_delivering_product_can_show_is_left_off(ctx, tenant):
+    # T1003.001 is Windows only; Workspace shows identity, mail and SaaS activity.
+    _report(ctx, tenant, ["T1003.001", "T1595"], deliver="Google Workspace")
+    items = engineer.intake(ctx.db, tenant, ctx.config)
+    assert not [i for i in items if i.intake == "cti"], (
+        "a model turn that can only end in source_gap is not worth starting"
+    )
+
+
+def test_only_a_configured_source_or_a_person_puts_a_report_on_the_backlog(ctx, tenant):
+    _report(ctx, tenant, ["T1499"], source="", by="agent:CTI")
+    items = engineer.intake(ctx.db, tenant, ctx.config)
+    assert not [i for i in items if i.intake == "cti"], "a read inside a case is the case's"
+    execute(
+        ctx.db,
+        "UPDATE shoc.intel_reports SET digested_by = 'human:rettila' WHERE tenant_id = %s",
+        (tenant,),
+    )
+    items = engineer.intake(ctx.db, tenant, ctx.config)
+    assert [i for i in items if i.intake == "cti"]
 
 
 def test_a_technique_a_rule_already_covers_does_not_reach_the_backlog(ctx, tenant):
@@ -134,11 +180,13 @@ def test_a_sub_technique_is_covered_by_a_rule_that_maps_to_its_parent(ctx, tenan
 
 # -- observability ----------------------------------------------------------
 def test_work_we_cannot_observe_is_marked_rather_than_queued_forever(ctx, tenant):
-    _report(ctx, tenant, ["T1499"])
-    items = engineer.intake(ctx.db, tenant, ctx.config)
+    items = [
+        engineer.BacklogItem(
+            item_uid="DBL-x", kind="coverage", intake="cti", title="t", reason="r", priority=4
+        )
+    ]
     engineer.score_observability(ctx.db, tenant, items)
-    assert all(i.observability in ("have", "partial", "none") for i in items)
-    assert any(i.observability == "none" for i in items), (
+    assert items[0].observability == "none", (
         "with no connector sending, a proposed detection is a source gap"
     )
 

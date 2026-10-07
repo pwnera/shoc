@@ -38,7 +38,9 @@ parse is an error, because usually it means the wrong path.
 what `evals/` wants and what a historical dataset does not. A real export keeps
 its own timestamps either way; `scripts/replay_datasets.py` loads one shifted so
 its newest event lands two hours before now (`--margin-hours`), which puts it
-back inside the detection windows.
+back inside the detection windows. The script refuses a tenant that reads live
+sources, where those events would open real cases: load into a tenant of its
+own (`SHOC_TENANT=lab`, after `shoc --tenant lab migrate`), or pass `--force`.
 
 ## Checking a mapping against it
 

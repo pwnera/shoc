@@ -6,6 +6,8 @@ source: aws_guardduty
 ocsf_version: "1.3.0"
 # The rule logsources this source answers to (ING-4).
 logsource: [aws, aws/guardduty]
+# The ATT&CK platforms whose techniques these events can show (DET-2).
+attack_platforms: [IaaS, Containers, Linux]
 
 constants:
   category_uid: 2

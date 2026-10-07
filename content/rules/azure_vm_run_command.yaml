@@ -49,7 +49,7 @@ sources:
     title: Azure VM Extension Deployment by User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_azure_vm_extension_deployment_by_interactive_user
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Mandiant
     title: SIM swapping and abuse of the Microsoft Azure Serial Console
     url: https://cloud.google.com/blog/topics/threat-intelligence/sim-swapping-abuse-azure-serial

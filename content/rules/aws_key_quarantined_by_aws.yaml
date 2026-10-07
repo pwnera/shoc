@@ -26,4 +26,4 @@ sources:
     title: AWS IAM CompromisedKeyQuarantine Policy Attached to User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/credential_access_iam_compromisedkeyquarantine_policy_attached_to_user
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

@@ -23,4 +23,4 @@ sources:
     title: Google Workspace Drive Data Transfer or Takeout Export Initiated
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/collection_google_drive_ownership_transferred_via_google_workspace
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

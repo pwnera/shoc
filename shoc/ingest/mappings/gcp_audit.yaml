@@ -8,6 +8,8 @@ source: gcp_audit
 ocsf_version: "1.3.0"
 # The rule logsources this source answers to (ING-4).
 logsource: [gcp]
+# The ATT&CK platforms whose techniques these events can show (DET-2).
+attack_platforms: [IaaS]
 
 # An IAM policy change lists what it added and removed as binding deltas. Keyed
 # by action and role (`unmapped.deltas.ADD.roles_owner.member`) and by action

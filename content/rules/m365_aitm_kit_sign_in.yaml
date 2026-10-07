@@ -31,4 +31,4 @@ sources:
     title: M365 Potential AiTM UserLoggedIn via Office App (Tycoon2FA)
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/initial_access_tycoon_o365
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

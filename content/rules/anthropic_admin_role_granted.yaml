@@ -32,17 +32,17 @@ sources:
     title: Anthropic Admin Role Assigned to User
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/persistence_anthropic_admin_role_assigned_to_user.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Anthropic Primary Owner Transferred
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/privilege_escalation_anthropic_primary_owner_transferred.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Anthropic Organization User Invite Sent
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/persistence_anthropic_organization_user_invite_sent.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Anthropic
     title: Query compliance activities
     url: https://platform.claude.com/docs/en/api/compliance/activities/list

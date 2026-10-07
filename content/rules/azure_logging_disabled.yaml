@@ -37,7 +37,7 @@ sources:
     title: Azure Event Hub Deleted
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/defense_evasion_event_hub_deletion
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Azure Suppression Rule Created
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/activity_logs/azure_suppression_rule_created.yml

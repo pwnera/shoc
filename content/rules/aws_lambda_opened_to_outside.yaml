@@ -38,12 +38,12 @@ sources:
     title: AWS Lambda Function URL Created with Public Access
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_lambda_function_url_public_access
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS Lambda Function Policy Updated to Allow Public Invocation
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_lambda_backdoor_invoke_function_for_any_principal
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS Lambda Function Policy Updated to Allow Cross-Account Invocation
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_lambda_cross_account_invocation_backdoor

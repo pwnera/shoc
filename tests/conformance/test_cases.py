@@ -173,7 +173,13 @@ def test_sentinel_defers_what_is_already_settled_and_keeps_it(ctx, store, config
 
     case_uid, found = _grouped(ctx, store, config)
     key = found["aws_access_key_created"]
-    fact = call("memory.add_fact", ctx, {"body": "deploy-ci's key is rotated monthly"}).data
+    entity = fetch_one(
+        ctx.db, "SELECT entity_key FROM shoc.findings WHERE finding_uid = %s", (key,)
+    )
+    assert entity
+    fact = call(
+        "memory.add_fact", ctx, {"body": f"{entity['entity_key']} is rotated monthly by deploy-ci"}
+    ).data
     client = _sentinel(
         groupings=[
             {
@@ -259,20 +265,67 @@ def test_a_deferral_names_something_stored_or_is_not_carried_out(ctx, store, con
 
 
 def test_a_case_sentinel_emptied_is_closed_and_not_investigated(ctx, store, config, clean):
-    from shoc.agents import sentinel
+    from shoc.agents import memory, sentinel
 
     case_uid, found = _grouped(ctx, store, config)
-    closed = engine.move(ctx.db, config.tenant_id, [found["aws_access_key_created"]])
-    engine.transition(ctx.db, config.tenant_id, closed, "closed", "a person closed it")
+    entities = sorted(
+        {
+            str(r["entity_key"])
+            for r in fetch_all(
+                ctx.db, "SELECT entity_key FROM shoc.findings WHERE case_uid = %s", (case_uid,)
+            )
+        }
+    )
+    fact = memory.add(
+        ctx.db, config.tenant_id, "The red team's exercise key: " + ", ".join(entities)
+    )
     client = _sentinel(
         groupings=[
-            {"finding_uid": uid, "decision": "defer", "settled_by": f"{closed}, closed last week"}
+            {"finding_uid": uid, "decision": "defer", "settled_by": f"{fact}, the exercise"}
             for uid in found.values()
-            if uid != found["aws_access_key_created"]
         ]
     )
     assert sentinel.shape(ctx.db, store, config.tenant_id, [case_uid], client, config) == []
     assert engine.require(ctx.db, config.tenant_id, case_uid)["state"] == "closed"
+
+
+def test_a_record_about_something_else_settles_nothing(ctx, store, config, clean):
+    """Any live suppression's id used to defer any finding (SEC-2)."""
+    from shoc.agents import sentinel
+    from shoc.cases import routing
+
+    case_uid, found = _grouped(ctx, store, config)
+    other_rule = routing.suppress_draft(
+        ctx.db, config.tenant_id, "CASE-x", "github_repo_made_public", "someone@example.com", "x"
+    )
+    closed = engine.move(ctx.db, config.tenant_id, [found["aws_access_key_created"]])
+    cited = fetch_one(
+        ctx.db,
+        "SELECT event_uids FROM shoc.findings WHERE finding_uid = %s",
+        (found["aws_access_key_created"],),
+    )
+    assert cited
+    engine.set_verdict(
+        ctx.db, config.tenant_id, closed, "benign_expected", 0.9, "rotation", cited["event_uids"]
+    )
+    engine.transition(ctx.db, config.tenant_id, closed, "closed", "a person closed it")
+    client = _sentinel(
+        groupings=[
+            {
+                "finding_uid": found["aws_discovery_burst"],
+                "decision": "defer",
+                "settled_by": other_rule,
+            },
+            {
+                "finding_uid": found["aws_access_denied_burst"],
+                "decision": "defer",
+                "settled_by": closed,
+            },
+        ]
+    )
+    sentinel.shape(ctx.db, store, config.tenant_id, [case_uid], client, config)
+    for uid in (found["aws_discovery_burst"], found["aws_access_denied_burst"]):
+        assert _finding(ctx, uid)["case_uid"] == case_uid, "a record about another rule"
 
 
 def test_a_closed_case_takes_no_finding(ctx, store, config, clean):

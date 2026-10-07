@@ -34,12 +34,12 @@ sources:
     title: GitHub OAuth Application Authorized
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/github/persistence_github_oauth_application_authorized.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: New GitHub App Installed
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/execution_new_github_app_installed
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: GitHub
     title: Audit log events for your organization
     url: https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization

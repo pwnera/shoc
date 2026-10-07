@@ -37,7 +37,7 @@ sources:
     title: AWS SES Email Identity Verified Then Deleted
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/resource_development_ses_identity_verified_then_deleted
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: SES Identity Has Been Deleted
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_delete_identity.yml

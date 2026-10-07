@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 
 from shoc.detect import rules as ruleset
@@ -577,11 +579,30 @@ def test_first_seen_needs_an_indexed_column_and_no_other_correlation():
             },
             baseline={"first_seen": ["actor.user.name"]},
         )
-    with pytest.raises(ConfigError, match="first_seen and lookback"):
+    with pytest.raises(ConfigError, match="first_seen, lookback and while_learning"):
         make(
             {"s": {"status": "Success"}, "condition": "s"},
             baseline={"rare": {"by": ["api.operation"]}},
         )
+    with pytest.raises(ConfigError, match="while_learning is quiet or fire"):
+        make(
+            {"s": {"status": "Success"}, "condition": "s"},
+            baseline={"first_seen": ["actor.user.name"], "while_learning": "loud"},
+        )
+
+
+def test_a_rule_that_fires_while_learning_is_new_or_not_yet_learnt():
+    rule = make(
+        {"s": {"api.operation": "authorize"}, "condition": "s"},
+        logsource={"product": "google"},
+        baseline={"first_seen": ["actor.user.name", "resource.uid"], "while_learning": "fire"},
+    )
+    c = compile_rule(rule, {"C0123": datetime(2026, 11, 1, tzinfo=UTC)})
+    assert " OR NOT ((SELECT MIN(o.time) FROM ocsf_events o" in c.where
+    assert "AND NOT (COALESCE(cloud_account_uid" not in c.where
+    assert " OR (COALESCE(cloud_account_uid, '') = :" in c.where
+    for d, sql in _everywhere(c).items():
+        assert "NOT EXISTS" in sql, d
 
 
 def test_entity_takes_a_list_and_every_field_is_selected():

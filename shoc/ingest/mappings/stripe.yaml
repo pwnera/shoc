@@ -3,6 +3,8 @@
 # field lists the path for both.
 source: stripe
 ocsf_version: "1.3.0"
+# The ATT&CK platforms whose techniques these events can show (DET-2).
+attack_platforms: [SaaS]
 
 constants:
   category_uid: 6

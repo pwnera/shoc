@@ -42,7 +42,7 @@ sources:
     title: Entra ID User Sign-In via Unusual Legacy Authentication Client
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_unusual_legacy_auth_client_signin
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Use of Legacy Authentication Protocols
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_legacy_authentication_protocols.yml

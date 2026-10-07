@@ -708,6 +708,42 @@ def test_first_seen_fires_once_on_a_new_tuple_after_the_lookback_is_known(
     assert _cited(store, tenant, rule, now) == [["new-1"]]
 
 
+def test_a_rule_that_fires_while_learning_fires_on_every_match_until_it_knows(
+    store, config, clean, now
+):
+    """`while_learning: fire` keeps a rule as loud as it was before its baseline
+    until the lookback is covered, then only a new tuple fires (DET-1)."""
+    login = {"eventName": "ConsoleLogin", "eventSource": "signin.amazonaws.com"}
+    tenant = config.tenant_id
+    _calls(
+        store,
+        tenant,
+        now,
+        [
+            ("known", 10, {**login, "sourceIPAddress": "198.51.100.1"}),
+            ("new-1", 10, {**login, "sourceIPAddress": "203.0.113.9"}),
+        ],
+    )
+    rule = _rule(
+        {"s": {"api.operation": "ConsoleLogin", "status": "Success"}},
+        baseline={
+            "first_seen": ["actor.user.name", "src_endpoint.ip"],
+            "lookback": "7d",
+            "while_learning": "fire",
+        },
+    )
+    learning = sorted(u for uids in _cited(store, tenant, rule, now) for u in uids)
+    assert learning == ["known", "new-1"], "nothing is familiar yet, so every match fires"
+    day = 24 * 60
+    _calls(
+        store,
+        tenant,
+        now,
+        [("old", 8 * day, {}), ("seen", 2 * day, {**login, "sourceIPAddress": "198.51.100.1"})],
+    )
+    assert _cited(store, tenant, rule, now) == [["new-1"]]
+
+
 def test_first_seen_is_learning_per_account(conn, store, config, clean, now):
     """A second AWS account connected yesterday is not new on every key it has,
     though the product has months of history from the first (D76, D79)."""

@@ -72,7 +72,7 @@ behind it.
   side the verdict did not take, and the IR Commander owns the response until
   the activity has stopped. Every claim cites events that exist, and no verdict
   may be "a person will look at this". The Manager is the only role that
-  talks to the operator, and it pages on five typed conditions and nothing else.
+  talks to the operator, and it pages on six typed conditions and nothing else.
 - **Response:** an autonomy policy in YAML (L0/L1/L2), typed reversible actions
   for AWS, Azure, GCP, Okta/Entra, Google Workspace, Microsoft 365, GitHub,
   GitLab, the EDRs, Wazuh, Cloudflare, Tailscale, Stripe, OpenAI and

@@ -28,7 +28,7 @@ sources:
     title: GitHub Private Repository Turned Public
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/exfiltration_github_private_repository_turned_public
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: GitHub
     title: Audit log events for your organization
     url: https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization

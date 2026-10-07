@@ -44,27 +44,27 @@ sources:
     title: AWS GuardDuty Detection Suppression
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_guardduty_finding_suppression
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS GuardDuty Member Account Manipulation
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_guardduty_member_manipulation
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS GuardDuty Publishing Destination Deleted
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_guardduty_publishing_destination_deleted
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS GuardDuty Threat Intelligence Set Deleted
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_guardduty_threat_intel_set_deleted
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS Security Hub Disabled
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_securityhub_disabled
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: AWS GuardDuty Detector Deleted Or Updated
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_cloudtrail_guardduty_detector_deleted_or_updated.yml

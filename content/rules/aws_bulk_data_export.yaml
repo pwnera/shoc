@@ -32,12 +32,12 @@ sources:
     title: AWS EC2 Export Task
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_ec2_export_task
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS RDS Snapshot Export
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_rds_snapshot_export
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS S3 Bucket Replicated to Another Account
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_s3_bucket_replicated_to_external_account
@@ -47,7 +47,7 @@ sources:
     title: AWS EC2 Full Network Packet Capture Detected
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_ec2_full_network_packet_capture_detected
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: AWS EC2 VM Export Failure
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_ec2_vm_export_failure.yml

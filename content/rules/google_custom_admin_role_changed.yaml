@@ -32,7 +32,7 @@ sources:
     title: Google Workspace Role Modified
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/persistence_google_workspace_role_modified
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Google Workspace Role Modified or Deleted
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/gcp/gworkspace/admin/gcp_gworkspace_role_modified_or_deleted.yml

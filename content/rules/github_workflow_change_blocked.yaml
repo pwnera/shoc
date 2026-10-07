@@ -26,4 +26,4 @@ sources:
     title: GitHub Actions Workflow Modification Blocked
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/initial_access_github_actions_workflow_injection_blocked
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

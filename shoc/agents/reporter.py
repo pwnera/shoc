@@ -79,7 +79,7 @@ def build(
     end = end or datetime.now(UTC)
     start = end - PERIODS[kind]
     if kind == "exception":
-        items = exceptions(conn, tenant_id)
+        items = exceptions(conn, tenant_id, config)
         return Report(
             report_uid=_uid(tenant_id, kind, end),
             kind=kind,
@@ -398,14 +398,19 @@ def _held(conn: Conn, tenant_id: str, start: datetime, end: datetime) -> list[di
     )
 
 
-def exceptions(conn: Conn, tenant_id: str) -> list[dict[str, Any]]:
+def exceptions(conn: Conn, tenant_id: str, config: Any = None) -> list[dict[str, Any]]:
     """The decisions only a person can make, each from a query (D52).
 
     An L2 that waited its window out unapproved while its case is still open:
     the system gave up on the action and the incident is not over. A source
     waiting on a credential, or whose credential its vendor now rejects: only
-    somebody with access to that product can make a new one.
+    somebody with access to that product can make a new one. A vendor shoc
+    reads and holds no response credential for, and dry run left on: either
+    way nothing is contained, and only the operator can change it.
     """
+    from shoc.actions.base import NEEDS
+    from shoc.cases import credentials
+
     items: list[dict[str, Any]] = []
     for row in fetch_all(
         conn,
@@ -458,6 +463,29 @@ def exceptions(conn: Conn, tenant_id: str) -> list[dict[str, Any]]:
                 f"{row['source']} can issue a new one",
                 "case_uid": "",
                 "reference": f"rejected:{row['source']}",
+            }
+        )
+    if getattr(config, "dry_run", False):
+        items.append(
+            {
+                "what": "Turn dry run off (SHOC_DRY_RUN=0) once the policy says what may run",
+                "why_only_a_human": "While it is on, every response action is planned and none "
+                "runs, so no case is contained. It is set where shoc is deployed",
+                "case_uid": "",
+                "reference": "dry_run",
+            }
+        )
+    held = {credentials.provider_of(n) for n in credentials.providers(conn, tenant_id)}
+    for provider in sorted(credentials.in_use(conn, tenant_id) - held):
+        how = NEEDS.get(provider)
+        items.append(
+            {
+                "what": f"Give shoc a {provider} response credential",
+                "why_only_a_human": f"shoc reads {provider} and holds no credential to act "
+                "there, so nothing it finds there is contained. Only somebody with access "
+                "can create one" + (f": {how.where}" if how and how.where else ""),
+                "case_uid": "",
+                "reference": f"response:{provider}",
             }
         )
     return items

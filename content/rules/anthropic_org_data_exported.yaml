@@ -25,14 +25,14 @@ sources:
     title: Anthropic Organization Data Export Accessed
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/collection_anthropic_organization_data_export_accessed.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Anthropic Compliance Audit Log Export Accessed
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/collection_anthropic_compliance_audit_log_export_accessed.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Anthropic Organization Deletion
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/impact_anthropic_organization_destructive_action.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

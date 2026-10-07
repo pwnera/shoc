@@ -45,7 +45,7 @@ sources:
     title: GitHub Protected Branch Settings Changed
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/defense_evasion_github_protected_branch_settings_changed
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Several Failed Protected Branch Force Pushes by User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/impact_high_number_of_failed_protected_branch_force_pushes_by_user

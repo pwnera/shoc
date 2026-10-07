@@ -32,17 +32,17 @@ sources:
     title: Attempt to Modify an Okta Network Zone
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/defense_evasion_okta_attempt_to_modify_okta_network_zone
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Attempt to Deactivate an Okta Network Zone
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/defense_evasion_attempt_to_deactivate_okta_network_zone
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Attempt to Delete an Okta Network Zone
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/defense_evasion_attempt_to_delete_okta_network_zone
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Okta Network Zone Deactivated or Deleted
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_network_zone_deactivated_or_deleted.yml

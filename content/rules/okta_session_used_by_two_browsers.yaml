@@ -36,7 +36,7 @@ sources:
     title: Okta AiTM Session Cookie Replay
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_aitm_session_cookie_replay
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Okta Multiple OS Names Detected for a Single DT Hash
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_multiple_user_agent_os_authentication

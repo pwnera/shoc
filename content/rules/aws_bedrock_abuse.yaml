@@ -38,7 +38,7 @@ sources:
     title: AWS Bedrock Foundation Model Access Enabled or Entitlement Granted
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_bedrock_foundation_model_access_enabled_or_entitlement_granted
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS Bedrock Unauthorized Foundation Model Access Attempt
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_bedrock_foundation_model_access_denied_attempt
@@ -48,12 +48,12 @@ sources:
     title: AWS Bedrock API Key Phantom User Activity Outside Bedrock
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_bedrock_phantom_user_activity_outside_bedrock
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS IAM Credentials Added to a Bedrock API Key Phantom User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_bedrock_phantom_user_credentials_added
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: AWS
     title: Monitor bedrock-mantle API calls using CloudTrail
     url: https://docs.aws.amazon.com/bedrock/latest/userguide/logging-cloudtrail-mantle.html

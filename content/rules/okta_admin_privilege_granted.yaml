@@ -28,12 +28,12 @@ sources:
     title: Administrator Privileges Assigned to an Okta Group
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/persistence_administrator_privileges_assigned_to_okta_group
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Okta User Assigned Administrator Role
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/persistence_administrator_role_assigned_to_okta_user
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Okta Admin Role Assigned to an User or Group
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_admin_role_assigned_to_user_or_group.yml

@@ -34,4 +34,4 @@ sources:
     title: Entra ID Temporary Access Pass Created for User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_temporary_access_pass_created
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

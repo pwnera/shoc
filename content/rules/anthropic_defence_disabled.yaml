@@ -44,32 +44,32 @@ sources:
     title: Anthropic Compliance API Logging Disabled
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/defense_evasion_anthropic_compliance_api_logging_disabled.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Anthropic SSO Disabled or Connection Removed
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/defense_evasion_anthropic_sso_disabled_or_connection_removed.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Anthropic Organization IP Restriction Deleted
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/defense_evasion_anthropic_organization_ip_restriction_deleted.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Anthropic Magic Link Second Factor Disabled
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/defense_evasion_anthropic_magic_link_second_factor_disabled.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Anthropic Extra Usage Spend Limit Deleted
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/impact_anthropic_extra_usage_spend_limit_deleted.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Anthropic Admin API Key Deleted
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/impact_anthropic_admin_api_key_deleted.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Panther
     title: Anthropic Spend Limit Deleted
     url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/anthropic_rules/anthropic_spend_limit_deleted.yml

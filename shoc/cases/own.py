@@ -35,7 +35,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
 
-from shoc.db.pool import Conn, execute, fetch_all
+from shoc.db.pool import Conn, execute, fetch_all, fetch_one
 
 KINDS = ("credential", "address", "operator", "automation")
 
@@ -148,8 +148,20 @@ def values(conn: Conn, tenant_id: str, *kinds: str) -> set[str]:
 
 
 def is_person(conn: Conn, tenant_id: str, value: str) -> bool:
-    """Whether this is one of the operator's own accounts."""
-    return bare(value).lower() in values(conn, tenant_id, "operator")
+    """Whether this is one of the operator's own accounts: one registered with
+    `own.add`, or the email a shoc admin or operator signs in with. Readers are
+    left out, since every SSO email is admitted as one (D120)."""
+    value = bare(value).lower()
+    if value in values(conn, tenant_id, "operator"):
+        return True
+    return bool(
+        fetch_one(
+            conn,
+            """SELECT 1 FROM shoc.users WHERE tenant_id = %s AND email = %s
+               AND role IN ('admin', 'operator') AND disabled_at IS NULL""",
+            (tenant_id, value),
+        )
+    )
 
 
 def protected(conn: Conn, tenant_id: str) -> set[str]:

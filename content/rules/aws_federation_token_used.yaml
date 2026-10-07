@@ -40,7 +40,7 @@ sources:
     title: AWS GetFederationToken Followed by Console Login via Federation Exchange
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/credential_access_get_federation_token_followed_by_console_login_via_federation_exchange
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS Sign-In Console Login with Federated User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/initial_access_signin_console_login_federated_user

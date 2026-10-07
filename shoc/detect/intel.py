@@ -21,9 +21,11 @@ Two things happen with an indicator:
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import hashlib
 import io
+import ipaddress
 import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -53,6 +55,20 @@ MATCH_COLUMNS = {
 MATCHED = tuple(MATCH_COLUMNS)
 # The entity a hit names, by indicator type.
 ENTITY_KIND = {"ip": "ip", "domain": "domain", "url": "url", "sha256": "hash"}
+NOUN = {"ip": "An address", "domain": "A domain", "url": "A URL", "sha256": "A file hash"}
+# How many of each source's indicators are matched, best first. One cap across
+# sources let a URL feed at 0.75 fill it, and no report's or person's 0.55
+# address was matched again (DET-4).
+PER_SOURCE = 5000
+# Below this confidence an indicator is a lead: a report's or an agent's value.
+# Its finding is low whatever severity the report or the agent gave it (DET-4).
+LEAD_BELOW = 0.6
+# An indicator that, on its first match, touches more accounts than this is
+# the office's egress or a service everybody uses: held, not raised (DET-4).
+PREVALENT_ACTORS = 3
+# The columns that name where traffic went, rather than where it came from.
+OUTBOUND = ("dst_endpoint_ip", "dst_endpoint_domain", "dns_query_hostname", "http_request_url")
+AUTHENTICATION = 3002
 
 
 @dataclass
@@ -80,6 +96,10 @@ def _client(headers: dict[str, str] | None = None) -> httpx.Client:
     return httpx.Client(timeout=TIMEOUT, headers=headers or {}, follow_redirects=True)
 
 
+# How long after it was last seen online a C2 address is still matched.
+FEODO_DAYS = 30
+
+
 def feodo(settings: dict[str, Any], secret: dict[str, Any]) -> list[Indicator]:
     """abuse.ch Feodo Tracker: botnet command-and-control addresses."""
     url = settings.get("url", "https://feodotracker.abuse.ch/downloads/ipblocklist.csv")
@@ -88,24 +108,44 @@ def feodo(settings: dict[str, Any], secret: dict[str, Any]) -> list[Indicator]:
         resp.raise_for_status()
         text = resp.text
     out: list[Indicator] = []
-    rows = csv.reader(
+    now = datetime.now(UTC)
+    # The header is a quoted CSV line of its own, after the commented banner;
+    # read by position, it was stored as an indicator named `dst_ip` (DET-4).
+    rows = csv.DictReader(
         io.StringIO(
             "\n".join(line for line in text.splitlines() if line and not line.startswith("#"))
         )
     )
     for row in rows:
-        if len(row) < 5:
+        value = str(row.get("dst_ip") or "").strip()
+        try:
+            ipaddress.ip_address(value)
+        except ValueError:
             continue
+        # Kept while it was online in the last 30 days, online now or not: a C2
+        # reached last week is what the retro-hunt is for, one last online in
+        # March is a false positive waiting for a new tenant of that address.
+        if str(row.get("c2_status") or "").strip() == "online":
+            seen = now
+        else:
+            try:
+                seen = datetime.strptime(str(row.get("last_online") or "").strip(), "%Y-%m-%d")
+            except ValueError:
+                continue
+            seen = seen.replace(tzinfo=UTC)
+        if now - seen > timedelta(days=FEODO_DAYS):
+            continue
+        family = str(row.get("malware") or "").strip()
         out.append(
             Indicator(
                 type="ip",
-                value=row[1].strip(),
+                value=value,
                 source="abuse.ch/feodo",
                 confidence=0.9,
                 severity="high",
-                description=f"{row[4].strip()} command-and-control",
-                tags=["c2", "botnet", row[4].strip().lower()],
-                expires_at=datetime.now(UTC) + timedelta(days=30),
+                description=f"{family or 'botnet'} command-and-control",
+                tags=["c2", "botnet", *([family.lower()] if family else [])],
+                expires_at=seen + timedelta(days=FEODO_DAYS),
             )
         )
     return out
@@ -715,16 +755,21 @@ def prune(conn: Conn, tenant_id: str) -> int:
 
 
 def indicators_for(
-    conn: Conn, tenant_id: str, types: tuple[str, ...] = MATCHED, limit: int = 5000
+    conn: Conn, tenant_id: str, types: tuple[str, ...] = MATCHED, per_source: int = PER_SOURCE
 ) -> list[dict[str, Any]]:
+    """The live indicators to match: each source's best `per_source`. A value
+    not found in its report's text, or held as prevalent, is not matched."""
     return fetch_all(
         conn,
-        """SELECT type, value, source, confidence, severity, description, tags
-           FROM shoc.iocs
-           WHERE tenant_id = %s AND type = ANY(%s)
-             AND (expires_at IS NULL OR expires_at > now())
-           ORDER BY confidence DESC LIMIT %s""",
-        (tenant_id, list(types), limit),
+        """SELECT type, value, source, confidence, severity, description, tags FROM (
+               SELECT *, row_number() OVER (
+                          PARTITION BY source ORDER BY confidence DESC, last_seen DESC) AS n
+               FROM shoc.iocs
+               WHERE tenant_id = %s AND type = ANY(%s)
+                 AND (expires_at IS NULL OR expires_at > now())
+                 AND NOT unverified AND NOT ('prevalent' = ANY(tags))) i
+           WHERE n <= %s""",
+        (tenant_id, list(types), per_source),
     )
 
 
@@ -744,6 +789,10 @@ def _open_finding(conn: Conn, tenant_id: str, kind: str, value: str) -> dict[str
            ORDER BY last_seen DESC LIMIT 1""",
         (tenant_id, value, f"ioc_match:{kind}", f"ioc_retrohunt:{kind}"),
     )
+
+
+# Rows one match query returns at most.
+ROWS = 500
 
 
 def match_window(
@@ -768,8 +817,9 @@ def match_window(
     hits: list[dict[str, Any]] = []
     by_value = {i["value"].lower(): i for i in pool}
     values = list(by_value)
-    for start in range(0, len(values), batch):
-        chunk = values[start : start + batch]
+    cols = sorted({c for type_cols in MATCH_COLUMNS.values() for c in type_cols})
+
+    def query(chunk: list[str]) -> list[dict[str, Any]]:
         params: dict[str, Any] = {
             "tenant_id": tenant_id,
             "window_start": since,
@@ -780,28 +830,35 @@ def match_window(
             params[f"v{index}"] = value
             placeholders.append(f":v{index}")
         joined = ", ".join(placeholders)
-        cols = sorted({c for type_cols in MATCH_COLUMNS.values() for c in type_cols})
         sql = (
             f"SELECT event_uid, time, {', '.join(cols)}, actor_user_name, "
-            f"api_operation, metadata_product FROM {layout.EVENTS_TABLE} "
+            f"api_operation, metadata_product, class_uid FROM {layout.EVENTS_TABLE} "
             f"WHERE tenant_id = :tenant_id AND {column} >= :window_start AND {column} < :window_end "
             f"AND ({' OR '.join(f'LOWER({c}) IN ({joined})' for c in cols)})"
-            " ORDER BY time DESC LIMIT 500"
+            f" ORDER BY time DESC LIMIT {ROWS}"
         )
-        for row in store.query(sql, params, 500).rows:
+        rows = store.query(sql, params, ROWS).rows
+        # A batch that filled the limit may hide a quiet value behind a noisy
+        # one: split it until each half fits, or one value is left.
+        if len(rows) >= ROWS and len(chunk) > 1:
+            return query(chunk[: len(chunk) // 2]) + query(chunk[len(chunk) // 2 :])
+        return rows
+
+    for start in range(0, len(values), batch):
+        for row in query(values[start : start + batch]):
             # A value counts only in a column its type belongs in: a domain
             # indicator never matches a URL that happens to equal it.
-            indicator = next(
+            match = next(
                 (
-                    by_value[v]
+                    (by_value[v], c)
                     for c in cols
                     if (v := str(row.get(c) or "").lower()) in by_value
                     and c in MATCH_COLUMNS.get(by_value[v]["type"], ())
                 ),
                 None,
             )
-            if indicator:
-                hits.append({**row, "indicator": indicator})
+            if match:
+                hits.append({**row, "indicator": match[0], "matched": match[1]})
     return hits
 
 
@@ -827,15 +884,32 @@ def findings_from_hits(
         held = _open_finding(conn, tenant_id, indicator["type"], value)
         if held:
             rule_id, window_start = held["rule_id"], held["window_start"]
+        actors = {str(r["actor_user_name"]) for r in rows if r.get("actor_user_name")}
+        if (
+            not held
+            and len(actors) > PREVALENT_ACTORS
+            and not _matched_before(conn, tenant_id, indicator["type"], value)
+        ):
+            _hold(conn, tenant_id, indicator, len(actors))
+            continue
+        confidence = float(indicator["confidence"])
+        columns = sorted({str(r.get("matched") or "") for r in rows} - {""})
+        if set(columns) & set(OUTBOUND):
+            attack = ["T1071"]
+        elif any(r.get("class_uid") == AUTHENTICATION for r in rows):
+            attack = ["T1078"]  # a listed address signed in: the account, not the network
+        else:
+            attack = []
         finding = Finding(
             finding_uid=held["finding_uid"]
             if held
             else _finding_uid(tenant_id, rule_id, value, window_start),
             tenant_id=tenant_id,
             rule_id=rule_id,
-            title=f"Traffic involving a known-bad {indicator['type']}: {value}",
-            severity=indicator["severity"],
-            confidence=float(indicator["confidence"]),
+            title=f"{NOUN.get(indicator['type'], 'A value')} listed by {indicator['source']}: "
+            f"{value}",
+            severity=str(indicator["severity"]) if confidence >= LEAD_BELOW else "low",
+            confidence=confidence,
             entity_key=value,
             window_start=window_start,
             window_end=max(times),
@@ -843,10 +917,14 @@ def findings_from_hits(
             last_seen=max(times),
             event_count=len(rows),
             event_uids=[str(r["event_uid"]) for r in rows[:20]],
-            attack=["T1071"],
+            attack=attack,
             evidence={
                 "kind": kind,
-                "indicator": {k: indicator[k] for k in ("type", "value", "source", "description")},
+                "indicator": {
+                    **{k: indicator[k] for k in ("type", "value", "source", "description")},
+                    "confidence": confidence,
+                },
+                "columns": columns,
                 "users": sorted(
                     {str(r.get("actor_user_name")) for r in rows if r.get("actor_user_name")}
                 )[:10],
@@ -873,6 +951,46 @@ def findings_from_hits(
     return created
 
 
+def _matched_before(conn: Conn, tenant_id: str, kind: str, value: str) -> bool:
+    return bool(
+        fetch_one(
+            conn,
+            """SELECT 1 FROM shoc.findings WHERE tenant_id = %s AND entity_key = %s
+                 AND rule_id IN (%s, %s) LIMIT 1""",
+            (tenant_id, value, f"ioc_match:{kind}", f"ioc_retrohunt:{kind}"),
+        )
+    )
+
+
+def _hold(conn: Conn, tenant_id: str, indicator: dict[str, Any], actors: int) -> None:
+    """Tag a value too common here to be anybody's attack, and say so once.
+
+    A report or a feed that names the office's egress or a shared service would
+    otherwise open a finding on every user. `intel.add` by a person releases it.
+    """
+    from shoc.agents import manager
+
+    held = fetch_one(
+        conn,
+        """UPDATE shoc.iocs SET tags = array_append(tags, 'prevalent')
+           WHERE tenant_id = %s AND type = %s AND value = %s AND NOT ('prevalent' = ANY(tags))
+           RETURNING value""",
+        (tenant_id, indicator["type"], indicator["value"]),
+    )
+    if held:
+        with contextlib.suppress(Exception):
+            manager.tell(
+                conn,
+                tenant_id,
+                "CTI",
+                "digest",
+                f"{indicator['value']}, listed by {indicator['source']}, touched {actors} "
+                "accounts on its first match: held as too common here to raise. "
+                "intel.add by a person matches it again.",
+                deliver=False,
+            )
+
+
 def retro_hunt(
     conn: Conn, store: EventStore, tenant_id: str, days: int = 90, limit: int = 500
 ) -> dict[str, Any]:
@@ -882,6 +1000,7 @@ def retro_hunt(
         """SELECT type, value, source, confidence, severity, description, tags
            FROM shoc.iocs
            WHERE tenant_id = %s AND retro_hunted_at IS NULL AND type = ANY(%s)
+             AND NOT unverified AND NOT ('prevalent' = ANY(tags))
            ORDER BY confidence DESC LIMIT %s""",
         (tenant_id, list(MATCHED), limit),
     )

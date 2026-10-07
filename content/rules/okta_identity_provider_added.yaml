@@ -28,7 +28,7 @@ sources:
     title: New Okta Identity Provider (IdP) Added by Admin
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/persistence_new_idp_successfully_added_by_admin
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Okta Identity Provider Created
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_identity_provider_created.yml

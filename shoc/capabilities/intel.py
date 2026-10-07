@@ -1007,6 +1007,16 @@ def add(ctx: Context, inp: AddInput) -> Result:
             else:
                 indicators.append(ioc)
     stored = intel.store_indicators(ctx.db, ctx.tenant_id, indicators)
+    if human and indicators:
+        # A person naming a value held as too common here releases it (DET-4).
+        from shoc.db.pool import execute
+
+        execute(
+            ctx.db,
+            """UPDATE shoc.iocs SET tags = array_remove(tags, 'prevalent')
+               WHERE tenant_id = %s AND (type, value) IN (SELECT * FROM unnest(%s::text[], %s::text[]))""",
+            (ctx.tenant_id, [i.type for i in indicators], [i.value.lower() for i in indicators]),
+        )
     hunted = (
         intel.retro_hunt(ctx.db, ctx.store, ctx.tenant_id)
         if inp.retro_hunt and stored
@@ -1211,7 +1221,10 @@ def digest(ctx: Context, inp: DigestInput) -> Result:
             return _queue_handed_in(ctx, inp, read, spent)
     url = intel.canonical(inp.url) if inp.url else ""
     doc = reader.fetch(url) if url else reader.from_text(inp.text, inp.title)
-    return _digest(ctx, doc, inp.store_indicators, inp.retro_hunt)
+    # An agent reads for what the report says. Storing and retro-hunting its
+    # values is for a report a feed or a person brought in (DET-7).
+    keep = ctx.caller.kind != "agent"
+    return _digest(ctx, doc, inp.store_indicators and keep, inp.retro_hunt and keep)
 
 
 def _queue_handed_in(ctx: Context, inp: DigestInput, read: int, spent: int) -> Result:
@@ -1271,12 +1284,8 @@ def _digest(
     company runs; it asks no peer (RFC 0029). `extra_tokens` is what a triage
     call already spent on this report.
     """
-    import json
-
-    from shoc.agents import ops, roles, safety
-    from shoc.agents.llm import NoLLM, complete_typed, from_config
+    from shoc.agents.llm import NoLLM, from_config
     from shoc.db.pool import execute, fetch_one
-    from shoc.detect import osint
     from shoc.detect import report as reader
     from shoc.errors import ValidationError
 
@@ -1287,13 +1296,16 @@ def _digest(
         "RPT-"
         + hashlib.sha256(f"{ctx.tenant_id}|{doc.url or digest_sha}".encode()).hexdigest()[:16]
     )
-    # The same text under another URL (a feed's tracking parameters, a mirror)
-    # has been read already; reading it again would only spend the model.
+    # A report is read once: the same text under any URL (a feed's tracking
+    # parameters, a mirror) or the same URL again would only spend the model,
+    # and a second read used to queue the first one's hunts twice. A person
+    # may ask for a re-read of the same URL.
+    again = ctx.caller.kind == "human"
     twin = fetch_one(
         ctx.db,
-        "SELECT report_uid, title FROM shoc.intel_reports "
-        "WHERE tenant_id = %s AND raw_sha256 = %s AND report_uid <> %s",
-        (ctx.tenant_id, digest_sha, report_uid),
+        "SELECT report_uid, title FROM shoc.intel_reports WHERE tenant_id = %s AND raw_sha256 = %s"
+        + (" AND report_uid <> %s" if again else ""),
+        (ctx.tenant_id, digest_sha, report_uid) if again else (ctx.tenant_id, digest_sha),
     )
     if twin:
         return Result(
@@ -1309,6 +1321,76 @@ def _digest(
             "(anthropic or openai) with SHOC_LLM_API_KEY. Feeds, matching, retro-hunts "
             "and intel.lookup all work without one."
         )
+    # Claimed before the model is called, so two workers that picked the same
+    # report 12 seconds apart do not both read it. The pool is in autocommit,
+    # so the row itself is the lock; a read that fails gives it back.
+    claimed = fetch_one(
+        ctx.db,
+        """INSERT INTO shoc.intel_reports
+               (report_uid, tenant_id, url, source_host, title, raw_sha256, digested_by, source)
+           VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING RETURNING report_uid""",
+        (
+            report_uid,
+            ctx.tenant_id,
+            doc.url,
+            doc.host,
+            doc.title,
+            digest_sha,
+            f"{ctx.caller.kind}:{ctx.caller.id}",
+            source,
+        ),
+    )
+    if not claimed and not again:
+        return Result(
+            data=DigestReport(report_uid=report_uid, url=doc.url, title=doc.title),
+            summary=f"Already read, or being read, as {report_uid}.",
+        )
+    try:
+        return _read(
+            ctx,
+            doc,
+            store,
+            retro_hunt,
+            source,
+            company,
+            extra_tokens,
+            client,
+            found,
+            report_uid,
+            digest_sha,
+        )
+    except Exception:
+        if claimed:
+            execute(
+                ctx.db,
+                "DELETE FROM shoc.intel_reports WHERE report_uid = %s AND tenant_id = %s "
+                "AND model = ''",
+                (report_uid, ctx.tenant_id),
+            )
+        raise
+
+
+def _read(
+    ctx: Context,
+    doc: Document,
+    store: bool,
+    retro_hunt: bool,
+    source: str,
+    company: intake.Profile | None,
+    extra_tokens: int,
+    client: Any,
+    found: Any,
+    report_uid: str,
+    digest_sha: str,
+) -> Result:
+    """The model's read of a claimed report, and what code keeps from it."""
+    import json
+
+    from shoc.agents import ops, roles, safety
+    from shoc.agents.llm import complete_typed
+    from shoc.db.pool import execute
+    from shoc.detect import osint
+    from shoc.detect import report as reader
 
     prose, cut = reader.for_model(doc.text, found)
     company = company or intake.profile(ctx.db, ctx.tenant_id)
@@ -1432,7 +1514,16 @@ def _digest(
     # A discarded report is remembered as read, and steers nothing: no
     # technique reaches the Hunter's agenda or the Detection Engineer's coverage.
     kept_techniques = [t["id"] for t in techniques] if keep else []
-    hunts = [h for h in answer.suggested_hunts if keep and (h.title or h.hypothesis).strip()][:10]
+    # Three hunts at most: a read queued a dozen, most for telemetry nobody here
+    # sends. A hunt for a value this read stored is the retro-hunt's job.
+    values = [i["value"] for i in storable] if store else []
+    hunts = [
+        h
+        for h in answer.suggested_hunts
+        if keep
+        and (h.title or h.hypothesis).strip()
+        and not any(v in str(h).lower() for v in values)
+    ][:3]
     # Suggested hunts go to the Hunter's backlog when the report came from a
     # configured source or a person handed it in (D79). Each carries the
     # behaviour and only the techniques it tests (D132).
@@ -1497,7 +1588,7 @@ def _digest(
                 source, procedures)
            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
            ON CONFLICT (report_uid) DO UPDATE SET
-               summary = EXCLUDED.summary, relevance = EXCLUDED.relevance,
+               title = EXCLUDED.title, summary = EXCLUDED.summary, relevance = EXCLUDED.relevance,
                actors = EXCLUDED.actors, malware = EXCLUDED.malware,
                campaigns = EXCLUDED.campaigns, techniques = EXCLUDED.techniques,
                procedures = EXCLUDED.procedures,

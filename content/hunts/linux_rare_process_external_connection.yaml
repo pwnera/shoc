@@ -10,7 +10,7 @@ sources:
     title: "Low Volume External Network Connections from Process by Unique Agent"
     url: https://github.com/elastic/detection-rules/blob/main/hunting/linux/queries/low_volume_external_network_connections_from_process.toml
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
 logsource:
   product: edr
   service: telemetry

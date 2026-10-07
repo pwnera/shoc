@@ -17,6 +17,8 @@ source: cloudflare_logs
 ocsf_version: "1.3.0"
 # The rule logsources this source answers to (ING-4).
 logsource: [cloudflare/logpush, dns]
+# The ATT&CK platforms whose techniques these events can show (DET-2).
+attack_platforms: [Network Devices, Windows, macOS, Linux]
 
 constants:
   category_uid: 4

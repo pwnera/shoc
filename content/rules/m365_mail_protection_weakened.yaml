@@ -54,42 +54,42 @@ sources:
     title: M365 Exchange Anti-Phish Policy Deleted
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_anti_phish_policy_deletion
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: M365 Exchange Anti-Phish Rule Modification
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_anti_phish_rule_modification
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: M365 Exchange Email Safe Link Policy Disabled
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_exchange_safelinks_disabled
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: M365 Exchange Email Safe Attachment Rule Disabled
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_safe_attach_rule_disabled
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: M365 Exchange Malware Filter Policy Deleted
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_malware_filter_policy_deletion
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: M365 Exchange Malware Filter Rule Modified
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_malware_filter_rule_mod
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: M365 Exchange Mailbox Audit Logging Bypass Added
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_mailbox_audit_bypass_association
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: M365 Exchange DKIM Signing Configuration Disabled
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_dkim_signing_config_disabled
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Microsoft
     title: Manage mailbox auditing
     url: https://learn.microsoft.com/en-us/purview/audit-mailboxes

@@ -890,7 +890,8 @@ def catalogue(
     The IR Commander used to name actions from memory: `okta.revoke_sessions`
     for an action then called `idp.revoke_sessions`, and twice a name for
     nothing at all. A name nothing can resolve is a sentence in a chat table, so
-    the Commander is now shown the list instead of remembering it.
+    the Commander is now shown the list instead of remembering it. An action
+    whose provider holds no credential says so in `can_run`.
     """
     from shoc.actions import load
 
@@ -905,19 +906,20 @@ def catalogue(
         linked = scope is not None and bool(out_of_scope(action, scope.platforms))
         known = action.type in policy.actions
         rule = policy.rule_for(action.type)
-        out.append(
-            {
-                "action": action.type,
-                "does": action.summary,
-                # RFC 0027: shoc swaps the case's user for the login it signs in as.
-                "target": f"{action.target_kind}, for the IdP login identity.resolve links it to"
-                if linked
-                else action.target_kind,
-                "params": list(action.required_params),
-                "reversible": action.reversible,
-                "autonomy": str(rule.get("autonomy", "L2")) if known else "not in the policy",
-            }
-        )
+        entry: dict[str, Any] = {
+            "action": action.type,
+            "does": action.summary,
+            # RFC 0027: shoc swaps the case's user for the login it signs in as.
+            "target": f"{action.target_kind}, for the IdP login identity.resolve links it to"
+            if linked
+            else action.target_kind,
+            "params": list(action.required_params),
+            "reversible": action.reversible,
+            "autonomy": str(rule.get("autonomy", "L2")) if known else "not in the policy",
+        }
+        if scope is not None and scope.held is not None and action.provider not in scope.held:
+            entry["can_run"] = f"no {action.provider} credential"
+        out.append(entry)
     return sorted(out, key=lambda a: str(a["action"]))
 
 

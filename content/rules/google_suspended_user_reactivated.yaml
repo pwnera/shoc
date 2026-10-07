@@ -23,4 +23,4 @@ sources:
     title: Google Workspace Suspended User Account Renewed
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/initial_access_google_workspace_suspended_user_renewed
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

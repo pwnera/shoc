@@ -31,7 +31,7 @@ sources:
     title: AWS IAM Deactivation of MFA Device
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_iam_deactivate_mfa_device
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS IAM Virtual MFA Device Registration Attempt with Session Token
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_aws_attempt_to_register_virtual_mfa_device

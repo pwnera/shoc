@@ -31,7 +31,7 @@ sources:
     title: Entra ID Domain Federation Configuration Change
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/privilege_escalation_entra_id_tenant_domain_federation_via_audit_logs
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: New Federated Domain Added - Exchange
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/m365/exchange/microsoft365_new_federated_domain_added_exchange.yml

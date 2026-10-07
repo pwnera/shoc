@@ -13,6 +13,8 @@
 # activity name.
 source: entra
 ocsf_version: "1.3.0"
+# The ATT&CK platforms whose techniques these events can show (DET-2).
+attack_platforms: [Identity Provider]
 
 # A directory change's old and new values, by name, on the first target that
 # has any: `unmapped.modified.Role_TemplateId.newValue` (RFC 0023). Graph

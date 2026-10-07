@@ -9,7 +9,7 @@ description: >
   each time it asks for a token.
 status: stable
 date: 2026-09-24
-modified: 2026-10-03
+modified: 2026-10-07
 severity: high
 confidence: 0.6
 attack: [T1550.001, T1528]
@@ -44,6 +44,13 @@ detection:
       - /auth/script.send_mail
   condition: selection
   timeframe: 15m
+# A person grants the same client again and again (every re-consent, every
+# new device); the first grant of a client by a user is the event. While the
+# 30 days are learnt every grant fires, as it did before the baseline.
+baseline:
+  first_seen: [actor.user.name, resource.uid]
+  lookback: 30d
+  while_learning: fire
 entity: actor.user.name
 fields: [actor.user.name, api.operation, resource.uid, unmapped.params.scope]
 sources:

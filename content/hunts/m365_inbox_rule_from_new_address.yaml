@@ -33,7 +33,7 @@ sources:
     title: M365 Exchange Inbox Phishing Evasion Rule Created
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_new_inbox_rule_delete_or_move
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Inbox Rules Creation Or Update Activity in O365
     url: https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/cloud/m365/audit/microsoft365_susp_inbox_rule_creation_or_update_activity.yml

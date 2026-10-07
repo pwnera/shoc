@@ -34,7 +34,7 @@ sources:
     title: Azure Storage Account Keys Accessed by Privileged User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/credential_access_azure_storage_account_keys_accessed
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Azure Storage Account Key Regenerated
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/credential_access_storage_account_key_regenerated

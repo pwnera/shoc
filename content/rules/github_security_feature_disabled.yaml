@@ -40,7 +40,7 @@ sources:
     title: GitHub Secret Scanning Disabled
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/defense_evasion_secret_scanning_disabled
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Github Secret Scanning Feature Disabled
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/application/github/audit/github_secret_scanning_feature_disabled.yml

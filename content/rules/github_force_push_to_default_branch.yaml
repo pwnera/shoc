@@ -33,7 +33,7 @@ sources:
     title: High Number of Protected Branch Force Pushes by User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/impact_high_number_of_protected_branch_force_pushes_by_user
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Panther
     title: GitHub Branch Protection Policy Override
     url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/github_rules/github_branch_policy_override.yml

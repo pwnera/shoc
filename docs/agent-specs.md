@@ -292,7 +292,9 @@ cannot force a re-investigation. It can stop the case being closed by ignoring i
 
 **When it wins on "that is normal here", it drafts the suppression itself**
 (fields, scope, TTL), because it is the role that knows exactly why the activity is
-benign. The Detection Engineer or a human merges it. When it wins on "this rule
+benign. It is kept only when the case closes benign and only for a rule and an
+entity the case raised, as the bare value, for at most a week; the operator's own
+account is never suppressed. When it wins on "this rule
 should never have fired", that is a detection defect and it says so instead; they
 are repaired in different places.
 
@@ -927,6 +929,9 @@ events behind the answer.
 **The exception report.** Sent **only when something needs a person**, and
 carrying **only decisions a human must make**: an L2 whose fallback ran and the
 narrower action was not enough, a credential only somebody with access can rotate.
+Dry run left on is an item, and so is a vendor shoc reads with no response
+credential stored, because while either holds no case is contained and only the
+operator can change it.
 **Silence when there is nothing is the product working.** Actions the system took
 on its own, coverage it lost, and everything that expired unanswered are worth
 knowing and are **not** exceptions; they go in the weekly.
@@ -1172,7 +1177,7 @@ own principal and its own list, never the caller's.
 | Investigator | `timeline.build`, `timeline.extend`, `events.query`, `finding.list`, `case.history`, `graph.neighbours`, `posture.exposure`, `identity.resolve`, `memory.search`, `suppression.list`, `intel.lookup`, `intel.reports`, `evidence.preserve` (L1), `platform.lookups`, `platform.lookup` | CTI, Surveyor |
 | Challenger | `events.query`, `memory.search`, `suppression.list`, `finding.list`, `case.history`, `graph.neighbours` | none |
 | IR Commander | `action.propose`, `action.list`, `posture.exposure`, `graph.neighbours`, `platform.lookups`, `platform.lookup` (no raw-log reads, RFC 0020) | Surveyor |
-| CTI | `intel.digest`, `intel.lookup`, `intel.list`, `intel.reports`, `indicator.exclude`, `events.query`, `posture.get`, `detection.backlog` | Surveyor |
+| CTI | `intel.lookup`, `intel.list`, `intel.reports`, `indicator.exclude`, `events.query`, `posture.get`, `detection.backlog` | Surveyor |
 | Hunter | `events.query`, `events.summarize`, `memory.search`, `finding.list`, `case.list`, `graph.neighbours`; on its backlog turn `hunt.merge`, `hunt.results`, `rule.list` | none |
 | Surveyor | `graph.refresh`, `graph.neighbours`, `events.query`, `snapshot.list`, `posture.*`, `asset.identify`, `identity.resolve`, `detection.backlog`, `platform.lookups`, `platform.lookup` | none |
 | Detection Engineer | `detection.merge`, `detection.revert`, `rule.test`, `rule.backtest`, `events.query`, `health.rules`, `finding.get`, `memory.search` | none |

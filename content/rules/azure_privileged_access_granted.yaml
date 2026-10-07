@@ -36,7 +36,7 @@ sources:
     title: Azure RBAC Built-In Administrator Roles Assigned
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/privilege_escalation_azure_rbac_administrator_roles_assigned
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Granting Of Permissions To An Account
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/activity_logs/azure_granting_permission_detection.yml

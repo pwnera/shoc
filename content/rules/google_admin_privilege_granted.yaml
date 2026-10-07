@@ -35,7 +35,7 @@ sources:
     title: Google Workspace Admin Role Assigned to a User or Group
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/persistence_google_workspace_admin_role_assigned_to_user
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Google Workspace User Granted Admin Privileges
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/gcp/gworkspace/admin/gcp_gworkspace_user_granted_admin_privileges.yml

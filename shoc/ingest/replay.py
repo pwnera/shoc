@@ -137,3 +137,36 @@ def shift_time(iso: str, seconds: float) -> str:
 def has_shapes(records: list[dict[str, Any]]) -> bool:
     """True when the file is a recorded scenario rather than a literal log export."""
     return any(REPEAT_KEY in r for r in records)
+
+
+def refuse_live(conn: Any, tenant_id: str, force: bool = False) -> None:
+    """Refuse to replay into a tenant that reads a live source, unless forced.
+
+    Lab data replayed into the main instance's tenant opened real cases there,
+    wrote a 30-day suppression and moved its metrics. The eval runner replays
+    each run into a tenant of its own (`evals/run.py`); `shoc replay` and
+    `scripts/replay_datasets.py` refuse a live one. A file source is a replay
+    itself.
+    """
+    from shoc.db.pool import fetch_all
+    from shoc.errors import ConfigError
+
+    if force:
+        return
+    live = [
+        str(r["source"])
+        for r in fetch_all(
+            conn,
+            """SELECT source FROM shoc.connector_config
+               WHERE tenant_id = %s AND enabled
+                 AND split_part(source, ':', 1) NOT IN ('slack', 'llm', 'file')
+               ORDER BY source""",
+            (tenant_id,),
+        )
+    ]
+    if live:
+        raise ConfigError(
+            f"tenant '{tenant_id}' reads live sources ({', '.join(live)}), so a replay "
+            "would open real cases there. Replay into another tenant (--tenant or "
+            "SHOC_TENANT), or pass --force."
+        )

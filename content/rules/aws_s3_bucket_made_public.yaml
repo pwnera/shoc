@@ -42,7 +42,7 @@ sources:
     title: AWS S3 Bucket Policy Added to Allow Public Access
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/exfiltration_s3_bucket_policy_added_for_public_access
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS S3 Bucket ACL Modified to Allow Public Access by New Identity
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/collection_s3_bucket_acl_public_access_new_identity

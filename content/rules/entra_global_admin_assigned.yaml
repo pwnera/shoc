@@ -43,7 +43,7 @@ sources:
     title: Entra ID Global Administrator Role Assigned
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_entra_id_global_administrator_role_assigned
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Entra ID Elevated Access to User Access Administrator
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/privilege_escalation_entra_id_elevate_to_user_administrator_access

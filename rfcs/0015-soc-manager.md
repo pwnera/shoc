@@ -120,9 +120,11 @@ body, citations, created_at, delivered_at, outcome, delivered_uid
 `kind` is one of `page`, `decision` or `digest`. `condition` is required for
 `page` and takes the three values the specs already name:
 `critical_severity`, `uncontainable_and_active` and `coverage_dark`, plus
-`deadline_expired` for `unattended.py`. A `page` told without one is stored as a
-`digest`. `group_key` is the case's entity, or `source:<name>` for a dark
-source. The same notice told twice on one day is one row.
+`deadline_expired` for `unattended.py`, `audit_broken` for the hourly audit
+check, and `malicious_uncontained` for a malicious case nothing has contained.
+A `page` told without one is stored as a `digest`. `group_key` is the case's
+entity, or `source:<name>` for a dark source. The same notice told twice on one
+day is one row.
 
 The senders change as follows:
 
@@ -139,6 +141,12 @@ The senders change as follows:
 - With no model configured, each new case is told to the Manager as a
   `critical_severity` page. Only a critical case passes the gate.
 - `unattended.py`'s `_page` writes a `page` notice with `deadline_expired`.
+- When a `malicious` verdict is recorded, and when a playbook run on the case
+  ends, code writes a `malicious_uncontained` notice if the case is high or
+  critical and no action other than `notify.*` has run on it for real (not in
+  dry run). It is written once per case, and its delivery is queued
+  `CONTAIN_WITHIN_MINUTES` (15) later, so what the policy already let run has
+  run first.
 - A pending L2 writes a `decision` notice that carries its fallback and window
   (RSP-7).
 - `_notify_slack` and `_notify_if_waiting` are deleted. A case no longer posts
@@ -157,6 +165,11 @@ decides whether the action it chased gets a second window.
    incident. For each group:
    - `critical_severity` counts only if the case is critical when the gate runs.
      Otherwise the notice becomes a digest.
+   - `malicious_uncontained` counts only if, when the gate runs, the case is
+     still malicious and high or critical, and no action other than `notify.*`
+     has run on it for real.
+     It has no one-hour test: Google Workspace events arrive up to three hours
+     late, and an investigation can take longer than an hour.
    - A group pages when nothing with the same key paged in the last
      `PAGE_AT_MOST_EVERY_HOURS` (24). Otherwise its notices are recorded as
      `merged` into the earlier page.

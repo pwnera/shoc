@@ -233,24 +233,28 @@ def test_an_injected_fact_brings_a_worked_case_back(conn, ctx, store, config, cl
 
 
 @pytest.mark.parametrize(
-    "kind, state, back",
+    "kind, state, by, back",
     [
-        ("aws.disable_access_key", "done", 1),
-        ("aws.disable_access_key", "failed", 1),
-        ("aws.disable_access_key", "approved", 0),
-        ("notify.slack", "done", 0),
+        ("aws.disable_access_key", "done", None, 1),
+        ("aws.disable_access_key", "failed", None, 1),
+        ("aws.disable_access_key", "approved", None, 0),
+        ("aws.disable_access_key", "rejected", "human:alice", 1),
+        ("aws.disable_access_key", "rejected", "unattended", 0),
+        ("notify.slack", "done", None, 0),
     ],
 )
 def test_a_finished_action_brings_a_worked_case_back(
-    conn, ctx, store, config, clean, kind, state, back
+    conn, ctx, store, config, clean, kind, state, by, back
 ):
-    """A containment that ended is news to the crew; a page it sent is not (AGT-12)."""
+    """A containment that ended or a person turned down is news to the crew; a page it
+    sent is not, and neither is a timeout it was already told about (AGT-12)."""
     case_uid = _worked_case(conn, config, store)
     execute(
         conn,
-        """INSERT INTO shoc.actions (action_uid, tenant_id, case_uid, type, target, state)
-           VALUES (%s, %s, %s, %s, 'AKIAIOSFODNN7EXAMPLE', %s)""",
-        (f"ACT-{kind}-{state}", config.tenant_id, case_uid, kind, state),
+        """INSERT INTO shoc.actions
+             (action_uid, tenant_id, case_uid, type, target, state, approved_by)
+           VALUES (%s, %s, %s, %s, 'AKIAIOSFODNN7EXAMPLE', %s, %s)""",
+        (f"ACT-{kind}-{state}-{by}", config.tenant_id, case_uid, kind, state, by),
     )
     assert f"queued {back}" in worker._sweep_cases(ctx)
 

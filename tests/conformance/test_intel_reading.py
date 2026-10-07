@@ -582,3 +582,56 @@ def test_a_discarded_report_lists_nothing(ctx, config, clean, model):
     model["keep"] = False
     out = call("intel.digest", ctx, {"text": REPORT})
     assert out.data.indicators == [] and not out.data.kept
+
+
+def test_a_report_is_read_once_unless_a_person_asks_again(ctx, config, clean, monkeypatch):
+    from dataclasses import replace
+
+    from shoc.agents import llm
+
+    client = ScriptedClient(replies={"Digest this threat report": json.dumps(DIGEST)})
+    monkeypatch.setattr(llm, "from_config", lambda *a, **k: client)
+    agent = replace(ctx, caller=replace(ctx.caller, kind="agent", id="CTI"))
+    first = call("intel.digest", agent, {"text": REPORT})
+    again = call("intel.digest", agent, {"text": REPORT})
+    assert again.data.report_uid == first.data.report_uid and "Already read" in again.summary
+    assert len(client.calls) == 1, "a second read only spent the model and queued hunts twice"
+    call("intel.digest", ctx, {"text": REPORT})
+    assert len(client.calls) == 2, "a person may ask for a re-read"
+
+
+def test_a_read_that_fails_gives_its_claim_back(ctx, config, clean, monkeypatch):
+    from shoc.agents import llm
+
+    class Broken(ScriptedClient):
+        def complete(self, *a, **k):
+            raise RuntimeError("the model is down")
+
+    monkeypatch.setattr(llm, "from_config", lambda *a, **k: Broken())
+    with pytest.raises(RuntimeError):
+        call("intel.digest", ctx, {"text": REPORT})
+    rows = fetch_all(
+        ctx.db, "SELECT 1 FROM shoc.intel_reports WHERE tenant_id = %s", (config.tenant_id,)
+    )
+    assert rows == [], "the next poll reads it again"
+
+
+def test_a_read_queues_three_hunts_and_none_for_a_value_it_stored(ctx, config, clean, model):
+    model["suggested_hunts"] = [
+        {"title": t, "hypothesis": t, "attack": []}
+        for t in (
+            "Search proxy logs for 203.0.113.55",
+            "OAuth consents granted to a new app within an hour of a link click",
+            "Mail rules created right after a sign-in from a new country",
+            "Admin role granted outside working hours",
+            "A new device enrolled for an admin from a new address",
+        )
+    ]
+    call("intel.digest", ctx, {"text": REPORT})
+    backlog = fetch_all(
+        ctx.db, "SELECT title FROM shoc.hunt_backlog WHERE tenant_id = %s", (config.tenant_id,)
+    )
+    titles = {b["title"] for b in backlog}
+    assert len(titles) == 3 and not any("203.0.113.55" in t for t in titles), (
+        "the retro-hunt looks for a stored value; the backlog is for behaviour"
+    )

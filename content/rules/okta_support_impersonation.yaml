@@ -24,4 +24,4 @@ sources:
     title: Okta User Session Impersonation
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_user_impersonation_access
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

@@ -3,6 +3,8 @@ source: wazuh
 ocsf_version: "1.3.0"
 # The rule logsources this source answers to (ING-4).
 logsource: [edr, edr/alerts]
+# The ATT&CK platforms whose techniques these events can show (DET-2).
+attack_platforms: [Windows, macOS, Linux]
 
 constants:
   category_uid: 2

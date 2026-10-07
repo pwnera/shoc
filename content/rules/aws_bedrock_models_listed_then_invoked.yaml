@@ -40,7 +40,7 @@ sources:
     title: AWS Bedrock Foundation Model Enumeration Followed by Invocation via Long-Term Key
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/discovery_bedrock_model_recon_and_invocation_via_long_term_key
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sysdig
     title: "LLMjacking: Stolen Cloud Credentials Used in New AI Attack"
     url: https://www.sysdig.com/blog/llmjacking-stolen-cloud-credentials-used-in-new-ai-attack

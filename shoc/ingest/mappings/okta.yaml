@@ -7,6 +7,8 @@
 # Okta's own threat detections are Detection Finding (2004).
 source: okta
 ocsf_version: "1.3.0"
+# The ATT&CK platforms whose techniques these events can show (DET-2).
+attack_platforms: [Identity Provider]
 
 constants:
   category_uid: 3

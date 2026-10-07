@@ -23,4 +23,4 @@ sources:
     title: Attempted Bypass of Okta MFA
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_attempted_bypass_of_okta_mfa
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

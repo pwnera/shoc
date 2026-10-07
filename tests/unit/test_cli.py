@@ -104,6 +104,7 @@ def test_the_process_commands_exist():
         ["init-config"],
         ["new", "rule", "x"],
         ["replay", "okta", "f.json"],
+        ["replay", "--scenario", "leaked_aws_key", "--force"],
     ):
         assert parser.parse_args(words).func is not None
 

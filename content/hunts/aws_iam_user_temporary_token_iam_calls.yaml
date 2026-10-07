@@ -31,4 +31,4 @@ sources:
     title: AWS IAM API Calls via Temporary Session Tokens
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_iam_api_calls_via_user_session_token
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

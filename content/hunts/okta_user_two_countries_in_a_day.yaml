@@ -43,7 +43,7 @@ sources:
     title: Okta User Sessions Started from Different Geolocations
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/initial_access_okta_user_sessions_started_from_different_geolocations
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic hunting
     title: Successful Impossible Travel Sign-On Events
     url: https://github.com/elastic/detection-rules/blob/main/hunting/okta/queries/initial_access_impossible_travel_sign_on.toml

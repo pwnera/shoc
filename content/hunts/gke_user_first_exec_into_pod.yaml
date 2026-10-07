@@ -33,4 +33,4 @@ sources:
     title: GKE User Exec into Pod
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/execution_gcp_gke_user_exec_into_pod
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

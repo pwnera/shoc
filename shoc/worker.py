@@ -363,7 +363,7 @@ def _queue_investigations(ctx: Context, case_uids: list[str], attempt: str = "op
 # What makes an open case worth another look. A case used to be finished the
 # moment one token had been spent on it — `tokens_used = 0` is true exactly once
 # — so a case that gained ten new findings, or that a human posted a fact into,
-# or whose containment has since completed, was never returned to. Nobody
+# or whose containment has since completed or been turned down, was never returned to. Nobody
 # watches this tool most days: if the crew does not go back on its own, nothing
 # does (017).
 NEEDS_ATTENTION = """
@@ -380,7 +380,8 @@ NEEDS_ATTENTION = """
     OR EXISTS (
         SELECT 1 FROM shoc.actions a
         WHERE a.tenant_id = c.tenant_id AND a.case_uid = c.case_uid
-          AND a.state IN ('done', 'failed', 'rolled_back')
+          AND (a.state IN ('done', 'failed', 'rolled_back')
+               OR (a.state = 'rejected' AND a.approved_by LIKE 'human:%%'))
           AND a.type NOT LIKE 'notify.%%'
           AND a.updated_at > c.worked_at)
 """

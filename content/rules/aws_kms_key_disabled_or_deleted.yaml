@@ -32,7 +32,7 @@ sources:
     title: AWS KMS Imported Key Material Deleted
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_kms_imported_key_material_deleted
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS KMS Key Policy Updated via PutKeyPolicy
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_kms_key_policy_put

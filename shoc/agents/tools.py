@@ -37,9 +37,11 @@ from shoc.agents.llm import ToolCall, ToolSpec
 
 # The writes a role's spec names (docs/agent-specs.md, tool access matrix). A
 # role is offered any read on its list and, of the rest, only these.
+# CTI writes nothing when it answers: a URL in a case's logs is the attacker's
+# to choose, and reading it from the case stored its values as indicators. A
+# report reaches CTI's reading through a feed, a person, or `queue_read` (DET-7).
 WRITES: dict[str, tuple[str, ...]] = {
     "IR Commander": ("action.propose",),
-    "CTI": ("intel.digest",),
     "Surveyor": ("graph.refresh",),
     "Detection Engineer": ("detection.merge", "detection.revert"),
     # Only on its backlog turn's list; triage is offered reads alone (RFC 0032).

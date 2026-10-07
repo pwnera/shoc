@@ -32,12 +32,12 @@ sources:
     title: Google Workspace MFA Enforcement Disabled For Organization
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/impact_google_workspace_mfa_enforcement_disabled
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Google Workspace 2SV Policy Disabled By User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/persistence_google_workspace_2sv_policy_disabled
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Google Workspace MFA Disabled
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/gcp/gworkspace/admin/gcp_gworkspace_mfa_disabled.yml

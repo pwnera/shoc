@@ -29,9 +29,9 @@ sources:
     title: AWS STS Role Assumption by User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_role_assumption_by_user
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: AWS STS Role Chaining
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_sts_role_chaining
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

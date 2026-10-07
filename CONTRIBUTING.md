@@ -48,7 +48,9 @@ python -m scripts.check_dependency_budget && python -m scripts.check_licenses
    Beyond plain matches a rule can count distinct values (`count_distinct`),
    fire on a second event after a first by the same key (`sequence`), compare
    two fields (`|fieldref`), test a network (`|cidr`), fire on a tuple first
-   seen in a lookback (`baseline.first_seen`) and key its finding on the first
+   seen in a lookback (`baseline.first_seen`; add `while_learning: fire` when
+   the rule must keep firing on every match until it has that much history)
+   and key its finding on the first
    of several fields (`entity: [a, b]`); RFC 0023 shows each in YAML. Write
    values as the vendor logs them: `contains` matches a backslash, `%` or `_`
    literally, and `true` on a `raw.` path needs no quotes. To read one item of
@@ -57,11 +59,16 @@ python -m scripts.check_dependency_budget && python -m scripts.check_licenses
    Set Sigma's `date` to the day you add it and `modified` to the day you
    last change it; the console lists rules by both.
    A rule or hunt taken from someone else's names them under `sources`, each
-   with `name`, `title`, `url` and, for Sigma, `author` and `license: DRL-1.1`
-   (that licence requires both). The finding and the rule page link to it.
-   Elastic's rules are under the Elastic License 2.0, which does not fit an
-   Apache 2.0 repository: take the idea, write the logic and the prose
-   yourself, and still cite it.
+   with `name`, `title`, `url`, `relation`, the source's `license` where it
+   has one and, for Sigma, `author` and `license: DRL-1.1` (that licence
+   requires both). The finding and the rule page link to it.
+   `relation: adapted` means the rule's logic or text came from the source,
+   and is allowed only under Apache-2.0, MIT, BSD-2-Clause, BSD-3-Clause or
+   DRL-1.1. Any other source, Elastic's rules (Elastic-2.0) and GPL code
+   included, is `relation: inspired`: take the idea, write the logic and the
+   prose yourself, and still cite it. `tests/unit/test_content_licences.py`
+   fails on an `adapted` source under any other licence and on a DRL-1.1
+   source without an author.
 2. Add `tests/fixtures/rules/<rule_id>/positive.json` and `negative.json` with
    raw source records. `_repeat: 40` expands a record, and timestamps are
    stamped by the test harness, so do not hard-code them.

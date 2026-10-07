@@ -443,7 +443,7 @@ def cmd_replay(args: argparse.Namespace, cfg: Config) -> int:
 
     from shoc.capabilities.registry import call
     from shoc.ingest.connectors.file import read_records
-    from shoc.ingest.replay import expand
+    from shoc.ingest.replay import expand, refuse_live
 
     ctx = Context(tenant_id=cfg.tenant_id, caller=CLI_CALLER, config=cfg)
     if args.scenario:
@@ -458,6 +458,7 @@ def cmd_replay(args: argparse.Namespace, cfg: Config) -> int:
         # A recorded scenario describes shapes (`_repeat`) and leaves timestamps
         # to the replay, so a relative detection window still sees the events.
         records = expand(records, args.source, spread_seconds=300)
+    refuse_live(ctx.db, ctx.tenant_id, args.force)
     result = call("events.ingest", ctx, {"source": args.source, "records": records})
     _print(result, args.json)
     return 0
@@ -605,6 +606,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--as-recorded",
         action="store_true",
         help="Keep the file's own timestamps and ids instead of replaying it as if it were happening now",
+    )
+    p.add_argument(
+        "--force",
+        action="store_true",
+        help="Replay even into a tenant that reads live sources; its cases become real ones",
     )
     p.set_defaults(func=cmd_replay)
 

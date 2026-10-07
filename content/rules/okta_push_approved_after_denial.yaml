@@ -39,4 +39,4 @@ sources:
     title: Potentially Successful Okta MFA Bombing via Push Notifications
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_potentially_successful_okta_bombing_via_push_notifications
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired

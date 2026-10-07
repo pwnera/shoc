@@ -27,7 +27,7 @@ sources:
     title: New GitHub Personal Access Token (PAT) Added
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/persistence_new_pat_created
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: GitHub
     title: Audit log events for your organization
     url: https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization

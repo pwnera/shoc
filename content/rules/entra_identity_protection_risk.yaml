@@ -38,12 +38,12 @@ sources:
     title: Entra ID High Risk Sign-in
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_high_risk_signin
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Entra ID Protection Admin Confirmed Compromise
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_protection_confirmed_compromise
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Entra ID High Risk User Sign-in Heuristic
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_risky_user_or_compromised_sign_in

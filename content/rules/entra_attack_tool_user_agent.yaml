@@ -32,17 +32,17 @@ sources:
     title: Entra ID Sign-in BloodHound Suite User-Agent Detected
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/discovery_bloodhound_user_agents_detected
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Entra ID Kali365 Default User-Agent Detected
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/initial_access_entra_id_kali365_user_agent
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Elastic
     title: Entra ID Sign-in TeamFiltration User-Agent Detected
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/discovery_entra_id_teamfiltration_user_agents_detected
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: Discovery Using AzureHound
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_ad_azurehound_discovery.yml

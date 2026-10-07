@@ -33,7 +33,7 @@ sources:
     title: M365 Identity OAuth Illicit Consent Grant by Rare Client and User
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/initial_access_identity_illicit_consent_grant_via_registered_application
     license: Elastic-2.0
-    relation: adapted
+    relation: inspired
   - name: Sigma
     title: End User Consent
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_app_end_user_consent.yml

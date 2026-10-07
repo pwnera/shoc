@@ -4,6 +4,8 @@
 # Webhook deliveries arrive already shaped as audit-log records (connectors/github.py).
 source: github
 ocsf_version: "1.3.0"
+# The ATT&CK platforms whose techniques these events can show (DET-2).
+attack_platforms: [SaaS]
 # An organisation with SAML single sign-on names the IdP login of each member
 # who acted (RFC 0027).
 login: unmapped.external_identity_nameid

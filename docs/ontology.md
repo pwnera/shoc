@@ -5,7 +5,7 @@ where it lives, its states, and what it connects to. Names match the code. When
 another document uses a term differently, this file and the schema win.
 
 Every table below carries `tenant_id`, and row-level security scopes it
-(migrations 007, 009 and 026): a session that has not set `shoc.tenant_id` sees none of it. Schema as of migration 046.
+(migrations 007, 009 and 026): a session that has not set `shoc.tenant_id` sees none of it. Schema as of migration 049.
 
 ## The main path
 
@@ -119,7 +119,7 @@ log.
 | Term | Lives in | Meaning | Values |
 |---|---|---|---|
 | Operator | a `human` principal | The company's one technical person. Not a security engineer, does not open shoc most days. Nothing may wait on them arriving (D37). Only the Manager talks to them. | |
-| Notice | `shoc.notices` | Something for the operator, grouped so one incident sends one message. | kind: `page`, `decision`, `digest`; page condition: `critical_severity`, `uncontainable_and_active`, `coverage_dark`, `deadline_expired`, `audit_broken` |
+| Notice | `shoc.notices` | Something for the operator, grouped so one incident sends one message. | kind: `page`, `decision`, `digest`; page condition: `critical_severity`, `uncontainable_and_active`, `coverage_dark`, `deadline_expired`, `audit_broken`, `malicious_uncontained` |
 | Report | `shoc.reports` | A written summary for a period. | `shift`, `weekly`, `exec`, `exception` |
 | Stream event | `shoc.stream_events`, `shoc.webhooks` | A change pushed to subscribers over SSE or a webhook. | |
 

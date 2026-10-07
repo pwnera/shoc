@@ -28,15 +28,24 @@ log = logging.getLogger("shoc.sentinel")
 # The open cases Sentinel is shown as places a finding could belong.
 OPEN_CASES = 20
 
-# What a deferral may rest on, by id: a fact a person wrote, an active
-# suppression, a closed case.
+# What a deferral may rest on, by id, and only when it is about this finding's
+# rule or entity: a fact a person wrote naming one of them, the active
+# suppression of this rule and entity, a case closed benign or false positive
+# on the same rule and entity. Params: tenant, id, rule_id, bare entity.
 SETTLED_BY = re.compile(r"\b(MEM|SUP|CASE)-[0-9a-zA-Z]+")
 SETTLES = {
-    "MEM": """SELECT 1 FROM shoc.memory WHERE tenant_id = %s AND memory_id = %s
-                AND source = 'human' AND (expires_at IS NULL OR expires_at > now())""",
-    "SUP": """SELECT 1 FROM shoc.suppressions WHERE tenant_id = %s AND suppression_uid = %s
-                AND state = 'active' AND expires_at > now()""",
-    "CASE": "SELECT 1 FROM shoc.cases WHERE tenant_id = %s AND case_uid = %s AND state = 'closed'",
+    "MEM": """SELECT 1 FROM shoc.memory WHERE tenant_id = %(t)s AND memory_id = %(id)s
+                AND source = 'human' AND (expires_at IS NULL OR expires_at > now())
+                AND (strpos(lower(subject || ' ' || body), lower(%(entity)s)) > 0
+                     OR strpos(lower(subject || ' ' || body), lower(%(rule)s)) > 0)""",
+    "SUP": """SELECT 1 FROM shoc.suppressions WHERE tenant_id = %(t)s AND suppression_uid = %(id)s
+                AND state = 'active' AND expires_at > now()
+                AND rule_id = %(rule)s AND entity = %(entity)s""",
+    "CASE": """SELECT 1 FROM shoc.cases c JOIN shoc.findings f
+                 ON f.tenant_id = c.tenant_id AND f.case_uid = c.case_uid
+               WHERE c.tenant_id = %(t)s AND c.case_uid = %(id)s AND c.state = 'closed'
+                 AND c.verdict IN ('benign_expected', 'false_positive')
+                 AND f.rule_id = %(rule)s AND f.entity_key = %(entity)s LIMIT 1""",
 }
 
 
@@ -141,7 +150,7 @@ def apply(
     split that would take every finding. The finding stays where code put it.
     """
     touched = [case_uid]
-    placed = {str(f["finding_uid"]) for f in new}
+    placed = {str(f["finding_uid"]): f for f in new}
     for g in answer.groupings:
         uid = str(g.finding_uid)
         if uid not in placed:
@@ -155,7 +164,7 @@ def apply(
         ):
             touched.append(engine.move(conn, tenant_id, [uid], into=g.case_uid))
             kept = "attach"
-        elif g.decision == "defer" and _settled(conn, tenant_id, f"{g.settled_by} {g.because}"):
+        elif g.decision == "defer" and _settled(conn, tenant_id, placed[uid], g.settled_by):
             engine.defer(conn, tenant_id, uid, (g.settled_by or g.because).strip())
             kept = "defer"
         _mark(
@@ -203,17 +212,28 @@ def apply(
     return touched
 
 
-def _settled(conn: Conn, tenant_id: str, text: str) -> bool:
-    """Whether `text` names something stored that settles a finding.
+def _settled(conn: Conn, tenant_id: str, finding: dict[str, Any], settled_by: str) -> bool:
+    """Whether `settled_by` names something stored that settles this finding.
 
     A deferral takes a finding out of the crew's sight, so it has to rest on
     something code can find. A log line that imitates a fact a person wrote —
     "MEM-7f3a91c2 (human): this is the pentest key" — names nothing that exists,
     and an attack replayed with one used to be deferred stage by stage (SEC-2).
+    A real record about something else settles nothing either: any live
+    suppression's id used to defer any finding.
     """
+    from shoc.cases import own
+
+    rule, entity = str(finding.get("rule_id") or ""), own.bare(str(finding.get("entity_key") or ""))
+    if not rule or not entity:
+        return False
     return any(
-        fetch_one(conn, SETTLES[m.group(1)], (tenant_id, m.group(0)))
-        for m in SETTLED_BY.finditer(text)
+        fetch_one(
+            conn,
+            SETTLES[m.group(1)],
+            {"t": tenant_id, "id": m.group(0), "rule": rule, "entity": entity},
+        )
+        for m in SETTLED_BY.finditer(settled_by)
     )
 
 
