@@ -15,7 +15,7 @@ from typing import Any
 import httpx
 
 from shoc.errors import ConfigError
-from shoc.ingest.connectors.base import FetchResult, client, resume, since_default, utc
+from shoc.ingest.connectors.base import FetchResult, client, since_default, utc
 
 # The fields a rule or the crew reads; the rest stay in SentinelOne.
 ALERTS = """query($after: String, $first: Int, $filters: [FilterInput!], $sort: SortInput) {
@@ -82,8 +82,7 @@ def _threats(
         # hold `since` until the pages run out.
         held = {"since": since, "newest": newest, "page_cursor": page_cursor}
         return FetchResult(records=records, cursor=held, more=True)
-    # The run loop moves only a top-level `since`; this one moves itself.
-    return FetchResult(records=records, cursor={"since": resume(since, newest)}, more=False)
+    return FetchResult(records=records, cursor={"since": newest}, more=False)
 
 
 def _alerts(
@@ -122,7 +121,7 @@ def _alerts(
     if info.get("hasNextPage") and info.get("endCursor"):
         held = {"since": since, "newest": newest, "after": info["endCursor"]}
         return FetchResult(records=records, cursor=held, more=True)
-    return FetchResult(records=records, cursor={"since": resume(since, newest)}, more=False)
+    return FetchResult(records=records, cursor={"since": newest}, more=False)
 
 
 CONNECTOR = SentinelOneConnector()

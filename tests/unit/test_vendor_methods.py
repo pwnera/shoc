@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -80,7 +80,8 @@ def test_entra_reads_the_sign_ins_graph_v1_leaves_out(monkeypatch):
     )
 
 
-def test_workspace_rereads_the_hours_google_delivers_token_events_late(monkeypatch):
+def test_workspace_waits_out_the_lag_google_documents_for_each_application(monkeypatch):
+    """Tokens up to a few hours, logins a couple of minutes (D154)."""
     monkeypatch.setattr("shoc.ingest.connectors.google_workspace.access_token", lambda *_: "tok")
     seen = transport(monkeypatch, [{"json": {}}, {"json": {}}])
     connector = connectors.get("google_workspace")
@@ -88,9 +89,11 @@ def test_workspace_rereads_the_hours_google_delivers_token_events_late(monkeypat
         connector.fetch(
             {"application": application, "admin_email": "a@acme.example"}, {}, {"since": SINCE}, 10
         )
-    token_start, login_start = (datetime.fromisoformat(query(r)["startTime"]) for r in seen)
-    assert token_start == datetime.fromisoformat(SINCE) - timedelta(hours=3)
-    assert login_start == datetime.fromisoformat(SINCE)
+    token, login = (query(r) for r in seen)
+    assert token["startTime"] == login["startTime"] == SINCE, "no overlap"
+    behind = [datetime.now(UTC) - datetime.fromisoformat(q["endTime"]) for q in (token, login)]
+    assert timedelta(hours=3) <= behind[0] < timedelta(hours=3, minutes=1)
+    assert timedelta(minutes=5) <= behind[1] < timedelta(minutes=6)
 
 
 def test_anthropic_reads_the_activity_feed_only_when_it_is_on(monkeypatch):

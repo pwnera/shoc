@@ -7,20 +7,23 @@ redelivered in between loads once, by its insertId.
 
 Without a subscription it falls back to Cloud Logging `entries.list`, which
 needs no setup but which Google caps at 60 calls a minute and says is not meant
-for high-volume reads. Admin Activity audit logs are on in every project; Data
-Access logs are opt-in there and expensive here, so the default filter leaves
-them out.
+for high-volume reads. Google puts Logging's ingestion delay at up to 10
+minutes, so that read stops 10 minutes before now (D154); a subscription hands
+over each entry once and needs no such bound. Admin Activity audit logs are on
+in every project; Data Access logs are opt-in there and expensive here, so the
+default filter leaves them out.
 """
 
 from __future__ import annotations
 
 import base64
 import json
+from datetime import timedelta
 from typing import Any
 
 from shoc.errors import ConfigError
 from shoc.ingest.connectors import googleauth
-from shoc.ingest.connectors.base import FetchResult, client, since_default
+from shoc.ingest.connectors.base import FetchResult, client, settled, since_default, utc
 
 ENTRIES = "https://logging.googleapis.com/v2/entries:list"
 SCOPE = "https://www.googleapis.com/auth/logging.read"
@@ -28,6 +31,7 @@ PUBSUB = "https://pubsub.googleapis.com/v1"
 PUBSUB_SCOPE = "https://www.googleapis.com/auth/pubsub"
 ACK_DEADLINE = 600  # the most Pub/Sub allows; longer than a poll interval
 ADMIN_ACTIVITY = 'logName:"cloudaudit.googleapis.com%2Factivity"'
+LAG = timedelta(minutes=10)
 
 
 class GCPAuditConnector:
@@ -45,10 +49,13 @@ class GCPAuditConnector:
             raise ConfigError("gcp_audit: settings need project_id (or a list of projects)")
         token = googleauth.access_token(secret, SCOPE)
         since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        until = settled(cursor, LAG)
+        if utc(since) >= utc(until):
+            return FetchResult(cursor={"since": since})
         log_filter = settings.get("filter", ADMIN_ACTIVITY)
         body: dict[str, Any] = {
             "resourceNames": [f"projects/{p}" for p in projects],
-            "filter": f'{log_filter} AND timestamp > "{since}"',
+            "filter": f'{log_filter} AND timestamp > "{since}" AND timestamp <= "{until}"',
             "orderBy": "timestamp asc",
             "pageSize": min(int(limit), 1000),
         }
@@ -67,7 +74,7 @@ class GCPAuditConnector:
         if page_token:
             # A pageToken is only valid for the filter it came from, so the
             # timestamp bound stays put until the walk is done.
-            held = {"since": since, "newest": newest, "page_token": page_token}
+            held = {"since": since, "until": until, "newest": newest, "page_token": page_token}
             return FetchResult(records=records, cursor=held, more=True)
         return FetchResult(records=records, cursor={"since": newest}, more=False)
 

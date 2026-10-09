@@ -24,11 +24,11 @@ from shoc.store.base import EventStore
 
 DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 
-# How far before the newest event seen the next window starts. CloudTrail and
-# Entra sign-ins, among others, deliver some events minutes after their
-# timestamp, and a window that resumed exactly at the newest event would never
-# read them. What the overlap reads again is dropped before the store, by
-# `stored_key`, so a page read twice never reaches a warehouse (D150).
+# How far back a listing of files named by time looks again: a file can land
+# behind the last key read, and an hourly blob keeps growing after its hour.
+# The keys and bytes already read are kept, so no event is read twice. A poll by
+# event time has no overlap: it starts at the newest event the last one read,
+# and reads up to the vendor's documented lag behind now, if it has one (D154).
 OVERLAP = timedelta(minutes=15)
 
 
@@ -270,20 +270,18 @@ def client(headers: dict[str, str] | None = None) -> httpx.Client:
 
 
 def since_default(cursor: dict[str, Any], hours: int = 24) -> str:
-    """Where to resume: the stored cursor, else a bounded backfill window."""
+    """Where a poll starts: the newest event time the last one read, or on the
+    first poll, which has none, a bounded backfill window (D154)."""
     if cursor.get("since"):
         return str(cursor["since"])
     return (datetime.now(UTC) - timedelta(hours=hours)).isoformat()
 
 
-def resume(start: str, newest: str) -> str:
-    """Where the next window starts once a walk is complete: OVERLAP before
-    `newest`, and never before `start`, so a quiet source does not drift back."""
-    try:
-        back = (utc(newest) - OVERLAP).isoformat()
-        return max(back, start, key=utc) if start else back
-    except ValueError:
-        return newest
+def settled(cursor: dict[str, Any], lag: timedelta) -> str:
+    """Where a poll stops: the vendor's documented delivery lag behind now, so
+    an event it delivers late is still after the next poll's start (D154). Held
+    while a walk pages, since a page token belongs to the window it came from."""
+    return str(cursor.get("until") or (datetime.now(UTC) - lag).isoformat())
 
 
 def utc(iso: str) -> datetime:
@@ -332,10 +330,7 @@ class Streams:
                 state[name] = {**mine, "more": False}
                 continue
             records += page.records
-            nxt = page.cursor
-            if not page.more and nxt.get("since"):
-                nxt = {**nxt, "since": resume(str(mine.get("since") or ""), str(nxt["since"]))}
-            state[name] = {**nxt, "more": page.more}
+            state[name] = {**page.cursor, "more": page.more}
         more = any(state[n].get("more") for n in todo)
         return FetchResult(
             records=records, cursor={"streams": state}, more=more, error="; ".join(failed)
@@ -439,10 +434,10 @@ def run(
 ) -> RunStats:
     """Fetch, map to OCSF, load in batches, then persist the cursor.
 
-    `events_seen` counts rows the store did not already hold, so the overlap a
-    connector reads again is not counted twice. A row the last run already read
-    and stored is dropped before the store: a quiet source reads the same page
-    every poll, and each load of it was three statements on a warehouse (D150).
+    `events_seen` counts rows the store did not already hold. A row the last
+    run already read and stored is dropped before the store: a filter that
+    includes its start reads the newest event again every poll, and a load of it
+    was three statements on a warehouse (D150, D154).
     """
     from shoc.ingest.connectors import get
 
@@ -494,11 +489,6 @@ def run(
             stats.cursor = page.cursor
             if page.error:
                 stats.error = page.error
-            if not page.more and page.cursor.get("since"):
-                stats.cursor = {
-                    **page.cursor,
-                    "since": resume(str(state.get("since") or ""), str(page.cursor["since"])),
-                }
             # An empty time window is not the end of a backfill (Tailscale,
             # M365): stop on an empty page only when the cursor did not move.
             if not page.more or (not page.records and page.cursor == before):

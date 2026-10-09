@@ -14,7 +14,7 @@ from shoc.actions import get
 from shoc.actions.base import Credentials
 from shoc.errors import ConfigError, ValidationError
 from shoc.ingest import connectors
-from shoc.ingest.connectors import base, tailscale
+from shoc.ingest.connectors import tailscale
 from shoc.ingest.connectors.stripe import PREVIEW
 from tests.unit.test_connectors import SINCE, query, transport
 
@@ -214,7 +214,7 @@ def test_openai_reads_the_audit_log_and_settled_hours_of_key_usage(monkeypatch):
     entry, spent = page.records
     assert entry["details"] == {"id": "key_new"} and entry["key_id"] == "key_new"
     newest = datetime.fromtimestamp(1790000000, tz=UTC).isoformat()
-    assert page.cursor["audit"] == {"since": base.resume(SINCE, newest)}
+    assert page.cursor["audit"] == {"since": newest}
 
     assert usage.url.path == "/v1/organization/usage/completions"
     assert usage.url.params.get_list("group_by[]") == ["api_key_id", "project_id"]

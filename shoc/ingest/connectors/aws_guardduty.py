@@ -8,7 +8,7 @@ from typing import Any
 
 from shoc.errors import ConfigError
 from shoc.ingest.connectors import awssig
-from shoc.ingest.connectors.base import FetchResult, client, resume, since_default
+from shoc.ingest.connectors.base import FetchResult, client, since_default
 
 SERVICE = "guardduty"
 
@@ -49,7 +49,7 @@ class AwsGuardDutyConnector:
         """One page of findings per detector, each detector with its own window.
 
         A detector's `since` holds while its NextToken is followed, and moves to
-        the newest `updatedAt` read (less the overlap) once its pages run out.
+        the newest `updatedAt` read once its pages run out.
         """
         region = settings.get("region") or "us-east-1"
         start = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
@@ -85,7 +85,7 @@ class AwsGuardDutyConnector:
                 out[detector_id] = {"since": since, "newest": newest, "next_token": token}
                 more = True
             else:
-                out[detector_id] = {"since": resume(since, newest)}
+                out[detector_id] = {"since": newest}
         return FetchResult(records=records, cursor={"detectors": out}, more=more)
 
 

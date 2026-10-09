@@ -15,7 +15,7 @@ from typing import Any
 import httpx
 
 from shoc.errors import ConfigError
-from shoc.ingest.connectors.base import FetchResult, client, resume, since_default, utc
+from shoc.ingest.connectors.base import FetchResult, client, since_default, utc
 
 API = "https://api.stripe.com"
 PREVIEW = "2026-07-29.preview"
@@ -84,8 +84,7 @@ def _events(http: httpx.Client, cursor: dict[str, Any], size: int, hours: int) -
     if body.get("has_more") and records:
         held = {"since": since, "newest": newest, "after": records[-1]["id"]}
         return FetchResult(records=records, cursor=held, more=True)
-    # The run loop moves only a top-level `since`; this one moves itself.
-    return FetchResult(records=records, cursor={"since": resume(since, newest)}, more=False)
+    return FetchResult(records=records, cursor={"since": newest}, more=False)
 
 
 CONNECTOR = StripeConnector()

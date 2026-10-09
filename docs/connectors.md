@@ -134,13 +134,22 @@ retention drops them.
 
 Cursors survive restarts: each connector stores where it got to in
 `shoc.connector_state`. While a connector follows a provider's page token, its
-time filter stays where the walk began, because the token belongs to that
-filter. Once the pages run out, the next window starts 15 minutes before the
-newest event read, so an event the provider delivers late, with an earlier
-timestamp, is still picked up. Each run keeps a digest of the `event_uid` and
-time of every row it read and stored, and the next run sends the store only the
-rows it lacks, so a quiet source that reads the same page every poll costs a
-warehouse nothing (D150). `events_seen` counts only the rows that were new. GuardDuty keeps a window per detector. Microsoft 365
+time window stays where the walk began, because the token belongs to that
+window. Once the pages run out, the next poll starts at the newest event read,
+with no overlap. The first poll has no event to start from and reads
+`backfill_hours` back (24 by default).
+
+Where the vendor documents how late its events arrive, a poll stops that far
+behind now, so an event delivered late is still after the next poll's start:
+Google Workspace per application (5 minutes for admin, login and drive, 3 hours
+for OAuth tokens), CloudTrail `LookupEvents` 5 minutes, the Azure Activity Log
+20 minutes and Cloud Logging `entries.list` 10 minutes (D154). The other sources
+document no figure and read up to now, so an event one of them delivers after a
+newer one was read is never ingested. A filter that includes its start reads the
+newest event again; each run keeps a digest of the `event_uid` and time of every
+row it read and stored, and the next run sends the store only the rows it lacks,
+so that re-read costs a warehouse nothing (D150). `events_seen` counts only the
+rows that were new. GuardDuty keeps a window per detector. Microsoft 365
 lists content by when it became available rather than by when the activity
 happened, so its cursor follows availability, in windows of at most 24 hours
 and never more than 7 days back; content Microsoft publishes hours late is
@@ -347,7 +356,8 @@ pytest tests/unit/test_mappings_all.py -k fastly
 The run loop gives you cursors, batching, deduplication and health accounting;
 a connector only answers "what happened after this cursor?". Keep `since` where
 it was while a page token is in the cursor, and set it to the newest event time
-once the pages run out; the run loop applies the overlap.
+once the pages run out. If the vendor documents a delivery lag, end the window
+at `settled(cursor, LAG)` and keep `until` in the cursor while paging.
 
 A new platform also ships its own response actions under `shoc/actions/`, with
 `platforms` naming the product its rules carry; CI fails when a platform we

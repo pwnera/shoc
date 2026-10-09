@@ -15,7 +15,7 @@ import httpx
 
 from shoc.errors import ConfigError
 from shoc.ingest.connectors import llmusage
-from shoc.ingest.connectors.base import FetchResult, client, resume, since_default, utc
+from shoc.ingest.connectors.base import FetchResult, client, since_default, utc
 
 API = "https://api.openai.com/v1/organization"
 
@@ -74,8 +74,7 @@ def _audit(http: httpx.Client, cursor: dict[str, Any], size: int, hours: int) ->
     if body.get("has_more") and body.get("last_id"):
         held = {"since": since, "newest": newest, "after": body["last_id"]}
         return FetchResult(records=records, cursor=held, more=True)
-    # The run loop moves only a top-level `since`; this one moves itself.
-    return FetchResult(records=records, cursor={"since": resume(since, newest)}, more=False)
+    return FetchResult(records=records, cursor={"since": newest}, more=False)
 
 
 def _entry(entry: dict[str, Any]) -> dict[str, Any]:

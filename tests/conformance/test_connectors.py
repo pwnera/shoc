@@ -37,7 +37,7 @@ def test_a_second_run_resumes_and_loads_nothing_new(conn, store, config, clean):
 
 
 def test_events_read_again_are_not_counted_again(conn, store, config, clean):
-    # Timestamped records, as a pull connector's overlap would read them twice.
+    # Timestamped records, as a run that failed before its cursor moved reads them twice.
     recorded = {
         "path": str(ROOT / "tests" / "fixtures" / "mappings" / "aws_cloudtrail.json"),
         "mapping": "aws_cloudtrail",
@@ -51,12 +51,13 @@ def test_events_read_again_are_not_counted_again(conn, store, config, clean):
         "SELECT events_seen FROM shoc.connector_state WHERE tenant_id=%s AND source=%s",
         (config.tenant_id, "file"),
     )
-    assert row and row["events_seen"] == first.loaded, "an overlap re-read is not new traffic"
+    assert row and row["events_seen"] == first.loaded, "a re-read is not new traffic"
 
 
 def test_a_page_read_again_never_reaches_the_store(conn, store, config, clean, monkeypatch):
-    """A quiet source reads its overlap every poll; on a warehouse each load of it
-    was three statements (ING-1, ING-3, STO-3, D71, D150)."""
+    """A filter that includes its start reads the newest event again every poll;
+    on a warehouse each load of it was three statements (ING-1, ING-3, STO-3,
+    D71, D150, D154)."""
     from shoc.ingest import connectors
     from shoc.ingest.batch import read_unique
     from shoc.ingest.connectors import base

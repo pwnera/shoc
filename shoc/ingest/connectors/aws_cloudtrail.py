@@ -10,10 +10,13 @@ from typing import Any
 
 from shoc.errors import ConfigError
 from shoc.ingest.connectors import awssig, cloudtrail_s3
-from shoc.ingest.connectors.base import FetchResult, client, since_default
+from shoc.ingest.connectors.base import FetchResult, client, settled, since_default, utc
 
 SERVICE = "cloudtrail"
 TARGET = "com.amazonaws.cloudtrail.v20131101.CloudTrail_20131101.LookupEvents"
+# AWS: CloudTrail "typically delivers logs within an average of about 5 minutes"
+# of the call. A poll reads no closer to now than that (D154).
+LAG = dt.timedelta(minutes=5)
 
 
 def sigv4_headers(
@@ -55,8 +58,12 @@ class AwsCloudTrailConnector:
             return cloudtrail_s3.fetch(settings, secret, cursor, limit)
         region = settings.get("region") or "us-east-1"
         start = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        until = settled(cursor, LAG)
+        if utc(start) >= utc(until):
+            return FetchResult(cursor={"since": start})
         body_obj: dict[str, Any] = {
             "StartTime": _epoch(start),
+            "EndTime": _epoch(until),
             "MaxResults": min(int(limit), 50),
         }
         if cursor.get("next_token"):
@@ -86,9 +93,9 @@ class AwsCloudTrailConnector:
             newest = max(newest, str(record.get("eventTime") or start))
         next_token = payload.get("NextToken")
         if next_token:
-            # A NextToken belongs to the StartTime it was issued for: hold it
+            # A NextToken belongs to the window it was issued for: hold it
             # until the walk is done.
-            held = {"since": start, "newest": newest, "next_token": next_token}
+            held = {"since": start, "until": until, "newest": newest, "next_token": next_token}
             return FetchResult(records=records, cursor=held, more=True)
         return FetchResult(records=records, cursor={"since": newest}, more=False)
 

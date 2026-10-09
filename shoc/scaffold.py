@@ -85,7 +85,7 @@ class {klass}Connector:
         page = payload.get("next_page")
         if page and records:
             # A page token belongs to the filter it came from: hold `since` until
-            # the pages run out. The run loop re-reads an overlap after that.
+            # the pages run out. The next poll starts at the newest event read.
             held = {{"since": since, "newest": newest, "page": page}}
             return FetchResult(records=records, cursor=held, more=True)
         return FetchResult(records=records, cursor={{"since": newest}}, more=False)

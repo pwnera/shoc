@@ -4,9 +4,10 @@ Authentication is a signed JWT assertion from a service account with
 domain-wide delegation, so the connector impersonates an admin who is allowed to
 read the reports.
 
-Google delivers some applications late: OAuth token events can arrive a couple
-of hours after they happened. Each read starts that far behind the cursor for
-such an application, and what it reads again loads once.
+Google documents how late each application's events arrive ("Data retention
+and lag times"): a couple of minutes for admin, login and drive, up to a few
+hours for OAuth tokens. A read stops that far behind now, so an event Google
+delivers late is still after the cursor when the next read starts (D154).
 """
 
 from __future__ import annotations
@@ -16,12 +17,21 @@ from typing import Any
 
 from shoc.errors import ConfigError
 from shoc.ingest.connectors import googleauth
-from shoc.ingest.connectors.base import FetchResult, Streams, client, since_default, utc
+from shoc.ingest.connectors.base import FetchResult, Streams, client, settled, since_default, utc
 
 REPORTS = "https://admin.googleapis.com/admin/reports/v1/activity/users/all/applications"
 SCOPE = "https://www.googleapis.com/auth/admin.reports.audit.readonly"
-# Google's documented delivery lag, beyond the run loop's own overlap.
-LAG = {"token": timedelta(hours=3)}
+# Google's documented lag per application, rounded up: "couple of minutes",
+# "tens of minutes", "up to a couple of hours", "up to a few hours" (tokens).
+LAG = {
+    "admin": timedelta(minutes=5),
+    "login": timedelta(minutes=5),
+    "drive": timedelta(minutes=5),
+    "user_accounts": timedelta(hours=1),
+    "groups": timedelta(hours=2),
+    "calendar": timedelta(hours=2),
+    "token": timedelta(hours=3),
+}
 
 
 def access_token(secret: dict[str, Any], subject: str, client_id: str = "") -> str:
@@ -56,8 +66,12 @@ class GoogleWorkspaceConnector:
             secret, settings.get("admin_email", ""), str(settings.get("client_id") or "")
         )
         since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
-        start = (utc(since) - LAG.get(application, timedelta(0))).isoformat()
-        params: dict[str, Any] = {"maxResults": min(int(limit), 1000), "startTime": start}
+        params: dict[str, Any] = {"maxResults": min(int(limit), 1000), "startTime": since}
+        until = settled(cursor, LAG[application]) if application in LAG else ""
+        if until:
+            if utc(since) >= utc(until):
+                return FetchResult(cursor={"since": since})
+            params["endTime"] = until
         if cursor.get("page_token"):
             params["pageToken"] = cursor["page_token"]
         headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
@@ -69,7 +83,7 @@ class GoogleWorkspaceConnector:
         for record in records:
             record["_application"] = application
         # Reports answer newest first; carry the newest across the walk, and
-        # hold startTime while following its pageToken.
+        # hold the window while following its pageToken.
         newest = max(
             [str((r.get("id") or {}).get("time", "")) for r in records]
             + [str(cursor.get("newest") or since)]
@@ -77,6 +91,8 @@ class GoogleWorkspaceConnector:
         page_token = payload.get("nextPageToken")
         if page_token:
             held = {"since": since, "newest": newest, "page_token": page_token}
+            if until:
+                held["until"] = until
             return FetchResult(records=records, cursor=held, more=True)
         return FetchResult(records=records, cursor={"since": newest}, more=False)
 

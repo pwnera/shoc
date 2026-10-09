@@ -239,7 +239,9 @@ def test_azure_activity_filters_on_the_event_timestamp(monkeypatch):
     assert "/subscriptions/sub-1/providers/Microsoft.Insights/eventtypes/management/values" in str(
         seen[0].url
     )
-    assert query(seen[0])["$filter"] == "eventTimestamp ge '2026-09-20T09:00:00+00:00'"
+    assert query(seen[0])["$filter"].startswith(
+        "eventTimestamp ge '2026-09-20T09:00:00+00:00' and eventTimestamp le '"
+    ), "the window stops Microsoft's 20 minutes before now (D154)"
     assert result.cursor == {"since": "2026-09-20T10:00:00Z"}
 
 
@@ -368,18 +370,12 @@ def test_gitlab_falls_back_to_the_instance_endpoint_and_needs_a_token(monkeypatc
         connectors.get("gitlab").fetch({}, {}, {}, 10)
 
 
-# -- the run loop's overlap ------------------------------------------------
+# -- where the next poll starts ---------------------------------------------
 
 
-def test_resume_starts_the_next_window_an_overlap_before_the_newest_event():
-    assert base.resume("", "2026-09-20T10:00:00Z") == "2026-09-20T09:45:00+00:00"
-    assert base.resume("2026-09-20T09:50:00+00:00", "2026-09-20T10:00:00Z") == (
-        "2026-09-20T09:50:00+00:00"
-    ), "the window never moves back past where it already starts"
-    assert base.resume(SINCE, "not a time") == "not a time"
+def test_a_complete_walk_starts_the_next_poll_at_the_newest_event_read(monkeypatch):
+    """No overlap: the next poll asks only for what came after (D154)."""
 
-
-def test_run_rereads_an_overlap_once_a_walk_is_complete(monkeypatch):
     class Quiet:
         source = "okta"
 
@@ -388,9 +384,9 @@ def test_run_rereads_an_overlap_once_a_walk_is_complete(monkeypatch):
 
     monkeypatch.setattr(connectors, "get", lambda source: Quiet())
     first = base.run(None, None, "t1", "okta", {}, {}, cursor={}, persist=False)  # type: ignore[arg-type]
-    assert first.error is None and first.cursor == {"since": "2026-09-20T09:45:00+00:00"}
+    assert first.error is None and first.cursor == {"since": "2026-09-20T10:00:00Z"}
     again = base.run(None, None, "t1", "okta", {}, {}, cursor=first.cursor, persist=False)  # type: ignore[arg-type]
-    assert again.cursor == first.cursor, "a quiet source does not drift backwards"
+    assert again.cursor == first.cursor, "a quiet source stays where it is"
 
 
 def test_an_event_its_record_does_not_place_carries_its_source_account(monkeypatch):
@@ -452,15 +448,15 @@ def test_streams_read_every_stream_by_default_each_with_its_own_cursor():
     assert [r["id"] for r in first.records] == [1, 3] and first.more is True
     assert first.cursor["streams"] == {
         "admin": {"since": SINCE, "page_token": "p2", "more": True},
-        "login": {"since": "2026-09-20T10:15:00+00:00", "more": False},
-    }, "each stream resumes an overlap before its own newest event"
+        "login": {"since": "2026-09-20T10:30:00+00:00", "more": False},
+    }, "each stream starts its next poll at its own newest event"
 
     second = streams.fetch({}, {}, first.cursor, 1000)
     assert [name for name, _ in inner.asked] == ["admin", "login", "admin"], "only the one paging"
     assert inner.asked[2][1]["page_token"] == "p2"
     assert second.more is False
     assert second.cursor["streams"]["admin"] == {
-        "since": "2026-09-20T09:45:00+00:00",
+        "since": "2026-09-20T10:00:00+00:00",
         "more": False,
     }
 
@@ -543,8 +539,11 @@ def test_cloudtrail_holds_start_time_while_following_next_token(monkeypatch):
 
     second = connector.fetch({"region": "eu-west-1"}, AWS, first.cursor, 1000)
     one, two = (json.loads(r.content) for r in seen)
-    assert one == {"StartTime": datetime.fromisoformat(SINCE).timestamp(), "MaxResults": 50}
-    assert two == {**one, "NextToken": "n2"}
+    assert one.keys() == {"StartTime", "EndTime", "MaxResults"} and one["MaxResults"] == 50
+    assert one["StartTime"] == datetime.fromisoformat(SINCE).timestamp()
+    behind = datetime.now(UTC) - datetime.fromtimestamp(one["EndTime"], tz=UTC)
+    assert timedelta(minutes=5) <= behind < timedelta(minutes=6), "AWS's delivery lag (D154)"
+    assert two == {**one, "NextToken": "n2"}, "the window holds while NextToken is followed"
     # LookupEvents answers newest first: the newest event came on page one.
     assert second.cursor == {"since": "2026-09-20T10:05:00Z"} and second.more is False
 
@@ -684,7 +683,7 @@ def test_guardduty_pages_each_detector_with_its_own_window(monkeypatch):
     assert again_d1["FindingCriteria"] == listed_d1["FindingCriteria"], "held while paging"
     assert second.more is False
     assert second.cursor["detectors"] == {
-        "d1": {"since": "2026-09-20T09:50:00+00:00"},
+        "d1": {"since": "2026-09-20T10:05:00Z"},
         "d2": {"since": earlier},
     }
 
@@ -858,8 +857,31 @@ def test_google_workspace_holds_start_time_while_following_a_page_token(monkeypa
 
     second = connector.fetch(settings, {}, first.cursor, 1000)
     assert query(seen[1])["startTime"] == SINCE and query(seen[1])["pageToken"] == "p2"
+    assert query(seen[1])["endTime"] == query(seen[0])["endTime"], "the window holds too"
     # Reports answer newest first: the newest event came on page one.
     assert second.cursor == {"since": "2026-09-20T10:05:00.000Z"} and second.more is False
+
+
+def test_a_poll_reads_only_what_has_settled_since_the_newest_event(monkeypatch):
+    """Google delivers token events up to a few hours late, so a read stops that
+    far behind now, and one that has nothing settled to read asks nothing (D154)."""
+    monkeypatch.setattr(
+        "shoc.ingest.connectors.google_workspace.googleauth.access_token",
+        lambda secret, scope, subject=None: "tok",
+    )
+    seen = transport(monkeypatch, [{"json": {"items": []}}])
+    connector = connectors.get("google_workspace")
+    settings = {"admin_email": "admin@example.com", "application": "token"}
+    recent = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+    page = connector.fetch(settings, {}, {"since": recent}, 1000)
+    assert not seen and page.cursor == {"since": recent} and not page.records
+
+    page = connector.fetch(settings, {}, {"since": SINCE}, 1000)
+    asked = query(seen[0])
+    assert asked["startTime"] == SINCE, "the first event after the last one read, no overlap"
+    behind = datetime.now(UTC) - datetime.fromisoformat(asked["endTime"])
+    assert timedelta(hours=3) <= behind < timedelta(hours=3, minutes=1)
+    assert page.cursor == {"since": SINCE}, "nothing read: the next poll starts at the same event"
 
 
 def test_google_workspace_needs_an_admin_to_impersonate():
