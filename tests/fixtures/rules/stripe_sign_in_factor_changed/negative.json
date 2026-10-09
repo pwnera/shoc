@@ -1,0 +1,68 @@
+[
+  {
+    "id": "accact_reset_failed",
+    "object": "v2.iam.activity_log",
+    "type": "user_password_reset_failed",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "finance@example.com"
+      }
+    },
+    "details": {
+      "type": "authentication",
+      "authentication": {
+        "challenge_type": "sms",
+        "surface": "dashboard",
+        "target_email": null,
+        "backup_email": null
+      }
+    }
+  },
+  {
+    "id": "accact_password_changed",
+    "object": "v2.iam.activity_log",
+    "type": "user_password_changed",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "finance@example.com"
+      }
+    },
+    "details": {
+      "type": "authentication",
+      "authentication": {
+        "challenge_type": "totp",
+        "surface": "dashboard",
+        "target_email": null,
+        "backup_email": null
+      }
+    }
+  },
+  {
+    "id": "accact_email_verified",
+    "object": "v2.iam.activity_log",
+    "type": "user_email_verified",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "finance@example.com"
+      }
+    },
+    "details": {
+      "type": "user_profile",
+      "user_profile": {
+        "old_email": null,
+        "new_email": "finance@example.com",
+        "old_redacted_phone_number": null,
+        "new_redacted_phone_number": null
+      }
+    }
+  }
+]

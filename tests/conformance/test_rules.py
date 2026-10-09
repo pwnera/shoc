@@ -815,6 +815,87 @@ def test_a_rule_that_fires_while_learning_fires_on_every_match_until_it_knows(
     assert _cited(store, tenant, rule, now) == [["new-1"]]
 
 
+def test_a_rule_that_learns_from_its_selection_waits_for_its_own_history(store, config, clean, now):
+    """`learns_from: selection` counts the lookback from the rule's own first
+    match: a product with months of other events has not learnt an event it
+    only began to send (D157)."""
+    login = {"eventName": "ConsoleLogin", "eventSource": "signin.amazonaws.com"}
+    tenant, day = config.tenant_id, 24 * 60
+    _calls(
+        store,
+        tenant,
+        now,
+        [
+            ("old", 30 * day, {}),
+            ("first", 3 * day, {**login, "sourceIPAddress": "198.51.100.1"}),
+            ("new-1", 10, {**login, "sourceIPAddress": "203.0.113.9"}),
+        ],
+    )
+    detection = {"s": {"api.operation": "ConsoleLogin"}}
+    baseline = {"first_seen": ["actor.user.name", "src_endpoint.ip"], "lookback": "7d"}
+    assert _cited(store, tenant, _rule(detection, baseline=baseline), now) == [["new-1"]]
+    own = _rule(detection, baseline={**baseline, "learns_from": "selection"})
+    assert _cited(store, tenant, own, now) == [], "its first login is three days old"
+    _calls(store, tenant, now, [("older", 8 * day, {**login, "sourceIPAddress": "198.51.100.1"})])
+    assert _cited(store, tenant, own, now) == [["new-1"]]
+
+
+def test_a_new_stripe_source_does_not_fire_on_the_payouts_it_backfilled(
+    conn, store, config, clean, now
+):
+    """A Stripe source's first poll reads months of activity log, and its first
+    payout event the 60 days of payouts before it. None of those payouts is
+    new; a later payout to another destination is (D157)."""
+    rule = next(r for r in RULES if r.id == "stripe_payout_to_new_destination")
+    mapping = ocsf.load_mapping("stripe")
+    tenant = config.tenant_id
+
+    def payout(uid, when, destination, ingested):
+        created = int(when.timestamp())
+        row = mapping.map_record(
+            {
+                "id": uid,
+                "type": "payout.created",
+                "created": created,
+                "data": {"object": {"id": uid, "object": "payout", "destination": destination}},
+            },
+            tenant,
+        )
+        row["ingested_at"] = ingested.isoformat()
+        return row
+
+    log = mapping.map_record(
+        {
+            "id": "accact_old",
+            "object": "v2.iam.activity_log",
+            "type": "api_key_created",
+            "created": (now - timedelta(days=150)).isoformat(),
+            "context": "acct_1PfakeAccount01",
+            "details": {"type": "api_key", "api_key": {"id": "mk_1", "type": "secret_key"}},
+        },
+        tenant,
+    )
+    loaded = now - timedelta(minutes=1)
+    usual = [
+        payout(f"po_{d}", now - timedelta(days=d), "ba_1PfakeUsualBank01", loaded)
+        for d in range(61, 0, -1)
+    ]
+    batch.load(store, [log, *usual])
+    run_all(conn, store, tenant, [rule], now=now)
+    assert _findings(conn, tenant, rule.id) == [], "a backfilled payout is history"
+
+    later = now + timedelta(minutes=4)
+    batch.load(
+        store,
+        [
+            payout("po_usual", now + timedelta(minutes=2), "ba_1PfakeUsualBank01", later),
+            payout("po_new", now + timedelta(minutes=2), "card_1PfakeDebit00001", later),
+        ],
+    )
+    run_all(conn, store, tenant, [rule], now=now + timedelta(minutes=5))
+    assert [r["entity_key"] for r in _findings(conn, tenant, rule.id)] == ["po_new"]
+
+
 def test_first_seen_is_learning_per_account(conn, store, config, clean, now):
     """A second AWS account connected yesterday is not new on every key it has,
     though the product has months of history from the first (D76, D79)."""

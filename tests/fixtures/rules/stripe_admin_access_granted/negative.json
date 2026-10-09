@@ -70,5 +70,32 @@
         "source": "dashboard"
       }
     }
+  },
+  {
+    "id": "accact_scim2",
+    "object": "v2.iam.activity_log",
+    "type": "scim_group_roles_updated",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "admin@example.com"
+      }
+    },
+    "details": {
+      "type": "scim",
+      "scim": {
+        "group_name": "Engineering",
+        "old_roles": [
+          "admin"
+        ],
+        "new_roles": [
+          "developer"
+        ],
+        "role_assigned_context": "acct_1SdeybAiQNL8swvt",
+        "user_email": null
+      }
+    }
   }
 ]

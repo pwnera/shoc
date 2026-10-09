@@ -154,7 +154,7 @@ PERMISSION_HINTS = {
     "cloudflare": "an account API token with Account Settings: Read",
     "cloudflare_logs": "an R2 API token with Object Read on the Logpush bucket, or s3:ListBucket and s3:GetObject on it",
     "tailscale": "an OAuth client with the logs:configuration:read scope",
-    "stripe": "a restricted key with Activity logs: read and Events: read",
+    "stripe": "a restricted key with Activity logs: read, Events: read and Payouts: read",
     "openai": "an Admin key with audit logs read, which only an organization owner can create",
     "anthropic": "an Admin API key, which only an organization admin can create",
 }
@@ -182,7 +182,7 @@ WHERE = {
     "cloudflare": "Manage account → Account API tokens → Create token → Custom, Account Settings: Read",
     "cloudflare_logs": "Cloudflare dashboard → R2 → Manage R2 API tokens → Create API token, Object Read only, scoped to the Logpush bucket → copy the Access Key ID and Secret Access Key. For an S3 destination: IAM → Users → Create user with s3:ListBucket and s3:GetObject on the bucket → Create access key",
     "tailscale": "Admin console → Settings → Trust credentials → + Credential → OAuth → Scopes: Logging → Audit Logs, Read",
-    "stripe": "Dashboard → Developers → API keys → Create restricted key, Activity logs: Read and Events: Read",
+    "stripe": "Dashboard → Developers → API keys → Create restricted key, Activity logs: Read, Events: Read and Payouts: Read",
     "openai": "As an owner: Settings → Data controls → turn audit logging on, then Admin keys → Create, Audit logs: Read",
     "anthropic": "Claude Console, as an admin → Settings → Security → turn on the Compliance API if it is offered (then set activity_feed), then Settings → Admin keys → Create admin key",
     "file": "A JSON or NDJSON file on the host shoc runs on, and the mapping to read it with",

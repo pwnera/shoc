@@ -90,7 +90,8 @@ def test_required_steps_fit_every_rule_the_playbook_answers(book):
 
 # Rules whose playbook has no step, optional included, that can act on the
 # platform they fire on: the Detection Engineer's gate refuses a new rule like
-# these (D77). The list only shrinks; a rule that gains an action leaves it.
+# these (D77). A rule joins it only with the reason its platform's API has no
+# action for it, and leaves it once one exists.
 CANNOT_ACT = {
     "aws_console_login_failure_burst",  # nothing to act on until a login succeeds
     # The same: only the Okta rule pairs the spray with a success. The `idp` step
@@ -99,8 +100,15 @@ CANNOT_ACT = {
     # Gateway names a WARP device; isolating it needs the EDR device id, and no
     # step can block a domain yet.
     "cloudflare_gateway_threat_domain_lookup",
+    # Stripe's API cannot revoke a key, remove a member, change who signs in
+    # or turn a protection back on for the account that calls it (D56).
     "stripe_admin_access_granted",
     "stripe_secret_key_created_or_viewed",
+    "stripe_defence_disabled",
+    "stripe_sign_in_factor_changed",
+    # The only Stripe action blocks a card behind a charge. Cancelling a pending
+    # manual payout would answer it, with a key that can write payouts.
+    "stripe_payout_to_new_destination",
 }
 
 

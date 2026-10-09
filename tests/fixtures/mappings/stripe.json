@@ -52,5 +52,9 @@
       "charge": "ch_3PfakeCharge0002",
       "fraud_type": "made_with_stolen_card"
     }}
-  }
+  },
+  {"id": "accact_1SdeybAiQNL8swvt2faReset01", "object": "v2.iam.activity_log", "created": "2026-10-06T09:00:00.000Z", "type": "user_two_step_authentication_reset_requested", "livemode": true, "context": "acct_1SdeybAiQNL8swvt", "actor": {"type": "user", "user": {"email": "admin@example.com"}}, "details": {"type": "authentication", "authentication": {"target_email": "finance@example.com", "surface": "dashboard", "challenge_type": null, "backup_email": null}}},
+  {"id": "accact_1SdeybAiQNL8swvtEmailChg01", "object": "v2.iam.activity_log", "created": "2026-10-06T09:05:00.000Z", "type": "user_email_changed", "livemode": true, "context": "acct_1SdeybAiQNL8swvt", "actor": {"type": "user", "user": {"email": "finance@example.net"}}, "details": {"type": "user_profile", "user_profile": {"old_email": "finance@example.com", "new_email": "finance@example.net", "old_redacted_phone_number": null, "new_redacted_phone_number": null}}},
+  {"id": "evt_1PfakePayoutEvent01", "object": "event", "api_version": "2026-07-29", "created": 1790001200, "type": "payout.created", "livemode": true, "data": {"object": {"id": "po_1PfakePayout0001", "object": "payout", "amount": 2450000, "currency": "usd", "automatic": false, "destination": "card_1PfakeDebit00001", "method": "instant", "status": "pending", "type": "card", "created": 1790001199}}},
+  {"id": "po_1PfakePayoutListed1", "type": "payout.created", "created": 1785000000, "data": {"object": {"id": "po_1PfakePayoutListed1", "object": "payout", "amount": 640000, "currency": "usd", "automatic": true, "destination": "ba_1PfakeUsualBank01", "method": "standard", "status": "paid", "type": "bank_account", "created": 1785000000}}}
 ]

@@ -600,7 +600,7 @@ def test_first_seen_needs_an_indexed_column_and_no_other_correlation():
             },
             baseline={"first_seen": ["actor.user.name"]},
         )
-    with pytest.raises(ConfigError, match="first_seen, lookback and while_learning"):
+    with pytest.raises(ConfigError, match="first_seen, lookback, while_learning and learns_from"):
         make(
             {"s": {"status": "Success"}, "condition": "s"},
             baseline={"rare": {"by": ["api.operation"]}},
@@ -609,6 +609,11 @@ def test_first_seen_needs_an_indexed_column_and_no_other_correlation():
         make(
             {"s": {"status": "Success"}, "condition": "s"},
             baseline={"first_seen": ["actor.user.name"], "while_learning": "loud"},
+        )
+    with pytest.raises(ConfigError, match="learns_from is product or selection"):
+        make(
+            {"s": {"status": "Success"}, "condition": "s"},
+            baseline={"first_seen": ["actor.user.name"], "learns_from": "source"},
         )
 
 
@@ -623,6 +628,27 @@ def test_a_rule_that_fires_while_learning_is_new_or_not_yet_learnt():
     assert "AND NOT (COALESCE(cloud_account_uid" not in c.where
     assert " OR (COALESCE(cloud_account_uid, '') = :" in c.where
     for d, sql in _everywhere(c).items():
+        assert "NOT EXISTS" in sql, d
+
+
+def test_a_rule_that_learns_from_its_selection_reads_its_own_first_match():
+    """D157: the history that must cover the lookback is the rule's own matches."""
+    base = {"first_seen": ["api.operation", "raw.data.object.destination"], "lookback": "60d"}
+    detection = {"s": {"api.operation": "payout.created"}, "condition": "s"}
+    product = compile_rule(make(detection, logsource={"product": "stripe"}, baseline=base))
+    own = compile_rule(
+        make(
+            detection,
+            logsource={"product": "stripe"},
+            baseline={**base, "learns_from": "selection"},
+        )
+    )
+    learnt = r"\(SELECT MIN\(o\.time\) FROM ocsf_events o WHERE (.*?)\) <= e\.time"
+    [products] = re.findall(learnt, product.where)
+    [matches] = re.findall(learnt, own.where)
+    assert "o.metadata_product" in products and "o.api_operation" not in products
+    assert "o.metadata_product" in matches and "o.api_operation" in matches
+    for d, sql in _everywhere(own).items():
         assert "NOT EXISTS" in sql, d
 
 

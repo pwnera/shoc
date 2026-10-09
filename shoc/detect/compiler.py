@@ -451,7 +451,10 @@ def _first_seen(rule: Any, where: str, population: str) -> str:
     The history is the rule's own selection, so a failed attempt from an
     address does not make the successful one look familiar. Until the product
     has events older than the lookback, nothing is new: every tuple would be.
-    A rule that says `while_learning: fire` fires on every match until then.
+    With `learns_from: selection` the rule's own matches must be that old: a
+    source that backfills months of one log and starts another today is not
+    learnt for the second (D157). A rule that says `while_learning: fire`
+    fires on every match until then.
     """
     cols = [_column(f, rule.id) for f in rule.first_seen]
     if not set(cols) & set(INDEXED):
@@ -464,9 +467,10 @@ def _first_seen(rule: Any, where: str, population: str) -> str:
         f"{_qualify(where, 'h')} AND h.time >= e.time - {lookback} "
         f"AND (h.time < e.time OR (h.time = e.time AND h.event_uid < e.event_uid))"
     )
+    known = where if rule.learns_from == "selection" else population
     learned = (
         f"(SELECT MIN(o.time) FROM {layout.EVENTS_TABLE} o WHERE o.tenant_id = :tenant_id "
-        f"AND {_qualify(population, 'o')}) <= e.time - {lookback}"
+        f"AND {_qualify(known, 'o')}) <= e.time - {lookback}"
     )
     if rule.while_learning == "fire":
         return f"({_not_seen(cols, history)} OR NOT ({learned}))"

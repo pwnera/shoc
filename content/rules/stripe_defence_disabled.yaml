@@ -1,0 +1,60 @@
+id: stripe_defence_disabled
+title: Stripe two-step authentication, SSO or anomaly detection switched off
+description: >
+  The account stopped requiring two-step authentication, SSO was removed or
+  turned off, or one of Stripe's anomaly protections was disabled: the check
+  on unusual money movement, the limit on dormant API keys, or the alert on
+  unusual API requests. Each lets a stolen password or an old key move money
+  with nobody asked.
+status: experimental
+date: 2026-10-10
+severity: high
+confidence: 0.6
+attack: [T1556.006, T1556, T1562]
+logsource:
+  product: stripe
+  service: activity_log
+detection:
+  selection:
+    api.operation: [two_step_authentication_mandate_disabled, sso_settings_deleted]
+  selection_sso_off:
+    api.operation: sso_settings_updated
+    raw.details.sso.mandate: "off"
+  # An update names the settings before and after it. A protection that is
+  # off after it and was not off before was turned off.
+  money_movement_off:
+    api.operation: anomaly_detection_settings_updated
+    raw.details.account_security.new_anomaly_settings.money_movement_anomaly_detection_enabled: false
+  money_movement_was_off:
+    raw.details.account_security.old_anomaly_settings.money_movement_anomaly_detection_enabled: false
+  dormant_keys_off:
+    api.operation: anomaly_detection_settings_updated
+    raw.details.account_security.new_anomaly_settings.dormant_api_key_protection_enabled: false
+  dormant_keys_was_off:
+    raw.details.account_security.old_anomaly_settings.dormant_api_key_protection_enabled: false
+  requests_off:
+    api.operation: anomaly_detection_settings_updated
+    raw.details.account_security.new_anomaly_settings.request_level_anomaly_detection_enabled: false
+  requests_was_off:
+    raw.details.account_security.old_anomaly_settings.request_level_anomaly_detection_enabled: false
+  condition: >-
+    selection or selection_sso_off
+    or (money_movement_off and not money_movement_was_off)
+    or (dormant_keys_off and not dormant_keys_was_off)
+    or (requests_off and not requests_was_off)
+  timeframe: 15m
+entity: [actor.user.name, actor.session.uid]
+fields: [actor.user.name, actor.session.uid, api.operation, raw.details.sso.mandate, raw.details.account_security, cloud.account.uid]
+sources:
+  - name: Stripe
+    title: Activity logs
+    url: https://docs.stripe.com/activity-logs
+    relation: inspired
+  - name: Stripe
+    title: The Activity Log object
+    url: https://docs.stripe.com/api/v2/iam/activity-logs/object?api-version=2026-09-30.preview
+    relation: inspired
+  - name: Stripe
+    title: Why does my API key have limited access?
+    url: https://support.stripe.com/questions/why-does-my-api-key-have-limited-access
+    relation: inspired

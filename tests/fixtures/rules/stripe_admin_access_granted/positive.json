@@ -46,5 +46,32 @@
         ]
       }
     }
+  },
+  {
+    "id": "accact_scim1",
+    "object": "v2.iam.activity_log",
+    "type": "scim_group_roles_updated",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "mallory@example.com"
+      }
+    },
+    "details": {
+      "type": "scim",
+      "scim": {
+        "group_name": "Contractors",
+        "old_roles": [
+          "view_only"
+        ],
+        "new_roles": [
+          "admin"
+        ],
+        "role_assigned_context": "acct_1SdeybAiQNL8swvt",
+        "user_email": null
+      }
+    }
   }
 ]

@@ -1,0 +1,28 @@
+[
+  {
+    "_day_offset": 90,
+    "id": "evt_1PfakePayoutOld0001",
+    "object": "event",
+    "api_version": "2026-07-29",
+    "type": "payout.created",
+    "livemode": true,
+    "data": {"object": {"id": "po_1PfakePayoutOld0001", "object": "payout", "amount": 812000, "currency": "usd", "automatic": true, "destination": "ba_1PfakeUsualBank01", "method": "standard", "source_type": "card", "status": "pending", "type": "bank_account"}}
+  },
+  {
+    "_day_offset": 10,
+    "id": "evt_1PfakePayoutUsual01",
+    "object": "event",
+    "api_version": "2026-07-29",
+    "type": "payout.created",
+    "livemode": true,
+    "data": {"object": {"id": "po_1PfakePayoutUsual01", "object": "payout", "amount": 640000, "currency": "usd", "automatic": true, "destination": "ba_1PfakeUsualBank01", "method": "standard", "source_type": "card", "status": "pending", "type": "bank_account"}}
+  },
+  {
+    "id": "evt_1PfakePayoutNew0001",
+    "object": "event",
+    "api_version": "2026-07-29",
+    "type": "payout.created",
+    "livemode": true,
+    "data": {"object": {"id": "po_1PfakePayoutNew0001", "object": "payout", "amount": 2450000, "currency": "usd", "automatic": false, "destination": "card_1PfakeDebit00001", "method": "instant", "source_type": "card", "status": "pending", "type": "card"}}
+  }
+]

@@ -56,7 +56,7 @@ behind it.
   staging, insert-only `MERGE`), Snowflake, Amazon Redshift and Google BigQuery,
   behind one `EventStore` interface and one conformance suite.
 - **Detection:** our own Sigma-subset compiler to canonical SQL, translated per
-  dialect with SQLGlot; 268 rules mapped to ATT&CK across AWS, Azure, GCP,
+  dialect with SQLGlot; 271 rules mapped to ATT&CK across AWS, Azure, GCP,
   Okta, Entra ID, Google Workspace, Microsoft 365, GitHub, GitLab, EDR,
   Cloudflare, Tailscale, Stripe, OpenAI and Anthropic, each with a positive and
   a negative fixture test; threat-intel feeds with IOC matching and a 90-day
@@ -101,7 +101,7 @@ has been run.
 | Event store | How it is tested |
 | --- | --- |
 | Postgres 16 | Every unit and conformance test, the 29 replayed attack and benign scenarios in `evals/`, and a deployment that runs around the clock |
-| Databricks SQL, Snowflake, Amazon Redshift, Google BigQuery | Unit tests translate all 268 rules and the query capabilities to each dialect. The conformance suite runs against a live warehouse only where CI holds that warehouse's credentials |
+| Databricks SQL, Snowflake, Amazon Redshift, Google BigQuery | Unit tests translate all 271 rules and the query capabilities to each dialect. The conformance suite runs against a live warehouse only where CI holds that warehouse's credentials |
 
 | Connector | How it is tested |
 | --- | --- |

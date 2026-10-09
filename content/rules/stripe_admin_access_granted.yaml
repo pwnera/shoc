@@ -2,10 +2,12 @@ id: stripe_admin_access_granted
 title: Stripe team member given an administrator role
 description: >
   An administrator can change the bank account payouts go to and create API
-  keys. Someone who took over a dashboard login invites a second account first.
+  keys. Someone who took over a dashboard login invites a second account first,
+  or, where the team comes from the identity provider over SCIM, gives the role
+  to a group that account is in.
 status: stable
 date: 2026-09-30
-modified: 2026-09-30
+modified: 2026-10-10
 severity: high
 confidence: 0.6
 attack: [T1098]
@@ -19,7 +21,15 @@ detection:
   selection_invite:
     api.operation: user_invite_created
     raw.details.user_invite.roles|contains: admin
-  condition: selection_roles or selection_invite
+  selection_scim:
+    api.operation: scim_group_roles_updated
+    raw.details.scim.new_roles|contains: admin
+  condition: selection_roles or selection_invite or selection_scim
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, resource.uid, cloud.account.uid]
+sources:
+  - name: Stripe
+    title: Activity logs
+    url: https://docs.stripe.com/activity-logs
+    relation: inspired

@@ -1,23 +1,32 @@
 id: contain_stripe_account_takeover
 title: Contain a change to who controls the Stripe account
 description: >
-  A secret key was created or read, or someone was made an administrator.
-  Stripe's API cannot revoke a key, remove a member or hold payouts for the
-  account itself, so the crew finds out what happened and a human is paged to
-  do it in the dashboard.
+  A secret key was created or read, someone was made an administrator, how
+  someone signs in changed, two-step authentication, SSO or an anomaly
+  protection was turned off, or money was paid out to a new bank account or
+  card. Stripe's API cannot revoke a key, remove a member, restore a setting
+  or hold payouts for the account itself, so the crew finds out what happened
+  and a human is paged to do it in the dashboard.
 rules:
   - stripe_admin_access_granted
   - stripe_secret_key_created_or_viewed
+  - stripe_defence_disabled
+  - stripe_sign_in_factor_changed
+  - stripe_payout_to_new_destination
 questions:
   - id: actor
     ask: Which team member did it, and did the same person create keys, invite people or change roles before, in the last 90 days?
   - id: key
     ask: Is the key new or was an existing one viewed, and is it restricted to IP addresses?
   - id: others
-    ask: Were other keys created or roles changed by the same person in the same hour?
+    ask: Were other keys created, roles or sign-in factors changed, or protections turned off by the same person in the same hour?
+  - id: payout
+    ask: If money was paid out, how much, was it instant, and does the destination belong to the company?
 benign_when:
   - An administrator created a key for a new deployment and announced it.
   - The role was given to a person the company just hired.
+  - Someone reset a password they forgot, or a person who just accepted an invite set their first one.
+  - The company moved its payouts to a new bank account, or the owner took a first instant payout to their own card, and said so.
 example: |
   claim (actor): "mallory@example.com gave backup@example.net the admin role, the first role change this account has seen", citing the change.
   checked and absent: "an invite to backup@example.net accepted earlier (90d)", which rules out a colleague being promoted.
@@ -30,6 +39,6 @@ steps:
   - name: page the on-call engineer
     action: notify.page
     params:
-      summary: "shoc: Stripe account changed by {{ entity.user }}, check keys and team in the dashboard"
+      summary: "shoc: {{ case.title }}. Check team, keys, security settings and payouts in the Stripe dashboard"
       severity: critical
       dedup_key: "{{ case.case_uid }}"

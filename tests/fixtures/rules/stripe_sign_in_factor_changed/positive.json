@@ -1,0 +1,112 @@
+[
+  {
+    "id": "accact_backup_code",
+    "object": "v2.iam.activity_log",
+    "type": "user_two_step_authentication_backup_code_used",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "finance@example.com"
+      }
+    },
+    "details": {
+      "type": "authentication",
+      "authentication": {
+        "challenge_type": null,
+        "surface": "dashboard",
+        "target_email": null,
+        "backup_email": null
+      }
+    }
+  },
+  {
+    "id": "accact_2fa_reset",
+    "object": "v2.iam.activity_log",
+    "type": "user_two_step_authentication_reset_requested",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "mallory@example.com"
+      }
+    },
+    "details": {
+      "type": "authentication",
+      "authentication": {
+        "target_email": "finance@example.com",
+        "surface": "dashboard",
+        "challenge_type": null,
+        "backup_email": null
+      }
+    }
+  },
+  {
+    "id": "accact_email",
+    "object": "v2.iam.activity_log",
+    "type": "user_email_changed",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "finance@example.net"
+      }
+    },
+    "details": {
+      "type": "user_profile",
+      "user_profile": {
+        "old_email": "finance@example.com",
+        "new_email": "finance@example.net",
+        "old_redacted_phone_number": null,
+        "new_redacted_phone_number": null
+      }
+    }
+  },
+  {
+    "id": "accact_google",
+    "object": "v2.iam.activity_log",
+    "type": "user_google_account_connected",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "finance@example.com"
+      }
+    },
+    "details": {
+      "type": "authentication",
+      "authentication": {
+        "challenge_type": "oauth",
+        "surface": "dashboard",
+        "target_email": null,
+        "backup_email": null
+      }
+    }
+  },
+  {
+    "id": "accact_reset",
+    "object": "v2.iam.activity_log",
+    "type": "user_password_reset_succeeded",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "finance@example.com"
+      }
+    },
+    "details": {
+      "type": "authentication",
+      "authentication": {
+        "challenge_type": "sms",
+        "surface": "dashboard",
+        "target_email": null,
+        "backup_email": null
+      }
+    }
+  }
+]

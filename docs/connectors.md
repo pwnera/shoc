@@ -28,7 +28,7 @@ versioned YAML file, so a rule written once works across all of them.
 | `cloudflare` | `account_id` | `api_token` | account audit log (Audit Logs v2) |
 | `cloudflare_logs` | `bucket`, `datasets` (dataset → the job's path, e.g. `{"http_requests": "logs/http", "gateway_dns": "zt/dns"}`), `account_id` for R2 or `bucket_region` for S3, `backfill_hours` | `access_key_id`, `secret_access_key` (an R2 API token's S3 credentials, or AWS keys) | Logpush jobs' files in R2 or S3: HTTP requests, firewall events, DNS, Gateway DNS/HTTP/network, Access requests, Zero Trust sessions, audit logs |
 | `tailscale` | optional `tailnet` (default `-`, the credential's own) | `client_id`, `client_secret` of an OAuth client, or an `api_key` access token | configuration audit log |
-| `stripe` | none | `api_key`, a restricted key | activity log (a public preview), and `charge.failed` and early fraud warning events |
+| `stripe` | none | `api_key`, a restricted key | activity log (a public preview), and `charge.failed`, early fraud warning and `payout.created` events |
 | `openai` | none | `admin_key` | organization audit log, and hourly usage per API key |
 | `anthropic` | optional `activity_feed` | `admin_key` | the Compliance API activity feed when `activity_feed` is on, API keys created since the last read, and hourly usage per API key |
 | `file` | `path`, `mapping`, optional `as_recorded`, `skip_unreadable` | none | replays a recorded file; used by evals and the quick start |
@@ -216,13 +216,16 @@ allows:
 | Cloudflare | Account API token with `Account Settings: Read` |
 | Cloudflare Logpush | R2 API token with Object Read on the Logpush bucket; for S3, `s3:ListBucket` and `s3:GetObject` on it |
 | Tailscale | OAuth client (Trust credentials) with the Audit Logs read scope; an API access token works too, and expires within 90 days |
-| Stripe | Restricted key with `Activity logs: read` and `Events: read` |
+| Stripe | Restricted key with `Activity logs: read`, `Events: read` and `Payouts: read`; Stripe lists an event to a restricted key only when the key can read the object it is about |
 | OpenAI | Admin key with audit logs read, which only an organization owner can create. An owner first turns audit logging on in the organization's data controls; nothing before that day is recorded |
 | Anthropic | Admin API key, which only an organization admin can create; an individual account has no Admin API |
 
 Stripe counts every API read against an allowance that starts at 10,000 a
 month, and its connector makes two per poll, so give it
-`--interval-seconds 900`. The OpenAI and Anthropic connectors read usage an hour
+`--interval-seconds 900`. When the first payout event arrives, it also lists
+the payouts of the 60 days before the poll's start, once, because `/v1/events`
+keeps 30 days and `stripe_payout_to_new_destination` compares a payout's
+destination with 60 (D157). The OpenAI and Anthropic connectors read usage an hour
 at a time once the hour has closed, which puts a key's usage in shoc 30 to 90
 minutes after it happened. The first read takes the last seven days of usage.
 Their usage rules band a key's hourly output tokens by order of magnitude from

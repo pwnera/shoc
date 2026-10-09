@@ -62,6 +62,10 @@ class Rule:
     # holds the rule back (D82), `fire` fires on every match as it would
     # without a baseline, for a rule that must not go silent for a month.
     while_learning: str = "quiet"
+    # Whose history must cover the lookback: the products the rule reads
+    # (D82), or the rule's own matches, for an event a source starts sending
+    # long after the rest of its product (D157).
+    learns_from: str = "product"
     created: str = ""  # Sigma `date`
     updated: str = ""  # Sigma `modified`
     path: Path | None = None
@@ -99,6 +103,7 @@ class Rule:
             "first_seen": list(self.first_seen),
             "lookback": self.lookback if self.first_seen else None,
             "while_learning": self.while_learning if self.first_seen else None,
+            "learns_from": self.learns_from if self.first_seen else None,
             "fields": list(self.fields),
             "created": self.created or None,
             "updated": self.updated or self.created or None,
@@ -149,10 +154,10 @@ def from_dict(data: dict[str, Any], path: Path | None = None) -> Rule:
         by = sequence.get("by") or []
         sequence["by"] = [by] if isinstance(by, str) else list(by)
     baseline = data.get("baseline") or {}
-    if set(baseline) - {"first_seen", "lookback", "while_learning"}:
+    if set(baseline) - {"first_seen", "lookback", "while_learning", "learns_from"}:
         raise ConfigError(
-            f"{path or data.get('id')}: a rule's baseline takes first_seen, lookback and "
-            "while_learning"
+            f"{path or data.get('id')}: a rule's baseline takes first_seen, lookback, "
+            "while_learning and learns_from"
         )
     entity = data.get("entity") or []
     rule = Rule(
@@ -180,6 +185,7 @@ def from_dict(data: dict[str, Any], path: Path | None = None) -> Rule:
         first_seen=list(baseline.get("first_seen", []) or []),
         lookback=str(baseline.get("lookback", "30d")),
         while_learning=str(baseline.get("while_learning", "quiet")),
+        learns_from=str(baseline.get("learns_from", "product")),
         created=str(data.get("date") or ""),
         updated=str(data.get("modified") or ""),
         path=path,
@@ -209,6 +215,8 @@ def validate(rule: Rule) -> None:
         parse_timeframe(rule.lookback)
     if rule.while_learning not in ("quiet", "fire"):
         raise ConfigError(f"{rule.id}: while_learning is quiet or fire")
+    if rule.learns_from not in ("product", "selection"):
+        raise ConfigError(f"{rule.id}: learns_from is product or selection")
     # One correlation per rule, so a finding has one meaning.
     if sum(map(bool, (det.count, det.sequence, rule.first_seen))) > 1:
         raise ConfigError(f"{rule.id}: use one of count, sequence and first_seen per rule")

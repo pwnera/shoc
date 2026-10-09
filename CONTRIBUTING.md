@@ -49,7 +49,9 @@ python -m scripts.check_dependency_budget && python -m scripts.check_licenses
    fire on a second event after a first by the same key (`sequence`), compare
    two fields (`|fieldref`), test a network (`|cidr`), fire on a tuple first
    seen in a lookback (`baseline.first_seen`; add `while_learning: fire` when
-   the rule must keep firing on every match until it has that much history)
+   the rule must keep firing on every match until it has that much history,
+   and `learns_from: selection` when that history is the rule's own matches
+   rather than its product's events, as for a payout's destination)
    and key its finding on the first
    of several fields (`entity: [a, b]`); RFC 0023 shows each in YAML. Write
    values as the vendor logs them: `contains` matches a backslash, `%` or `_`

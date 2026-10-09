@@ -1,0 +1,84 @@
+[
+  {
+    "id": "accact_mandate_on",
+    "object": "v2.iam.activity_log",
+    "type": "two_step_authentication_mandate_enabled",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "admin@example.com"
+      }
+    },
+    "details": {
+      "type": "account_security"
+    }
+  },
+  {
+    "id": "accact_sso_required",
+    "object": "v2.iam.activity_log",
+    "type": "sso_settings_updated",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "admin@example.com"
+      }
+    },
+    "details": {
+      "type": "sso",
+      "sso": {
+        "mandate": "required"
+      }
+    }
+  },
+  {
+    "id": "accact_sso_created",
+    "object": "v2.iam.activity_log",
+    "type": "sso_settings_created",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "admin@example.com"
+      }
+    },
+    "details": {
+      "type": "sso",
+      "sso": {
+        "mandate": "optional"
+      }
+    }
+  },
+  {
+    "id": "accact_anomaly_on",
+    "object": "v2.iam.activity_log",
+    "type": "anomaly_detection_settings_updated",
+    "livemode": true,
+    "context": "acct_1SdeybAiQNL8swvt",
+    "actor": {
+      "type": "user",
+      "user": {
+        "email": "admin@example.com"
+      }
+    },
+    "details": {
+      "type": "account_security",
+      "account_security": {
+        "old_anomaly_settings": {
+          "money_movement_anomaly_detection_enabled": false,
+          "dormant_api_key_protection_enabled": false,
+          "request_level_anomaly_detection_enabled": true
+        },
+        "new_anomaly_settings": {
+          "money_movement_anomaly_detection_enabled": false,
+          "dormant_api_key_protection_enabled": true,
+          "request_level_anomaly_detection_enabled": true
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,42 @@
+id: stripe_sign_in_factor_changed
+title: How someone signs in to Stripe changed
+description: >
+  A Stripe login's password was reset or set for the first time, a Google
+  account was connected to sign in with, its email changed, an emergency
+  backup code turned its two-step authentication off, or its two-step method
+  was reset, by the user or at an administrator's request. Any of them,
+  done by someone else, lets that person sign in as the login's owner from
+  then on.
+status: experimental
+date: 2026-10-10
+severity: high
+confidence: 0.5
+attack: [T1098, T1556.006]
+logsource:
+  product: stripe
+  service: activity_log
+detection:
+  selection:
+    api.operation:
+      - user_password_reset_succeeded
+      - user_password_initialized
+      - user_google_account_connected
+      - user_email_changed
+      - user_two_step_authentication_backup_code_used
+      - user_two_step_authentication_reset_requested
+      - user_two_step_authentication_method_reset
+  condition: selection
+  timeframe: 15m
+# The login changed: the target of a reset an administrator asked for, the
+# address an email change replaced, or else the person who acted.
+entity: [resource.uid, actor.user.name]
+fields: [actor.user.name, resource.uid, api.operation, raw.details.user_profile.new_email, raw.details.authentication.challenge_type, cloud.account.uid]
+sources:
+  - name: Stripe
+    title: Activity logs
+    url: https://docs.stripe.com/activity-logs
+    relation: inspired
+  - name: Stripe
+    title: The Activity Log object
+    url: https://docs.stripe.com/api/v2/iam/activity-logs/object?api-version=2026-09-30.preview
+    relation: inspired

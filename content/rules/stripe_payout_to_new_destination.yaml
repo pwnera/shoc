@@ -1,0 +1,48 @@
+id: stripe_payout_to_new_destination
+title: Stripe paid out to a bank account or card it has not paid out to in 60 days
+description: >
+  In a Stripe takeover the money leaves as a payout to the intruder's bank
+  account or, faster, an instant payout to their debit card. Stripe's activity
+  log does not yet return bank account changes, but every payout names its
+  destination, so the first payout to a new one is the cash-out itself,
+  whichever way the account was taken. A company pays out to one or two
+  destinations for years; a change of bank or a first instant payout to the
+  owner's own card fires too. When the first payout event arrives, the
+  connector reads the 60 days of payouts before it, and the rule stays quiet
+  until the payouts it has stored go back 60 days.
+status: experimental
+date: 2026-10-09
+severity: critical
+confidence: 0.6
+attack: [T1657]
+logsource:
+  product: stripe
+  service: events
+detection:
+  selection:
+    api.operation: payout.created
+    raw.data.object.destination|exists: true
+  condition: selection
+  timeframe: 1h
+baseline:
+  # api.operation is the indexed column the history lookup starts from.
+  first_seen: [api.operation, raw.data.object.destination]
+  lookback: 60d
+  # A Stripe source reads months of activity log on its first poll, so the
+  # product's history says nothing of how far back its payouts go (D157).
+  learns_from: selection
+entity: [resource.uid, cloud.account.uid]
+fields: [cloud.account.uid, resource.uid, raw.data.object.destination, raw.data.object.method, raw.data.object.amount, raw.data.object.currency, raw.data.object.automatic, raw.data.object.arrival_date]
+sources:
+  - name: Stripe
+    title: Account takeover fraud explained
+    url: https://stripe.com/resources/more/account-takeover-fraud-explained
+    relation: inspired
+  - name: Stripe
+    title: The Payout object
+    url: https://docs.stripe.com/api/payouts/object
+    relation: inspired
+  - name: Stripe
+    title: The Activity Log object
+    url: https://docs.stripe.com/api/v2/iam/activity-logs/object?api-version=2026-09-30.preview
+    relation: inspired

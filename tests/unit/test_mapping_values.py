@@ -87,6 +87,34 @@ EXPECTED = {
         "severity_id": 3,
         "resource_uid": "ch_3PfakeCharge0002",
     },
+    # A reset an administrator asked for is about the login reset, and an
+    # email change about the address it replaced.
+    ("stripe", "accact_1SdeybAiQNL8swvt2faReset01"): {
+        "severity_id": 2,
+        "api_operation": "user_two_step_authentication_reset_requested",
+        "actor_user_name": "admin@example.com",
+        "resource_uid": "finance@example.com",
+        "resource_type": "authentication",
+    },
+    ("stripe", "accact_1SdeybAiQNL8swvtEmailChg01"): {
+        "severity_id": 2,
+        "actor_user_name": "finance@example.net",
+        "resource_uid": "finance@example.com",
+    },
+    ("stripe", "evt_1PfakePayoutEvent01"): {
+        "activity_id": 1,
+        "api_operation": "payout.created",
+        "resource_type": "payout",
+        "resource_uid": "po_1PfakePayout0001",
+        "cloud_account_uid": "stripe",
+    },
+    # A payout the connector listed when payouts were first read (D157).
+    ("stripe", "po_1PfakePayoutListed1"): {
+        "activity_id": 1,
+        "api_operation": "payout.created",
+        "resource_uid": "po_1PfakePayoutListed1",
+        "time": "2026-07-25T17:20:00+00:00",
+    },
     # Wazuh levels 0-15 fold into the five OCSF severities.
     ("wazuh", "wz-1"): {
         "class_uid": 2004,

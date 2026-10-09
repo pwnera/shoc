@@ -140,12 +140,13 @@ def test_stripe_reads_the_activity_log_and_payment_events_each_with_its_cursor(m
     assert events.url.params.get_list("types[]") == [
         "charge.failed",
         "radar.early_fraud_warning.created",
+        "payout.created",
     ]
     assert events.url.params["created[gt]"] == epoch(SINCE)
-    assert page.cursor["logs"] == {"next": "/v2/iam/activity_logs?page=p2"}
+    assert page.cursor["logs"] == {"next": "/v2/iam/activity_logs?page=p2", "version": PREVIEW}
     held = page.cursor["events"]
     assert held["since"] == SINCE and held["after"] == "evt_1", "paging back, newest first"
-    assert page.more
+    assert page.more and not page.cursor["payouts"], "no payout event, so no payouts read"
 
 
 def test_stripe_starts_the_activity_log_again_once_its_page_expired(monkeypatch):
@@ -157,10 +158,66 @@ def test_stripe_starts_the_activity_log_again_once_its_page_expired(monkeypatch)
             {"json": {"data": [], "has_more": False}},
         ],
     )
-    stale = {"logs": {"next": "/v2/iam/activity_logs?page=old"}}
+    stale = {"logs": {"next": "/v2/iam/activity_logs?page=old", "version": PREVIEW}}
     page = connectors.get("stripe").fetch({}, {"api_key": "rk"}, stale, 100)
     assert seen[0].url.params["page"] == "old" and "page" not in seen[1].url.params
-    assert page.cursor["logs"] == {"next": "/v2/iam/activity_logs?page=p9"}
+    assert page.cursor["logs"] == {"next": "/v2/iam/activity_logs?page=p9", "version": PREVIEW}
+
+
+def test_stripe_reads_the_activity_log_again_under_a_new_preview_version(monkeypatch):
+    """A page token from an older preview may stand past action types that
+    version did not return."""
+    seen = transport(
+        monkeypatch,
+        [
+            {"json": {"data": [], "next_page_url": "/v2/iam/activity_logs?page=p1"}},
+            {"json": {"data": [], "has_more": False}},
+        ],
+    )
+    older = {"logs": {"next": "/v2/iam/activity_logs?page=old"}}
+    page = connectors.get("stripe").fetch({}, {"api_key": "rk"}, older, 100)
+    assert "page" not in seen[0].url.params
+    assert page.cursor["logs"]["version"] == PREVIEW
+
+
+def test_stripe_reads_sixty_days_of_payouts_once_the_first_payout_event_arrives(monkeypatch):
+    """/v1/events keeps 30 days; a payout's destination is compared with 60 (D157)."""
+    payout = {"type": "payout.created", "data": {"object": {"destination": "ba_1"}}}
+    seen = transport(
+        monkeypatch,
+        [
+            {"json": {"data": [], "next_page_url": "/v2/iam/activity_logs?page=p1"}},
+            {"json": {"data": [{"id": "evt_9", "created": 1790000300, **payout}]}},
+            {"json": {"data": [{"id": "po_2", "created": 1789000000}], "has_more": True}},
+            {"json": {"data": [{"id": "po_1", "created": 1786000000}], "has_more": False}},
+            # The next poll reads a payout event and no payouts.
+            {"json": {"data": []}},
+            {"json": {"data": [{"id": "evt_10", "created": 1790000900, **payout}]}},
+        ],
+    )
+    stripe = connectors.get("stripe")
+    page = stripe.fetch({}, {"api_key": "rk"}, {"events": {"since": SINCE}}, 100)
+    first, more = seen[2], seen[3]
+    assert first.url.path == "/v1/payouts" and more.url.params["starting_after"] == "po_2"
+    end = int(epoch(SINCE))
+    assert first.url.params["created[lte]"] == str(end)
+    assert first.url.params["created[gte]"] == str(end - 60 * 86400)
+    assert [(r["id"], r["type"]) for r in page.records] == [
+        ("evt_9", "payout.created"),
+        ("po_2", "payout.created"),
+        ("po_1", "payout.created"),
+    ]
+    assert page.records[2] == {
+        "id": "po_1",
+        "type": "payout.created",
+        "created": 1786000000,
+        "data": {"object": {"id": "po_1", "created": 1786000000}},
+    }
+    assert page.cursor["payouts"]
+
+    again = stripe.fetch({}, {"api_key": "rk"}, page.cursor, 100)
+    assert [r.url.path for r in seen[4:]] == ["/v2/iam/activity_logs", "/v1/events"]
+    assert [r["id"] for r in again.records] == ["evt_10"] and again.cursor["payouts"]
 
 
 # -- OpenAI and Anthropic ------------------------------------------------------
