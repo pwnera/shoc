@@ -100,7 +100,7 @@ Configuring a source tries the credential once before answering, so a token
 that is wrong, expired or missing a permission says so there and then:
 
 ```
-Source okta configured, polling every 300s. It is saved, but the credential
+Source okta configured, polling every 900s. It is saved, but the credential
 did not work: okta rejected the credential (401); it needs an API token of a
 read-only administrator, which reads the System Log, users and network zones.
 ```

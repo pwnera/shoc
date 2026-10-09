@@ -20,7 +20,7 @@ CONFIG = {
             "source": "okta",
             "settings": {"org_url": "https://acme.okta.com"},
             "secret_env": {"api_token": "SHOC_SECRET_TEST_OKTA_TOKEN"},
-            "interval_seconds": 600,
+            "interval_seconds": 1800,
         }
     ],
     "intel_feeds": [{"feed": "abuse_ch_urlhaus"}],
@@ -90,7 +90,7 @@ def test_apply_configures_the_source_and_its_schedule(ctx, config, clean, probes
         "WHERE tenant_id=%s AND source='okta'",
         (config.tenant_id,),
     )
-    assert row and row["interval_seconds"] == 600
+    assert row and row["interval_seconds"] == 1800
     assert row["settings"]["org_url"] == "https://acme.okta.com"
     assert b"00-token" not in bytes(row["secret"]), "the token is encrypted at rest"
     schedule = fetch_one(
@@ -98,12 +98,12 @@ def test_apply_configures_the_source_and_its_schedule(ctx, config, clean, probes
         "SELECT interval_seconds FROM shoc.schedules WHERE schedule_id=%s",
         (f"{config.tenant_id}:sync:okta",),
     )
-    assert schedule and schedule["interval_seconds"] == 600
+    assert schedule and schedule["interval_seconds"] == 1800
 
 
 def test_a_changed_setting_shows_up_as_an_update(ctx, config, clean):
     call("config.apply", ctx, {"config": CONFIG})
-    changed = {**CONFIG, "sources": [{**CONFIG["sources"][0], "interval_seconds": 900}]}
+    changed = {**CONFIG, "sources": [{**CONFIG["sources"][0], "interval_seconds": 3600}]}
     result = call("config.plan", ctx, {"config": changed})
     actions = {(c["kind"], c["target"]): c["action"] for c in result.data.changes}
     assert actions[("source", "okta")] == "update"

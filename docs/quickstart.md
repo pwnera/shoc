@@ -94,8 +94,8 @@ Entra ID, Google Workspace, Microsoft 365, GuardDuty, Azure, GCP, GitLab and
 the EDRs (Defender, CrowdStrike, SentinelOne) and Wazuh work the same way; see
 [`connectors.md`](connectors.md) for every source and the permissions to grant.
 
-`shoc worker` polls every configured source on its interval and runs a detection
-cycle every five minutes. In Docker it is already running.
+`shoc worker` polls every configured source and runs a detection cycle every 15
+minutes. In Docker it is already running.
 
 ## 4. Connect Claude (or any MCP client)
 

@@ -51,8 +51,9 @@ class SourceList:
 def list_sources(ctx: Context, inp: Empty) -> Result:
     rows = fetch_all(
         ctx.db,
-        """SELECT c.source, c.enabled, c.settings, c.interval_seconds,
-                  c.secret,
+        """SELECT c.source, c.enabled, c.settings, c.secret,
+                  -- What the worker polls at: once a cycle at most (D153).
+                  GREATEST(c.interval_seconds, %s) AS interval_seconds,
                   s.last_run_at, s.last_ok_at, s.last_error,
                   -- A source configured and not yet synced has no state row.
                   COALESCE(s.events_seen, 0) AS events_seen,
@@ -65,7 +66,7 @@ def list_sources(ctx: Context, inp: Empty) -> Result:
            LEFT JOIN shoc.source_history h
              ON h.tenant_id = c.tenant_id AND h.source = c.source
            WHERE c.tenant_id = %s AND c.source NOT IN ('slack', 'llm') ORDER BY c.source""",
-        (ctx.tenant_id,),
+        (ctx.config.cycle_seconds, ctx.tenant_id),
     )
     from shoc.db.secrets import open_secret
 
@@ -138,7 +139,9 @@ class SourceConfig:
     )
     settings: dict[str, Any] = f(doc="Non-secret settings, e.g. {'org_url': '…'}", factory=dict)
     secret: dict[str, Any] = f(doc="Credentials, e.g. {'api_token': '…'}", factory=dict)
-    interval_seconds: int = f(300, doc="How often the worker polls this source")
+    interval_seconds: int = f(
+        0, doc="Seconds between polls; once a detection cycle (SHOC_CYCLE_SECONDS) at most"
+    )
     enabled: bool = f(True, doc="Whether the worker should poll it at all")
     verify: bool = f(True, doc="Try the credential once before saving it")
 
@@ -147,7 +150,7 @@ class SourceConfig:
 class SourceState:
     source: str = ""
     enabled: bool = True
-    interval_seconds: int = 300
+    interval_seconds: int = 0
     verified: bool | None = None
     verify_error: str | None = None
 
@@ -220,20 +223,20 @@ def configure_source(ctx: Context, inp: SourceConfig) -> Result:
                 f"key, then POST records to /ingest/{inp.source}."
             ),
         )
+    # Detection looks once a cycle, so a poll more often only wakes the store (D153).
+    every = max(inp.interval_seconds, ctx.config.cycle_seconds)
     upsert_schedule(
         ctx.db,
         f"{ctx.tenant_id}:sync:{inp.source}",
         ctx.tenant_id,
         "source.sync",
-        max(inp.interval_seconds, ctx.config.poll_floor_seconds),
+        every,
         {"source": inp.source},
         enabled=inp.enabled,
     )
     if not inp.enabled:
         return Result(
-            data=SourceState(
-                source=inp.source, enabled=False, interval_seconds=inp.interval_seconds
-            ),
+            data=SourceState(source=inp.source, enabled=False, interval_seconds=every),
             summary=f"Source {inp.source} saved and disabled; the worker does not poll it.",
         )
     verified, why = _verify(ctx, inp)
@@ -242,12 +245,12 @@ def configure_source(ctx: Context, inp: SourceConfig) -> Result:
         data=SourceState(
             source=inp.source,
             enabled=inp.enabled,
-            interval_seconds=inp.interval_seconds,
+            interval_seconds=every,
             verified=verified,
             verify_error=why,
         ),
         summary=(
-            f"Source {inp.source} configured, polling every {inp.interval_seconds}s."
+            f"Source {inp.source} configured, polling every {every}s."
             + (f" The credential works. {why}" if verified and why else "")
             + (f" It is saved, but the credential did not work: {why}" if verified is False else "")
         ),

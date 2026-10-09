@@ -3541,7 +3541,7 @@ Input schema:
     },
     "interval_seconds": {
       "type": "integer",
-      "description": "How often the worker polls this source"
+      "description": "Seconds between polls; once a detection cycle (SHOC_CYCLE_SECONDS) at most"
     },
     "enabled": {
       "type": "boolean",

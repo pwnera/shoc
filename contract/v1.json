@@ -8388,7 +8388,7 @@
             "type": "boolean"
           },
           "interval_seconds": {
-            "description": "How often the worker polls this source",
+            "description": "Seconds between polls; once a detection cycle (SHOC_CYCLE_SECONDS) at most",
             "type": "integer"
           },
           "secret": {

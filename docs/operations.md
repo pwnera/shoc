@@ -13,8 +13,8 @@ box:
 
 | Every | Job | What it does |
 | --- | --- | --- |
-| Per source interval | `source.sync` | Pull a connector; what it loaded wakes detection |
-| 5 minutes | `detect.run` | Rules, IOC matching, open cases |
+| Once a cycle, or the source's longer interval | `source.sync` | Pull a connector; what it loaded wakes detection |
+| 15 minutes (`SHOC_CYCLE_SECONDS`) | `detect.run` | Rules, IOC matching, open cases |
 | 1 minute | `stream.deliver` | Push events to signed webhooks |
 | 15 minutes | `case.sweep` | Send the crew back to every open case with something new; the retry clock for a failed run |
 | 30 minutes | `unattended` | Resolve what nobody approved: page, or abandon with a reason |

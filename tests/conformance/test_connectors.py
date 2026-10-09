@@ -167,7 +167,7 @@ def test_two_accounts_of_one_connector_keep_their_own_config_and_cursor(conn, co
     from shoc.capabilities.registry import call
     from shoc.ingest.connectors.base import read_config
 
-    for source, interval in (("file", 300), ("file:second", 600)):
+    for source, interval in (("file", 1800), ("file:second", 3600)):
         call(
             "source.configure",
             ctx,
@@ -179,8 +179,8 @@ def test_two_accounts_of_one_connector_keep_their_own_config_and_cursor(conn, co
     assert read_state(conn, config.tenant_id, "file:second")["offset"] == first.data.fetched
     assert read_state(conn, config.tenant_id, "file") == {}, "each account has its own cursor"
     listed = {r["source"]: r for r in call("source.list", ctx, {}).data.configured}
-    assert listed["file"]["interval_seconds"] == 300
-    assert listed["file:second"]["interval_seconds"] == 600
+    assert listed["file"]["interval_seconds"] == 1800
+    assert listed["file:second"]["interval_seconds"] == 3600
 
 
 def test_an_account_label_must_be_plain(ctx, clean):

@@ -238,12 +238,12 @@ def test_agents_read_a_warehouse_with_the_reader_credential():
     assert isinstance(writer, SnowflakeStore) and writer.role == "SHOC"
 
 
-def test_a_warehouse_cycles_every_fifteen_minutes_unless_told(monkeypatch):
+def test_every_backend_cycles_every_fifteen_minutes_unless_told(monkeypatch):
     monkeypatch.delenv("SHOC_CYCLE_SECONDS", raising=False)
     cfg = Config()
-    assert cfg.cycle_seconds == 300
-    cfg.backend = "snowflake"
     assert cfg.cycle_seconds == 900
+    cfg.backend = "snowflake"
+    assert cfg.cycle_seconds == 900, "a move to a warehouse changes no schedule (D153)"
     monkeypatch.setenv("SHOC_CYCLE_SECONDS", "1800")
     assert cfg.cycle_seconds == 1800
 

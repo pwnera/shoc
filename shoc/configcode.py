@@ -40,7 +40,7 @@ class SourceSpec:
     source: str
     settings: dict[str, Any] = field(default_factory=dict)
     secret_env: dict[str, str] = field(default_factory=dict)
-    interval_seconds: int = 300
+    interval_seconds: int = 0
     enabled: bool = True
 
 
@@ -87,7 +87,7 @@ class Desired:
                     source=s["source"],
                     settings=s.get("settings", {}) or {},
                     secret_env=s.get("secret_env", {}) or {},
-                    interval_seconds=int(s.get("interval_seconds", 300)),
+                    interval_seconds=int(s.get("interval_seconds", 0)),
                     enabled=bool(s.get("enabled", True)),
                 )
                 for s in data.get("sources", []) or []
@@ -441,7 +441,6 @@ retention_days: 90
 
 sources:
   - source: aws_cloudtrail
-    interval_seconds: 300
     settings: { region: eu-west-1, backfill_hours: 24 }
     secret_env:
       access_key_id: SHOC_SECRET_AWS_ACCESS_KEY_ID

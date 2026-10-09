@@ -41,7 +41,7 @@ def test_default_schedules_cover_the_whole_cycle(conn, config):
             (config.tenant_id,),
         )
     }
-    assert kinds["detect.run"] == 300
+    assert kinds["detect.run"] == 900, "one 15-minute cycle on every backend (D153)"
     assert kinds["retention"] == 86400
     assert kinds["intel.refresh"] == 21600
     assert "ops.check" in kinds and "graph.refresh" in kinds
@@ -51,8 +51,8 @@ def test_default_schedules_cover_the_whole_cycle(conn, config):
     assert kinds["report.exec"] == 2592000, "the executive report goes out every 30 days (AGT-14)"
 
 
-def test_a_source_configured_on_postgres_polls_a_warehouse_once_a_cycle(conn, config, monkeypatch):
-    """Only `source.configure` raised a sync to the cycle (D71, D151)."""
+def test_a_source_polls_once_a_cycle_at_most_on_every_backend(conn, config, monkeypatch):
+    """Only `source.configure` raised a sync to the cycle (D151, D153)."""
     tenant = config.tenant_id
     execute(
         conn,
@@ -74,12 +74,13 @@ def test_a_source_configured_on_postgres_polls_a_warehouse_once_a_cycle(conn, co
         return row["interval_seconds"]
 
     monkeypatch.delenv("SHOC_CYCLE_SECONDS", raising=False)
-    monkeypatch.setattr(config, "backend", "databricks")
+    for backend in ("postgres", "databricks"):
+        monkeypatch.setattr(config, "backend", backend)
+        worker.ensure_default_schedules(conn, config)
+        assert every() == 900, backend
+    monkeypatch.setenv("SHOC_CYCLE_SECONDS", "300")
     worker.ensure_default_schedules(conn, config)
-    assert every() == 900
-    monkeypatch.setattr(config, "backend", "postgres")
-    worker.ensure_default_schedules(conn, config)
-    assert every() == 300, "back on Postgres it polls as configured"
+    assert every() == 300, "a shorter cycle lets it poll as configured"
 
 
 def test_the_sweep_sends_the_crew_back_at_a_case_nobody_worked(conn, ctx, store, config, clean):

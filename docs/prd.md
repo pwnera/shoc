@@ -91,7 +91,7 @@ v1.0 ships 45 requirements across eight areas (AGT-7 was removed). Each has a st
 | STO-6 | Google BigQuery adapter: load job into a staging table, insert-only MERGE | After v1.0 |
 | DET-1 | Sigma-subset compiler to canonical SQL, translated per dialect with SQLGlot | v0.1 |
 | DET-2 | 50 curated rules mapped to ATT&CK, each with a positive and a negative test | v0.1 (20), v0.3 (50) |
-| DET-3 | Scheduler on Postgres: 5-minute cycles, correlation, deduplication | v0.1 |
+| DET-3 | Scheduler on Postgres: 15-minute cycles on every backend (D153), correlation, deduplication | v0.1 |
 | DET-4 | Threat-intel indicators from polled sources (abuse.ch, OTX, MISP, any indicator list URL; no CISA KEV, D57; URLhaus without payloads for embedded devices, D122) or handed in and withdrawn (`intel.add`, `intel.remove`, D59), with IOC matching and 90-day retro-hunt | v0.3 |
 | DET-6 | `intel.lookup`: on-demand indicator research across downloaded lists, keyless sources, keyed sources a person configured under a daily quota (D123) and our own history, scored and cached | v0.3 |
 | DET-7 | `intel.digest`: read a threat report (URL, text or PDF) into indicators, ATT&CK techniques and hunts; report sources (RSS or Atom, OTX pulses, MISP events) are polled, scored against what the company runs, and read best-first under a daily cap (D59, D122) | v0.3 |

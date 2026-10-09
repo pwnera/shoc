@@ -205,23 +205,14 @@ class Config:
 
     @property
     def cycle_seconds(self) -> int:
-        """How often a schedule loads into or reads the event store (DET-3, D71).
+        """How often detection runs, and the shortest interval a source polls at
+        (DET-3, D71, D153).
 
-        A warehouse bills for the minutes it is awake, so it gets a longer
-        cycle; the scheduler starts every cycle on the same clock boundary, so
-        polls and detection wake it once.
+        The same on every backend, so moving to another one changes no
+        schedule. The scheduler starts every cycle on the same clock boundary,
+        so the polls and detection wake a warehouse once.
         """
-        default = "300" if self.backend == "postgres" else "900"
-        return int(os.environ.get("SHOC_CYCLE_SECONDS") or default)
-
-    @property
-    def poll_floor_seconds(self) -> int:
-        """The shortest interval a source polls at (D71, D151).
-
-        A poll that loads wakes a warehouse, and detection only looks once a
-        cycle, so on one a source polls no more often than the cycle.
-        """
-        return 0 if self.backend == "postgres" else self.cycle_seconds
+        return int(os.environ.get("SHOC_CYCLE_SECONDS") or 900)
 
     def tenant_schema(self, tenant_id: str | None = None) -> str:
         """Postgres and Redshift tenancy is a schema per tenant (decision D4)."""

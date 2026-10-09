@@ -51,7 +51,7 @@ log.
 
 | Term | Lives in | Meaning | Values |
 |---|---|---|---|
-| Source | `shoc.connector_config`, `connector_state` | One product that sends logs, pulled by a connector on an interval (300 s default). Credentials are encrypted in `secret`. 24 connectors ship (23 products and `file`); see [connectors.md](connectors.md). | |
+| Source | `shoc.connector_config`, `connector_state` | One product that sends logs, pulled by a connector once a detection cycle (15 minutes by default) or less often. Credentials are encrypted in `secret`. 24 connectors ship (23 products and `file`); see [connectors.md](connectors.md). | |
 | Onboarding | `shoc.source_onboarding` | The Integrator's progress on one source. A source is done when it has produced a finding (`proof_finding`). `dark` marks a source that stopped sending. | `discover` → `credentials` → `map` → `prove` → `done` |
 | Event | `ocsf_events` via an `EventStore` adapter | One log record mapped to OCSF, with the whole original event kept, technology-specific fields included. `event_uid` is what every citation points at. Event content is untrusted data. | |
 | Entity | typed key | A thing an event is about, written `kind:value` (`user:alice@example.com`, `ip:203.0.113.7`). Findings, cases, graph nodes and exposures share these keys. | `user`, `key`, `ip`, `resource`, `account`, `host`, `device`, `role`; on a finding only, `process_hash`, `file_hash` |

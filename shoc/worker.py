@@ -657,15 +657,15 @@ def ensure_default_schedules(conn: Any, config: Config, tenant: str = "") -> Non
             ensure_default_schedules(conn, config, each)
         return
     jobs.upsert_schedule(conn, f"{tenant}:detect", tenant, "detect.run", config.cycle_seconds, {})
-    # `source.configure` floors a sync only when it runs, so a source configured
-    # before the tenant moved to a warehouse, or before the cycle grew, kept
-    # polling at its old rate (D71, D151).
+    # `source.configure` floors a sync at the cycle only when it runs, so a
+    # source configured before the cycle grew kept polling at its old rate
+    # (D151, D153).
     execute(
         conn,
         """UPDATE shoc.schedules s SET interval_seconds = greatest(c.interval_seconds, %s)
            FROM shoc.connector_config c
            WHERE c.tenant_id = %s AND s.schedule_id = c.tenant_id || ':sync:' || c.source""",
-        (config.poll_floor_seconds, tenant),
+        (config.cycle_seconds, tenant),
     )
     jobs.upsert_schedule(
         conn, f"{tenant}:retention", tenant, "retention", 86400, {"days": config.retention_days}
