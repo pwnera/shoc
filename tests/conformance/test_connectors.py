@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from shoc.db.pool import execute, fetch_one
@@ -50,6 +52,55 @@ def test_events_read_again_are_not_counted_again(conn, store, config, clean):
         (config.tenant_id, "file"),
     )
     assert row and row["events_seen"] == first.loaded, "an overlap re-read is not new traffic"
+
+
+def test_a_page_read_again_never_reaches_the_store(conn, store, config, clean, monkeypatch):
+    """A quiet source reads its overlap every poll; on a warehouse each load of it
+    was three statements (ING-1, ING-3, STO-3, D71, D150)."""
+    from shoc.ingest import connectors
+    from shoc.ingest.batch import read_unique
+    from shoc.ingest.connectors import base
+
+    path = ROOT / "tests" / "fixtures" / "mappings" / "aws_cloudtrail.json"
+    records = sorted(json.loads(path.read_text()), key=lambda r: r["eventTime"])
+    late, rest = records[0], records[1:]
+    pages = [rest, rest, [], rest, [late, *rest]]
+
+    class Overlap:
+        source = "aws_cloudtrail"
+
+        def fetch(self, settings, secret, cursor, limit):
+            return base.FetchResult(records=pages.pop(0), cursor={"since": rest[-1]["eventTime"]})
+
+    batches: list[int] = []
+    load_batch = store.load_batch
+    monkeypatch.setattr(
+        store, "load_batch", lambda p, *a: batches.append(len(read_unique(p))) or load_batch(p, *a)
+    )
+    monkeypatch.setattr(connectors, "get", lambda source: Overlap())
+
+    def stamps() -> int:
+        row = fetch_one(
+            conn,
+            "SELECT count(*) AS n FROM shoc.store_loads WHERE tenant_id = %s",
+            (config.tenant_id,),
+        )
+        return int(row["n"]) if row else 0
+
+    def poll() -> int:
+        stats = run(conn, store, config.tenant_id, "aws_cloudtrail", {}, {})
+        assert stats.error is None, stats.detail
+        return stats.loaded
+
+    assert poll() == len(rest) and batches == [len(rest)] and stamps() == 1
+    assert poll() == 0 and batches == [len(rest)], "a page already stored is not sent again"
+    assert poll() == 0, "an empty window"
+    assert poll() == 0 and batches == [len(rest)], "an empty window forgets nothing"
+    assert stamps() == 1, "a page that added nothing is not a load (D71)"
+    assert poll() == 1 and batches == [len(rest), 1], (
+        "an event delivered late, older than every stored one, is still loaded, and alone"
+    )
+    assert stamps() == 2
 
 
 def test_verifying_a_credential_leaves_the_cursor_alone(conn, config, ctx, clean):

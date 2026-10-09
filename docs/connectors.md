@@ -137,9 +137,10 @@ Cursors survive restarts: each connector stores where it got to in
 time filter stays where the walk began, because the token belongs to that
 filter. Once the pages run out, the next window starts 15 minutes before the
 newest event read, so an event the provider delivers late, with an earlier
-timestamp, is still picked up. The store keeps one row per `event_uid` and
-time, so what the overlap reads twice is dropped, and `events_seen` counts only
-the rows that were new. GuardDuty keeps a window per detector. Microsoft 365
+timestamp, is still picked up. Each run keeps a digest of the `event_uid` and
+time of every row it read and stored, and the next run sends the store only the
+rows it lacks, so a quiet source that reads the same page every poll costs a
+warehouse nothing (D150). `events_seen` counts only the rows that were new. GuardDuty keeps a window per detector. Microsoft 365
 lists content by when it became available rather than by when the activity
 happened, so its cursor follows availability, in windows of at most 24 hours
 and never more than 7 days back; content Microsoft publishes hours late is

@@ -9,6 +9,7 @@ module plus one mapping file.
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -26,8 +27,8 @@ DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 # How far before the newest event seen the next window starts. CloudTrail and
 # Entra sign-ins, among others, deliver some events minutes after their
 # timestamp, and a window that resumed exactly at the newest event would never
-# read them. What the overlap reads again is dropped by the store, which keeps
-# one row per event_uid and time.
+# read them. What the overlap reads again is dropped before the store, by
+# `stored_key`, so a page read twice never reaches a warehouse (D150).
 OVERLAP = timedelta(minutes=15)
 
 
@@ -351,21 +352,48 @@ def read_state(conn: Any, tenant_id: str, source: str) -> dict[str, Any]:
 
 
 def write_state(
-    conn: Any, tenant_id: str, source: str, cursor: dict[str, Any], seen: int, error: str | None
+    conn: Any,
+    tenant_id: str,
+    source: str,
+    cursor: dict[str, Any],
+    seen: int,
+    error: str | None,
+    keys: bytes | None = None,
 ) -> None:
+    """`keys`, when given, replaces the `stored_key`s the next run skips."""
     execute(
         conn,
         """INSERT INTO shoc.connector_state
-               (tenant_id, source, cursor, last_run_at, last_ok_at, last_error, events_seen)
-           VALUES (%s, %s, %s, now(), CASE WHEN %s::text IS NULL THEN now() END, %s, %s)
+               (tenant_id, source, cursor, last_run_at, last_ok_at, last_error, events_seen,
+                stored_keys)
+           VALUES (%s, %s, %s, now(), CASE WHEN %s::text IS NULL THEN now() END, %s, %s, %s)
            ON CONFLICT (tenant_id, source) DO UPDATE SET
                cursor = EXCLUDED.cursor,
                last_run_at = now(),
                last_ok_at = COALESCE(EXCLUDED.last_ok_at, shoc.connector_state.last_ok_at),
                last_error = EXCLUDED.last_error,
-               events_seen = shoc.connector_state.events_seen + EXCLUDED.events_seen""",
-        (tenant_id, source, json.dumps(cursor), error, error, seen),
+               events_seen = shoc.connector_state.events_seen + EXCLUDED.events_seen,
+               stored_keys = COALESCE(EXCLUDED.stored_keys, shoc.connector_state.stored_keys)""",
+        (tenant_id, source, json.dumps(cursor), error, error, seen, keys),
     )
+
+
+def stored_key(row: dict[str, Any]) -> bytes:
+    """A mapped row's identity in the store, which keeps one row per event_uid
+    and time, in 8 bytes (D150)."""
+    text = f"{row.get('event_uid')}\0{row.get('time')}"
+    return hashlib.blake2b(text.encode(), digest_size=8).digest()
+
+
+def stored_keys(conn: Any, tenant_id: str, source: str) -> set[bytes]:
+    """The `stored_key` of every row the source's last run read and stored."""
+    row = fetch_one(
+        conn,
+        "SELECT stored_keys FROM shoc.connector_state WHERE tenant_id = %s AND source = %s",
+        (tenant_id, source),
+    )
+    blob = bytes((row or {}).get("stored_keys") or b"")
+    return {blob[i : i + 8] for i in range(0, len(blob), 8)}
 
 
 def mark_push(conn: Any, tenant_id: str, source: str, loaded: int) -> None:
@@ -412,7 +440,9 @@ def run(
     """Fetch, map to OCSF, load in batches, then persist the cursor.
 
     `events_seen` counts rows the store did not already hold, so the overlap a
-    connector reads again is not counted twice.
+    connector reads again is not counted twice. A row the last run already read
+    and stored is dropped before the store: a quiet source reads the same page
+    every poll, and each load of it was three statements on a warehouse (D150).
     """
     from shoc.ingest.connectors import get
 
@@ -421,6 +451,8 @@ def run(
         cursor if cursor is not None else (read_state(conn, tenant_id, source) if persist else {})
     )
     stats = RunStats(source=source, cursor=dict(state))
+    known = stored_keys(conn, tenant_id, source) if persist else set()
+    stored: set[bytes] = set()
     try:
         # Loading the mapping is inside the try: a misconfigured source is bad
         # health for that source, never an exception that stops the worker.
@@ -447,13 +479,16 @@ def run(
                 if shift:
                     for row in rows:
                         row["time"] = replay.shift_time(row["time"], shift)
-                added = batchwriter.load(store, rows).rows
+                keys = [stored_key(row) for row in rows]
+                new = [row for row, key in zip(rows, keys, strict=True) if key not in known]
+                added = batchwriter.load(store, new).rows if new else 0
+                stored.update(keys)
                 stats.loaded += added
                 if conn is not None:
                     # A page read again adds nothing. Stamped as a load, it woke
                     # every rule of an idle cycle (D71).
                     if added:
-                        batchwriter.loaded(conn, tenant_id, rows)
+                        batchwriter.loaded(conn, tenant_id, new)
                     if persist:
                         history(conn, tenant_id, source, rows, store)
             stats.cursor = page.cursor
@@ -472,7 +507,9 @@ def run(
         stats.error = explain(source, exc)
         stats.detail = f"{type(exc).__name__}: {exc}"
     if persist:
-        write_state(conn, tenant_id, source, stats.cursor, stats.loaded, stats.error)
+        # A run that read nothing keeps the last one's keys.
+        kept = b"".join(stored) if stored else None
+        write_state(conn, tenant_id, source, stats.cursor, stats.loaded, stats.error, kept)
     return stats
 
 
