@@ -23,7 +23,7 @@ versioned YAML file, so a rule written once works across all of them.
 | `sentinelone` | `console_url` | `api_token` | `/web/api/v2.1/threats`, and Unified Alert Management (STAR, identity and cloud alerts) |
 | `sentinelone_cloudfunnel` | `bucket`, optional `prefix` (default `s1/cloud_funnel`), `bucket_region`, `event_categories`, `backfill_hours` | `access_key_id`, `secret_access_key`, optional `session_token` | Cloud Funnel 2.0 telemetry in your S3 bucket |
 | `github` | `org` | `token` | organisation audit log (GitHub Enterprise Cloud only; other plans push a [webhook](#github-on-the-free-and-team-plans)) |
-| `gitlab` | optional `group`, `base_url` | `token` | audit events (group, or the instance), each named by its audit event type (`member_updated`, `deploy_key_added`) |
+| `gitlab` | optional `group`, `base_url` | `token` | audit events of the group, every group below it and all their projects, or of the instance; each named by its audit event type (`member_updated`, `deploy_key_added`) |
 | `wazuh` | `indexer_url`, optional `index`, `verify_tls` | `username`, `password` | `wazuh-alerts-*` in the Wazuh indexer |
 | `cloudflare` | `account_id` | `api_token` | account audit log (Audit Logs v2) |
 | `cloudflare_logs` | `bucket`, `datasets` (dataset → the job's path, e.g. `{"http_requests": "logs/http", "gateway_dns": "zt/dns"}`), `account_id` for R2 or `bucket_region` for S3, `backfill_hours` | `access_key_id`, `secret_access_key` (an R2 API token's S3 credentials, or AWS keys) | Logpush jobs' files in R2 or S3: HTTP requests, firewall events, DNS, Gateway DNS/HTTP/network, Access requests, Zero Trust sessions, audit logs |
@@ -39,6 +39,14 @@ subscription. Each stream keeps its own cursor, and one that fails is reported
 while the others go on loading. Entra sign-in logs need an Entra ID P1 or P2
 licence; without one, set `stream` to `directoryAudits`. Risk detections and risky
 users need P1 or P2, and carry their risk level only on P2.
+
+GitLab keeps an audit event with the group or project it happened in, and a
+group's endpoint returns only the group's own. With `group` set, each poll lists
+the groups below it and every project in them (projects shared in from another
+namespace are left out), then reads each one's audit events as a stream with its
+own cursor: one call per group and project. A project created after the source
+was set up is read from `backfill_hours` back. Events about a user rather than a
+group or project, such as a user made an administrator, need instance mode.
 
 `LookupEvents` returns 50 events a call, two calls a second per region, and
 management events only, so a busy AWS account outgrows it. Set `bucket` to the
@@ -195,7 +203,7 @@ allows:
 | Google Workspace | Service account with domain-wide delegation for `https://www.googleapis.com/auth/admin.reports.audit.readonly`, and the Admin SDK API enabled in its Cloud project; `admin_email` is a user whose only admin role has the Reports privilege |
 | Microsoft 365 | `ActivityFeed.Read` on the Management API |
 | GitHub | Fine-grained token with organisation `Administration: read`; the audit-log API answers 404 unless the organisation is on GitHub Enterprise Cloud, so other plans send a webhook instead |
-| GitLab | Personal or group access token with `read_api`; instance-wide events need an administrator |
+| GitLab | Token with `read_api` of a group Owner: a group access token with the Owner role, or an Owner's personal token. GitLab gives a member below Owner only their own actions in a group, and below Maintainer only their own in a project. Instance-wide events need an administrator |
 | Azure Activity Log | `Reader` on the subscription, granted to the same app registration as Entra ID |
 | GCP Cloud Audit | Service account with `roles/pubsub.subscriber` on the sink's subscription; `roles/logging.viewer` on the project for the `project_id` fallback |
 | Defender | Graph application permission `SecurityAlert.Read.All` |

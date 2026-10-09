@@ -331,18 +331,53 @@ def test_gcp_audit_needs_a_project():
 # -- GitLab ----------------------------------------------------------------
 
 
-def test_gitlab_reads_group_audit_events(monkeypatch):
+def test_gitlab_reads_the_group_the_groups_below_it_and_their_projects(monkeypatch):
+    """A group's audit events hold only the group's own; a project's and a
+    subgroup's are read from each one, with its own cursor (D155)."""
+    recent = (datetime.now(UTC) - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
     seen = transport(
         monkeypatch,
-        [{"json": [{"id": 1, "created_at": "2026-09-20T10:00:00Z"}]}],
+        [
+            {"json": [{"id": 11}]},
+            {"json": [{"id": 21}], "headers": {"x-next-page": "2"}},
+            {"json": [{"id": 22}]},
+            {"json": [{"id": 1, "created_at": "2026-09-20T10:00:00Z"}]},
+            {"json": []},
+            {"json": [{"id": 3, "created_at": recent}]},
+            {"json": []},
+        ],
     )
+    cursor = {"streams": {"groups/acme%2Fplatform": {"since": SINCE, "more": False}}}
     result = connectors.get("gitlab").fetch(
-        {"group": "acme"}, {"token": "tok"}, {"since": "2026-09-20T09:00:00+00:00"}, 50
+        {"group": "acme/platform"}, {"token": "tok"}, cursor, 400
     )
-    assert str(seen[0].url).startswith("https://gitlab.com/api/v4/groups/acme/audit_events")
-    assert query(seen[0])["created_after"] == "2026-09-20T09:00:00+00:00"
-    assert seen[0].headers["private-token"] == "tok"
-    assert result.cursor == {"since": "2026-09-20T10:00:00Z"}
+    paths = [r.url.raw_path.decode().split("?")[0] for r in seen]
+    assert paths == [
+        "/api/v4/groups/acme%2Fplatform/descendant_groups",
+        "/api/v4/groups/acme%2Fplatform/projects",
+        "/api/v4/groups/acme%2Fplatform/projects",
+        "/api/v4/groups/acme%2Fplatform/audit_events",
+        "/api/v4/groups/11/audit_events",
+        "/api/v4/projects/21/audit_events",
+        "/api/v4/projects/22/audit_events",
+    ]
+    assert query(seen[1]) == {
+        "include_subgroups": "true",
+        "with_shared": "false",
+        "simple": "true",
+        "per_page": "100",
+        "page": "1",
+    }
+    assert query(seen[2])["page"] == "2"
+    assert query(seen[3])["created_after"] == SINCE
+    backfill = datetime.now(UTC) - timedelta(hours=24) - base.utc(query(seen[4])["created_after"])
+    assert abs(backfill) < timedelta(minutes=1), "a scope never read starts at the backfill"
+    assert all(r.headers["private-token"] == "tok" for r in seen)
+    assert [r["id"] for r in result.records] == [1, 3]
+    streams = result.cursor["streams"]
+    assert streams["groups/acme%2Fplatform"] == {"since": "2026-09-20T10:00:00Z", "more": False}
+    assert streams["projects/21"] == {"since": recent, "more": False}
+    assert result.more is False
 
 
 def test_gitlab_holds_the_window_still_while_paging(monkeypatch):

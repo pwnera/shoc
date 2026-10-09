@@ -1,20 +1,35 @@
 """GitLab audit-events connector (ING-1).
 
 Instance audit events need an administrator token, which a GitLab.com customer
-does not have, so a `group` in the settings switches to that group's events —
-the same scope a GitHub organisation audit log covers. Records can also be
-pushed to `/ingest/gitlab` (ING-2).
+does not have, so a `group` in the settings switches to the group. GitLab keeps
+an event with the group or project it happened in, and a group's endpoint
+returns only the group's own, so the group, each group below it and each of
+their projects is read as a stream with its own cursor (D155).
 """
 
 from __future__ import annotations
 
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
+
+import httpx
 
 from shoc.errors import ConfigError
-from shoc.ingest.connectors.base import FetchResult, client, since_default
+from shoc.ingest.connectors.base import FetchResult, Streams, client, since_default
 
 DEFAULT_URL = "https://gitlab.com"
+
+
+def listing(http: httpx.Client, url: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Every item of a GitLab list, page by page."""
+    items: list[dict[str, Any]] = []
+    page = "1"
+    while page:
+        resp = http.get(url, params={**params, "per_page": 100, "page": page})
+        resp.raise_for_status()
+        items += resp.json() or []
+        page = (resp.headers.get("x-next-page") or "").strip()
+    return items
 
 
 class GitLabConnector:
@@ -33,8 +48,27 @@ class GitLabConnector:
         token = secret.get("token")
         if not token:
             raise ConfigError("gitlab: the secret needs token (a read_api personal access token)")
-        group = settings.get("group")
-        path = f"/api/v4/groups/{group}/audit_events" if group else "/api/v4/audit_events"
+        headers = {"PRIVATE-TOKEN": str(token), "Accept": "application/json"}
+        group, scope = settings.get("group"), settings.get("scope")
+        if group and not scope:
+            top = quote(str(group), safe="")
+            with client(headers) as http:
+                groups = listing(http, f"{base}/api/v4/groups/{top}/descendant_groups", {})
+                projects = listing(
+                    http,
+                    f"{base}/api/v4/groups/{top}/projects",
+                    # A project shared into the group belongs to another namespace.
+                    {"include_subgroups": "true", "with_shared": "false", "simple": "true"},
+                )
+            scopes = (
+                [f"groups/{top}"]
+                + [f"groups/{g['id']}" for g in groups]
+                + [f"projects/{p['id']}" for p in projects]
+            )
+            return Streams(self, "scope").fetch(
+                {**settings, "scope": scopes}, secret, cursor, limit
+            )
+        path = f"/api/v4/{scope}/audit_events" if scope else "/api/v4/audit_events"
         since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
         page = int(cursor.get("page", 1))
         params: dict[str, Any] = {
@@ -42,7 +76,6 @@ class GitLabConnector:
             "per_page": min(int(limit), 100),
             "page": page,
         }
-        headers = {"PRIVATE-TOKEN": str(token), "Accept": "application/json"}
         with client(headers) as http:
             resp = http.get(f"{base}{path}", params=params)
             resp.raise_for_status()
