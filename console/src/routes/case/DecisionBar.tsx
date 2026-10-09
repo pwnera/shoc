@@ -2,7 +2,8 @@
  * What waits on a person in this case, only when something does: one
  * approval card per proposed action (the inbox's own component, without the
  * severity the header carries), "Close as" when the crew handed the verdict
- * to a person, and "Decide again" for an approval nobody decided in time.
+ * to a person, and "Decide again" for an approval nobody decided in time,
+ * kept on a closed case with "Acknowledge" until a person has seen it (D152).
  * From 768px it sticks at the top of the main column, one line per item while
  * stuck and three lines at most, the last a "+N" that unsticks it; on a phone
  * it scrolls away and the bottom bar carries Reject | Approve. A and R act on
@@ -10,18 +11,20 @@
  * already decided. Approve calls `action.approve` only: the worker resumes a
  * waiting playbook run on its own.
  *
- * Capabilities used: action.approve and action.reject, through ApprovalCard.
+ * Capabilities used: action.approve and action.reject, through ApprovalCard;
+ * case.acknowledge.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Gavel, Hourglass, type LucideIcon } from "lucide-react";
+import { Gavel, Hourglass, ShieldOff, type LucideIcon } from "lucide-react";
 import { ApprovalCard, type ApprovalHandle } from "@/components/ui/approval";
 import { Button } from "@/components/ui/button";
 import { Entity } from "@/components/ui/entity";
 import { cn } from "@/lib/cn";
 import { useCommand } from "@/lib/commands";
 import { DISPOSITIONS, actionLabel } from "@/lib/labels";
-import { inbox } from "@/lib/needs";
+import { expiredActions } from "@/lib/needs";
+import { useAcknowledgeCase } from "@/lib/queries";
 import { toast } from "@/lib/toast";
 import type { Action, Case, Disposition, Playbook, PlaybookRun } from "@/types";
 import { focusDecision } from "./links";
@@ -82,11 +85,16 @@ export function DecisionBar({
   const sentinel = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLDivElement>(null);
   const first = useRef<ApprovalHandle>(null);
+  const acknowledge = useAcknowledgeCase();
   const closed = record.state === "closed";
+  const unseen = closed && Boolean(record.unacknowledged);
   const pending = actions.filter((a) => a.state === "proposed");
-  const expired = inbox({ actions, cases: [record] }).flatMap((item) => (item.kind === "expired" && item.action ? [item.action] : []));
+  // On a closed case, only what expired since a person last acknowledged it.
+  const expired = expiredActions(actions).filter(
+    (a) => !closed || (unseen && (a.updated_at ?? a.created_at) > (record.acknowledged_at ?? "")),
+  );
   const asking = !closed && record.verdict === "needs_human";
-  const shown = !closed && (pending.length > 0 || asking || expired.length > 0);
+  const shown = closed ? unseen : pending.length > 0 || asking || expired.length > 0;
   const stuck = useStuck(sentinel, bar, shown);
 
   // The first card comes on screen first: on a phone the bar has scrolled away when the bottom bar asks.
@@ -199,6 +207,24 @@ export function DecisionBar({
         </div>
       </div>
     )),
+    ...(unseen
+      ? [
+          <div key="acknowledge" className={row()}>
+            {glyph(ShieldOff)}
+            <div className={line}>
+              <span className="sh-approval__title">Not contained</span>
+              <Button
+                size="sm"
+                className="ml-auto"
+                disabled={acknowledge.isPending}
+                onClick={() => acknowledge.mutate({ case_uid: record.case_uid })}
+              >
+                Acknowledge
+              </Button>
+            </div>
+          </div>,
+        ]
+      : []),
   ];
   const cut = stuck && items.length > STUCK_ROWS ? STUCK_ROWS - 1 : items.length;
   const unstick = () => {

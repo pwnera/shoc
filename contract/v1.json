@@ -625,7 +625,7 @@
       "cli": "shoc ask",
       "input_schema": {
         "additionalProperties": false,
-        "description": "Ask the crew something. The answer always cites the events behind it.",
+        "description": "Ask the crew something. An answer about a case, key, address, account or finding cites the events behind it.",
         "properties": {
           "history": {
             "description": "Earlier turns of this conversation, oldest first: {role: operator|manager, text}",
@@ -932,6 +932,63 @@
       ],
       "rest": "/v1/capability/list",
       "scope": "meta:read"
+    },
+    "case.acknowledge": {
+      "audit": true,
+      "autonomy": "L2",
+      "cli": "shoc case acknowledge",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "case_uid": {
+            "description": "Case identifier, e.g. CASE-1a2b\u2026",
+            "type": "string"
+          }
+        },
+        "required": [
+          "case_uid"
+        ],
+        "title": "CaseRef",
+        "type": "object"
+      },
+      "mcp_tool": "case_acknowledge",
+      "output_schema": {
+        "properties": {
+          "citations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "data": {
+            "additionalProperties": false,
+            "properties": {
+              "acknowledged_at": {
+                "type": "string"
+              },
+              "case_uid": {
+                "type": "string"
+              }
+            },
+            "title": "Acknowledged",
+            "type": "object"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data",
+          "summary",
+          "citations"
+        ],
+        "type": "object"
+      },
+      "principals": [
+        "human"
+      ],
+      "rest": "/v1/case/acknowledge",
+      "scope": "cases:transition"
     },
     "case.chase": {
       "audit": true,
@@ -1370,6 +1427,10 @@
           "state": {
             "description": "triage, analysis, containment, eradication, recovery, post_incident or closed",
             "type": "string"
+          },
+          "unacknowledged": {
+            "description": "Only cases closed without their containment that nobody has acknowledged",
+            "type": "boolean"
           },
           "verdict": {
             "description": "malicious, suspicious, benign_expected, false_positive, needs_human or unknown",
@@ -10210,6 +10271,7 @@
     "case.state_changed",
     "case.updated",
     "case.verdict",
+    "events.loaded",
     "finding.new",
     "health.action.stuck",
     "health.approval.waiting",
@@ -10226,6 +10288,7 @@
     "health.source.failing",
     "health.source.quality",
     "health.source.stale",
+    "intel.report",
     "openspace.message",
     "playbook.finished",
     "playbook.needs_approval",

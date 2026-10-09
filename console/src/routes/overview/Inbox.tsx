@@ -2,7 +2,8 @@
  * Needs you: every decision only a person can make, one row each, ordered by
  * severity, then the deadline, then how long it has waited. An approval is a
  * compact approval card (A approves and R rejects through its confirm); a
- * verdict, an expired approval and a credential open where they are decided.
+ * verdict, an expired approval, a case closed without its containment and a
+ * credential open where they are decided.
  * A list that failed to load gets its own error row, so a failure never reads
  * as an empty inbox; one whose refresh failed keeps its rows and the head says
  * how old they are. Under 768px a row is two lines and an approval opens its
@@ -15,7 +16,7 @@
  */
 import { useId, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { KeyRound, Scale, Telescope, TimerOff, type LucideIcon } from "lucide-react";
+import { KeyRound, Scale, ShieldOff, Telescope, TimerOff, type LucideIcon } from "lucide-react";
 import { ApprovalCard, type ApprovalHandle } from "@/components/ui/approval";
 import { SeverityBadge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -39,7 +40,7 @@ import { connectorOf, sourceName } from "@/lib/sources";
 import type { NeedsItem } from "@/types";
 import { useInboxLists } from "./lists";
 
-const LISTS = { approvals: "Approvals", actions: "Actions", cases: "Cases", sources: "Sources" } as const;
+const LISTS = { approvals: "Approvals", actions: "Actions", cases: "Cases", closed: "Closed cases", sources: "Sources" } as const;
 
 
 export function Inbox({ needs }: { needs: Needs }) {
@@ -144,6 +145,7 @@ function autonomyOf(actions: Record<string, Record<string, unknown>> | undefined
 const GLYPH: Record<Exclude<NeedsItem["kind"], "approval">, { icon: LucideIcon; crew?: boolean }> = {
   verdict: { icon: Scale, crew: true },
   expired: { icon: TimerOff },
+  unacknowledged: { icon: ShieldOff },
   credential: { icon: KeyRound },
   rejected_credential: { icon: KeyRound },
 };
@@ -156,11 +158,12 @@ function Row({ item, active }: { item: NeedsItem; active: boolean }) {
   let title = "";
   let hunt = false;
   let entity: string | null = null;
-  if (item.kind === "verdict" && c) {
+  if ((item.kind === "verdict" || item.kind === "unacknowledged") && c) {
     // A hunt-born case trades its "Hunt:" prefix for a telescope, as on Cases and Findings.
     const bareTitle = huntTitle(c.title);
     hunt = bareTitle !== null;
     title = bareTitle ?? c.title;
+    if (item.kind === "unacknowledged") title = `Not contained: ${title}`;
     entity = c.title.includes(bare(c.entity_key)) ? null : c.entity_key;
   } else if (item.kind === "expired" && item.action) {
     title = `Decide again: ${actionLabel(item.action.type)}`;

@@ -44,6 +44,10 @@ export type Case = {
   crew_attempts?: number;
   crew_attempted_at?: string | null;
   assignee?: string | null;
+  /** Closed without its containment and nobody has acknowledged it since (D152). */
+  unacknowledged?: boolean;
+  acknowledged_at?: string | null;
+  acknowledged_by?: string | null;
 };
 
 /** How a person closes a case (`case.close`). */
@@ -1390,7 +1394,7 @@ export type Answer = {
 
 /** One decision only a person can make, as the Overview inbox lists it (`lib/needs.ts`). */
 export type NeedsItem = {
-  kind: "approval" | "verdict" | "expired" | "credential" | "rejected_credential";
+  kind: "approval" | "verdict" | "expired" | "unacknowledged" | "credential" | "rejected_credential";
   /** Unique within the inbox: the action uid, the case uid or the source name. */
   key: string;
   /** The case's severity; null for source rows and actions without a case. */

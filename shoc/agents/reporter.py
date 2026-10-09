@@ -402,7 +402,9 @@ def exceptions(conn: Conn, tenant_id: str, config: Any = None) -> list[dict[str,
     """The decisions only a person can make, each from a query (D52).
 
     An L2 that waited its window out unapproved while its case is still open:
-    the system gave up on the action and the incident is not over. A source
+    the system gave up on the action and the incident is not over. The same
+    after the crew closed the case, until a person acknowledges it (D152):
+    quiet logs do not mean the key was revoked. A source
     waiting on a credential, or whose credential its vendor now rejects: only
     somebody with access to that product can make a new one. A vendor shoc
     reads and holds no response credential for, and dry run left on: either
@@ -410,26 +412,32 @@ def exceptions(conn: Conn, tenant_id: str, config: Any = None) -> list[dict[str,
     """
     from shoc.actions.base import NEEDS
     from shoc.cases import credentials
+    from shoc.cases.engine import UNACKNOWLEDGED
 
     items: list[dict[str, Any]] = []
     for row in fetch_all(
         conn,
-        """SELECT a.action_uid, a.type, a.target, a.error, a.case_uid
-           FROM shoc.actions a
-           JOIN shoc.cases c ON c.tenant_id = a.tenant_id AND c.case_uid = a.case_uid
-           WHERE a.tenant_id = %s AND a.state = 'rejected' AND a.approved_by = 'unattended'
-             AND c.state <> 'closed'
-           ORDER BY a.updated_at LIMIT 20""",
+        f"""SELECT a.action_uid, a.type, a.target, a.error, a.case_uid,
+                   c.state = 'closed' AS closed
+            FROM shoc.actions a
+            JOIN shoc.cases c ON c.tenant_id = a.tenant_id AND c.case_uid = a.case_uid
+            WHERE a.tenant_id = %s AND a.state = 'rejected' AND a.approved_by = 'unattended'
+              AND (c.state <> 'closed'
+                   OR ({UNACKNOWLEDGED}
+                       AND a.updated_at > coalesce(c.acknowledged_at, '-infinity')))
+            ORDER BY a.updated_at LIMIT 20""",
         (tenant_id,),
     ):
+        why = "the case closed without it" if row["closed"] else "the case is still open"
         items.append(
             {
                 "what": f"Decide on {row['type']} against {row['target']}, or another action, "
-                f"for {row['case_uid']}",
-                "why_only_a_human": "It needed a person's approval, nobody gave it in time, and the "
-                f"case is still open ({row['error'] or 'expired'})",
+                f"for {row['case_uid']}" + (", or acknowledge the case" if row["closed"] else ""),
+                "why_only_a_human": "It needed a person's approval, nobody gave it in time, and "
+                f"{why} ({row['error'] or 'expired'})",
                 "case_uid": str(row["case_uid"]),
-                "reference": str(row["action_uid"]),
+                # A new key once the case closes, so the person hears about it again.
+                "reference": ("closed:" if row["closed"] else "") + str(row["action_uid"]),
             }
         )
     for row in fetch_all(

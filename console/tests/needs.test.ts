@@ -83,6 +83,14 @@ describe("the inbox", () => {
     expect(inbox({ actions: [expired], proposals: [again], cases: [kase("C1")] }).map((i) => i.key)).toEqual(["A2"]);
   });
 
+  it("keeps a case closed without its containment until a person acknowledges it", () => {
+    const expired = action("E1", { state: "rejected", approved_by: "unattended", updated_at: at(-hour) });
+    const closed = kase("C1", { state: "closed", closed_at: at(-hour), unacknowledged: true });
+    const items = inbox({ actions: [expired], cases: [closed], unacknowledged: [closed] });
+    expect(items.map((i) => [i.kind, i.key])).toEqual([["unacknowledged", "C1"]]);
+    expect(inbox({ unacknowledged: [kase("C2", { state: "closed" })] })).toEqual([]);
+  });
+
   it("raises a source whose credential the provider rejected", () => {
     const rejected = { source: "okta", last_error: "Okta rejected the credential (401)", last_run_at: at(0) };
     const items = inbox({ configured: [rejected as ConfiguredSource] });

@@ -307,7 +307,15 @@ def propose(
     existing = fetch_one(
         conn, "SELECT * FROM shoc.actions WHERE tenant_id=%s AND action_uid=%s", (tenant_id, uid)
     )
-    if existing and existing["state"] not in ("proposed", "blocked", "failed"):
+    # A person may ask again for one nobody decided in time; the crew may not,
+    # or an expired L2 would come back every time the crew is woken (D152).
+    expired = (
+        existing is not None
+        and existing["state"] == "rejected"
+        and existing["approved_by"] == "unattended"
+        and principal_kind == "human"
+    )
+    if existing and existing["state"] not in ("proposed", "blocked", "failed") and not expired:
         # Settled, approved or running already. Re-proposing it must not undo a
         # human's rejection or approval, or repeat a completed action. A failed
         # one is decided again, with the parameters it is proposed with now.
@@ -361,6 +369,10 @@ def propose(
                blast_radius = EXCLUDED.blast_radius,
                grounded = EXCLUDED.grounded,
                acts_in = EXCLUDED.acts_in,
+               approved_by = CASE WHEN shoc.actions.state = 'rejected'
+                                  THEN NULL ELSE shoc.actions.approved_by END,
+               approved_at = CASE WHEN shoc.actions.state = 'rejected'
+                                  THEN NULL ELSE shoc.actions.approved_at END,
                error = NULL,
                updated_at = now()
            RETURNING *""",

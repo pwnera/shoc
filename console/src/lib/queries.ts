@@ -115,6 +115,7 @@ export {
   useRules,
   useSearch,
   useSourceList,
+  useUnacknowledged,
 } from "./reads";
 
 /**
@@ -505,6 +506,17 @@ export function useSetCaseState() {
     (input) => ({ ...input }),
     undefined,
     { failed: (input) => (input.state === "closed" ? "Close failed" : "Move failed") },
+  );
+}
+
+/** Say a person has seen that the case closed without its containment (D152). */
+export function useAcknowledgeCase() {
+  return useRefreshing<{ case_uid: string }, { case_uid: string; acknowledged_at: string }>(
+    "case.acknowledge",
+    ["case.get", "case.list"],
+    (input) => ({ ...input }),
+    () => toast({ tone: "ok", text: "Acknowledged" }),
+    { failed: "Acknowledge failed" },
   );
 }
 

@@ -23,6 +23,10 @@ class CaseFilter:
         doc="malicious, suspicious, benign_expected, false_positive, needs_human or unknown",
     )
     limit: int = f(25, doc="Maximum rows, capped at 200")
+    unacknowledged: bool = f(
+        False,
+        doc="Only cases closed without their containment that nobody has acknowledged",
+    )
 
 
 @dataclass
@@ -40,7 +44,9 @@ class CasePage:
     tags=("cases", "read"),
 )
 def list_cases(ctx: Context, inp: CaseFilter) -> Result:
-    rows = engine.recent(ctx.db, ctx.tenant_id, max(1, min(inp.limit, 200)), inp.state)
+    rows = engine.recent(
+        ctx.db, ctx.tenant_id, max(1, min(inp.limit, 200)), inp.state, inp.unacknowledged
+    )
     if inp.verdict:
         rows = [r for r in rows if r["verdict"] == inp.verdict]
     open_count = sum(1 for r in rows if r["state"] != "closed")
@@ -307,6 +313,48 @@ def close_case(ctx: Context, inp: CloseInput) -> Result:
             + (f" {rejected} pending action(s) rejected." if rejected else "")
         ),
         citations=[inp.case_uid, *citations[:20]],
+    )
+
+
+@dataclass
+class Acknowledged:
+    case_uid: str = ""
+    acknowledged_at: str = ""
+
+
+@capability(
+    name="case.acknowledge",
+    summary="Acknowledge a case closed without its containment, so it stops asking for you",
+    input=CaseRef,
+    output=Acknowledged,
+    scope="cases:transition",
+    principals=("human",),
+    # It takes a warning off the inbox and the exception report, which is what
+    # a log line written at an assistant would want, so an assistant asks (D65).
+    autonomy="L2",
+    audit=True,
+    tags=("cases", "write"),
+)
+def acknowledge(ctx: Context, inp: CaseRef) -> Result:
+    """Say a person has seen that this case closed without its containment (D152).
+
+    Only the actions that expired before now are covered: one that expires
+    later puts the case back in front of a person.
+    """
+    from shoc.db.pool import fetch_one
+
+    engine.require(ctx.db, ctx.tenant_id, inp.case_uid)
+    row = fetch_one(
+        ctx.db,
+        """UPDATE shoc.cases SET acknowledged_at = now(), acknowledged_by = %s
+           WHERE tenant_id = %s AND case_uid = %s RETURNING acknowledged_at""",
+        (f"{ctx.caller.kind}:{ctx.caller.id}", ctx.tenant_id, inp.case_uid),
+    )
+    at = row["acknowledged_at"].isoformat() if row else ""
+    return Result(
+        data=Acknowledged(case_uid=inp.case_uid, acknowledged_at=at),
+        summary=f"{inp.case_uid} acknowledged.",
+        citations=[inp.case_uid],
     )
 
 

@@ -73,7 +73,7 @@ export const useProposals = () => useActions({ state: "proposed" });
 /** One case's actions; nothing until the uid is known, never the whole log. */
 export const useCaseActions = (caseUid: string | undefined) => useActions({ case_uid: caseUid ?? "" }, Boolean(caseUid));
 
-function useCases(input: { state?: string; verdict?: string; limit?: number } = {}) {
+function useCases(input: { state?: string; verdict?: string; limit?: number; unacknowledged?: boolean } = {}) {
   const asked = { limit: CASE_CAP, ...input };
   return useQuery({
     queryKey: ["case.list", asked],
@@ -84,6 +84,9 @@ function useCases(input: { state?: string; verdict?: string; limit?: number } = 
 
 /** Every case the kernel returns: one cache key for the shell, Overview, Cases and Measurement. */
 export const useCaseLog = () => useCases();
+
+/** Closed cases whose containment never ran and nobody acknowledged, so none hides behind newer cases (D152). */
+export const useUnacknowledged = () => useCases({ unacknowledged: true });
 
 export function useHealth() {
   return useQuery({

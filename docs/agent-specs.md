@@ -928,7 +928,9 @@ carrying **only decisions a human must make**: an L2 whose fallback ran and the
 narrower action was not enough, a credential only somebody with access can rotate.
 Dry run left on is an item, and so is a vendor shoc reads with no response
 credential stored, because while either holds no case is contained and only the
-operator can change it.
+operator can change it. A case the crew closed after its containment expired
+unapproved stays an item until a person acknowledges it (D152): an hour of quiet
+logs does not revoke a key.
 **Silence when there is nothing is the product working.** Actions the system took
 on its own, coverage it lost, and everything that expired unanswered are worth
 knowing and are **not** exceptions; they go in the weekly.

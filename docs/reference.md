@@ -18,6 +18,7 @@ always `{data, summary, citations}`.
 | `asset.identify` | `posture:read` | L0 | human, agent, external_agent, service | `POST /v1/asset/identify` | `asset_identify` | `shoc asset identify` |
 | `capability.describe` | `meta:read` | L0 | human, agent, external_agent, service | `POST /v1/capability/describe` | `capability_describe` | `shoc capability describe` |
 | `capability.list` | `meta:read` | L0 | human, agent, external_agent, service | `POST /v1/capability/list` | `capability_list` | `shoc capability list` |
+| `case.acknowledge` | `cases:transition` | L2 | human | `POST /v1/case/acknowledge` | `case_acknowledge` | `shoc case acknowledge` |
 | `case.chase` | `cases:chase` | L0 | human, service | `POST /v1/case/chase` | `case_chase` | `shoc case chase` |
 | `case.close` | `cases:transition` | L2 | human | `POST /v1/case/close` | `case_close` | `shoc case close` |
 | `case.get` | `cases:read` | L0 | human, agent, external_agent, service | `POST /v1/case/get` | `case_get` | `shoc case get` |
@@ -484,6 +485,32 @@ Input schema:
 }
 ```
 
+## `case.acknowledge`
+
+Acknowledge a case closed without its containment, so it stops asking for you.
+
+- **Scope:** `cases:transition` · **Autonomy:** L2 · **Audited:** yes
+- **Principals:** human
+
+Input schema:
+
+```json
+{
+  "type": "object",
+  "title": "CaseRef",
+  "properties": {
+    "case_uid": {
+      "type": "string",
+      "description": "Case identifier, e.g. CASE-1a2b\u2026"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "case_uid"
+  ]
+}
+```
+
 ## `case.chase`
 
 Page, abandon or send the crew back on whatever has waited past its deadline.
@@ -657,6 +684,10 @@ Input schema:
     "limit": {
       "type": "integer",
       "description": "Maximum rows, capped at 200"
+    },
+    "unacknowledged": {
+      "type": "boolean",
+      "description": "Only cases closed without their containment that nobody has acknowledged"
     }
   },
   "additionalProperties": false

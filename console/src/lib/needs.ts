@@ -4,12 +4,12 @@
  * case is open. The rail count, the title, the favicon, the mobile tab and the
  * Overview heading all read these selectors, so they always agree.
  *
- * Capabilities used (through `lib/queries.ts`): action.list, case.list,
- * source.list, ops.alerts, health.status; presence (`lib/presence.ts`) adds a
+ * Capabilities used (through `lib/queries.ts`): action.list, case.list (and
+ * its unacknowledged cases), source.list, ops.alerts, health.status; presence (`lib/presence.ts`) adds a
  * model failure the live stream saw before the alerts did.
  */
 import { usePresence } from "./presence";
-import { useAlerts, useActionLog, useCaseLog, useHealth, useProposals, useSourceList } from "./reads";
+import { useAlerts, useActionLog, useCaseLog, useHealth, useProposals, useSourceList, useUnacknowledged } from "./reads";
 import type { Action, Case, ConfiguredSource, NeedsItem, Onboarding, OpsAlert, Severity } from "@/types";
 
 /** A source credential the provider refused, by the kernel's own test of the error text. */
@@ -22,11 +22,36 @@ const rank = (item: NeedsItem) =>
 
 const open = (c: Case | undefined) => Boolean(c && c.state !== "closed");
 
+/** Approvals nobody decided in time, the newest per case and type, with nothing newer of that type in `all`. */
+export function expiredActions(actions: Action[], all: Action[] = actions): Action[] {
+  const expired = new Map<string, Action>();
+  for (const action of actions) {
+    if (action.state !== "rejected" || action.approved_by !== "unattended") continue;
+    if (action.type === "notify.page" || !action.case_uid) continue;
+    const when = action.updated_at ?? action.created_at;
+    const newer = all.some(
+      (other) =>
+        other.action_uid !== action.action_uid &&
+        other.case_uid === action.case_uid &&
+        other.type === action.type &&
+        other.created_at > action.created_at &&
+        !(other.state === "rejected" && other.approved_by === "unattended"),
+    );
+    if (newer) continue;
+    const key = `${action.case_uid}|${action.type}`;
+    const seen = expired.get(key);
+    if (!seen || (seen.updated_at ?? seen.created_at) < when) expired.set(key, action);
+  }
+  return [...expired.values()];
+}
+
 /** The inbox, from whatever lists answered. Pure, so the tests can feed it. */
 export function inbox(input: {
   proposals?: Action[];
   actions?: Action[];
   cases?: Case[];
+  /** Cases closed without their containment that nobody acknowledged (D152). */
+  unacknowledged?: Case[];
   configured?: ConfiguredSource[];
   onboarding?: Onboarding[];
 }): NeedsItem[] {
@@ -60,28 +85,9 @@ export function inbox(input: {
 
   // An approval nobody decided in time, on a case still open, with nothing newer of its kind.
   const all = [...(input.actions ?? []), ...(input.proposals ?? [])];
-  const expired = new Map<string, Action>();
-  for (const action of input.actions ?? []) {
-    if (action.state !== "rejected" || action.approved_by !== "unattended") continue;
-    if (action.type === "notify.page" || !action.case_uid) continue;
-    const owner = cases.get(action.case_uid);
-    if (!open(owner)) continue;
-    const when = action.updated_at ?? action.created_at;
-    const newer = all.some(
-      (other) =>
-        other.action_uid !== action.action_uid &&
-        other.case_uid === action.case_uid &&
-        other.type === action.type &&
-        other.created_at > action.created_at &&
-        !(other.state === "rejected" && other.approved_by === "unattended"),
-    );
-    if (newer) continue;
-    const key = `${action.case_uid}|${action.type}`;
-    const seen = expired.get(key);
-    if (!seen || (seen.updated_at ?? seen.created_at) < when) expired.set(key, action);
-  }
-  for (const action of expired.values()) {
-    const owner = cases.get(action.case_uid!)!;
+  for (const action of expiredActions(input.actions ?? [], all)) {
+    const owner = cases.get(action.case_uid!);
+    if (!owner || !open(owner)) continue;
     items.push({
       kind: "expired",
       key: action.action_uid,
@@ -92,6 +98,18 @@ export function inbox(input: {
       to: `/cases/${owner.case_uid}`,
     });
   }
+
+  // Closed, but what would have contained it never ran: one row per case, until a person acknowledges it.
+  for (const c of input.unacknowledged ?? [])
+    if (c.state === "closed" && c.unacknowledged)
+      items.push({
+        kind: "unacknowledged",
+        key: c.case_uid,
+        severity: c.severity,
+        case: c,
+        at: c.closed_at ?? c.updated_at,
+        to: `/cases/${c.case_uid}`,
+      });
 
   for (const row of input.onboarding ?? [])
     if (row.step === "credentials")
@@ -125,7 +143,7 @@ export type Needs = {
   count: number;
   /** A list the inbox reads has not answered yet. */
   pending: boolean;
-  /** The lists that failed: approvals, actions, cases, sources. Never read an empty inbox into these. */
+  /** The lists that failed: approvals, actions, cases, closed, sources. Never read an empty inbox into these. */
   failed: string[];
   /** The newest approval by a person, for "last decision 3h ago". */
   lastDecision: string | null;
@@ -136,17 +154,20 @@ export function useNeedsYou(): Needs {
   const proposals = useProposals();
   const actions = useActionLog();
   const cases = useCaseLog();
+  const closed = useUnacknowledged();
   const sources = useSourceList();
   const named = [
     ["approvals", proposals],
     ["actions", actions],
     ["cases", cases],
+    ["closed", closed],
     ["sources", sources],
   ] as const;
   const items = inbox({
     proposals: proposals.data?.rows,
     actions: actions.data?.rows,
     cases: cases.data?.rows,
+    unacknowledged: closed.data?.rows,
     configured: sources.data?.configured,
     onboarding: sources.data?.onboarding,
   });

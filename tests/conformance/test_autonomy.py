@@ -840,3 +840,74 @@ def test_nudged_cases_do_not_starve_newer_ones(ctx, conn, config, case, clean):
     first = unattended.run(conn, config.tenant_id, config)
     assert len(first.nudged) == 25 and case["case_uid"] not in first.nudged
     assert unattended.run(conn, config.tenant_id, config).nudged == [case["case_uid"]]
+
+
+def test_a_case_closed_without_its_containment_waits_for_a_person(
+    ctx, conn, config, case, uids, clean
+):
+    """Quiet logs do not revoke a key (D152).
+
+    The crew closes a case once its searches come back clean, and the action
+    that would have contained it expired unapproved. The case stays in front of
+    a person until one acknowledges it, and a person, not the crew, may ask
+    for the action again.
+    """
+    from shoc.agents import reporter
+    from shoc.capabilities.registry import Caller, Context, call
+    from shoc.errors import ShocError
+
+    tenant, uid = config.tenant_id, case["case_uid"]
+    proposal = action_store.Proposal(
+        action_type="aws.revoke_role_sessions", params={"role_name": "deploy"}, case_uid=uid
+    )
+    row = action_store.propose(
+        conn, tenant, proposal, "IR Commander", principal_kind="agent", config=config
+    )
+    action_store.reject(conn, tenant, row["action_uid"], "unattended", "nobody decided in time")
+    engine.set_verdict(conn, tenant, uid, "malicious", 0.9, "leaked key used", uids)
+    engine.transition(conn, tenant, uid, "closed", "verify searches came back clean", by="crew")
+
+    listed = call("case.list", ctx, {"unacknowledged": True, "limit": 200}).data.rows
+    assert [r["case_uid"] for r in listed] == [uid]
+    assert engine.require(conn, tenant, uid)["unacknowledged"] is True
+    refs = {i["reference"] for i in reporter.exceptions(conn, tenant, config)}
+    assert f"closed:{row['action_uid']}" in refs, "closing it is news, so the key is new"
+
+    again = action_store.propose(
+        conn, tenant, proposal, "IR Commander", principal_kind="agent", config=config
+    )
+    assert again["state"] == "rejected", "the crew may not bring back what nobody approved"
+    again = action_store.propose(
+        conn, tenant, proposal, "human:test", principal_kind="human", config=config
+    )
+    assert again["state"] == "proposed" and again["approved_by"] is None
+    assert engine.require(conn, tenant, uid)["unacknowledged"] is False
+
+    action_store.reject(conn, tenant, row["action_uid"], "unattended", "nobody decided again")
+    assert engine.require(conn, tenant, uid)["unacknowledged"] is True
+    crew = Context(
+        tenant_id=tenant, caller=Caller(kind="agent", id="x", scopes=("*",)), config=config
+    )
+    with pytest.raises(ShocError):
+        call("case.acknowledge", crew, {"case_uid": uid})
+    before = audit_seq(conn, tenant)
+    call("case.acknowledge", ctx, {"case_uid": uid})
+    audited = fetch_all(
+        conn,
+        "SELECT principal_id FROM shoc.audit_log WHERE tenant_id = %s AND seq > %s"
+        " AND capability = 'case.acknowledge'",
+        (tenant, before),
+    )
+    assert [r["principal_id"] for r in audited] == ["test"]
+    assert engine.require(conn, tenant, uid)["unacknowledged"] is False
+    assert not call("case.list", ctx, {"unacknowledged": True}).data.rows
+    assert not [i for i in reporter.exceptions(conn, tenant, config) if i["case_uid"] == uid]
+
+    # One that expires after the acknowledgement shows the case again, unless it closed benign.
+    action_store.propose(
+        conn, tenant, proposal, "human:test", principal_kind="human", config=config
+    )
+    action_store.reject(conn, tenant, row["action_uid"], "unattended", "and once more")
+    assert engine.require(conn, tenant, uid)["unacknowledged"] is True
+    engine.set_verdict(conn, tenant, uid, "benign_expected", 0.9, "the deploy role", uids)
+    assert engine.require(conn, tenant, uid)["unacknowledged"] is False

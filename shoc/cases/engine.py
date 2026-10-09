@@ -437,10 +437,26 @@ def _label(entities: set[str], group: list[dict[str, Any]]) -> str:
     return group[0].get("entity_key") or "-"
 
 
+# A case closed without its containment: not by a person, not found benign, and
+# holding an action nobody approved in time since a person last acknowledged it.
+# Quiet logs do not revoke a key, so it stays in front of a person until one
+# says they have seen it (D152).
+UNACKNOWLEDGED = """(c.state = 'closed'
+    AND c.closed_by IS DISTINCT FROM 'human'
+    AND coalesce(c.verdict, '') NOT IN ('benign_expected', 'false_positive')
+    AND EXISTS (
+        SELECT 1 FROM shoc.actions a
+        WHERE a.tenant_id = c.tenant_id AND a.case_uid = c.case_uid
+          AND a.state = 'rejected' AND a.approved_by = 'unattended'
+          AND a.type NOT LIKE 'notify.%%'
+          AND a.updated_at > coalesce(c.acknowledged_at, '-infinity')))"""
+
+
 def get(conn: Conn, tenant_id: str, case_uid: str) -> dict[str, Any] | None:
     return fetch_one(
         conn,
-        "SELECT * FROM shoc.cases WHERE tenant_id = %s AND case_uid = %s",
+        f"""SELECT c.*, {UNACKNOWLEDGED} AS unacknowledged FROM shoc.cases c
+            WHERE c.tenant_id = %s AND c.case_uid = %s""",
         (tenant_id, case_uid),
     )
 
@@ -703,14 +719,19 @@ def wake(conn: Conn, tenant_id: str, type_: str, payload: dict[str, Any]) -> Non
         )
 
 
-def recent(conn: Conn, tenant_id: str, limit: int = 50, state: str = "") -> list[dict[str, Any]]:
-    where = ["tenant_id = %(tenant_id)s"]
+def recent(
+    conn: Conn, tenant_id: str, limit: int = 50, state: str = "", unacknowledged: bool = False
+) -> list[dict[str, Any]]:
+    where = ["c.tenant_id = %(tenant_id)s"]
     params: dict[str, Any] = {"tenant_id": tenant_id, "limit": limit}
     if state:
-        where.append("state = %(state)s")
+        where.append("c.state = %(state)s")
         params["state"] = state
+    if unacknowledged:
+        where.append(UNACKNOWLEDGED)
     return fetch_all(
         conn,
-        f"SELECT * FROM shoc.cases WHERE {' AND '.join(where)} ORDER BY updated_at DESC LIMIT %(limit)s",
+        f"""SELECT c.*, {UNACKNOWLEDGED} AS unacknowledged FROM shoc.cases c
+            WHERE {" AND ".join(where)} ORDER BY c.updated_at DESC LIMIT %(limit)s""",
         params,
     )
