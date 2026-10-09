@@ -897,35 +897,12 @@ def test_every_job_kind_the_worker_handles_is_listed(config):
             assert kind in JOB_CAPABILITIES, f"{kind} is handled but not listed"
 
 
-def test_the_worker_waits_for_the_schema_instead_of_crashing(conn, config, store):
+def test_the_worker_waits_for_the_schema_instead_of_crashing(conn):
+    """And for nothing else: a worker that waited for a spent warehouse quota
+    stopped case sweeps and webhooks with it (2026-10-08)."""
     from shoc.worker import wait_for_schema
 
-    assert wait_for_schema(conn, attempts=1, delay=0, config=config)
-
-
-def test_a_worker_on_a_warehouse_needs_no_event_table_in_postgres(conn, config, monkeypatch):
-    """`shoc migrate` makes the event table in the warehouse, so that is where to look."""
-    from dataclasses import replace
-
-    from shoc import store as stores
-    from shoc.store.base import StoreHealth
-    from shoc.worker import wait_for_schema
-
-    class Warehouse:
-        ok = True
-
-        def health(self):
-            return StoreHealth(dialect="warehouse", ok=self.ok)
-
-        def close(self):
-            pass
-
-    warehouse = Warehouse()
-    monkeypatch.setitem(stores.ADAPTERS, "warehouse", lambda cfg, tid, ro: warehouse)
-    elsewhere = replace(config, backend="warehouse", tenant_id=f"{config.tenant_id}wh")
-    assert wait_for_schema(conn, attempts=1, delay=0, config=elsewhere)
-    warehouse.ok = False
-    assert not wait_for_schema(conn, attempts=1, delay=0, config=elsewhere)
+    assert wait_for_schema(conn, attempts=1, delay=0)
 
 
 def test_two_workers_never_claim_the_same_job(conn, config):

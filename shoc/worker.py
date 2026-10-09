@@ -23,7 +23,6 @@ from shoc.capabilities.registry import Caller, Context
 from shoc.config import Config
 from shoc.db import jobs
 from shoc.db.pool import ALL_TENANTS, connect, set_tenant
-from shoc.store import open_store
 
 log = logging.getLogger("shoc.worker")
 
@@ -611,31 +610,25 @@ def check_agent_can_read(config: Config) -> bool:
     return False
 
 
-def wait_for_schema(
-    conn: Any, attempts: int = 30, delay: float = 2.0, config: Config | None = None
-) -> bool:
+def wait_for_schema(conn: Any, attempts: int = 30, delay: float = 2.0) -> bool:
     """Wait for `shoc migrate` to have run, rather than crash-looping on first boot.
 
-    Both halves have to be there. Waiting only on the control plane let a worker
-    start while the tenant's event table was still being created, run a full
-    detection cycle against nothing, and leave fifty rules marked broken on an
-    install that was merely unfinished. The event table is asked of the store,
-    since on a warehouse it is not in Postgres (STO-3, STO-4).
+    Only the control plane is waited on. A worker that also waited for the
+    event store ran nothing while a warehouse was down, case sweeps and webhook
+    deliveries included, and restarted every minute until it came back. A
+    detection cycle that cannot reach the store, or finds its table not made
+    yet, stops without marking a rule broken instead (`detect.engine.run_all`).
     """
     from shoc.db.pool import fetch_one
 
-    store = open_store(config or Config.load())
-    try:
-        for attempt in range(attempts):
-            row = fetch_one(conn, "SELECT to_regclass('shoc.schedules') IS NOT NULL AS ready")
-            if row and row["ready"] and store.health().ok:
-                return True
-            if attempt == 0:
-                log.info("waiting for the database schema; run `shoc migrate` to create it")
-            time.sleep(delay)
-        return False
-    finally:
-        store.close()
+    for attempt in range(attempts):
+        row = fetch_one(conn, "SELECT to_regclass('shoc.schedules') IS NOT NULL AS ready")
+        if row and row["ready"]:
+            return True
+        if attempt == 0:
+            log.info("waiting for the database schema; run `shoc migrate` to create it")
+        time.sleep(delay)
+    return False
 
 
 def tenants_without_schedules(conn: Any) -> list[str]:
@@ -750,7 +743,7 @@ def run(
     cfg = config or Config.load()
     conn = connect(cfg)
     set_tenant(conn, ALL_TENANTS)  # the queue is shared; each job scopes itself
-    if not wait_for_schema(conn, config=cfg):
+    if not wait_for_schema(conn):
         log.error("giving up waiting for the database schema; run `shoc migrate`")
         return 0
     ensure_default_schedules(conn, cfg)

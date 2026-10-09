@@ -29,6 +29,7 @@ from shoc.cases import engine as case_engine
 from shoc.db.pool import execute, fetch_all, fetch_one
 from shoc.detect import rules as ruleset
 from shoc.detect.compiler import CompiledRule, compile_rule, evidence_sql, page_sql
+from shoc.errors import StoreError
 from shoc.store import ocsf as layout
 from shoc.store.base import EventStore
 
@@ -686,6 +687,13 @@ def run_all(
                 stats.errors[rule.id] = "; ".join(notes)
             _ran(conn, tenant_id, rule.id, None if lookback_seconds else end, new, notes)
         except Exception as exc:
+            # A store that is down, or whose table `shoc migrate` has not made
+            # yet, is not this rule's fault: marking it would mark every rule.
+            health = store.health()
+            if not health.ok:
+                raise StoreError(
+                    f"event store unreachable, detection stopped: {health.detail}"
+                ) from exc
             stats.errors[rule.id] = f"{type(exc).__name__}: {exc}"
             _failed(conn, tenant_id, rule.id, str(exc), None if lookback_seconds else start)
         stats.rules_run += 1

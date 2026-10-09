@@ -5,10 +5,14 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import pytest
+
 from shoc.db import jobs
 from shoc.db.pool import execute, fetch_one
 from shoc.detect.engine import run_all
+from shoc.errors import StoreError
 from shoc.ingest import batch
+from shoc.store.base import StoreHealth
 from tests.conformance.test_rules import MATCH
 
 
@@ -17,8 +21,14 @@ class Unreachable:
 
     dialect = "postgres"
 
+    def __init__(self, up: bool = True) -> None:
+        self.up = up
+
     def query(self, *args, **kwargs):
         raise RuntimeError("the store was read")
+
+    def health(self) -> StoreHealth:
+        return StoreHealth(ok=self.up, detail="" if self.up else "free daily limit")
 
 
 # Typed loosely: it stands in for a store only as far as a skipped cycle goes.
@@ -55,6 +65,23 @@ def test_a_cycle_reads_nothing_when_nothing_was_loaded_since_its_range(
     _stamp(conn, tenant, later)
     stats = run_all(conn, UNREACHABLE, tenant, [MATCH], now=later + timedelta(minutes=5))
     assert "the store was read" in stats.errors[MATCH.id]
+
+
+def test_a_cycle_stops_without_marking_a_rule_when_the_store_is_down(
+    conn, store, config, clean, now
+):
+    tenant = config.tenant_id
+    run_all(conn, store, tenant, [MATCH], now=now)
+    _stamp(conn, tenant, now)
+    down: Any = Unreachable(up=False)
+    with pytest.raises(StoreError, match="free daily limit"):
+        run_all(conn, down, tenant, [MATCH], now=now + timedelta(minutes=5))
+    row = fetch_one(
+        conn,
+        "SELECT watermark, last_error FROM shoc.rule_state WHERE tenant_id = %s AND rule_id = %s",
+        (tenant, MATCH.id),
+    )
+    assert row and row["last_error"] is None and row["watermark"] == now
 
 
 def test_every_load_stamps_the_tenant(conn, config, clean):

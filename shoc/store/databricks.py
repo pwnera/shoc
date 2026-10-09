@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import tempfile
+import threading
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -59,6 +60,7 @@ class DatabricksStore:
         schema: str = "shoc",
         volume: str = "batches",
         reader: str = "",
+        statement_timeout_seconds: float = 120,
     ) -> None:
         if not (server_hostname and http_path and access_token):
             raise ConfigError(
@@ -74,6 +76,7 @@ class DatabricksStore:
         self.volume = volume
         # The principal agents read as, granted USE and SELECT per catalog (SEC-1).
         self.reader = reader
+        self.statement_timeout_seconds = statement_timeout_seconds
         self._conn: Any = None
         self._staging_dir = tempfile.mkdtemp(prefix="shoc-dbx-")
 
@@ -105,7 +108,17 @@ class DatabricksStore:
 
     def _execute(self, sql: str, params: Any = None) -> list[dict[str, Any]]:
         with self.conn.cursor() as cur:
-            cur.execute(sql, params or None)
+            # The connector polls a statement until the warehouse answers, and
+            # one that ran out of compute never does: it held the worker for 30
+            # minutes. The deadline counts queueing and warehouse start too.
+            deadline = threading.Timer(
+                self.statement_timeout_seconds or threading.TIMEOUT_MAX, cur.cancel
+            )
+            deadline.start()
+            try:
+                cur.execute(sql, params or None)
+            finally:
+                deadline.cancel()
             if cur.description is None:
                 return []
             names = [d[0] for d in cur.description]

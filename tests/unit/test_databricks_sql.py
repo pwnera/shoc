@@ -101,6 +101,38 @@ def test_migrate_keeps_file_statistics_on_ingested_at():
     assert "ingested_at" in columns and "time" in columns and "raw" not in columns
 
 
+def test_a_statement_the_warehouse_never_answers_is_cancelled():
+    """A warehouse out of compute left one poll running for 30 minutes."""
+    import threading
+
+    from shoc.store.databricks import DatabricksStore
+
+    class Cursor:
+        cancelled = threading.Event()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return None
+
+        def execute(self, sql, params=None):
+            assert self.cancelled.wait(5), "the statement was never cancelled"
+            raise RuntimeError("Query execution was canceled")
+
+        def cancel(self):
+            self.cancelled.set()
+
+    class Connection:
+        def cursor(self):
+            return Cursor()
+
+    store = DatabricksStore("h", "/p", "t", "acme", "shoc_acme", statement_timeout_seconds=0.05)
+    store._conn = Connection()
+    with pytest.raises(RuntimeError, match="canceled"):
+        store._execute("SELECT 1")
+
+
 def test_the_ingestion_lag_is_canonical_sql():
     """ops.py once sent Postgres interval arithmetic to every backend (STO-1)."""
     from shoc.agents.ops import LAG_SECONDS

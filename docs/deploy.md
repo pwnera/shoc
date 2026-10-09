@@ -159,7 +159,7 @@ only to `.env`.
 | `SHOC_BIGQUERY_CREDENTIALS` | A service-account key, as its JSON or the path of the file. The account needs BigQuery Data Editor and Job User on the project |
 | `SHOC_BIGQUERY_READONLY_CREDENTIALS` | The service account agents read BigQuery as. Give it Job User on the project; `shoc migrate` grants it Data Viewer on each tenant's dataset |
 | `SHOC_CYCLE_SECONDS` | How often detection runs, and on a warehouse the shortest interval a source polls at (default 300 on Postgres, 900 on a warehouse) |
-| `SHOC_STATEMENT_TIMEOUT` | Seconds before a query is cancelled (default 120) |
+| `SHOC_STATEMENT_TIMEOUT` | Seconds before a query is cancelled (default 120); on Databricks this includes queueing and warehouse start |
 | `SHOC_MAX_REQUEST_BYTES` | Largest accepted request body (default 32 MB) |
 | `SHOC_MAX_INGEST_RECORDS` | Records per ingest call (default 50,000) |
 

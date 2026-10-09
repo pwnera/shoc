@@ -50,6 +50,7 @@ def _databricks(cfg: Any, tid: str, readonly: bool) -> EventStore:
         tid,
         cfg.tenant_catalog(tid),
         reader=cfg.databricks_readonly_principal,
+        statement_timeout_seconds=cfg.statement_timeout_seconds,
     )
 
 
