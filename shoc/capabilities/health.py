@@ -47,7 +47,8 @@ def status(ctx: Context, inp: Empty) -> Result:
     source_health = ops.source_health(ctx.db, ctx.tenant_id)
     # Over the rules `rule.list` gives, so the Overview and Detection count the
     # same: `rule_state` also holds the indicator matcher's watermark
-    # (ioc_match, whose failure fails its job) and the state of reverted rules.
+    # (ioc_match, whose failure `detect.run` reports with its errors) and the
+    # state of reverted rules.
     loaded = [r.id for r in ruleset.load(ctx.config, ctx.db, ctx.tenant_id)]
     rules = {
         "tracked": len(loaded),

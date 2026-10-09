@@ -153,3 +153,18 @@ def audit_trail(conn: Any, tenant_id: str, after: int) -> list[tuple[str, str]]:
         (tenant_id, after),
     )
     return [(r["capability"], r["who"]) for r in rows]
+
+
+class Counting:
+    """A store that keeps the canonical SQL of every statement it is sent."""
+
+    def __init__(self, store: Any) -> None:
+        self.store = store
+        self.sent: list[str] = []
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.store, name)
+
+    def query(self, canonical_sql: str, params: Any = None, limit: int = 1000) -> Any:
+        self.sent.append(canonical_sql)
+        return self.store.query(canonical_sql, params, limit)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 
@@ -459,6 +460,57 @@ def test_a_noisy_value_does_not_hide_a_quiet_one_in_its_batch(ctx, store, config
     _indicator(ctx.db, config.tenant_id, quiet)
     hits = intel.match_window(ctx.db, store, config.tenant_id, now - timedelta(hours=2))
     assert quiet in {h["indicator"]["value"] for h in hits}
+
+
+def test_a_cycle_with_nothing_listed_in_its_window_reads_the_store_once(
+    ctx, store, config, clean, now
+):
+    """However many indicators there are, a cycle lists its window's values once (D149)."""
+    from shoc.db.pool import execute
+    from tests.support import Counting
+
+    execute(
+        ctx.db,
+        """INSERT INTO shoc.iocs (tenant_id, type, value, source, confidence, severity)
+           SELECT %s, 'ip', '198.51.100.' || g, 'test', 0.9, 'high'
+           FROM generate_series(1, 250) g""",
+        (config.tenant_id,),
+    )
+    batch.load(store, _events(config.tenant_id, now, ip="192.0.2.10"))
+    counting: Any = Counting(store)
+    since = now - timedelta(hours=1)
+    assert intel.match_window(ctx.db, counting, config.tenant_id, since, column="ingested_at") == []
+    assert len(counting.sent) == 1
+
+    batch.load(store, _events(config.tenant_id, now, ip="198.51.100.7"))
+    counting.sent.clear()
+    hits = intel.match_window(ctx.db, counting, config.tenant_id, since, column="ingested_at")
+    assert {h["indicator"]["value"] for h in hits} == {"198.51.100.7"}
+    assert len(counting.sent) == 2
+
+
+def test_no_statement_binds_more_values_than_its_dialect_takes(
+    ctx, store, config, clean, now, monkeypatch
+):
+    """Databricks refuses a statement with more than 256 bound values (D149)."""
+    from shoc.db.pool import execute
+    from shoc.store import sql
+    from tests.support import Counting
+
+    monkeypatch.setitem(sql.MAX_PARAMS, store.dialect, 40)
+    execute(
+        ctx.db,
+        """INSERT INTO shoc.iocs (tenant_id, type, value, source, confidence, severity)
+           SELECT %s, 'ip', '198.51.100.' || g, 'test', 0.9, 'high'
+           FROM generate_series(1, 60) g""",
+        (config.tenant_id,),
+    )
+    batch.load(store, _events(config.tenant_id, now, ip="198.51.100.60"))
+    counting: Any = Counting(store)
+    hits = intel.match_window(ctx.db, counting, config.tenant_id, now - timedelta(hours=1))
+    assert {h["indicator"]["value"] for h in hits} == {"198.51.100.60"}
+    assert len(counting.sent) > 1
+    assert max(sql.placeholders(s) for s in counting.sent) <= 40
 
 
 def test_a_leads_finding_is_low_and_says_who_listed_it(ctx, store, config, clean, now):

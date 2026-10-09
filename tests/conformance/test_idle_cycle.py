@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from shoc.db import jobs
-from shoc.db.pool import execute, fetch_one
+from shoc.db.pool import execute, fetch_all, fetch_one
 from shoc.detect.engine import run_all
 from shoc.errors import StoreError
 from shoc.ingest import batch
@@ -65,6 +65,37 @@ def test_a_cycle_reads_nothing_when_nothing_was_loaded_since_its_range(
     _stamp(conn, tenant, later)
     stats = run_all(conn, UNREACHABLE, tenant, [MATCH], now=later + timedelta(minutes=5))
     assert "the store was read" in stats.errors[MATCH.id]
+
+
+def test_a_load_wakes_only_the_rules_over_its_products(conn, store, config, clean, now):
+    """A GitHub push does not read the store for a CloudTrail rule (D149)."""
+    tenant = config.tenant_id
+    run_all(conn, store, tenant, [MATCH], now=now)
+    batch.loaded(conn, tenant, [{"metadata_product": "GitHub", "ingested_at": now.isoformat()}])
+    later = now + timedelta(minutes=5)
+    stats = run_all(conn, UNREACHABLE, tenant, [MATCH], now=later)
+    assert not stats.errors
+    assert _watermark(conn, tenant) == later
+
+    batch.loaded(
+        conn, tenant, [{"metadata_product": "AWS CloudTrail", "ingested_at": later.isoformat()}]
+    )
+    stats = run_all(conn, UNREACHABLE, tenant, [MATCH], now=later + timedelta(minutes=5))
+    assert "the store was read" in stats.errors[MATCH.id]
+
+
+def test_every_load_names_its_products(conn, config, clean):
+    batch.loaded(conn, config.tenant_id, [{"metadata_product": "AWS CloudTrail"}, {}])
+    batch.loaded(conn, config.tenant_id)
+    rows = fetch_all(
+        conn,
+        """SELECT products FROM shoc.store_loads WHERE tenant_id = %s
+           ORDER BY loaded_at, products NULLS LAST""",
+        (config.tenant_id,),
+    )
+    assert [r["products"] for r in rows] == [["aws cloudtrail"], None], (
+        "a load recorded without its rows counts for every product"
+    )
 
 
 def test_a_cycle_stops_without_marking_a_rule_when_the_store_is_down(

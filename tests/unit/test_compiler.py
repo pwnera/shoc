@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 
 import pytest
@@ -559,6 +560,26 @@ def test_first_seen_in_a_rule_is_an_anti_join_on_its_own_selection():
     assert "e.src_endpoint_ip <> ''" in c.where
     for d, sql in _everywhere(c).items():
         assert "NOT EXISTS" in sql, d
+
+
+def test_a_probe_reads_no_history_and_keeps_what_a_late_first_event_pairs_with():
+    """A cycle asks the probe of many rules at once; it may say yes too often, never no (D149)."""
+    seen = compile_rule(
+        make(
+            {"s": {"api.operation": "ConsoleLogin"}, "condition": "s"},
+            logsource={"product": "aws"},
+            baseline={"first_seen": ["actor.user.name"], "lookback": "14d"},
+        ),
+        prefix="r7_",
+    )
+    assert "EXISTS" not in seen.probe and "LOWER(api_operation) = :r7_p" in seen.probe
+    assert all(name.startswith("r7_p") for name in seen.params)
+    pair = compile_rule(make(dict(SEQUENCE), logsource={"product": "aws"}))
+    assert "EXISTS" not in pair.probe
+    bound = [pair.params[name] for name in re.findall(r":(\w+)", pair.probe)]
+    assert "updateloginprofile" in bound, "a `first` ingested now wakes the rule"
+    for d in ("postgres", "databricks", "snowflake", "redshift", "bigquery"):
+        translate(f"SELECT MAX(CASE WHEN {pair.probe} THEN 1 ELSE 0 END) FROM ocsf_events", d)
 
 
 def test_first_seen_needs_an_indexed_column_and_no_other_correlation():

@@ -13,7 +13,7 @@ import os
 import tempfile
 import time
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -66,26 +66,40 @@ def read_unique(path: str) -> list[dict[str, Any]]:
     return list(seen.values())
 
 
-def loaded(conn: Any, tenant_id: str, rows: Iterable[dict[str, Any]] = ()) -> None:
-    """Record a committed load, with the oldest `ingested_at` among its rows.
+# How long a recorded load is kept: a detection cycle can prove that nothing
+# of a product was loaded since a time no older than this.
+KEPT = timedelta(days=7)
 
-    The newest load lets an idle detection cycle skip the store (D71); the
-    oldest stamp lets a cycle read a load that committed after its watermark
-    had passed the events' stamps (DET-3). Loads older than a week are pruned.
+
+def loaded(conn: Any, tenant_id: str, rows: Iterable[dict[str, Any]] = ()) -> None:
+    """Record a committed load: its products, and the oldest `ingested_at` among its rows.
+
+    The newest load of a product lets a cycle skip the rules over it that have
+    read everything since (D71, D149); the oldest stamp lets a cycle read a load
+    that committed after its watermark had passed the events' stamps (DET-3).
+    Loads older than `KEPT` are pruned.
     """
     from shoc.db.pool import execute
 
+    rows = list(rows)
     stamps = [str(r["ingested_at"]) for r in rows if r.get("ingested_at")]
     oldest = min(stamps, key=lambda s: datetime.fromisoformat(s)) if stamps else None
-    execute(
-        conn,
-        "INSERT INTO shoc.store_loads (tenant_id, loaded_at, stamped_from) VALUES (%s, now(), %s)",
-        (tenant_id, oldest),
+    # Without its rows a load could hold anything: NULL counts for every product.
+    products = (
+        sorted({str(r["metadata_product"]).lower() for r in rows if r.get("metadata_product")})
+        if rows
+        else None
     )
     execute(
         conn,
-        "DELETE FROM shoc.store_loads WHERE tenant_id = %s AND loaded_at < now() - interval '7 days'",
-        (tenant_id,),
+        """INSERT INTO shoc.store_loads (tenant_id, loaded_at, stamped_from, products)
+           VALUES (%s, now(), %s, %s)""",
+        (tenant_id, oldest, products),
+    )
+    execute(
+        conn,
+        "DELETE FROM shoc.store_loads WHERE tenant_id = %s AND loaded_at < now() - %s",
+        (tenant_id, KEPT),
     )
 
 

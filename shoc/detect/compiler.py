@@ -69,16 +69,21 @@ class CompiledRule:
     distinct_column: str = ""
     distinct_expr: str = ""
     buckets_sql: str = ""
+    # Every event the rule could fire on or pair with, over bare columns and
+    # without the history a sequence or a first-seen baseline reads. A cycle
+    # asks it of many rules in one statement before listing any rule's buckets.
+    probe: str = ""
 
 
 class _Params:
-    def __init__(self) -> None:
+    def __init__(self, prefix: str = "") -> None:
         self.values: dict[str, Any] = {}
         self._n = 0
+        self._prefix = prefix
 
     def add(self, value: Any) -> str:
         self._n += 1
-        name = f"p{self._n}"
+        name = f"{self._prefix}p{self._n}"
         self.values[name] = value
         return f":{name}"
 
@@ -468,7 +473,9 @@ def _first_seen(rule: Any, where: str, population: str) -> str:
     return f"{_not_seen(cols, history)} AND {learned}"
 
 
-def compile_rule(rule: Any, learning: dict[str, Any] | None = None) -> CompiledRule:
+def compile_rule(
+    rule: Any, learning: dict[str, Any] | None = None, prefix: str = ""
+) -> CompiledRule:
     """Compile a `Rule` into canonical SQL over `ocsf_events`, read as `e`.
 
     `select_sql` and `evidence_sql` are scans without an order or a limit: the
@@ -478,8 +485,10 @@ def compile_rule(rule: Any, learning: dict[str, Any] | None = None) -> CompiledR
 
     `learning` maps an account to the time its own history first covers a
     first-seen rule's lookback; before then nothing in it is new (D79).
+    `prefix` starts every parameter name, so several rules' SQL can share a
+    statement.
     """
-    params = _Params()
+    params = _Params(prefix)
     det = rule.detection
     blocks = {name: _block(name, spec, params, rule.id) for name, spec in det.blocks.items()}
     where = compile_condition(det.condition, blocks, rule.id)
@@ -489,12 +498,15 @@ def compile_rule(rule: Any, learning: dict[str, Any] | None = None) -> CompiledR
     population = narrowed or "TRUE"
     if narrowed:
         where = f"{population} AND {where}"
+    probe = where
     extra: dict[str, str] = {}
     late = ""
     if det.sequence:
         first = compile_condition(det.sequence["first"], blocks, rule.id)
         if narrowed:
             first = f"{population} AND {first}"
+        # A `first` ingested now can pair with a `then` stored earlier.
+        probe = f"({where} OR {first})"
         exists, extra["sequence_first"], late = _sequence(rule, first, where)
         where = f"{where} AND {exists}"
     if rule.first_seen:
@@ -523,6 +535,7 @@ def compile_rule(rule: Any, learning: dict[str, Any] | None = None) -> CompiledR
             + (f"UNION {late} " if late else "")
             + "ORDER BY bucket DESC"
         ),
+        probe=probe,
     )
 
     if rule.is_aggregate:
@@ -615,6 +628,8 @@ def compile_pack(pack: Any, limit: int = 500, accounts: list[str] | None = None)
     out = CompiledPack(
         pack_id=pack.id, where=full_where, params=params.values, baseline=pack.baseline.kind
     )
+    # In ingestion order, so a run that stops at its limit can say up to where
+    # it read, and the next run starts there instead of past rows nobody saw.
     selected = _selected(
         *pack.pivot,
         *pack.baseline.first_seen,
@@ -622,6 +637,7 @@ def compile_pack(pack: Any, limit: int = 500, accounts: list[str] | None = None)
         "api.operation",
         "class_name",
         "time",
+        "ingested_at",
     )
 
     if pack.baseline.kind == "first_seen":
@@ -633,7 +649,7 @@ def compile_pack(pack: Any, limit: int = 500, accounts: list[str] | None = None)
     else:
         out.select_sql = (
             f"SELECT {_select(selected)} FROM {layout.EVENTS_TABLE} "
-            f"WHERE {full_where} ORDER BY time LIMIT {int(limit)}"
+            f"WHERE {full_where} ORDER BY ingested_at, time, event_uid LIMIT {int(limit)}"
         )
     return out
 
@@ -658,7 +674,7 @@ def _first_seen_sql(
     return (
         f"SELECT {_select(selected, 'e')} FROM {EVENTS} "
         f"WHERE {_qualify(where, 'e')} AND {_not_seen(cols, history)} "
-        f"ORDER BY e.time LIMIT {int(limit)}"
+        f"ORDER BY e.ingested_at, e.time, e.event_uid LIMIT {int(limit)}"
     )
 
 

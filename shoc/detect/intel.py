@@ -40,6 +40,7 @@ from shoc.db.pool import Conn, execute, fetch_all, fetch_one
 from shoc.errors import ConfigError
 from shoc.store import ocsf as layout
 from shoc.store.base import EventStore
+from shoc.store.sql import max_params
 
 TIMEOUT = httpx.Timeout(60.0, connect=15.0)
 
@@ -793,6 +794,34 @@ def _open_finding(conn: Conn, tenant_id: str, kind: str, value: str) -> dict[str
 
 # Rows one match query returns at most.
 ROWS = 500
+# Distinct values a cycle's window may hold before the matcher stops listing
+# them and sends its indicators to the store instead.
+PRESENT = 50_000
+COLS = sorted({c for type_cols in MATCH_COLUMNS.values() for c in type_cols})
+
+
+def _present(
+    store: EventStore, tenant_id: str, since: datetime, until: datetime, column: str
+) -> set[tuple[str, str]] | None:
+    """(column, value) for every matchable value in the window, or None past `PRESENT`.
+
+    One statement, whatever the number of indicators: a cycle's window holds a
+    few hundred values, a feed thousands, and the comparison happens here.
+    """
+    scope = f"tenant_id = :tenant_id AND {column} >= :window_start AND {column} < :window_end"
+    union = " UNION ALL ".join(
+        f"SELECT DISTINCT '{c}' AS col, LOWER({c}) AS val FROM {layout.EVENTS_TABLE} "
+        f"WHERE {scope} AND {c} IS NOT NULL"
+        for c in COLS
+    )
+    result = store.query(
+        f"SELECT col, val FROM ({union}) v LIMIT {PRESENT + 1}",
+        {"tenant_id": tenant_id, "window_start": since, "window_end": until},
+        PRESENT,
+    )
+    if result.truncated:
+        return None
+    return {(str(r["col"]), str(r["val"])) for r in result.rows}
 
 
 def match_window(
@@ -808,16 +837,29 @@ def match_window(
     """Find events in a window that touch a known indicator.
 
     The window is on event time, or on `ingested_at` for a detection cycle.
+    A cycle's window is minutes of ingestion, so it first lists the values the
+    window holds (`_present`) and asks the store only about indicators among
+    them: one statement when nothing matches, however large the feeds.
 
-    The match is one SQL statement per batch of indicators rather than one per
-    indicator, so a 5,000-entry feed costs ten queries, not five thousand.
+    Otherwise the match is one statement per batch of indicators, each value
+    compared only with its own type's columns, and no statement binds more
+    values than its dialect allows (`max_params`).
     """
     until = until or datetime.now(UTC)
     pool = indicators if indicators is not None else indicators_for(conn, tenant_id)
     hits: list[dict[str, Any]] = []
     by_value = {i["value"].lower(): i for i in pool}
-    values = list(by_value)
-    cols = sorted({c for type_cols in MATCH_COLUMNS.values() for c in type_cols})
+    if column == "ingested_at" and by_value:
+        present = _present(store, tenant_id, since, until, column)
+        if present is not None:
+            by_value = {
+                v: i
+                for v, i in by_value.items()
+                if any((c, v) in present for c in MATCH_COLUMNS.get(i["type"], ()))
+            }
+
+    def columns(value: str) -> tuple[str, ...]:
+        return MATCH_COLUMNS.get(by_value[value]["type"], ())
 
     def query(chunk: list[str]) -> list[dict[str, Any]]:
         params: dict[str, Any] = {
@@ -825,33 +867,57 @@ def match_window(
             "window_start": since,
             "window_end": until,
         }
-        placeholders = []
+        marks: dict[str, list[str]] = {}
         for index, value in enumerate(chunk):
             params[f"v{index}"] = value
-            placeholders.append(f":v{index}")
-        joined = ", ".join(placeholders)
+            for c in columns(value):
+                marks.setdefault(c, []).append(f":v{index}")
+        matches = " OR ".join(f"LOWER({c}) IN ({', '.join(m)})" for c, m in sorted(marks.items()))
         sql = (
-            f"SELECT event_uid, time, {', '.join(cols)}, actor_user_name, "
+            f"SELECT event_uid, time, {', '.join(COLS)}, actor_user_name, "
             f"api_operation, metadata_product, class_uid FROM {layout.EVENTS_TABLE} "
             f"WHERE tenant_id = :tenant_id AND {column} >= :window_start AND {column} < :window_end "
-            f"AND ({' OR '.join(f'LOWER({c}) IN ({joined})' for c in cols)})"
-            f" ORDER BY time DESC LIMIT {ROWS}"
+            f"AND ({matches}) ORDER BY time DESC LIMIT {ROWS}"
         )
         rows = store.query(sql, params, ROWS).rows
-        # A batch that filled the limit may hide a quiet value behind a noisy
-        # one: split it until each half fits, or one value is left.
-        if len(rows) >= ROWS and len(chunk) > 1:
-            return query(chunk[: len(chunk) // 2]) + query(chunk[len(chunk) // 2 :])
-        return rows
+        if len(rows) < ROWS:
+            return rows
+        # A noisy value filled the page and may hide a quiet one: what the page
+        # shows is kept, and the values it does not show are asked again.
+        asked = set(chunk)
+        shown = {
+            v
+            for r in rows
+            for c in COLS
+            if (v := str(r.get(c) or "").lower()) in asked and c in columns(v)
+        }
+        rest = [v for v in chunk if v not in shown]
+        return rows + (query(rest) if shown and rest else [])
 
-    for start in range(0, len(values), batch):
-        for row in query(values[start : start + batch]):
+    budget = max_params(store.dialect) - 3
+    chunks: list[list[str]] = []
+    used = 0
+    for value in by_value:
+        need = len(columns(value))
+        if not chunks or used + need > budget or len(chunks[-1]) >= batch:
+            chunks.append([])
+            used = 0
+        chunks[-1].append(value)
+        used += need
+
+    read: set[tuple[str, str]] = set()
+    for values in chunks:
+        for row in query(values):
+            # A row that touches a noisy and a quiet value comes back twice.
+            if (key := (str(row["event_uid"]), str(row["time"]))) in read:
+                continue
+            read.add(key)
             # A value counts only in a column its type belongs in: a domain
             # indicator never matches a URL that happens to equal it.
             match = next(
                 (
                     (by_value[v], c)
-                    for c in cols
+                    for c in COLS
                     if (v := str(row.get(c) or "").lower()) in by_value
                     and c in MATCH_COLUMNS.get(by_value[v]["type"], ())
                 ),

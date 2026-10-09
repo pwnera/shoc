@@ -13,6 +13,12 @@ buckets whole, so a late event, a burst spread over several cycles and a backlog
 after an outage come out the way one backfill over the same events would. A
 bucket that fails two cycles in a row is left out, named in `rule_state` and
 handed to the Manager, so one bad bucket never stops the rule.
+
+The store is read only where something can have changed (D71, D149). A rule
+whose products were not loaded since its watermark moves on without a query;
+one statement asks every other rule's selection whether anything ingested in
+its range matches, and only the rules with a match list their buckets, which
+are read a run of adjacent buckets at a time.
 """
 
 from __future__ import annotations
@@ -29,9 +35,11 @@ from shoc.cases import engine as case_engine
 from shoc.db.pool import execute, fetch_all, fetch_one
 from shoc.detect import rules as ruleset
 from shoc.detect.compiler import CompiledRule, compile_rule, evidence_sql, page_sql
-from shoc.errors import StoreError
+from shoc.errors import ConfigError, StoreError
+from shoc.ingest.batch import KEPT
 from shoc.store import ocsf as layout
 from shoc.store.base import EventStore
+from shoc.store.sql import max_params, placeholders
 
 MAX_EVIDENCE = 20
 PAGE = 1000
@@ -50,7 +58,8 @@ ADHOC_LIMIT = 200
 # (`shoc.store_loads`). An event read twice only refreshes its finding.
 SETTLE = timedelta(minutes=10)
 # The most ingestion time one rule reads in one cycle. After an outage the
-# watermark walks forward by this much per cycle until it reaches now.
+# watermark walks forward by this much per cycle until it reaches now. It also
+# bounds the event time one statement reads for a run of adjacent buckets.
 CATCH_UP = timedelta(hours=6)
 
 
@@ -430,11 +439,13 @@ def _since_watermark(
     notes: list[str],
     learning: dict[str, datetime] | None = None,
 ) -> list[Finding]:
-    """Evaluate, one at a time, the buckets that matches ingested in [start, end) fall in.
+    """Evaluate the buckets that matches ingested in [start, end) fall in, each
+    run of adjacent ones in one read (`_runs`).
 
     A bucket that fails raises, so the watermark stays and the next cycle tries
-    again. With `skip`, set when the rule's last cycle failed as well, the bucket
-    is left out and named in `notes`, and the rest of the range goes on.
+    again. With `skip`, set when the rule's last cycle failed as well, a run
+    that fails is read again a bucket at a time, the bucket that fails is left
+    out and named in `notes`, and the rest of the range goes on.
     """
     seconds = rule.timeframe_seconds
     span = timedelta(seconds=seconds)
@@ -452,14 +463,37 @@ def _since_watermark(
         # A new event also counts toward windows that began up to one timeframe before it.
         buckets |= {b - span for b in buckets}
     found: list[Finding] = []
-    for bucket in sorted(buckets):
+    pending = _runs(buckets, span)
+    while pending:
+        run = pending.pop(0)
         try:
-            found += run_rule(store, tenant_id, rule, bucket, bucket + span, 0, notes, learning)
+            found += run_rule(store, tenant_id, rule, run[0], run[-1] + span, 0, notes, learning)
         except Exception as exc:
             if not skip:
                 raise
-            notes.append(f"{bucket:%Y-%m-%d %H:%M} not evaluated: {exc}")
+            if len(run) > 1:
+                pending[:0] = [[bucket] for bucket in run]
+            else:
+                notes.append(f"{run[0]:%Y-%m-%d %H:%M} not evaluated: {exc}")
     return found
+
+
+def _runs(buckets: set[datetime], span: timedelta) -> list[list[datetime]]:
+    """Adjacent buckets in runs of at most `CATCH_UP` of event time.
+
+    Reading a run in one statement finds what reading its buckets one by one
+    would: a match is filed under the bucket its time falls in, and a threshold
+    window under the bucket it starts in. A backlog of a few hundred buckets
+    becomes a few reads.
+    """
+    longest = max(1, CATCH_UP // span)
+    runs: list[list[datetime]] = []
+    for bucket in sorted(buckets):
+        if runs and bucket - runs[-1][-1] == span and len(runs[-1]) < longest:
+            runs[-1].append(bucket)
+        else:
+            runs.append([bucket])
+    return runs
 
 
 def _ran(
@@ -484,13 +518,40 @@ def _ran(
         manager.tell(conn, tenant_id, "detect", "digest", f"{rule_id}: {note}", group_key=rule_id)
 
 
-def _last_load(conn: Any, tenant_id: str) -> datetime | None:
-    row = fetch_one(
-        conn,
-        "SELECT max(loaded_at) AS loaded_at FROM shoc.store_loads WHERE tenant_id = %s",
-        (tenant_id,),
-    )
-    return row["loaded_at"] if row else None
+def _last_loads(conn: Any, tenant_id: str) -> dict[str, datetime]:
+    """When a committed load last brought each product, lower-cased, and under
+    '' any product. A load recorded before loads named their products counts as
+    '*', every product."""
+    return {
+        r["product"]: r["loaded_at"]
+        for r in fetch_all(
+            conn,
+            """SELECT p AS product, max(loaded_at) AS loaded_at
+               FROM shoc.store_loads, unnest(coalesce(products, ARRAY['*']) || ARRAY['']) AS p
+               WHERE tenant_id = %s GROUP BY p""",
+            (tenant_id,),
+        )
+    }
+
+
+def _nothing_loaded(
+    loads: dict[str, datetime], rule: ruleset.Rule, start: datetime, now: datetime
+) -> bool:
+    """No load since `start` brought anything the rule reads (D71, D149).
+
+    A rule that names no product reads every load. Loads are kept for `KEPT`,
+    so a range that starts earlier is read unless a later load proves otherwise.
+    A store that has never stamped a load is always read.
+    """
+    if not loads:
+        return False
+    product = str(rule.logsource.get("product", "") or "")
+    if not product:
+        return loads[""] < start
+    service = str(rule.logsource.get("service", "") or "")
+    names = {p.lower() for p in layout.products_for(product, service)}
+    last = max((loads[p] for p in (*names, "*") if p in loads), default=now - KEPT)
+    return last < start
 
 
 def _late_loads(conn: Any, tenant_id: str) -> list[tuple[datetime, datetime]]:
@@ -517,6 +578,65 @@ def _idle(conn: Any, tenant_id: str, rule_id: str, now: datetime) -> None:
            WHERE tenant_id = %s AND rule_id = %s""",
         (now, tenant_id, rule_id),
     )
+
+
+def _unmatched(
+    store: EventStore, tenant_id: str, ranges: list[tuple[ruleset.Rule, datetime, datetime]]
+) -> set[str]:
+    """The rules nothing ingested in their range matches, asked of many at once.
+
+    One `MAX(CASE …)` per rule over the union of their ranges, as many rules
+    per statement as the dialect binds values for, so a cycle whose rows match
+    no rule costs one read instead of one per rule. A statement that fails
+    proves nothing: its rules are read one by one, unless the store is down.
+    """
+    budget = max_params(store.dialect) - 3
+    # Per statement: {alias: rule id}, the MAX(CASE …) columns, and their values.
+    chunks: list[tuple[dict[str, str], list[str], dict[str, Any]]] = []
+    used = 0
+    for i, (rule, start, end) in enumerate(ranges):
+        try:
+            compiled = compile_rule(rule, prefix=f"r{i}_")
+        except ConfigError:
+            continue  # its own read says what is wrong with it
+        need = placeholders(compiled.probe) + 2
+        if not chunks or used + need > budget:
+            chunks.append(
+                ({}, [], {"tenant_id": tenant_id, "ingested_from": start, "ingested_to": end})
+            )
+            used = 0
+        aliases, columns, params = chunks[-1]
+        aliases[f"r{i}"] = rule.id
+        columns.append(
+            f"MAX(CASE WHEN ingested_at >= :r{i}_from AND ingested_at < :r{i}_to "
+            f"AND {compiled.probe} THEN 1 ELSE 0 END) AS r{i}"
+        )
+        params.update(compiled.params, **{f"r{i}_from": start, f"r{i}_to": end})
+        params["ingested_from"] = min(params["ingested_from"], start)
+        params["ingested_to"] = max(params["ingested_to"], end)
+        used += need
+    unmatched: set[str] = set()
+    for aliases, columns, params in chunks:
+        sql = (
+            f"SELECT {', '.join(columns)} FROM {layout.EVENTS_TABLE} "
+            "WHERE tenant_id = :tenant_id AND ingested_at >= :ingested_from "
+            "AND ingested_at < :ingested_to"
+        )
+        try:
+            row = (store.query(sql, params, 1).rows or [{}])[0]
+        except Exception as exc:
+            _stop_if_down(store, exc)
+            continue
+        unmatched |= {rule_id for alias, rule_id in aliases.items() if not row.get(alias)}
+    return unmatched
+
+
+def _stop_if_down(store: EventStore, exc: Exception) -> None:
+    """A store that is down, or whose table `shoc migrate` has not made yet, is
+    not a rule's fault: marking it would mark every rule."""
+    health = store.health()
+    if not health.ok:
+        raise StoreError(f"event store unreachable, detection stopped: {health.detail}") from exc
 
 
 def _failed(
@@ -568,7 +688,7 @@ def match_indicators(
     start, end = _window(
         row["watermark"] if row else None, now, timedelta(minutes=30), _late_loads(conn, tenant_id)
     )
-    last = _last_load(conn, tenant_id)
+    last = _last_loads(conn, tenant_id).get("")
     if row and row["watermark"] and last and last < start:
         _idle(conn, tenant_id, INDICATORS, now)
         return []
@@ -639,7 +759,7 @@ def run_all(
             (tenant_id,),
         )
     }
-    last = None if lookback_seconds else _last_load(conn, tenant_id)
+    loads = {} if lookback_seconds else _last_loads(conn, tenant_id)
     late = [] if lookback_seconds else _late_loads(conn, tenant_id)
     history = fetch_all(
         conn,
@@ -647,15 +767,24 @@ def run_all(
            FROM shoc.source_history WHERE tenant_id = %s""",
         (tenant_id,),
     )
+    ranges: list[tuple[ruleset.Rule, datetime, datetime]] = []
     for rule in rules:
-        learning = accounts_learning(rule, history) if rule.first_seen else None
         state = states.get(rule.id) or {}
         span = timedelta(seconds=rule.timeframe_seconds)
         start, end = _window(state.get("watermark"), now, span, late)
-        if state.get("watermark") and last and last < start:
+        if state.get("watermark") and _nothing_loaded(loads, rule, start, now):
             _idle(conn, tenant_id, rule.id, now)
             stats.rules_run += 1
+        else:
+            ranges.append((rule, start, end))
+    unmatched = set() if lookback_seconds else _unmatched(store, tenant_id, ranges)
+    for rule, start, end in ranges:
+        if rule.id in unmatched:
+            _ran(conn, tenant_id, rule.id, end, 0, [])
+            stats.rules_run += 1
             continue
+        learning = accounts_learning(rule, history) if rule.first_seen else None
+        state = states.get(rule.id) or {}
         notes: list[str] = []
         try:
             if lookback_seconds:
@@ -687,13 +816,7 @@ def run_all(
                 stats.errors[rule.id] = "; ".join(notes)
             _ran(conn, tenant_id, rule.id, None if lookback_seconds else end, new, notes)
         except Exception as exc:
-            # A store that is down, or whose table `shoc migrate` has not made
-            # yet, is not this rule's fault: marking it would mark every rule.
-            health = store.health()
-            if not health.ok:
-                raise StoreError(
-                    f"event store unreachable, detection stopped: {health.detail}"
-                ) from exc
+            _stop_if_down(store, exc)
             stats.errors[rule.id] = f"{type(exc).__name__}: {exc}"
             _failed(conn, tenant_id, rule.id, str(exc), None if lookback_seconds else start)
         stats.rules_run += 1

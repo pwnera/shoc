@@ -388,6 +388,8 @@ def run_pack(
         _record(conn, tenant_id, pack, run)
         return run
     run.rows = len(rows)
+    if len(rows) >= MAX_ROWS_PER_PACK:
+        _stopped_at_limit(pack, run, rows)
     run.tuples = group(tenant_id, run.run_uid, pack, rows)
     if len(run.tuples) > TOO_MANY_TUPLES:
         run.unseen.append(
@@ -403,6 +405,30 @@ def run_pack(
     elif triage:
         triaged(conn, store, tenant_id, [(pack, run)], client, config)
     return run
+
+
+def _stopped_at_limit(pack: Any, run: Run, rows: list[dict[str, Any]]) -> None:
+    """A query that returned its limit left rows unread, and says which.
+
+    Rows come in ingestion order, so the window ends at the last one read and
+    the next run starts there. Before, the cursor moved to the window's end and
+    what lay past the limit was never hunted.
+    """
+    if pack.baseline.kind == "rare":
+        run.unseen.append(f"only the {MAX_ROWS_PER_PACK} groupings with the most events were read")
+        return
+    last = rows[-1].get("ingested_at")
+    if isinstance(last, datetime) and run.ingested_from and last > run.ingested_from:
+        run.ingested_to = last
+        run.unseen.append(
+            f"the query stopped at {MAX_ROWS_PER_PACK} rows; what was ingested from "
+            f"{last:%Y-%m-%d %H:%M:%S} on is read by the next run"
+        )
+    else:
+        run.unseen.append(
+            f"the query stopped at {MAX_ROWS_PER_PACK} rows ingested at one instant; "
+            "the rest of the window was not read"
+        )
 
 
 def _query(

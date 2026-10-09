@@ -33,6 +33,20 @@ PARAM_STYLE: dict[str, str] = {
     "bigquery": "@{name}",
 }
 
+# The most placeholders one statement may carry, each repeat counted: Databricks
+# refuses a 257th, BigQuery a 10,001st. A caller with more values to bind spreads
+# them over several statements.
+MAX_PARAMS: dict[str, int] = {"databricks": 256}
+
+
+def max_params(dialect: str) -> int:
+    return MAX_PARAMS.get(dialect, 10_000)
+
+
+def placeholders(canonical_sql: str) -> int:
+    """How many `:name` placeholders a canonical statement holds, repeats included."""
+    return len(PLACEHOLDER.findall(canonical_sql))
+
 
 # SQLGlot writes JSON extraction for Postgres as the `json_*` functions, and our
 # JSON columns are `jsonb`, which has functions of its own and no implicit cast

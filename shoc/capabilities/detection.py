@@ -14,7 +14,7 @@ from typing import Any, Literal
 from shoc.capabilities.registry import Context, Result, capability
 from shoc.detect import rules as ruleset
 from shoc.detect.compiler import compile_rule
-from shoc.detect.engine import ADHOC_LIMIT, match_indicators, run_all, run_rule
+from shoc.detect.engine import ADHOC_LIMIT, INDICATORS, match_indicators, run_all, run_rule
 from shoc.errors import ConfigError, Denied, NotFound
 from shoc.jsonschema import field as f
 from shoc.jsonschema import to_json
@@ -150,7 +150,7 @@ def run_detection(ctx: Context, inp: DetectRun) -> Result:
             raise NotFound(f"no rule '{inp.rule_id}'")
     lookback = ruleset.parse_timeframe(inp.lookback) if inp.lookback else None
     stats = run_all(ctx.db, ctx.store, ctx.tenant_id, rules, lookback_seconds=lookback)
-    ioc_findings = _match_indicators(ctx, lookback)
+    ioc_findings = _match_indicators(ctx, lookback, stats.errors)
     cases = _open_cases(ctx) if inp.open_cases else []
     return Result(
         data=DetectReport(
@@ -170,11 +170,16 @@ def run_detection(ctx: Context, inp: DetectRun) -> Result:
     )
 
 
-def _match_indicators(ctx: Context, lookback: int | None) -> list[str]:
-    """Check what the cycle read against known indicators (DET-4)."""
+def _match_indicators(ctx: Context, lookback: int | None, errors: dict[str, str]) -> list[str]:
+    """Check what the cycle read against known indicators (DET-4).
+
+    Intel is an enrichment: a failure never fails the cycle, and is reported
+    with the cycle's errors rather than nowhere.
+    """
     try:
         return match_indicators(ctx.db, ctx.store, ctx.tenant_id, lookback)
-    except Exception:  # intel is an enrichment; it must never fail a detection cycle
+    except Exception as exc:
+        errors[INDICATORS] = f"{type(exc).__name__}: {exc}"
         return []
 
 

@@ -7,6 +7,7 @@ on Databricks or Snowflake fails here rather than in a customer's account.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 
@@ -348,6 +349,75 @@ def test_a_cycle_evaluates_each_bucket_and_not_the_time_between(
     assert len(_findings(conn, tenant, MATCH.id)) == 2
 
 
+def test_adjacent_buckets_are_read_in_one_statement_and_agree_with_a_backfill(
+    conn, store, config, clean, now, monkeypatch
+):
+    """A backlog of adjacent buckets is one read, not one per bucket (D149)."""
+    tenant, start = config.tenant_id, _boundary(now)
+    span = timedelta(minutes=15)
+    windows = []
+
+    def spy(store_, tenant_, rule, lo, hi, *args):
+        windows.append((lo, hi))
+        return run_rule(store_, tenant_, rule, lo, hi, *args)
+
+    monkeypatch.setattr(engine, "run_rule", spy)
+    times = [start + i * span + timedelta(minutes=1) for i in range(4)]
+    batch.load(store, _trail(tenant, times, start + 4 * span, "adj", op="DeleteTrail"))
+    run_all(conn, store, tenant, [MATCH], now=start + 4 * span + timedelta(minutes=1))
+    assert windows == [(start, start + 4 * span)]
+    cycled = [r["finding_uid"] for r in _findings(conn, tenant, MATCH.id)]
+    backfill = run_rule(store, tenant, MATCH, start - span, start + 5 * span)
+    assert len(cycled) == 4 and sorted(cycled) == sorted(f.finding_uid for f in backfill)
+
+
+def test_a_cycle_whose_rows_match_no_rule_reads_the_store_once(conn, store, config, clean, now):
+    """One statement asks every woken rule whether anything it reads arrived (D149)."""
+    from tests.support import Counting
+
+    tenant, start = config.tenant_id, _boundary(now)
+    rules = [MATCH, BURST, SESSIONS]
+    run_all(conn, store, tenant, rules, now=start)
+    cycle = start + timedelta(minutes=5)
+    batch.load(store, _trail(tenant, [cycle], cycle, "quiet", op="DescribeTrails"))
+    counting: Any = Counting(store)
+    stats = run_all(conn, counting, tenant, rules, now=cycle + timedelta(minutes=1))
+    assert not stats.errors and stats.rules_run == 3
+    assert len(counting.sent) == 1
+
+    later = cycle + timedelta(minutes=5)
+    batch.load(store, _trail(tenant, [later], later, "loud", op="DeleteTrail"))
+    counting.sent.clear()
+    stats = run_all(conn, counting, tenant, rules, now=later + timedelta(minutes=1))
+    assert stats.findings_new == 1
+    # The probe, then MATCH's buckets and its one run; BURST and SESSIONS are not read.
+    assert len(counting.sent) == 3
+
+
+def test_a_run_that_fails_twice_is_read_again_bucket_by_bucket(
+    conn, store, config, clean, now, monkeypatch
+):
+    tenant, start = config.tenant_id, _boundary(now)
+    span = timedelta(minutes=15)
+    bad = start + span
+
+    def flaky(store_, tenant_, rule, lo, hi, *args):
+        if lo <= bad < hi:
+            raise StoreError("canceling statement due to statement timeout")
+        return run_rule(store_, tenant_, rule, lo, hi, *args)
+
+    monkeypatch.setattr(engine, "run_rule", flaky)
+    ingested = start + 2 * span
+    batch.load(store, _trail(tenant, [start], ingested, "good", op="DeleteTrail", user="good"))
+    batch.load(store, _trail(tenant, [bad], ingested, "bad", op="DeleteTrail", user="bad"))
+    first = run_all(conn, store, tenant, [MATCH], now=ingested + timedelta(minutes=1))
+    assert MATCH.id in first.errors and not _findings(conn, tenant, MATCH.id)
+    run_all(conn, store, tenant, [MATCH], now=ingested + timedelta(minutes=6))
+    assert _entities(conn, tenant, MATCH.id) == ["good"]
+    state = _state(conn, tenant, MATCH.id)
+    assert state and f"{bad:%Y-%m-%d %H:%M} not evaluated" in state["last_error"]
+
+
 def test_a_bucket_that_fails_twice_is_left_out_and_the_rule_goes_on(
     conn, store, config, clean, now, monkeypatch
 ):
@@ -396,6 +466,7 @@ def test_a_rule_that_failed_from_its_first_cycle_resumes_where_it_started(
 
     with monkeypatch.context() as patched:
         patched.setattr(engine, "_since_watermark", down)
+        patched.setattr(engine, "_unmatched", lambda *args: set())
         run_all(conn, store, tenant, [MATCH], now=start)
     gap = start + timedelta(hours=1)
     batch.load(store, _trail(tenant, [gap], gap, "gap", op="DeleteTrail"))

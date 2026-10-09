@@ -434,6 +434,33 @@ def test_too_many_tuples_are_triaged_in_order_and_the_rest_named(
     assert run.unseen and "too broad" in run.unseen[0]
 
 
+def test_a_pack_that_stops_at_its_limit_ends_its_window_at_the_last_row_read(
+    ctx, store, config, clean, now, monkeypatch
+):
+    """Rows past the limit are read by the next run, not skipped by the cursor."""
+    from datetime import datetime
+
+    monkeypatch.setattr(hunter, "MAX_ROWS_PER_PACK", 1)
+    _connect(ctx, config, FIRST)
+    path = FIXTURES / FIRST.id / "surfaced.json"
+    loads = []
+    for minutes in (2, 1):
+        rows = fixture_rows(
+            json.loads(path.read_text()),
+            _source(FIRST),
+            config.tenant_id,
+            now - timedelta(minutes=minutes),
+        )
+        batch.load(store, rows)
+        loads.append(datetime.fromisoformat(rows[0]["ingested_at"]))
+    run = hunter.run_pack(ctx.db, store, config.tenant_id, FIRST, client=NoLLM(), config=config)
+    assert run.rows == 1
+    assert run.ingested_to == loads[0]
+    assert any("read by the next run" in u for u in run.unseen)
+    recorded = hunter.results(ctx.db, config.tenant_id)
+    assert recorded[0]["ingested_to"] == loads[0]
+
+
 def test_promotion_counts_confirmed_attacks_only(ctx, store, config, clean, now):
     from shoc.detect.engine import Finding, upsert
 

@@ -205,6 +205,17 @@ everything else stay exactly the same.
 Detection cost grows with the window, not with total storage: retention only
 affects disk and the cost of a retro-hunt.
 
+On a warehouse the bill follows how often the store is woken and how many
+statements each cycle sends (D149). A rule whose products were not loaded since
+its last cycle sends nothing. One statement asks every other rule whether
+anything new matches it, and only the rules with a match send their own, a run
+of adjacent buckets per statement. Indicators are compared with the values the
+cycle's window holds, in one statement however large the feeds. Counted with
+the 182 shipped rules and 5,300 indicators: a cycle after a GitHub push sends 10
+statements (198 before), and an 8-hour backlog of GitHub events is caught up in
+35 (592 before), with the same findings. No statement binds more than 256 values
+on Databricks, which refuses more.
+
 A four-minute soak (a worker running its full schedule while 68,000 events
 arrived in 4,000-event batches) held flat at 74 MB resident and three Postgres
 connections, with no job backlog and nothing failed. A detection cycle over the
