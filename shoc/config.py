@@ -214,6 +214,15 @@ class Config:
         default = "300" if self.backend == "postgres" else "900"
         return int(os.environ.get("SHOC_CYCLE_SECONDS") or default)
 
+    @property
+    def poll_floor_seconds(self) -> int:
+        """The shortest interval a source polls at (D71, D151).
+
+        A poll that loads wakes a warehouse, and detection only looks once a
+        cycle, so on one a source polls no more often than the cycle.
+        """
+        return 0 if self.backend == "postgres" else self.cycle_seconds
+
     def tenant_schema(self, tenant_id: str | None = None) -> str:
         """Postgres and Redshift tenancy is a schema per tenant (decision D4)."""
         return f"t_{self._safe(tenant_id)}"

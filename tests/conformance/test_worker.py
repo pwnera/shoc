@@ -51,6 +51,37 @@ def test_default_schedules_cover_the_whole_cycle(conn, config):
     assert kinds["report.exec"] == 2592000, "the executive report goes out every 30 days (AGT-14)"
 
 
+def test_a_source_configured_on_postgres_polls_a_warehouse_once_a_cycle(conn, config, monkeypatch):
+    """Only `source.configure` raised a sync to the cycle (D71, D151)."""
+    tenant = config.tenant_id
+    execute(
+        conn,
+        """INSERT INTO shoc.connector_config (tenant_id, source, interval_seconds)
+           VALUES (%s, 'okta', 300)""",
+        (tenant,),
+    )
+    jobs.upsert_schedule(
+        conn, f"{tenant}:sync:okta", tenant, "source.sync", 300, {"source": "okta"}
+    )
+
+    def every() -> int:
+        row = fetch_one(
+            conn,
+            "SELECT interval_seconds FROM shoc.schedules WHERE schedule_id = %s",
+            (f"{tenant}:sync:okta",),
+        )
+        assert row
+        return row["interval_seconds"]
+
+    monkeypatch.delenv("SHOC_CYCLE_SECONDS", raising=False)
+    monkeypatch.setattr(config, "backend", "databricks")
+    worker.ensure_default_schedules(conn, config)
+    assert every() == 900
+    monkeypatch.setattr(config, "backend", "postgres")
+    worker.ensure_default_schedules(conn, config)
+    assert every() == 300, "back on Postgres it polls as configured"
+
+
 def test_the_sweep_sends_the_crew_back_at_a_case_nobody_worked(conn, ctx, store, config, clean):
     """A failed investigation used to be final: the job key never changed again."""
     from evals.run import SCENARIOS, replay

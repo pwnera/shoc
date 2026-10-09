@@ -220,17 +220,12 @@ def configure_source(ctx: Context, inp: SourceConfig) -> Result:
                 f"key, then POST records to /ingest/{inp.source}."
             ),
         )
-    # A poll that loads wakes a warehouse, and detection only looks once a
-    # cycle, so on one a source polls no more often than the cycle (D71).
-    every = inp.interval_seconds
-    if getattr(ctx.config, "backend", "postgres") != "postgres":
-        every = max(every, ctx.config.cycle_seconds)
     upsert_schedule(
         ctx.db,
         f"{ctx.tenant_id}:sync:{inp.source}",
         ctx.tenant_id,
         "source.sync",
-        every,
+        max(inp.interval_seconds, ctx.config.poll_floor_seconds),
         {"source": inp.source},
         enabled=inp.enabled,
     )
