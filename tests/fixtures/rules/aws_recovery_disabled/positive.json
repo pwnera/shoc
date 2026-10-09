@@ -110,5 +110,75 @@
       "backupRetentionPeriod": 0,
       "applyImmediately": true
     }
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "rds-delete-no-snapshot",
+    "eventName": "DeleteDBInstance",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#rds",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:GitHubActions",
+      "arn": "arn:aws:sts::123456789012:assumed-role/github-deploy/GitHubActions",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLEDEPLOY01",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/github-deploy",
+          "accountId": "123456789012",
+          "userName": "github-deploy"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "dBInstanceIdentifier": "prod-db",
+      "skipFinalSnapshot": true,
+      "deleteAutomatedBackups": true
+    },
+    "responseElements": {
+      "dBInstanceIdentifier": "prod-db",
+      "dBInstanceStatus": "deleting"
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "rds-delete-snapshot",
+    "eventName": "DeleteDBSnapshot",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#rds",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00001",
+      "arn": "arn:aws:iam::123456789012:user/dev-ci",
+      "accountId": "123456789012",
+      "userName": "dev-ci",
+      "accessKeyId": "AKIAEXAMPLEDEV00001"
+    },
+    "requestParameters": {
+      "dBSnapshotIdentifier": "prod-db-before-migration"
+    },
+    "responseElements": {
+      "dBSnapshotIdentifier": "prod-db-before-migration",
+      "status": "deleted"
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
   }
 ]

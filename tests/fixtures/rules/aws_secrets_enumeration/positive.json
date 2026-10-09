@@ -1203,5 +1203,584 @@
     "managementEvent": true,
     "eventCategory": "Management",
     "sessionCredentialFromConsole": "true"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN01"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN02"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN03"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN04"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN05"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN06"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN07"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN08"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN09"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN10"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN11"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN12"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN13"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN14"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN15"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN16"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN17"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN18"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-page",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.55",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLESSMPATH01",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLESSMPATH01"
+    },
+    "requestParameters": {
+      "path": "/",
+      "recursive": true,
+      "withDecryption": true,
+      "nextToken": "EXAMPLEPAGETOKEN19"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
   }
 ]

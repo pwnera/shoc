@@ -39,5 +39,17 @@
         "name": "node"
       }
     }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd30",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Lin",
+    "ImageFileName": "/usr/bin/docker",
+    "CommandLine": "docker run --rm --privileged -v /:/host ubuntu bash -c \"cp /host/tmp/runner /host/etc/sudoers.d/runner\"",
+    "ParentBaseFileName": "node",
+    "RawProcessId": "5150",
+    "UserName": "dev"
   }
 ]

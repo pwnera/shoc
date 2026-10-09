@@ -70,5 +70,33 @@
       "id": "023e105f4ecef8ad9ca31a8372d0c353",
       "name": "example.com"
     }
-  }
+  },
+  {
+    "id": "cf-logpush-redirect",
+    "account": {"id": "acc-1", "name": "Acme"},
+    "action": {"type": "update", "description": "Logpush job", "result": "success"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"method": "PUT", "status_code": 200, "uri": "/accounts/acc-1/logpush/jobs/9", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "job-9", "product": "logpush", "request": {"destination_conf": "r2://other-bucket/gateway?account-id=acc-2"}, "response": {}},
+    "zone": {}
+  },
+  {
+    "id": "cf-gateway-activity-off",
+    "account": {"id": "acc-1", "name": "Acme"},
+    "action": {"type": "update", "description": "Update Zero Trust account configuration", "result": "success"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"method": "PUT", "status_code": 200, "uri": "/accounts/acc-1/gateway/configuration", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "acc-1", "product": "gateway", "request": {"settings": {"activity_log": {"enabled": false}, "tls_decrypt": {"enabled": true}}}, "response": {}},
+    "zone": {}
+  },
+  {
+    "id": "cf-gateway-dns-cut",
+    "account": {"id": "acc-1", "name": "Acme"},
+    "action": {"type": "update", "description": "Update Zero Trust account logging settings", "result": "success"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"method": "PUT", "status_code": 200, "uri": "/accounts/acc-1/gateway/logging", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "acc-1", "product": "gateway", "request": {"redact_pii": false, "settings_by_rule_type": {"dns": {"log_all": false, "log_blocks": true}, "http": {"log_all": true, "log_blocks": true}, "l4": {"log_all": true, "log_blocks": true}}}, "response": {}},
+    "zone": {}
+  },
+  {"ActionResult": true, "ActionType": "gateway_update", "ActorEmail": "mallory@example.com", "ActorID": "042fb38530054d63921f9ca81a33d5d2", "ActorIP": "::ffff:203.0.113.7", "ActorType": "user", "ID": "3cca43bb-2fb4-4acf-bfe8-06f12e3cce01", "Interface": "UI", "Metadata": {"account_id": "1d1e650b3385b95db72bba7cfb1287e9", "actor_email": "mallory@example.com"}, "NewValue": {"settings": {"antivirus": {"enabled_download_phase": true, "enabled_upload_phase": true, "fail_closed": true}, "tls_decrypt": {"enabled": true}, "activity_log": {"enabled": false}, "block_page": null, "fips": {"tls": false}}}, "OldValue": null, "OwnerID": "1d1e650b3385b95db72bba7cfb1287e9", "ResourceID": "1d1e650b3385b95db72bba7cfb1287e9", "ResourceType": "gateway.config"}
 ]

@@ -1,0 +1,60 @@
+[
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "dns",
+      "type": "DNS Resolved",
+      "dns": {
+        "request": "api.github.com",
+        "response": "203.0.113.40;"
+      }
+    },
+    "agent": {
+      "uuid": "55cf574b-9fd7-5278-2ee0-badefd0d2215"
+    },
+    "endpoint": {
+      "name": "web-01",
+      "os": "linux"
+    },
+    "src": {
+      "process": {
+        "name": "node"
+      }
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "DnsRequest",
+    "aid": "0123456789abcdef0123456789abcd17",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Mac",
+    "DomainName": "polling.oastify.com",
+    "RequestType": "1",
+    "ContextProcessId": "777"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceNetworkEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "cccccccccccccccccccccccccccccccccccccccf",
+      "DeviceName": "laptop-52.example.com",
+      "ActionType": "DnsConnectionInspected",
+      "LocalIP": "192.0.2.30",
+      "LocalPort": 50222,
+      "RemoteIP": "192.0.2.1",
+      "RemotePort": 53,
+      "Protocol": "Udp",
+      "InitiatingProcessId": 0,
+      "AdditionalFields": {
+        "direction": "Out",
+        "query": "login.microsoftonline.com",
+        "qtype_name": "A",
+        "rcode_name": "NOERROR",
+        "answers": [
+          "203.0.113.41"
+        ]
+      }
+    }
+  }
+]

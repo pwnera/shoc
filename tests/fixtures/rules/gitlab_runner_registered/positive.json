@@ -1,0 +1,40 @@
+[
+  {
+    "id": 91500,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "ci_runner_registered",
+    "details": {
+      "event_name": "ci_runner_registered",
+      "custom_message": "Registered group CI runner",
+      "target_id": 377,
+      "target_type": "Ci::Runner",
+      "target_details": "/groups/acme/-/runners/377",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "192.0.2.144",
+      "entity_path": "acme"
+    }
+  },
+  {
+    "id": 91502,
+    "author_id": 42,
+    "entity_id": 18,
+    "entity_type": "Project",
+    "event_name": "ci_runner_created",
+    "details": {
+      "event_name": "ci_runner_created",
+      "custom_message": "Created project CI runner",
+      "target_id": 378,
+      "target_type": "Ci::Runner",
+      "target_details": "/acme/platform/api/-/runners/378",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "192.0.2.144",
+      "entity_path": "acme/platform/api"
+    }
+  }
+]

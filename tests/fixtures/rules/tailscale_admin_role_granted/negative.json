@@ -9,5 +9,17 @@
     "new": "member",
     "event": "USER.UPDATE.USER_ROLE",
     "tailnet": "T1234CNTRL"
+  },
+  {
+    "action": "UPDATE",
+    "actor": {"displayName": "Mallory", "id": "u999CNTRL", "loginName": "mallory@example.com", "type": "USER"},
+    "eventGroupID": "4b1f0c2d9e8a7b6c5d4e3f2a1b0c9e01",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "u556CNTRL", "name": "finance", "type": "USER", "property": "USER_ROLE"},
+    "type": "CONFIG",
+    "old": "member",
+    "new": "billing-admin",
+    "event": "USER.UPDATE.USER_ROLE",
+    "tailnet": "T1234CNTRL"
   }
 ]

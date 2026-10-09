@@ -1,0 +1,71 @@
+[
+  {
+    "Id": "m365-SiteCollectionAdminAdded-finance",
+    "Operation": "SiteCollectionAdminAdded",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 14,
+    "UserKey": "i:0h.f|membership|00000000-0000-0000-0000-00000000a401@live.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "SharePoint",
+    "ClientIP": "203.0.113.12",
+    "ObjectId": "https://example.sharepoint.com/sites/finance",
+    "UserId": "omega@example.onmicrosoft.com",
+    "SiteUrl": "https://example.sharepoint.com/sites/finance",
+    "ModifiedProperties": [
+      {
+        "Name": "SiteAdmin",
+        "NewValue": "omega@example.onmicrosoft.com",
+        "OldValue": ""
+      }
+    ],
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "_content_type": "Audit.SharePoint"
+  },
+  {
+    "Id": "m365-SiteCollectionAdminAdded-hr",
+    "Operation": "SiteCollectionAdminAdded",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 14,
+    "UserKey": "i:0h.f|membership|00000000-0000-0000-0000-00000000a401@live.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "SharePoint",
+    "ClientIP": "203.0.113.12",
+    "ObjectId": "https://example.sharepoint.com/sites/hr",
+    "UserId": "omega@example.onmicrosoft.com",
+    "SiteUrl": "https://example.sharepoint.com/sites/hr",
+    "ModifiedProperties": [
+      {
+        "Name": "SiteAdmin",
+        "NewValue": "omega@example.onmicrosoft.com",
+        "OldValue": ""
+      }
+    ],
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "_content_type": "Audit.SharePoint"
+  },
+  {
+    "Id": "m365-SiteCollectionAdminAdded-legal",
+    "Operation": "SiteCollectionAdminAdded",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 14,
+    "UserKey": "i:0h.f|membership|00000000-0000-0000-0000-00000000a401@live.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "SharePoint",
+    "ClientIP": "203.0.113.12",
+    "ObjectId": "https://example.sharepoint.com/sites/legal",
+    "UserId": "omega@example.onmicrosoft.com",
+    "SiteUrl": "https://example.sharepoint.com/sites/legal",
+    "ModifiedProperties": [
+      {
+        "Name": "SiteAdmin",
+        "NewValue": "omega@example.onmicrosoft.com",
+        "OldValue": ""
+      }
+    ],
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "_content_type": "Audit.SharePoint"
+  }
+]

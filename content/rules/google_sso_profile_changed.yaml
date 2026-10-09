@@ -1,0 +1,58 @@
+id: google_sso_profile_changed
+title: Third-party SSO profile created or changed in Google Workspace
+description: >
+  A super admin added or edited an SSO profile that lets another identity
+  provider sign users in to Google, or turned on the older organisation-wide
+  SSO. Whoever controls that provider can then sign in as any user the
+  profile covers, with no Google password and no Google two-step
+  verification. A company sets SSO up once and touches it again when the
+  provider's certificate is renewed. Deleting a profile or turning SSO off
+  closes a way in and is left out.
+status: experimental
+date: 2026-10-09
+severity: critical
+confidence: 0.7
+attack: [T1556.007, T1484.002]
+logsource:
+  product: google
+  service: reports
+detection:
+  selection_profile:
+    api.service.name: admin
+    api.operation|startswith: INBOUND_SSO_
+  filter_deleted:
+    api.operation|endswith: _DELETED
+  # The single profile Google had before SSO profiles.
+  selection_legacy:
+    api.service.name: admin
+    api.operation: CHANGE_SSO_SETTINGS
+  selection_legacy_on:
+    api.service.name: admin
+    api.operation: TOGGLE_SSO_ENABLED
+    unmapped.params.NEW_VALUE: "true"
+  condition: (selection_profile and not filter_deleted) or selection_legacy or selection_legacy_on
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, unmapped.params.INBOUND_SSO_PROFILE_NAME, unmapped.params.INBOUND_SSO_PROFILE_CHANGES, src_endpoint.ip]
+sources:
+  - name: Panther
+    title: GCP Inbound SSO Profile Created
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/gcp_audit_rules/gcp_inbound_sso_profile_created_or_updated.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Google
+    title: Admin audit activity events, domain settings
+    url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/admin-domain-settings
+    relation: inspired
+  - name: Google
+    title: Event Threat Detection overview
+    url: https://cloud.google.com/security-command-center/docs/concepts-event-threat-detection-overview
+    relation: inspired
+  - name: Google
+    title: SSOProfileCreatedEvent
+    url: https://developers.google.com/workspace/admin/alertcenter/reference/rest/v1beta1/SSOProfileCreatedEvent
+    relation: inspired
+  - name: Okta Security
+    title: "Cross-Tenant Impersonation: Prevention and Detection"
+    url: https://sec.okta.com/articles/2023/08/cross-tenant-impersonation-prevention-and-detection
+    relation: inspired

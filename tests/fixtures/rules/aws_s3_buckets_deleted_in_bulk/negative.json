@@ -1,0 +1,266 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "s3-cfn-1",
+    "eventName": "DeleteBucket",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "cloudformation.amazonaws.com",
+    "userAgent": "cloudformation.amazonaws.com",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:AWSCloudFormation",
+      "arn": "arn:aws:sts::123456789012:assumed-role/cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1/AWSCloudFormation",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLECFN00001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1",
+          "accountId": "123456789012",
+          "userName": "cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      },
+      "invokedBy": "cloudformation.amazonaws.com"
+    },
+    "requestParameters": {
+      "bucketName": "preview-stack-assets-1a2b3c",
+      "Host": "preview-stack-assets-1a2b3c.s3.eu-west-1.amazonaws.com"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::preview-stack-assets-1a2b3c"
+      }
+    ]
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "s3-cfn-2",
+    "eventName": "DeleteBucket",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "cloudformation.amazonaws.com",
+    "userAgent": "cloudformation.amazonaws.com",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:AWSCloudFormation",
+      "arn": "arn:aws:sts::123456789012:assumed-role/cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1/AWSCloudFormation",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLECFN00001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1",
+          "accountId": "123456789012",
+          "userName": "cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      },
+      "invokedBy": "cloudformation.amazonaws.com"
+    },
+    "requestParameters": {
+      "bucketName": "preview-stack-logs-1a2b3c",
+      "Host": "preview-stack-logs-1a2b3c.s3.eu-west-1.amazonaws.com"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::preview-stack-logs-1a2b3c"
+      }
+    ]
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "s3-cfn-3",
+    "eventName": "DeleteBucket",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "cloudformation.amazonaws.com",
+    "userAgent": "cloudformation.amazonaws.com",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:AWSCloudFormation",
+      "arn": "arn:aws:sts::123456789012:assumed-role/cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1/AWSCloudFormation",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLECFN00001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1",
+          "accountId": "123456789012",
+          "userName": "cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      },
+      "invokedBy": "cloudformation.amazonaws.com"
+    },
+    "requestParameters": {
+      "bucketName": "preview-stack-media-1a2b3c",
+      "Host": "preview-stack-media-1a2b3c.s3.eu-west-1.amazonaws.com"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::preview-stack-media-1a2b3c"
+      }
+    ]
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "s3-tf-1",
+    "eventName": "DeleteBucket",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "APN/1.0 HashiCorp/1.0 Terraform/1.9.5 (+https://www.terraform.io) terraform-provider-aws/5.70.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLETERRAFORM",
+      "arn": "arn:aws:iam::123456789012:user/terraform",
+      "accountId": "123456789012",
+      "userName": "terraform",
+      "accessKeyId": "AKIAEXAMPLETERRAFORM"
+    },
+    "requestParameters": {
+      "bucketName": "staging-assets",
+      "Host": "staging-assets.s3.eu-west-1.amazonaws.com"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::staging-assets"
+      }
+    ]
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "s3-tf-2",
+    "eventName": "DeleteBucket",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "APN/1.0 HashiCorp/1.0 Terraform/1.9.5 (+https://www.terraform.io) terraform-provider-aws/5.70.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLETERRAFORM",
+      "arn": "arn:aws:iam::123456789012:user/terraform",
+      "accountId": "123456789012",
+      "userName": "terraform",
+      "accessKeyId": "AKIAEXAMPLETERRAFORM"
+    },
+    "requestParameters": {
+      "bucketName": "staging-logs",
+      "Host": "staging-logs.s3.eu-west-1.amazonaws.com"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::staging-logs"
+      }
+    ]
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "s3-tf-3",
+    "eventName": "DeleteBucket",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "APN/1.0 HashiCorp/1.0 Terraform/1.9.5 (+https://www.terraform.io) terraform-provider-aws/5.70.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLETERRAFORM",
+      "arn": "arn:aws:iam::123456789012:user/terraform",
+      "accountId": "123456789012",
+      "userName": "terraform",
+      "accessKeyId": "AKIAEXAMPLETERRAFORM"
+    },
+    "requestParameters": {
+      "bucketName": "staging-media",
+      "Host": "staging-media.s3.eu-west-1.amazonaws.com"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::staging-media"
+      }
+    ]
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "s3-retry",
+    "eventName": "DeleteBucket",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#s3.rb",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEOPS000001",
+      "arn": "arn:aws:iam::123456789012:user/ops",
+      "accountId": "123456789012",
+      "userName": "ops",
+      "accessKeyId": "AKIAEXAMPLEOPS000001"
+    },
+    "requestParameters": {
+      "bucketName": "old-test-bucket",
+      "Host": "old-test-bucket.s3.eu-west-1.amazonaws.com"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::old-test-bucket"
+      }
+    ],
+    "_repeat": 3
+  }
+]

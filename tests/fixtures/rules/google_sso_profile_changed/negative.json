@@ -1,0 +1,60 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-sso-deleted",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "it-admin@example.com",
+      "profileId": "100000000000000000001",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.40",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "INBOUND_SSO_SETTINGS",
+        "name": "INBOUND_SSO_PROFILE_DELETED",
+        "parameters": [
+          {
+            "name": "INBOUND_SSO_PROFILE_NAME",
+            "value": "inboundSamlSsoProfiles/03abcd1234efgh5"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-sso-off",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "it-admin@example.com",
+      "profileId": "100000000000000000001",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.40",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "DOMAIN_SETTINGS",
+        "name": "TOGGLE_SSO_ENABLED",
+        "parameters": [
+          {
+            "name": "DOMAIN_NAME",
+            "value": "example.com"
+          },
+          {
+            "name": "NEW_VALUE",
+            "value": "false"
+          }
+        ]
+      }
+    ]
+  }
+]

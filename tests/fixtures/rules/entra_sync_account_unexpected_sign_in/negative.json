@@ -1,0 +1,69 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-00000000i002",
+    "userPrincipalName": "sync_dc01_3f2a9b1c7d4e@example.onmicrosoft.com",
+    "userId": "00000000-0000-0000-0000-00000000a201",
+    "appDisplayName": "Microsoft Azure Active Directory Connect",
+    "appId": "cb1056e2-e479-49de-ae31-7812af012ed8",
+    "resourceDisplayName": "Windows Azure Active Directory",
+    "resourceId": "00000002-0000-0000-c000-000000000000",
+    "ipAddress": "198.51.100.5",
+    "authenticationProtocol": "none",
+    "status": { "errorCode": 0 },
+    "signInEventTypes": ["nonInteractiveUser"],
+    "_stream": "nonInteractiveSignIns"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000i003",
+    "userPrincipalName": "sync_dc01_3f2a9b1c7d4e@example.onmicrosoft.com",
+    "userId": "00000000-0000-0000-0000-00000000a201",
+    "appDisplayName": "Microsoft Online Syndication Partner Portal",
+    "appId": "00000000-0000-0000-0000-00000000i010",
+    "resourceDisplayName": "Windows Azure Active Directory",
+    "ipAddress": "198.51.100.5",
+    "authenticationProtocol": "none",
+    "status": { "errorCode": 0 },
+    "signInEventTypes": ["nonInteractiveUser"],
+    "_stream": "nonInteractiveSignIns"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000i004",
+    "userPrincipalName": "sync_dc01_3f2a9b1c7d4e@example.onmicrosoft.com",
+    "userId": "00000000-0000-0000-0000-00000000a201",
+    "appDisplayName": "Microsoft Graph Command Line Tools",
+    "appId": "14d82eec-204b-4c2f-b7e8-296a70dab67e",
+    "resourceDisplayName": "Microsoft Graph",
+    "ipAddress": "203.0.113.89",
+    "authenticationProtocol": "none",
+    "status": { "errorCode": 50126, "failureReason": "Error validating credentials due to invalid username or password." },
+    "signInEventTypes": ["interactiveUser"],
+    "_stream": "signIns"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000i005_SYNC_1",
+    "activityDisplayName": "Update user",
+    "category": "UserManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a201",
+        "userPrincipalName": "Sync_DC01_3f2a9b1c7d4e@example.onmicrosoft.com",
+        "ipAddress": "198.51.100.5"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000a202",
+        "userPrincipalName": "dana@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          { "displayName": "LastDirSyncTime", "oldValue": "[\"2026-10-09T08:00:00Z\"]", "newValue": "[\"2026-10-09T08:30:00Z\"]" }
+        ]
+      }
+    ],
+    "_stream": "directoryAudits"
+  }
+]

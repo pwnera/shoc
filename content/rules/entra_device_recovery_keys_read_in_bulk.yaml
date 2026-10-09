@@ -1,0 +1,53 @@
+id: entra_device_recovery_keys_read_in_bulk
+title: BitLocker keys or LAPS passwords read for three or more devices
+description: >
+  One account read the BitLocker recovery key or the Windows LAPS local
+  administrator password of three or more devices within an hour. Entra ID
+  keeps both for every enrolled laptop, so a Global, Intune or Cloud Device
+  Administrator account in the wrong hands gets local admin on the fleet, ready
+  for ransomware, without touching on-premises AD. The help desk reads one key
+  when someone is locked out. A fleet-wide recovery, such as the faulty
+  CrowdStrike update of July 2024, is the usual benign burst.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1555.006]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  # The target is the device for LAPS and the key for BitLocker.
+  selection:
+    api.operation|contains: [recover device local administrator password, read bitlocker key]
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 1h
+  group_by: [actor.user.name]
+  count_distinct: resource.uid
+  count: ">= 3"
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Sigma
+    title: Windows LAPS Credential Dump From Entra ID
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_auditlogs_laps_credential_dumping.yml
+    author: andrewdanis
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: Bitlocker Key Retrieval
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_ad_bitlocker_key_retrieval.yml
+    author: Michael Epping, '@mepples21'
+    license: DRL-1.1
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: BitLocker Key Retrieval
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Hunting%20Queries/AuditLogs/BitLockerKeyRetrieval.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft
+    title: Microsoft Entra security operations for devices
+    url: https://learn.microsoft.com/en-us/entra/architecture/security-operations-devices
+    relation: inspired

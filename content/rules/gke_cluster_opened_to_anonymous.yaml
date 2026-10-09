@@ -1,0 +1,57 @@
+id: gke_cluster_opened_to_anonymous
+title: Anonymous caller changed a GKE cluster, or a binding opened it to everyone
+description: >
+  An unauthenticated request created, changed or deleted something in a GKE
+  cluster and was allowed, or someone bound a role to system:anonymous,
+  system:unauthenticated or system:authenticated. On GKE system:authenticated
+  takes in every Google account in the world. Either way the cluster is open
+  to the internet. Any role counts, cluster-admin or not.
+  Refused anonymous requests, which internet scanners send all day, and
+  Kubernetes' own default bindings are left out.
+status: experimental
+date: 2026-10-09
+severity: critical
+confidence: 0.75
+attack: [T1190, T1098.003, T1610]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  scope:
+    api.service.name: k8s.io
+  anonymous_write:
+    actor.user.name: system:anonymous
+    activity_name: [Create, Update, Delete]
+    status: Success
+  binding:
+    api.operation|endswith: [rolebindings.create, rolebindings.update, rolebindings.patch]
+  # A patch logs only what it changes; the binding it returns names the subjects.
+  everyone:
+    - raw.protoPayload.request.subjects|contains: [system:anonymous, system:unauthenticated, system:authenticated]
+    - raw.protoPayload.response.subjects|contains: [system:anonymous, system:unauthenticated, system:authenticated]
+  filter_system:
+    actor.user.name|startswith: "system:"
+  workload:
+    actor.user.name|startswith: "system:serviceaccount:"
+  condition: scope and (anonymous_write or (binding and everyone and (workload or not filter_system)))
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, http_request.user_agent, cloud.account.uid]
+sources:
+  - name: Google
+    title: Event Threat Detection overview
+    url: https://cloud.google.com/security-command-center/docs/concepts-event-threat-detection-overview
+    relation: inspired
+  - name: Google
+    title: Best practices for GKE RBAC
+    url: https://cloud.google.com/kubernetes-engine/docs/best-practices/rbac
+    relation: inspired
+  - name: Google
+    title: GKE audit policy
+    url: https://cloud.google.com/kubernetes-engine/docs/concepts/audit-policy
+    relation: inspired
+  - name: Elastic
+    title: GCP integration rules, GKE anonymous request authorized and anonymous pod create
+    url: https://github.com/elastic/detection-rules/tree/main/rules/integrations/gcp
+    license: Elastic-2.0
+    relation: inspired

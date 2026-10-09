@@ -1,0 +1,86 @@
+[
+  {
+    "eventDataId": "00000000-0000-0000-0000-00000000p001",
+    "correlationId": "00000000-0000-0000-0000-00000000p101",
+    "operationName": {
+      "value": "Microsoft.Storage/storageAccounts/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Started"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "203.0.113.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Storage/storageAccounts/stprodbackup",
+    "properties": {
+      "eventCategory": "Administrative",
+      "requestbody": "{\"properties\":{\"allowBlobPublicAccess\":true}}"
+    }
+  },
+  {
+    "eventDataId": "00000000-0000-0000-0000-00000000p002",
+    "correlationId": "00000000-0000-0000-0000-00000000p102",
+    "operationName": {
+      "value": "Microsoft.Storage/storageAccounts/blobServices/containers/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Started"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "203.0.113.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Storage/storageAccounts/stprodbackup/blobServices/default/containers/exports",
+    "properties": {
+      "eventCategory": "Administrative",
+      "requestbody": "{\"properties\":{\"publicAccess\":\"Container\",\"metadata\":{}}}"
+    }
+  },
+  {
+    "eventDataId": "00000000-0000-0000-0000-00000000p003",
+    "correlationId": "00000000-0000-0000-0000-00000000p103",
+    "operationName": {
+      "value": "Microsoft.Storage/storageAccounts/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Started"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "203.0.113.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Storage/storageAccounts/stprodbackup",
+    "properties": {
+      "eventCategory": "Administrative",
+      "requestbody": "{\"properties\":{\"publicNetworkAccess\":\"Enabled\",\"networkAcls\":{\"bypass\":\"AzureServices\",\"virtualNetworkRules\":[],\"ipRules\":[],\"defaultAction\":\"Allow\"}}}"
+    }
+  }
+]

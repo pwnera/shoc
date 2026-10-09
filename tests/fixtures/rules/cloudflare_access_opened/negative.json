@@ -1,0 +1,47 @@
+[
+  {
+    "id": "5e1d0b6c2f7a4e3b9c8d7f6a5b4c3e01",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Update Access reusable policy", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1d01", "method": "PUT", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/access/policies/6a0c1f2e-3d4b-5a69-8c7d-9e0f1a2b3d01", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "6a0c1f2e-3d4b-5a69-8c7d-9e0f1a2b3d01", "product": "access", "request": {"name": "Staff", "decision": "allow", "include": [{"everyone": {}}], "require": [{"email_domain": {"domain": "example.com"}}]}, "response": {"id": "6a0c1f2e-3d4b-5a69-8c7d-9e0f1a2b3d01"}, "scope": "accounts", "type": "policies"},
+    "zone": {}
+  },
+  {
+    "id": "5e1d0b6c2f7a4e3b9c8d7f6a5b4c3e02",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Create Access reusable policy", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1d02", "method": "POST", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/access/policies", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "", "product": "access", "request": {"name": "Lockdown", "decision": "deny", "include": [{"everyone": {}}]}, "response": {"id": "6a0c1f2e-3d4b-5a69-8c7d-9e0f1a2b3d02"}, "scope": "accounts", "type": "policies"},
+    "zone": {}
+  },
+  {
+    "id": "5e1d0b6c2f7a4e3b9c8d7f6a5b4c3e03",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Create Access application policy", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1d03", "method": "POST", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/access/apps/0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4b03/policies", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "", "product": "access", "request": {"name": "Engineers", "decision": "allow", "include": [{"email": {"email": "everyone@example.com"}}, {"email_domain": {"domain": "example.com"}}]}, "response": {"id": "6a0c1f2e-3d4b-5a69-8c7d-9e0f1a2b3d03"}, "scope": "accounts", "type": "policies"},
+    "zone": {}
+  },
+  {
+    "id": "5e1d0b6c2f7a4e3b9c8d7f6a5b4c3e04",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Refresh Access service token", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "api", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1d04", "method": "POST", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/access/service_tokens/3f2e1d0c-9b8a-4776-8564-534231201e04/refresh", "user_agent": "terraform/1.9.0"},
+    "resource": {"id": "3f2e1d0c-9b8a-4776-8564-534231201e04", "product": "access", "request": {}, "response": {"id": "3f2e1d0c-9b8a-4776-8564-534231201e04"}, "scope": "accounts", "type": "service_tokens"},
+    "zone": {}
+  },
+  {
+    "id": "5e1d0b6c2f7a4e3b9c8d7f6a5b4c3e05",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Delete Access application policy", "result": "success", "type": "delete"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1d05", "method": "DELETE", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/access/apps/0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4b05/policies/6a0c1f2e-3d4b-5a69-8c7d-9e0f1a2b3d05", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "6a0c1f2e-3d4b-5a69-8c7d-9e0f1a2b3d05", "product": "access", "request": {}, "response": {}, "scope": "accounts", "type": "policies"},
+    "zone": {}
+  }
+]

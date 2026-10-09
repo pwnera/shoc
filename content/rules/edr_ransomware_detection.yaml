@@ -1,15 +1,17 @@
 id: edr_ransomware_detection
 title: Ransomware detected on an endpoint
 description: >
-  The endpoint agent named ransomware, by name or by the technique it tagged
-  (T1486, data encrypted for impact). Treat this as an incident until somebody
-  proves otherwise, and look immediately at what that host could reach.
+  The endpoint agent named ransomware, by name or by the technique it tagged,
+  T1486 (data encrypted for impact) or T1490 (shadow copies, backups or
+  recovery deleted, which every ransomware crew does minutes before it
+  encrypts). Treat this as an incident until somebody proves otherwise, and
+  look immediately at what that host could reach.
 status: stable
 date: 2026-09-24
-modified: 2026-10-03
+modified: 2026-10-09
 severity: critical
 confidence: 0.85
-attack: [T1486]
+attack: [T1486, T1490]
 sources:
   - name: Elastic
     title: "Ransomware - Detected - Elastic Defend"
@@ -24,6 +26,14 @@ sources:
     title: "Handling future members in evolvable enumerations"
     url: https://learn.microsoft.com/en-us/graph/best-practices-concept#handling-future-members-in-evolvable-enumerations
     relation: inspired
+  - name: CISA
+    title: "#StopRansomware: Akira Ransomware"
+    url: https://www.cisa.gov/news-events/cybersecurity-advisories/aa24-109a
+    relation: inspired
+  - name: CISA
+    title: "#StopRansomware: Medusa Ransomware"
+    url: https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-071a
+    relation: inspired
 logsource:
   product: edr
   service: alerts
@@ -35,8 +45,8 @@ detection:
   selection_message:
     message|contains: ransom
   selection_technique:
-    - raw.technique_id: T1486
-    - raw.mitreTechniques|contains: T1486
+    - raw.technique_id: [T1486, T1490]
+    - raw.mitreTechniques|contains: [T1486, T1490]
   # Office 365, Identity, Cloud Apps, Entra ID Protection, App Governance and
   # Purview alerts from Defender, and Falcon Identity Protection: about an
   # account, not a host. Defender for Cloud alerts are azure_vendor_alert's;

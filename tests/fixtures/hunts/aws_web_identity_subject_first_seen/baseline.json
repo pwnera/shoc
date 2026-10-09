@@ -1,0 +1,52 @@
+[
+  {
+    "eventVersion": "1.08",
+    "userIdentity": {
+      "type": "WebIdentityUser",
+      "principalId": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com:sts.amazonaws.com:repo:unknown-org/tools:ref:refs/heads/dev_remote",
+      "userName": "repo:unknown-org/tools:ref:refs/heads/dev_remote",
+      "identityProvider": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+    },
+    "eventSource": "sts.amazonaws.com",
+    "eventName": "AssumeRoleWithWebIdentity",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "192.0.2.150",
+    "userAgent": "aws-sdk-nodejs/2.1693.0 linux/v20.17.0 configure-aws-credentials-for-github-actions",
+    "requestParameters": {
+      "roleArn": "arn:aws:iam::123456789012:role/github-deploy",
+      "roleSessionName": "GitHubActions",
+      "durationSeconds": 3600
+    },
+    "responseElements": {
+      "credentials": {
+        "accessKeyId": "ASIAEXAMPLEWEBID0001",
+        "sessionToken": "EXAMPLETOKEN",
+        "expiration": "Oct 1, 2026, 4:41:37 PM"
+      },
+      "subjectFromWebIdentityToken": "repo:unknown-org/tools:ref:refs/heads/dev_remote",
+      "assumedRoleUser": {
+        "assumedRoleId": "AROAEXAMPLEDEPLOY01:GitHubActions",
+        "arn": "arn:aws:sts::123456789012:assumed-role/github-deploy/GitHubActions"
+      },
+      "provider": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com",
+      "audience": "sts.amazonaws.com"
+    },
+    "additionalEventData": {
+      "identityProviderConnectionVerificationMethod": "IAMTrustStore"
+    },
+    "eventID": "webid-history",
+    "readOnly": true,
+    "resources": [
+      {
+        "accountId": "123456789012",
+        "type": "AWS::IAM::Role",
+        "ARN": "arn:aws:iam::123456789012:role/github-deploy"
+      }
+    ],
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "recipientAccountId": "123456789012",
+    "eventCategory": "Management",
+    "_repeat": 3
+  }
+]

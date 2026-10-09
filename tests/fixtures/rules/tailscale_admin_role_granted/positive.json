@@ -9,5 +9,17 @@
     "new": "admin",
     "event": "USER.UPDATE.USER_ROLE",
     "tailnet": "T1234CNTRL"
+  },
+  {
+    "action": "UPDATE",
+    "actor": {"displayName": "Mallory", "id": "u999CNTRL", "loginName": "mallory@example.com", "type": "USER"},
+    "eventGroupID": "4b1f0c2d9e8a7b6c5d4e3f2a1b0c9d01",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "g321CNTRL", "name": "contractors", "type": "GROUP", "property": "USER_ROLE"},
+    "type": "CONFIG",
+    "old": "member",
+    "new": "it-admin",
+    "event": "GROUP.UPDATE.USER_ROLE",
+    "tailnet": "T1234CNTRL"
   }
 ]

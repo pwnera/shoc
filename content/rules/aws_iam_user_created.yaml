@@ -1,11 +1,17 @@
 id: aws_iam_user_created
-title: New IAM user created
+title: New IAM user or Identity Center user created
 description: >
-  A new IAM user was created. In a small company IAM users are rare and mostly
-  replaced by SSO, so a new one is worth confirming.
+  A new IAM user, or a user in Identity Center's own directory, was created.
+  In a small company IAM users are rare and mostly replaced by SSO, so a new
+  one is worth confirming. An attacker with an admin session creates an
+  Identity Center user to keep a sign-in of their own. Identity Center logs
+  this only in the account and region it runs in, so that account must be
+  connected. Users an identity provider such as Okta, Entra or Google
+  provisions through SCIM are left out; a company using the built-in
+  directory sees one finding per hire.
 status: stable
 date: 2026-09-24
-modified: 2026-09-24
+modified: 2026-10-09
 severity: medium
 confidence: 0.55
 attack: [T1136.003]
@@ -17,7 +23,20 @@ detection:
     api.operation: CreateUser
     api.service.name|contains: iam
     status: Success
-  condition: selection
+  selection_identity_center:
+    api.operation: CreateUser
+    api.service.name: [sso-directory.amazonaws.com, identitystore.amazonaws.com]
+    status: Success
+  condition: selection or selection_identity_center
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, api.operation, src_endpoint.ip]
+sources:
+  - name: Datadog Security Labs
+    title: "Tales from the cloud trenches: The Attacker doth persist too much, methinks"
+    url: https://securitylabs.datadoghq.com/articles/tales-from-the-cloud-trenches-the-attacker-doth-persist-too-much/
+    relation: inspired
+  - name: AWS
+    title: IAM Identity Center information in CloudTrail
+    url: https://docs.aws.amazon.com/singlesignon/latest/userguide/sso-info-in-cloudtrail.html
+    relation: inspired

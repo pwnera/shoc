@@ -72,5 +72,74 @@
     "siteId": "900000000000000002",
     "threatId": null,
     "userId": "000000000000000001"
+  },
+  {
+    "_source": "sentinelone",
+    "accountId": "000000000000000000",
+    "activityType": 3020,
+    "agentId": null,
+    "data": {
+      "accountName": "example.com",
+      "username": "it.admin@example.com",
+      "value": "2222222222222222222222222222222222222222",
+      "osFamily": "windows"
+    },
+    "id": "act-3020-1",
+    "primaryDescription": "The Management user it.admin@example.com deleted a blocklist hash.",
+    "secondaryDescription": null,
+    "threatId": null,
+    "userId": "000000000000000001"
+  },
+  {
+    "_source": "sentinelone",
+    "accountId": "000000000000000000",
+    "activityType": 3602,
+    "agentId": null,
+    "data": {
+      "accountName": "example.com",
+      "username": "it.admin@example.com",
+      "ruleName": "Rclone to file sharing",
+      "ruleId": "1500000000000000001"
+    },
+    "id": "act-3602-1",
+    "primaryDescription": "The Management user it.admin@example.com deleted the Custom Rule Rclone to file sharing.",
+    "secondaryDescription": null,
+    "threatId": null,
+    "userId": "000000000000000001"
+  },
+  {
+    "_source": "sentinelone",
+    "accountId": "000000000000000000",
+    "activityType": 3603,
+    "agentId": null,
+    "data": {
+      "accountName": "example.com",
+      "username": "it.admin@example.com",
+      "ruleName": "LSASS dump via comsvcs",
+      "ruleId": "1500000000000000002",
+      "status": "Disabled"
+    },
+    "id": "act-3603-1",
+    "primaryDescription": "The Management user it.admin@example.com changed the status of the Custom Rule LSASS dump via comsvcs to Disabled.",
+    "secondaryDescription": null,
+    "threatId": null,
+    "userId": "000000000000000001"
+  },
+  {
+    "_source": "sentinelone",
+    "accountId": "000000000000000000",
+    "activityType": 64,
+    "agentId": "1000000000000000021",
+    "data": {
+      "accountName": "example.com",
+      "username": "it.admin@example.com",
+      "computerName": "LAPTOP-21",
+      "uuid": "11112222333344445555666677778888"
+    },
+    "id": "act-64-1",
+    "primaryDescription": "The Management user it.admin@example.com viewed the Agent LAPTOP-21 passphrase.",
+    "secondaryDescription": null,
+    "threatId": null,
+    "userId": "000000000000000001"
   }
 ]

@@ -1,0 +1,46 @@
+id: gcp_org_guardrail_changed
+title: GCP organisation policy changed or removed, or a project moved out of its organisation
+description: >
+  An organisation policy was created, changed or deleted, or someone tried to
+  move a project to another parent. Organisation policies are the guardrails
+  that block the next step: iam.allowedPolicyMemberDomains stops a Gmail
+  account getting a role, iam.disableServiceAccountKeyCreation stops key
+  files, storage.publicAccessPrevention stops public buckets. Moving a project
+  out of the organisation drops every organisation-level sink and policy at
+  once, so a refused attempt counts too. A small company changes these a few
+  times a year. Changes made at organisation level reach shoc only through a
+  sink created on the organisation.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.55
+attack: [T1484, T1562]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection_policy:
+    api.operation|endswith: [OrgPolicy.CreatePolicy, OrgPolicy.UpdatePolicy, OrgPolicy.DeletePolicy, SetOrgPolicy, ClearOrgPolicy]
+    status: Success
+  selection_move:
+    api.operation|endswith: [Projects.MoveProject, projects.move]
+  condition: selection_policy or selection_move
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, status]
+sources:
+  - name: Chronicle
+    title: GCP IAM Organization Policy Updated Or Deleted
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/gcp/gcp_iam_organization_policy_updated_or_deleted.yaral
+    author: Google Cloud Security
+    license: Apache-2.0
+    relation: adapted
+  - name: Stratus Red Team
+    title: Attempt to Remove a GCP Project from its Organization
+    url: https://github.com/DataDog/stratus-red-team/blob/main/docs/attack-techniques/GCP/gcp.defense-evasion.remove-project-from-organization.md
+    license: Apache-2.0
+    relation: adapted
+  - name: Google
+    title: Restrict identities with domain-restricted sharing
+    url: https://cloud.google.com/resource-manager/docs/organization-policy/restricting-domains
+    relation: inspired

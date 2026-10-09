@@ -1,0 +1,37 @@
+[
+  {
+    "Id": "hunt-m365-mail-known-app",
+    "Operation": "MailItemsAccessed",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 50,
+    "ResultStatus": "Succeeded",
+    "UserKey": "100320030DF47B14",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "Exchange",
+    "UserId": "cfo@example.com",
+    "AppId": "00000000-0000-0000-0000-00000000d001",
+    "ClientAppId": "00000000-0000-0000-0000-00000000d001",
+    "ClientIPAddress": "198.51.100.20",
+    "ClientInfoString": "Client=REST;",
+    "MailboxOwnerUPN": "cfo@example.com",
+    "OperationProperties": [
+      {
+        "Name": "MailAccessType",
+        "Value": "Bind"
+      },
+      {
+        "Name": "IsThrottled",
+        "Value": "False"
+      }
+    ],
+    "Folders": [
+      {
+        "Path": "\\Inbox",
+        "FolderItems": []
+      }
+    ],
+    "OperationCount": 1,
+    "_content_type": "Audit.Exchange"
+  }
+]

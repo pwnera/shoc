@@ -2,12 +2,14 @@ id: endpoint_security_tool_disabled
 title: A command turned off antivirus, the EDR or Gatekeeper
 description: >
   A command switched off Defender's real-time protection, by cmdlet or by policy
-  value, stopped or unloaded the EDR's service, or turned Gatekeeper off.
-  Intruders and ransomware crews do this before anything else; tamper protection
-  often blocks it, and the attempt is still the signal.
+  value, deleted its signatures, removed the Defender feature, set it to allow
+  what it detects or stripped its ransomware protections, stopped or unloaded
+  the EDR's service, or turned Gatekeeper off. Intruders and ransomware crews do
+  this before anything else; tamper protection often blocks it, and the attempt
+  is still the signal.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.7
 attack: [T1562.001]
@@ -40,6 +42,42 @@ sources:
     author: "Nasreddine Bencherchali (Nextron Systems)"
     license: DRL-1.1
     relation: inspired
+  - name: Sigma
+    title: "Windows Defender Definition Files Removed"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_mpcmdrun_remove_windows_defender_definition.yml
+    author: "frack113"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Suspicious Uninstall of Windows Defender Feature via PowerShell"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_uninstall_defender_feature.yml
+    author: "yxinmiracle"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "PowerShell Defender Threat Severity Default Action Set to 'Allow' or 'NoAction'"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_defender_default_action_modified.yml
+    author: "Matt Anderson (Huntress)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Windows Defender Disabled Via SystemSettingsAdminFlows.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_systemsettingsadminflows_defender_disable.yml
+    author: "Chirag Damani (KPMG India), Swachchhanda Shrawan Poudel (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Tamper Windows Defender Remove-MpPreference"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_remove_mppreference.yml
+    author: "Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Suspicious Windows Defender Registry Key Tampering Via Reg.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_reg_windows_defender_tamper.yml
+    author: "Florian Roth (Nextron Systems), Swachchhanda Shrawan Poudel, Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
   - name: The DFIR Report
     title: "IcedID to XingLocker Ransomware in 24 hours"
     url: https://thedfirreport.com/2021/10/18/icedid-to-xinglocker-ransomware-in-24-hours/
@@ -57,7 +95,10 @@ detection:
     process.cmd_line|contains: [DisableRealtimeMonitoring, DisableBehaviorMonitoring,
                                 DisableIOAVProtection, DisableBlockAtFirstSeen,
                                 DisableScriptScanning, DisableAntiSpyware, DisableAntiVirus,
-                                DisableOnAccessProtection]
+                                DisableOnAccessProtection, DisableArchiveScanning,
+                                DisableCloudProtection, DisableIntrusionPreventionSystem,
+                                DisableNetworkProtection, DisableRoutinelyTakingAction,
+                                DisableScanOnRealtimeEnable]
   sel_mp_true:
     process.cmd_line|contains: ['$true', ' 1']
   sel_sc_name:
@@ -85,7 +126,39 @@ detection:
     process.cmd_line|contains: Windows Defender
   sel_reg_on:
     process.cmd_line|contains: ['/d 1', '/d "1"']
-  condition: selection_process and ((sel_mp_cmdlet and sel_mp_setting and sel_mp_true) or (sel_sc_name and sel_sc_verb and sel_sc_target) or sel_gatekeeper or (sel_unload_verb and sel_unload_target) or sel_vendor_cli or (sel_reg and sel_mp_setting and sel_reg_on))
+  # The protections that are off at 0.
+  sel_reg_zero_name:
+    process.cmd_line|contains: [EnableControlledFolderAccess, PUAProtection, MpEnablePus, SpynetReporting,
+                                SubmitSamplesConsent, TamperProtection]
+  sel_reg_zero:
+    - process.cmd_line|contains: ['/d 0 ', '/d "0"']
+    - process.cmd_line|endswith: '/d 0'
+  sel_mpcmdrun:
+    process.name: MpCmdRun.exe
+    process.cmd_line|contains: -RemoveDefinitions
+  sel_mpcmdrun_all:
+    process.cmd_line|contains: ' -All'
+  sel_feature:
+    process.cmd_line|contains: [Uninstall-WindowsFeature, Remove-WindowsFeature]
+  sel_feature_defender:
+    process.cmd_line|contains: Windows-Defender
+  # Defender still detects, then does nothing: 6 is Allow, 9 is NoAction.
+  sel_default_allow:
+    process.cmd_line|contains: ['ThreatDefaultAction Allow', 'ThreatDefaultAction NoAction',
+                                'ThreatDefaultAction 6', 'ThreatDefaultAction 9', 'defac Allow',
+                                'defac NoAction', 'defac 6', 'defac 9']
+  # The Settings back end: RTP 1 turns real-time protection off.
+  sel_ssaf:
+    process.name: SystemSettingsAdminFlows.exe
+    process.cmd_line|contains: defender
+  sel_ssaf_off:
+    process.cmd_line|contains: ['RTP 1', 'RealTimeProtection 1', 'SubmitSamplesConsent 0', 'SpyNetReporting 0']
+  sel_remove_mp:
+    process.cmd_line|contains: Remove-MpPreference
+  sel_remove_mp_what:
+    process.cmd_line|contains: [AttackSurfaceReductionRules_Ids, AttackSurfaceReductionRules_Actions,
+                                ControlledFolderAccessProtectedFolders]
+  condition: selection_process and ((sel_mp_cmdlet and sel_mp_setting and sel_mp_true) or (sel_sc_name and sel_sc_verb and sel_sc_target) or sel_gatekeeper or (sel_unload_verb and sel_unload_target) or sel_vendor_cli or (sel_reg and sel_mp_setting and sel_reg_on) or (sel_reg and sel_reg_zero_name and sel_reg_zero) or (sel_mpcmdrun and sel_mpcmdrun_all) or (sel_feature and sel_feature_defender) or (sel_mp_cmdlet and sel_default_allow) or (sel_ssaf and sel_ssaf_off) or (sel_remove_mp and sel_remove_mp_what))
   timeframe: 15m
 entity: resource.uid
 fields: [device.hostname, actor.user.name, process.name, process.cmd_line,

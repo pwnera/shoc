@@ -26,7 +26,13 @@ def _challenge(status):
 
 
 @pytest.mark.parametrize(
-    ("status", "expected"), [("passed", "Success"), ("incorrect_answer_entered", "Failure")]
+    ("status", "expected"),
+    [
+        ("passed", "Success"),
+        ("incorrect_answer_entered", "Failure"),
+        ("Challenge Passed.", "Success"),
+        ("Challenge Failed.", "Failure"),
+    ],
 )
 def test_challenge_outcome(status, expected):
     row = ocsf.load_mapping("google_workspace").map_record(_challenge(status), "t1")

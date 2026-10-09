@@ -1,0 +1,51 @@
+id: entra_session_from_several_addresses
+title: One Entra session used from three or more addresses in a day
+hypothesis: >
+  A session cookie or refresh token stolen by a phishing proxy or an
+  infostealer is replayed from the attacker's own address, so the victim's
+  Entra session shows up from an address it never started on. Entra writes the
+  same session id on the interactive sign-in and on every token the session
+  later gets. A phone that moves between Wi-Fi and its carrier does the same
+  thing every day, and a dual-stack network gives a session an IPv4 and an IPv6
+  address, which is why this is a hunt at three addresses and not a rule at
+  two.
+attack: [T1539, T1550.004]
+logsource:
+  product: entra
+  service: sign_ins
+window: 1d
+cadence_days: 1
+detection:
+  # Sign-ins only: an audit or a risk detection carries a correlation id in
+  # the same column.
+  selection:
+    class_uid: 3002
+    actor.session.uid|exists: true
+    status: Success
+  filter_workload:
+    actor.user.type: [ServicePrincipal, ManagedIdentity]
+  condition: selection and not filter_workload
+baseline:
+  rare:
+    by: [actor.session.uid, actor.user.name]
+    among: src_endpoint.ip
+    seen_by_at_least: 3
+  lookback: 1d
+pivot: [actor.user.name, actor.session.uid, src_endpoint.ip, src_endpoint.asn,
+        src_endpoint.location.country, http_request.user_agent, api.operation]
+triage: >
+  Do the addresses belong to the same person moving around (home, office,
+  phone carrier, one country), or does one of them sit at a hosting provider
+  or in another country with a different client? The odd address out is the
+  replay.
+follow_up:
+  - Did the session register a device or an MFA method, create a mail rule or consent to an app from the odd address?
+  - Did the user report a phishing email or an unexpected sign-in prompt that day?
+sensitive: true
+sources:
+  - name: Splunk
+    title: Azure AD Concurrent Sessions From Different Ips
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/azure_ad_concurrent_sessions_from_different_ips.yml
+    author: Mauricio Velazco, Bhavin Patel, Splunk
+    license: Apache-2.0
+    relation: inspired

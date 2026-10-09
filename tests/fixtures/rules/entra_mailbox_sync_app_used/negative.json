@@ -1,0 +1,40 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-00000000c003",
+    "userPrincipalName": "anna@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a002",
+    "appDisplayName": "Microsoft Office",
+    "appId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "198.51.100.20",
+    "authenticationProtocol": "none",
+    "signInEventTypes": ["interactiveUser"],
+    "status": { "errorCode": 0 },
+    "_stream": "signIns"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000c008_CONS_1",
+    "activityDisplayName": "Consent to application",
+    "category": "ApplicationManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Assign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a004",
+        "userPrincipalName": "ben@example.com",
+        "ipAddress": "198.51.100.21"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000c009",
+        "displayName": "Zoom",
+        "type": "ServicePrincipal",
+        "modifiedProperties": []
+      }
+    ],
+    "_stream": "directoryAudits"
+  }
+]

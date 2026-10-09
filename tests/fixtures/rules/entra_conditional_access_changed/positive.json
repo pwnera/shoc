@@ -19,5 +19,30 @@
     ],
     "tenantId": "tid-1",
     "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Update named location",
+    "activityDisplayName": "Update named location",
+    "category": "Policy",
+    "loggedByService": "Conditional Access",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Policy",
+        "displayName": "Office",
+        "id": "00000000-0000-0000-0000-0000000n1c01",
+        "modifiedProperties": []
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
   }
 ]

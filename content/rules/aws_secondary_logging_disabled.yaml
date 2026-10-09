@@ -1,29 +1,42 @@
 id: aws_secondary_logging_disabled
-title: VPC flow logs, DNS query logs, S3 access logs or Bedrock invocation logs removed
+title: VPC flow, DNS query, S3 access or Bedrock invocation logs removed, or a log bucket set to expire
 description: >
   Flow logs, Route 53 resolver query logging, a bucket's server access logging
-  or Bedrock model invocation logging was deleted or switched off. With
-  CloudTrail still on, these are the logs that show where data went.
+  or Bedrock model invocation logging was deleted or switched off, a Bedrock
+  guardrail was deleted, or a log bucket was set to delete what it holds
+  within a week. With CloudTrail still on, these are the logs that show where
+  data went. An insider indicted in New York in 2021 left the trail running
+  and set one-day expiry on the logs instead, so the evidence deleted itself.
+  A log bucket is recognised by its name (CloudTrail's and Control Tower's
+  defaults, flow, access, trail or audit logs); a short expiry on any other
+  bucket is left out. A guardrail matters only where the account enforces
+  one.
 status: experimental
 date: 2026-10-02
+modified: 2026-10-09
 severity: high
 confidence: 0.6
-attack: [T1562.008]
+attack: [T1562.008, T1562.001]
 logsource:
   product: aws
   service: cloudtrail
 detection:
   selection_ops:
-    api.operation: [DeleteFlowLogs, DeleteResolverQueryLogConfig, DisassociateResolverQueryLogConfig, DeleteModelInvocationLoggingConfiguration]
+    api.operation: [DeleteFlowLogs, DeleteResolverQueryLogConfig, DisassociateResolverQueryLogConfig, DeleteModelInvocationLoggingConfiguration, DeleteGuardrail]
   selection_s3_access_logs:
     api.operation: PutBucketLogging
     raw.requestParameters.BucketLoggingStatus.LoggingEnabled|exists: false
+  # PutBucketLifecycleConfiguration is logged as PutBucketLifecycle too.
+  selection_log_expiry:
+    api.operation: PutBucketLifecycle
+    raw.requestParameters.bucketName|re: 'cloudtrail|controltower-logs|trail-?logs|flow-?logs|access-?logs|audit'
+    raw.requestParameters.LifecycleConfiguration|re: '"Expiration"\s*:\s*\{[^{}]*"Days"\s*:\s*"?[1-7]"?\s*[,}]'
   success:
     status: Success
   condition: success and selection_*
   timeframe: 15m
 entity: actor.user.name
-fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, resource.uid]
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, resource.uid, raw.requestParameters.bucketName]
 sources:
   - name: Elastic
     title: AWS VPC Flow Logs Deletion
@@ -54,5 +67,30 @@ sources:
     title: AWS VPC Flow Logs Deleted
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_cloudtrail_vpc_flow_logs_deleted.yml
     author: Ivan Saakov
+    license: DRL-1.1
+    relation: adapted
+  - name: Stratus Red Team
+    title: CloudTrail Logs Impairment Through S3 Lifecycle Rule
+    url: https://stratus-red-team.cloud/attack-techniques/AWS/aws.defense-evasion.cloudtrail-lifecycle-rule/
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: AWS CloudTrail Retention Lifecycle Too Short
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/aws_cloudtrail_rules/aws_cloudtrail_short_lifecycle.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS S3 Bucket Expiration Lifecycle Configuration Added
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_s3_bucket_lifecycle_expiration_added
+    license: Elastic-2.0
+    relation: inspired
+  - name: US Department of Justice
+    title: United States v. Nickolas Sharp, indictment
+    url: https://www.justice.gov/usao-sdny/press-release/file/1452706/download
+    relation: inspired
+  - name: Sigma
+    title: AWS Bedrock Guardrail Deleted
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_cloudtrail_bedrock_guardrail_deleted.yml
+    author: Marco Pedrinazzi (@pedrinazziM) (InTheCyber)
     license: DRL-1.1
     relation: adapted

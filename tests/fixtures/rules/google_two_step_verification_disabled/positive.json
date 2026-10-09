@@ -82,5 +82,84 @@
         ]
       }
     ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-titanium-unenroll",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "100000000000000000002",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.23",
+    "_application": "login",
+    "events": [
+      {
+        "type": "titanium_change",
+        "name": "titanium_unenroll"
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-admin-titanium-unenroll",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "it-admin@example.com",
+      "profileId": "100000000000000000001",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.40",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "USER_SETTINGS",
+        "name": "UNENROLL_USER_FROM_TITANIUM",
+        "parameters": [
+          {
+            "name": "USER_EMAIL",
+            "value": "cfo@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-2sv-any-method",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "it-admin@example.com",
+      "profileId": "100000000000000000001",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.40",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "CHANGE_ALLOWED_TWO_STEP_VERIFICATION_METHODS",
+        "parameters": [
+          {
+            "name": "ALLOWED_TWO_STEP_VERIFICATION_METHOD",
+            "value": "ANY"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "Finance"
+          }
+        ]
+      }
+    ]
   }
 ]

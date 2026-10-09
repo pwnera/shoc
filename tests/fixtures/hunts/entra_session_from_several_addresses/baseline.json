@@ -1,0 +1,164 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-00000000s004",
+    "userPrincipalName": "jane@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a601",
+    "appDisplayName": "Microsoft Office",
+    "appId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "198.51.100.5",
+    "autonomousSystemNumber": 64500,
+    "location": {
+      "countryOrRegion": "FR"
+    },
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+    "authenticationProtocol": "none",
+    "sessionId": "00000000-0000-0000-0000-00000000d602",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000s005",
+    "userPrincipalName": "jane@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a601",
+    "appDisplayName": "Microsoft Office",
+    "appId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "2001:db8::5",
+    "autonomousSystemNumber": 64500,
+    "location": {
+      "countryOrRegion": "FR"
+    },
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+    "authenticationProtocol": "none",
+    "sessionId": "00000000-0000-0000-0000-00000000d602",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "nonInteractiveUser"
+    ],
+    "_stream": "nonInteractiveSignIns"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000s006",
+    "userPrincipalName": "jane@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a601",
+    "appDisplayName": "Microsoft Office",
+    "appId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.67",
+    "autonomousSystemNumber": 64500,
+    "location": {
+      "countryOrRegion": "FR"
+    },
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+    "authenticationProtocol": "none",
+    "sessionId": "00000000-0000-0000-0000-00000000d602",
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Invalid username or password or Invalid on-premise username or password."
+    },
+    "signInEventTypes": [
+      "nonInteractiveUser"
+    ],
+    "_stream": "nonInteractiveSignIns"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000s007",
+    "userPrincipalName": "bob@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a602",
+    "appDisplayName": "Microsoft Office",
+    "appId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "198.51.100.6",
+    "autonomousSystemNumber": 64500,
+    "location": {
+      "countryOrRegion": "FR"
+    },
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+    "authenticationProtocol": "none",
+    "sessionId": "00000000-0000-0000-0000-00000000d603",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000s008",
+    "appDisplayName": "Backup Connector",
+    "appId": "00000000-0000-0000-0000-00000000s900",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "198.51.100.40",
+    "autonomousSystemNumber": 64500,
+    "location": {
+      "countryOrRegion": "FR"
+    },
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+    "authenticationProtocol": "none",
+    "sessionId": "00000000-0000-0000-0000-00000000d604",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "servicePrincipal"
+    ],
+    "_stream": "servicePrincipalSignIns",
+    "servicePrincipalName": "Backup Connector",
+    "servicePrincipalId": "00000000-0000-0000-0000-00000000s901"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000s009",
+    "appDisplayName": "Backup Connector",
+    "appId": "00000000-0000-0000-0000-00000000s900",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "198.51.100.41",
+    "autonomousSystemNumber": 64500,
+    "location": {
+      "countryOrRegion": "FR"
+    },
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+    "authenticationProtocol": "none",
+    "sessionId": "00000000-0000-0000-0000-00000000d604",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "servicePrincipal"
+    ],
+    "_stream": "servicePrincipalSignIns",
+    "servicePrincipalName": "Backup Connector",
+    "servicePrincipalId": "00000000-0000-0000-0000-00000000s901"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000s010",
+    "appDisplayName": "Backup Connector",
+    "appId": "00000000-0000-0000-0000-00000000s900",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "198.51.100.42",
+    "autonomousSystemNumber": 64500,
+    "location": {
+      "countryOrRegion": "FR"
+    },
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+    "authenticationProtocol": "none",
+    "sessionId": "00000000-0000-0000-0000-00000000d604",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "servicePrincipal"
+    ],
+    "_stream": "servicePrincipalSignIns",
+    "servicePrincipalName": "Backup Connector",
+    "servicePrincipalId": "00000000-0000-0000-0000-00000000s901"
+  }
+]

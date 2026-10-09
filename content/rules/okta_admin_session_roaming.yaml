@@ -1,0 +1,50 @@
+id: okta_admin_session_roaming
+title: Okta admin session used from another network
+description: >
+  Okta ended an administrator's session because a request in it came from a
+  different network (autonomous system) than the one the session started on.
+  Okta added this binding, now on by default, after its 2023 support-system
+  breach, in which session tokens from browser recordings that customers had
+  uploaded to support were used to take over five customers' sessions. A
+  stolen admin cookie trips it on its first request. A VPN with a proxy agent
+  (Zscaler, Netskope) makes one admin flap between the same two networks all
+  day, so only the first trip from a network in 30 days fires; while those 30
+  days are learnt, every trip fires.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.75
+attack: [T1539, T1550.004]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation: security.session.detect_client_roaming
+  condition: selection
+  timeframe: 15m
+baseline:
+  first_seen: [actor.user.name, src_endpoint.asn]
+  lookback: 30d
+  while_learning: fire
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.asn, src_endpoint.location.country,
+         http_request.user_agent, actor.session.uid]
+sources:
+  - name: Okta
+    title: User Denied Access due to Session Binding
+    url: https://github.com/okta/customer-detections/blob/master/detections/user_denied_access_due_to_session_binding.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Okta
+    title: Protecting Administrative Sessions in Okta
+    url: https://sec.okta.com/protectingadminsessions
+    relation: inspired
+  - name: Okta
+    title: "Unauthorized Access to Okta's Support Case Management System: Root Cause and Remediation"
+    url: https://sec.okta.com/articles/2023/11/unauthorized-access-oktas-support-case-management-system-root-cause/
+    relation: inspired
+  - name: Okta
+    title: Roaming session detected for user
+    url: https://support.okta.com/help/s/article/roaming-session-detected-for-user-security-session-detect-client-roaming
+    relation: inspired

@@ -4,7 +4,11 @@ hypothesis: >
   IMAP, POP, SMTP AUTH, ActiveSync and the other basic-auth protocols cannot do
   MFA, so password sprayers and mail-stealing tools use them. A printer or a
   scanner that sends mail settles into the baseline after its first day; a user
-  who never used IMAP and suddenly does is worth a look.
+  who never used IMAP and suddenly does is worth a look. The same goes for a
+  password-only token request (ROPC), which password sprayers use because it
+  takes a password and nothing else, so an account with no MFA enforced lets
+  it straight in. It is logged as the desktop client every user already has,
+  so the protocol is part of what has to be new.
 attack: [T1078.004]
 logsource:
   product: entra
@@ -25,11 +29,19 @@ detection:
       - Offline Address Book
       - Autodiscover
       - Other clients
-  condition: selection
+  # A password-only token request, with no second factor.
+  selection_ropc:
+    status: Success
+    raw.authenticationRequirement: singleFactorAuthentication
+  ropc:
+    - raw.authenticationProtocol: ropc
+    - http_request.user_agent|contains: [BAV2ROPC, CBAinPROD, CBAinTAR]
+  condition: selection or (selection_ropc and ropc)
 baseline:
-  first_seen: [actor.user.name, raw.clientAppUsed]
+  first_seen: [actor.user.name, raw.clientAppUsed, raw.authenticationProtocol]
   lookback: 30d
-pivot: [actor.user.name, raw.clientAppUsed, src_endpoint.ip, src_endpoint.location.country]
+pivot: [actor.user.name, raw.clientAppUsed, raw.authenticationProtocol, src_endpoint.ip,
+        src_endpoint.location.country, http_request.user_agent]
 triage: >
   Is this a device the company set up, such as a printer, a scanner or an old
   phone mail app, signing in from the office? A legacy sign-in from a hosting
@@ -54,4 +66,15 @@ sources:
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_ad_suspicious_signin_bypassing_mfa.yml
     author: Harjot Singh, '@cyb3rjy0t'
     license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: Applications That Are Using ROPC Authentication Flow
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_app_ropc_authentication.yml
+    author: Mark Morowczynski '@markmorow', Bailey Bercik '@baileybercik'
+    license: DRL-1.1
     relation: inspired
+  - name: Panther
+    title: Azure ROPC Login Attempt Without MFA
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/azure_signin_rules/azure_ropc_login_no_mfa.yml
+    license: Apache-2.0
+    relation: adapted

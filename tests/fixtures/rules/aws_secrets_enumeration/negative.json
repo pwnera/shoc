@@ -1860,5 +1860,46 @@
       "secretId": "prod/service-24"
     },
     "sessionCredentialFromConsole": "true"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-app",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:1a2b3c4d5e6f",
+      "arn": "arn:aws:sts::123456789012:assumed-role/api-task-role/1a2b3c4d5e6f",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLETASK0001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/api-task-role",
+          "accountId": "123456789012",
+          "userName": "api-task-role"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "path": "/prod/api",
+      "recursive": true,
+      "withDecryption": true
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true,
+    "_repeat": 25
   }
 ]

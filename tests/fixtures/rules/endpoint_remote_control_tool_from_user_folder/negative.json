@@ -1,0 +1,73 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "6666666666666666666666666666666666666668",
+      "DeviceName": "class-pc-02.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "client32.exe",
+      "FolderPath": "C:\\Program Files (x86)\\NetSupport\\NetSupport School\\client32.exe",
+      "ProcessCommandLine": "\"C:\\Program Files (x86)\\NetSupport\\NetSupport School\\client32.exe\" /*",
+      "InitiatingProcessFileName": "services.exe",
+      "AccountName": "system",
+      "ProcessVersionInfoProductName": "NetSupport Remote Control"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677779999"
+    },
+    "endpoint": {
+      "name": "srv-app02.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "MeshAgent.exe",
+        "cmdline": "\"C:\\Program Files\\Mesh Agent\\MeshAgent.exe\"",
+        "image": {
+          "path": "C:\\Program Files\\Mesh Agent\\MeshAgent.exe"
+        },
+        "user": "NT AUTHORITY\\SYSTEM"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "services.exe"
+      }
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcde7",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Lin",
+    "ImageFileName": "/usr/local/mesh_services/meshagent/meshagent",
+    "CommandLine": "/usr/local/mesh_services/meshagent/meshagent",
+    "ParentBaseFileName": "systemd",
+    "RawProcessId": "4242",
+    "UserName": "root"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "6666666666666666666666666666666666666669",
+      "DeviceName": "laptop-12.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "client32.exe",
+      "ProcessCommandLine": "\"client32.exe\"",
+      "InitiatingProcessFileName": "explorer.exe",
+      "AccountName": "jdoe"
+    }
+  }
+]

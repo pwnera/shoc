@@ -1,0 +1,38 @@
+id: m365_onmicrosoft_domain_added
+title: New onmicrosoft.com domain added to the tenant (Microsoft 365 audit)
+description: >
+  A second onmicrosoft.com domain was added to the tenant. Midnight Blizzard
+  took over small businesses' tenants, added an onmicrosoft.com domain with a
+  security-sounding name and sent Teams phishing from it to other companies, so
+  the victim's tenant became the attacker's infrastructure under the victim's
+  name. A company adds such a domain almost never; its own custom domains do not
+  match. This copy of the Entra rule covers tenants that connect only Microsoft
+  365.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.8
+attack: [T1585.003, T1586.003]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation|contains: [add verified domain, add unverified domain, add domain to company]
+    unmapped.modified.Name.NewValue|contains: .onmicrosoft.com
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 1h
+entity: actor.user.name
+fields: [actor.user.name, api.operation, unmapped.modified.Name.NewValue, src_endpoint.ip]
+sources:
+  - name: Microsoft Sentinel
+    title: New onmicrosoft domain added to tenant
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Microsoft%20Entra%20ID/Analytic%20Rules/NewOnmicrosoftDomainAdded.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft
+    title: Midnight Blizzard conducts targeted social engineering over Microsoft Teams
+    url: https://www.microsoft.com/en-us/security/blog/2023/08/02/midnight-blizzard-conducts-targeted-social-engineering-over-microsoft-teams/
+    relation: inspired

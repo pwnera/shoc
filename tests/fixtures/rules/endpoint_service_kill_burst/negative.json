@@ -1,0 +1,190 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999998",
+      "DeviceName": "laptop-21.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "taskkill.exe",
+      "ProcessCommandLine": "taskkill /f /im AdobeCollabSync.exe",
+      "InitiatingProcessFileName": "msiexec.exe",
+      "AccountName": "system"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999998",
+      "DeviceName": "laptop-21.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "taskkill.exe",
+      "ProcessCommandLine": "taskkill /f /im AcroRd32.exe",
+      "InitiatingProcessFileName": "msiexec.exe",
+      "AccountName": "system"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999998",
+      "DeviceName": "laptop-21.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "taskkill.exe",
+      "ProcessCommandLine": "taskkill /f /im armsvc.exe",
+      "InitiatingProcessFileName": "msiexec.exe",
+      "AccountName": "system"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999998",
+      "DeviceName": "laptop-21.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "taskkill.exe",
+      "ProcessCommandLine": "taskkill /f /im AdobeARM.exe",
+      "InitiatingProcessFileName": "msiexec.exe",
+      "AccountName": "system"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999997",
+      "DeviceName": "print01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "net.exe",
+      "ProcessCommandLine": "net stop spooler",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "it-admin"
+    },
+    "_repeat": 12
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd91",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL02",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\net.exe",
+    "CommandLine": "net stop SQLWriter /y",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8200",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd91",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL02",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\net.exe",
+    "CommandLine": "net stop MSSQL$SQLEXPRESS /y",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8201",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd91",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL02",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\net.exe",
+    "CommandLine": "net stop BackupExecJobEngine /y",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8202",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd91",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL02",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\sc.exe",
+    "CommandLine": "sc config SQLTELEMETRY start= disabled",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8203",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd91",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL02",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\sc.exe",
+    "CommandLine": "sc stop SQLBrowser",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8204",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd91",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL02",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\taskkill.exe",
+    "CommandLine": "taskkill /f /im mysqld.exe",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8205",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd91",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL02",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\taskkill.exe",
+    "CommandLine": "taskkill /f /im winword.exe",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8206",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd91",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL02",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\taskkill.exe",
+    "CommandLine": "taskkill /f /im thunderbird.exe",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8207",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd91",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL02",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\taskkill.exe",
+    "CommandLine": "taskkill /f /im onenote.exe",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8208",
+    "UserName": "administrator"
+  }
+]

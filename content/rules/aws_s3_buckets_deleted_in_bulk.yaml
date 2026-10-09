@@ -1,0 +1,51 @@
+id: aws_s3_buckets_deleted_in_bulk
+title: Three or more S3 buckets deleted by one credential within an hour
+description: >
+  One access key deleted, or tried to delete, three or more different S3
+  buckets within an hour. In the Bling Libra extortion of 2024 a leaked key
+  deleted a handful of buckets, then created new ones named after a contact
+  address as the ransom note. The victim recorded no S3 data events, so these
+  management events were all CloudTrail held. A refused deletion counts too,
+  since a bucket must be emptied before it can go. CloudFormation stack
+  deletions and Terraform or Pulumi teardowns are left out; a person clearing
+  old test buckets by hand will match.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.7
+attack: [T1485, T1490]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.service.name: s3.amazonaws.com
+    api.operation: DeleteBucket
+  # CloudFormation, CDK, SAM and Serverless stack deletions.
+  filter_aws:
+    actor.invoked_by|exists: true
+  filter_iac:
+    http_request.user_agent|contains: [terraform, pulumi]
+  condition: selection and not filter_aws and not filter_iac
+  timeframe: 1h
+  group_by: [actor.session.uid]
+  count_distinct: raw.requestParameters.bucketName
+  count: ">= 3"
+entity: actor.session.uid
+fields: [actor.user.name, src_endpoint.ip, http_request.user_agent, raw.requestParameters.bucketName, status]
+sources:
+  - name: Unit 42
+    title: "Bling Libra's Tactical Evolution: The Threat Actor Group Behind ShinyHunters Ransomware"
+    url: https://unit42.paloaltonetworks.com/shinyhunters-ransomware-extortion/
+    relation: inspired
+  - name: Sigma
+    title: AWS Bucket Deleted
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_cloudtrail_bucket_deleted.yml
+    author: Ivan Saakov, Nasreddine Bencherchali
+    license: DRL-1.1
+    relation: adapted
+  - name: Panther
+    title: S3 Bucket Deleted
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/aws_cloudtrail_rules/aws_s3_bucket_deleted.yml
+    license: Apache-2.0
+    relation: inspired

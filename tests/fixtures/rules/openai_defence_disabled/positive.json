@@ -97,5 +97,22 @@
       ]
     },
     "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-certs-off",
+    "type": "certificates.deactivated",
+    "actor": {"type": "session", "session": {"user": {"id": "user-9", "email": "mallory@example.com"}, "ip_address": "203.0.113.44", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "certificates.deactivated": {"certificates": [{"id": "cert_fake01", "name": "office-ca"}]},
+    "details": {"certificates": [{"id": "cert_fake01", "name": "office-ca"}]},
+    "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-sso-deleted",
+    "type": "tenant.sso_connection.deleted",
+    "actor": {"type": "session", "session": {"user": {"id": "user-9", "email": "mallory@example.com"}, "ip_address": "203.0.113.44", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "details": {},
+    "key_id": null
   }
 ]

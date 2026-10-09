@@ -1,0 +1,38 @@
+[
+  {
+    "id": "7a2b3c4d5e6f40718293a4b5c6d7e901",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Delete routing rule", "result": "success", "type": "delete"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2001", "method": "DELETE", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/email/routing/rules/a7e6f7cdc1d24b5d8e2c3f4a5b6c7d01", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "a7e6f7cdc1d24b5d8e2c3f4a5b6c7d01", "product": "email_routing", "request": {}, "response": {}, "scope": "zones", "type": "rules"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "7a2b3c4d5e6f40718293a4b5c6d7e902",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Create routing rule", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2002", "method": "POST", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/email/routing/rules", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "", "product": "email_routing", "request": {"name": "forwarder-spam", "enabled": true, "actions": [{"type": "drop"}], "matchers": [{"type": "literal", "field": "to", "value": "forward@example.com"}]}, "response": {"id": "a7e6f7cdc1d24b5d8e2c3f4a5b6c7d02"}, "scope": "zones", "type": "rules"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "7a2b3c4d5e6f40718293a4b5c6d7e903",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Disable Email Routing", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2003", "method": "POST", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/email/routing/disable", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "", "product": "email_routing", "request": {}, "response": {}, "scope": "zones", "type": "routing"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "7a2b3c4d5e6f40718293a4b5c6d7e904",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Delete destination address", "result": "success", "type": "delete"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2004", "method": "DELETE", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/email/routing/addresses/ea95132c15732412d22c1476fa83f803", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "ea95132c15732412d22c1476fa83f803", "product": "email_routing", "request": {}, "response": {}, "scope": "accounts", "type": "addresses"},
+    "zone": {}
+  }
+]

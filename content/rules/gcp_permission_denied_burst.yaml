@@ -1,0 +1,49 @@
+id: gcp_permission_denied_burst
+title: One GCP identity refused five different operations within an hour
+description: >
+  A stolen key or token is tried against everything to see what it can do:
+  make a key, grant a role, start VMs, delete a sink. Each refusal is a
+  permission-denied entry in the audit log. Five different refused operations
+  in an hour is a probe; a CI job retrying the one call it lacks rights for is
+  one operation and stays quiet. Google's own service agents and GKE nodes
+  are left out. An internet scanner refused across a cluster's resources
+  counts.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.5
+attack: [T1580, T1069.003, T1078.004]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  # 7 is PERMISSION_DENIED.
+  selection:
+    status_code: "7"
+  filter_google_agent:
+    actor.user.name|contains: ["@gcp-sa-", "@cloudservices.gserviceaccount.com", "@compute-system.iam.gserviceaccount.com", "@container-engine-robot.iam.gserviceaccount.com"]
+  filter_kubernetes_node:
+    actor.user.name|startswith: "system:node"
+  condition: selection and not filter_google_agent and not filter_kubernetes_node
+  timeframe: 1h
+  group_by: [actor.user.name]
+  count_distinct: api.operation
+  count: ">= 5"
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, http_request.user_agent, api.operation]
+sources:
+  - name: Chronicle
+    title: GCP Excessive Permission Denied Events
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/gcp/gcp_excessive_permission_denied_events.yaral
+    author: Google Cloud Security
+    license: Apache-2.0
+    relation: adapted
+  - name: Google
+    title: Event Threat Detection overview
+    url: https://cloud.google.com/security-command-center/docs/concepts-event-threat-detection-overview
+    relation: inspired
+  - name: Elastic
+    title: GCP GKE API Request Failure Burst
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/gcp/discovery_gcp_gke_api_request_failure_burst.toml
+    license: Elastic-2.0
+    relation: inspired

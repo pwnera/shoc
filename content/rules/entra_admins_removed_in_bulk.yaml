@@ -1,0 +1,48 @@
+id: entra_admins_removed_in_bulk
+title: Three or more people removed from admin roles within an hour
+description: >
+  One account removed three or more people from Entra ID admin roles, active or
+  eligible, within an hour. In the 0mega SaaS ransomware case Obsidian
+  described, the attacker made its own Global Administrator and then removed
+  more than 200 existing admins in two hours, so nobody could take the tenant
+  back while it emptied SharePoint. A small company has two to five admins and
+  removes three at once only in a planned clean-up. An activation that ran out
+  or that its holder ended is left out, and so is the copy of each PIM change
+  that the MS-PIM service writes; the admin's own PIM record counts.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.7
+attack: [T1531]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection:
+    api.operation|contains: [remove member from role, remove eligible member from role, remove scoped member from role]
+  filter_pim_lifecycle:
+    api.operation|contains: [pim activation expired, pim deactivate]
+  # PIM's own copy of a change names the service, not the admin.
+  filter_pim_service:
+    - raw.initiatedBy.app.displayName: MS-PIM
+    - raw.properties.initiatedBy.app.displayName: MS-PIM
+    - actor.user.name: Azure AD PIM
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_pim_lifecycle and not filter_pim_service and not filter_failed
+  timeframe: 1h
+  group_by: [actor.user.name]
+  count_distinct: resource.uid
+  count: ">= 3"
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Microsoft Sentinel
+    title: Multiple admin membership removals from newly created admin.
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Microsoft%20Entra%20ID/Analytic%20Rules/MultipleAdmin_membership_removals_from_NewAdmin.yaml
+    license: MIT
+    relation: adapted
+  - name: Obsidian Security
+    title: SaaS ransomware attack hit SharePoint Online without using a compromised endpoint
+    url: https://obsidiansecurity.com/news/saas-ransomware-attack-hit-sharepoint-online-without-using-a-compromised-endpoint
+    relation: inspired

@@ -1,0 +1,41 @@
+id: okta_org_authenticator_deactivated
+title: Okta authenticator turned off for the whole organisation
+description: >
+  An administrator deactivated an authenticator (Okta Verify, a security key,
+  phone) or a Classic MFA factor for every user at once, and the sign-on
+  policies that asked for it fall back to whatever is left. In the 2023
+  help-desk campaign against Okta customers, attackers who reached Super
+  Administrator removed second-factor requirements, and Okta's guidance after
+  it lists factor deactivation among the events to alert on. Retiring a weak
+  factor such as SMS or security questions fires too; changing an
+  authenticator's settings does not.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.7
+attack: [T1556.006, T1562.001]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  # Identity Engine names it an authenticator, Classic a factor.
+  selection:
+    api.operation: [security.authenticator.lifecycle.deactivate, system.mfa.factor.deactivate]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, message]
+sources:
+  - name: Panther
+    title: Okta MFA Globally Disabled
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/okta_rules/okta_admin_disabled_mfa.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Okta
+    title: "Cross-Tenant Impersonation: Prevention and Detection"
+    url: https://sec.okta.com/articles/2023/08/cross-tenant-impersonation-prevention-and-detection
+    relation: inspired
+  - name: Okta
+    title: Event types catalogue (security.authenticator.lifecycle.deactivate, system.mfa.factor.deactivate)
+    url: https://github.com/okta/okta-developer-docs/blob/master/packages/@okta/vuepress-site/data/event-types.json
+    relation: inspired

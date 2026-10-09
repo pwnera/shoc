@@ -1,19 +1,21 @@
 id: contain_openai_owner_change
 title: Contain a new owner of the OpenAI organization
 description: >
-  Someone was invited or promoted to owner. The API can take the role back,
-  but not the Admin keys an owner may already have made, so a human is paged
-  to check both in the dashboard.
+  Someone was invited or promoted to owner, or an outside identity provider
+  was trusted to act as a service account. The API can take the role back, but
+  not the Admin keys an owner may already have made, so a human is paged to
+  check both in the dashboard.
 rules:
   - openai_owner_role_granted
   - openai_defence_disabled
   - openai_login_failure_burst
+  - openai_workload_identity_trust_added
   - hunt:openai_user_first_login_country
 questions:
   - id: actor
     ask: Who granted the role, from which address, and is that address one this person used before?
   - id: target
-    ask: Who received it, and is that a person the company knows?
+    ask: Who received it, or which issuer was trusted, and is that a person or system the company knows?
   - id: after
     ask: Did the new owner, or the account that promoted them, create keys, change the audit log setting or add projects since?
   - id: guarded

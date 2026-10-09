@@ -1,0 +1,128 @@
+[
+  {
+    "id": "Directory_00000000-0000-0000-0000-0000000g001_XYZ_1",
+    "activityDisplayName": "Add app role assignment to service principal",
+    "category": "ApplicationManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Assign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a003",
+        "userPrincipalName": "it-admin@example.com",
+        "ipAddress": "203.0.113.9"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-0000000g101",
+        "displayName": "Office 365 Exchange Online",
+        "type": "ServicePrincipal",
+        "modifiedProperties": [
+          {
+            "displayName": "AppRole.Id",
+            "oldValue": null,
+            "newValue": "\"dc890d15-9560-4a4c-9b7f-a736ec74ec40\""
+          },
+          {
+            "displayName": "AppRole.Value",
+            "oldValue": null,
+            "newValue": "\"full_access_as_app\""
+          },
+          {
+            "displayName": "AppRole.DisplayName",
+            "oldValue": null,
+            "newValue": "\"Use Exchange Web Services with full access to all mailboxes\""
+          },
+          {
+            "displayName": "ServicePrincipal.DisplayName",
+            "oldValue": null,
+            "newValue": "\"Mail Sync Helper\""
+          },
+          {
+            "displayName": "ServicePrincipal.AppId",
+            "oldValue": null,
+            "newValue": "\"00000000-0000-0000-0000-0000000g201\""
+          }
+        ]
+      },
+      {
+        "id": "00000000-0000-0000-0000-0000000g301",
+        "displayName": "Mail Sync Helper",
+        "type": "ServicePrincipal",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "User-Agent",
+        "value": "python-requests/2.31.0"
+      }
+    ],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-0000000g002_XYZ_1",
+    "activityDisplayName": "Add app role assignment to service principal",
+    "category": "ApplicationManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Assign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a003",
+        "userPrincipalName": "it-admin@example.com",
+        "ipAddress": "203.0.113.9"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-0000000g102",
+        "displayName": "Microsoft Graph",
+        "type": "ServicePrincipal",
+        "modifiedProperties": [
+          {
+            "displayName": "AppRole.Id",
+            "oldValue": null,
+            "newValue": "\"9e3f62cf-ca93-4989-b6ce-bf83c28f9fe8\""
+          },
+          {
+            "displayName": "AppRole.Value",
+            "oldValue": null,
+            "newValue": "\"RoleManagement.ReadWrite.Directory\""
+          },
+          {
+            "displayName": "AppRole.DisplayName",
+            "oldValue": null,
+            "newValue": "\"Read and write all directory RBAC settings\""
+          },
+          {
+            "displayName": "ServicePrincipal.DisplayName",
+            "oldValue": null,
+            "newValue": "\"Tenant Reporter\""
+          },
+          {
+            "displayName": "ServicePrincipal.AppId",
+            "oldValue": null,
+            "newValue": "\"00000000-0000-0000-0000-0000000g202\""
+          }
+        ]
+      },
+      {
+        "id": "00000000-0000-0000-0000-0000000g302",
+        "displayName": "Tenant Reporter",
+        "type": "ServicePrincipal",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "User-Agent",
+        "value": "python-requests/2.31.0"
+      }
+    ],
+    "_stream": "directoryAudits"
+  }
+]

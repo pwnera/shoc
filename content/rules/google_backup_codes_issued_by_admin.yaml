@@ -1,0 +1,36 @@
+id: google_backup_codes_issued_by_admin
+title: An admin generated two-step verification backup codes for a user
+description: >
+  An admin made backup verification codes for another person's account.
+  Whoever reads them passes that person's second factor. It is how a
+  help-desk call from someone pretending to have lost their phone ends, and
+  how an attacker holding one admin account walks into every other one. A
+  real lost phone looks the same, so the question is whether the person asked
+  and how the admin knew it was them.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1098, T1556.006, T1656]
+logsource:
+  product: google
+  service: reports
+detection:
+  selection:
+    api.service.name: admin
+    api.operation: GENERATE_2SV_SCRATCH_CODES
+  condition: selection
+  timeframe: 15m
+# Keyed on the account the codes open, so a later finding about that user
+# joins this one.
+entity: [resource.uid, actor.user.name]
+fields: [actor.user.name, resource.uid, src_endpoint.ip]
+sources:
+  - name: Google
+    title: Admin audit activity events, user settings
+    url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/admin-user-settings
+    relation: inspired
+  - name: Mandiant
+    title: "Defending Against UNC3944: Cybercrime Hardening Guidance from the Frontlines"
+    url: https://cloud.google.com/blog/topics/threat-intelligence/unc3944-proactive-hardening-recommendations
+    relation: inspired

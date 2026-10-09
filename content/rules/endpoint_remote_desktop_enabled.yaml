@@ -1,0 +1,96 @@
+id: endpoint_remote_desktop_enabled
+title: Remote Desktop was turned on, or allowed through the firewall, by a command
+description: >
+  A command set fDenyTSConnections to 0, called SetAllowTSConnections(1),
+  opened TCP 3389 in the Windows firewall or enabled its Remote Desktop rule
+  group; on Defender the registry write itself is also read. Intruders turn
+  Remote Desktop on so they can come back interactively and move between
+  machines, often with one batch file run on every host they reach.
+  endpoint_rdp_logon_from_internet sees the logon; this sees the door being
+  opened on a laptop that never had it. The switch in System Properties or
+  Settings and Group Policy's own value are left out; IT enabling RDP on a new
+  server with a script looks the same.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.65
+attack: [T1021.001, T1112, T1562.004]
+sources:
+  - name: Sigma
+    title: "Potential Tampering With RDP Related Registry Keys Via Reg.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_reg_rdp_keys_tamper.yml
+    author: "pH-T (Nextron Systems), @Kostastsale, TheDFIRReport"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "RDP Connection Allowed Via Netsh.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_netsh_fw_allow_rdp.yml
+    author: "Sander Wiebing"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "RDP Enable or Disable via Win32_TerminalServiceSetting WMI Class"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_rdp_enable_or_disable_via_win32_terminalservicesetting_wmi_class.yml
+    author: "Daniel Koifman (KoifSec), Swachchhanda Shrawan Poudel (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Splunk
+    title: "Windows Remote Services Rdp Enable"
+    url: https://github.com/splunk/security_content/blob/develop/detections/endpoint/windows_remote_services_rdp_enable.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: CISA
+    title: "#StopRansomware: Medusa Ransomware"
+    url: https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-071a
+    relation: inspired
+  - name: Microsoft
+    title: "Beyond ransomware: Tracking Storm-2570's consistent tradecraft across deployments"
+    url: https://www.microsoft.com/en-us/security/blog/2026/09/24/beyond-ransomware-tracking-storm-2570-consistent-tradecraft-across-deployments/
+    author: "Microsoft Threat Intelligence"
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+  sel_deny_value:
+    process.cmd_line|contains: fDenyTSConnections
+  # 0, not 0x00000001: '/d 0' alone would also match the hex form of 1.
+  sel_deny_zero:
+    - process.cmd_line|contains: ['/d 0 ', '/d 0"', '/d "0"', '/d 0x0 ', '/d 0x00000000', '-Value 0 ', '-Value 0;']
+    - process.cmd_line|endswith: ['/d 0', '-Value 0', '/d 0x0']
+  sel_wmi_on:
+    process.cmd_line|contains: ['SetAllowTSConnections 1', 'SetAllowTSConnections(1', 'SetAllowTSConnections "1"',
+                                "SetAllowTSConnections '1'"]
+  sel_netsh:
+    process.name: netsh.exe
+    process.cmd_line|contains: firewall
+  sel_rdp_port:
+    process.cmd_line|contains: ['localport=3389', 'tcp 3389', ' 3389 ']
+  sel_netsh_allow:
+    process.cmd_line|contains: [allow, portopening]
+  sel_rdp_group:
+    process.cmd_line|contains: ['remote desktop', remotedesktop]
+  sel_netsh_enable:
+    process.cmd_line|contains: enable=yes
+  sel_ps_firewall:
+    process.cmd_line|contains: Enable-NetFirewallRule
+  # Defender only: Falcon's ASEP events do not cover this key, and SentinelOne
+  # does not keep registry events by default. Group Policy writes under
+  # SOFTWARE\Policies\, which this path does not match.
+  sel_registry:
+    raw.category: AdvancedHunting-DeviceRegistryEvents
+    api.operation: RegistryValueSet
+    raw.properties.RegistryKey|contains: '\Control\Terminal Server'
+    raw.properties.RegistryValueName: fDenyTSConnections
+    raw.properties.RegistryValueData: '0'
+  # The switches an admin clicks in System Properties or Settings.
+  filter_gui:
+    process.name: [SystemPropertiesRemote.exe, SystemSettingsAdminFlows.exe, SystemSettings.exe]
+  condition: (selection_process and ((sel_deny_value and sel_deny_zero) or sel_wmi_on or (sel_netsh and ((sel_rdp_port and sel_netsh_allow) or (sel_rdp_group and sel_netsh_enable))) or (sel_ps_firewall and sel_rdp_group))) or (sel_registry and not filter_gui)
+  timeframe: 1h
+entity: [device.uid, resource.uid]
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         process.parent_process.name, raw.properties.RegistryValueData]

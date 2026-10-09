@@ -1,10 +1,12 @@
 id: contain_cloudflare_account_change
 title: Contain a change to the Cloudflare account
 description: >
-  A token was created, a member added or promoted, a mail record repointed, or
-  TLS switched off. When the change came through an account API token, that
-  token is disabled, which is reversible; a dashboard session cannot be ended
-  through the API, so a human is paged to remove the member or revert the record.
+  A token was created, a member added or promoted, a mail record changed, mail
+  forwarded, Access opened, the domain unlocked or its zone removed, or TLS
+  switched off. When the change came through an account API token, that token
+  is disabled, which is reversible; a dashboard session cannot be ended
+  through the API, so a human is paged to remove the member or revert the
+  record.
 rules:
   - cloudflare_api_token_created
   - cloudflare_member_added_or_changed
@@ -12,12 +14,16 @@ rules:
   - cloudflare_ssl_downgraded
   - cloudflare_api_token_revoked
   - cloudflare_logpush_job_disabled
+  - cloudflare_access_opened
+  - cloudflare_email_routing_forward_added
+  - cloudflare_mail_auth_record_changed
+  - cloudflare_domain_unlocked_or_zone_removed
   - hunt:cloudflare_member_first_product
 questions:
   - id: actor
     ask: Who made the change, from which address, and through the dashboard or an API token?
   - id: change
-    ask: What exactly changed, the token's permissions, the member's roles, the record's content or the SSL mode, and what was there before?
+    ask: What exactly changed, the token's permissions, the member's roles, the record's content, the Access policy or mail route, or the SSL mode, and what was there before?
   - id: after
     ask: What did the same person or token do next, more tokens, DNS records or zone settings?
 benign_when:

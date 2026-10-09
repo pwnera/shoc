@@ -61,5 +61,23 @@
     },
     "new_owner_id": "user_01Backup",
     "previous_owner_id": "user_01Founder"
+  },
+  {
+    "id": "activity_01RoleAssigned",
+    "organization_id": "org_01",
+    "organization_uuid": "00000000-0000-4000-8000-000000000001",
+    "type": "role_assignment_granted",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "role": "platform:admin",
+    "target_id": "user_01Backup",
+    "target_type": "organization_member",
+    "resource_type": "organization",
+    "resource_id": "org_01"
   }
 ]

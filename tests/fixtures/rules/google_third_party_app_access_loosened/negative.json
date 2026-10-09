@@ -1,0 +1,115 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-blocked-app",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "it-admin@example.com",
+      "profileId": "100000000000000000001",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.40",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "ADD_TO_BLOCKED_OAUTH2_APPS",
+        "parameters": [
+          {
+            "name": "OAUTH2_APP_ID",
+            "value": "123456789012-abcdefghijklmnop.apps.googleusercontent.com"
+          },
+          {
+            "name": "OAUTH2_APP_NAME",
+            "value": "Mail Sync Helper"
+          },
+          {
+            "name": "OAUTH2_APP_TYPE",
+            "value": "WEB"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-service-restricted",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "it-admin@example.com",
+      "profileId": "100000000000000000001",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.40",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "DISALLOW_SERVICE_FOR_OAUTH2_ACCESS",
+        "parameters": [
+          {
+            "name": "OAUTH2_SERVICE_NAME",
+            "value": "GMAIL"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-marketplace-selected",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "it-admin@example.com",
+      "profileId": "100000000000000000001",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.40",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "APPLICATION_SETTINGS",
+        "name": "CHANGE_APPLICATION_SETTING",
+        "parameters": [
+          {
+            "name": "APPLICATION_NAME",
+            "value": "Google Workspace Marketplace"
+          },
+          {
+            "name": "SETTING_NAME",
+            "value": "ENABLE_G_SUITE_MARKETPLACE"
+          },
+          {
+            "name": "OLD_VALUE",
+            "value": "1"
+          },
+          {
+            "name": "NEW_VALUE",
+            "value": "3"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "example.com"
+          }
+        ]
+      }
+    ]
+  }
+]

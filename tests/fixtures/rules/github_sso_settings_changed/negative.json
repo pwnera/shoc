@@ -1,0 +1,28 @@
+[
+  {
+    "_document_id": "gh-org_credential_authorization.grant",
+    "action": "org_credential_authorization.grant",
+    "actor": "jane-dev",
+    "actor_id": 5151,
+    "actor_ip": "198.51.100.23",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "operation_type": "authentication"
+  },
+  {
+    "_document_id": "gh-org.enable_two_factor_requirement",
+    "action": "org.enable_two_factor_requirement",
+    "actor": "it-admin",
+    "actor_id": 1001,
+    "actor_ip": "198.51.100.5",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "operation_type": "modify"
+  }
+]

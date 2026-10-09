@@ -11,5 +11,75 @@
     "Workload": "AzureActiveDirectory",
     "ClientIP": "198.51.100.7",
     "ObjectId": "example.com"
+  },
+  {
+    "Id": "m365-Update-user-sourceanchor-sync",
+    "Operation": "Update user.",
+    "OrganizationId": "org-1",
+    "RecordType": 8,
+    "ResultStatus": "Success",
+    "UserKey": "u-2",
+    "UserType": 0,
+    "UserId": "Sync_DC01_3f2a9b1c7d4e@example.onmicrosoft.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.5",
+    "ObjectId": "ceo@example.com",
+    "ModifiedProperties": [
+      {
+        "Name": "SourceAnchor",
+        "NewValue": "[\r\n  \"c3luY2VkLXVzZXI=\"\r\n]",
+        "OldValue": "[]"
+      },
+      {
+        "Name": "Included Updated Properties",
+        "NewValue": "SourceAnchor",
+        "OldValue": ""
+      }
+    ],
+    "Target": [
+      {
+        "ID": "User_00000000-0000-0000-0000-00000000a101",
+        "Type": 2
+      },
+      {
+        "ID": "ceo@example.com",
+        "Type": 5
+      }
+    ]
+  },
+  {
+    "Id": "m365-Update-user-displayname",
+    "Operation": "Update user.",
+    "OrganizationId": "org-1",
+    "RecordType": 8,
+    "ResultStatus": "Success",
+    "UserKey": "u-2",
+    "UserType": 0,
+    "UserId": "admin@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.7",
+    "ObjectId": "ceo@example.com",
+    "ModifiedProperties": [
+      {
+        "Name": "DisplayName",
+        "NewValue": "[\r\n  \"Chief Executive\"\r\n]",
+        "OldValue": "[]"
+      },
+      {
+        "Name": "Included Updated Properties",
+        "NewValue": "DisplayName",
+        "OldValue": ""
+      }
+    ],
+    "Target": [
+      {
+        "ID": "User_00000000-0000-0000-0000-00000000a101",
+        "Type": 2
+      },
+      {
+        "ID": "ceo@example.com",
+        "Type": 5
+      }
+    ]
   }
 ]

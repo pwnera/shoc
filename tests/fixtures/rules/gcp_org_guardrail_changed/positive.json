@@ -1,0 +1,72 @@
+[
+  {
+    "insertId": "orgpol-update",
+    "logName": "organizations/123456789012/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "organization",
+      "labels": {
+        "organization_id": "123456789012"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "orgpolicy.googleapis.com",
+      "methodName": "google.cloud.orgpolicy.v2.OrgPolicy.UpdatePolicy",
+      "resourceName": "organizations/123456789012/policies/iam.allowedPolicyMemberDomains",
+      "authenticationInfo": {
+        "principalEmail": "it-admin@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/google.cloud.orgpolicy.v2.UpdatePolicyRequest",
+        "policy": {
+          "name": "organizations/123456789012/policies/iam.allowedPolicyMemberDomains",
+          "spec": {
+            "rules": [
+              {
+                "allowAll": true
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "insertId": "project-move",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudresourcemanager.googleapis.com",
+      "methodName": "google.cloud.resourcemanager.v3.Projects.MoveProject",
+      "resourceName": "projects/example-prod",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      },
+      "request": {
+        "@type": "type.googleapis.com/google.cloud.resourcemanager.v3.MoveProjectRequest",
+        "name": "projects/example-prod",
+        "destinationParent": "organizations/999999999999"
+      }
+    }
+  }
+]

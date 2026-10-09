@@ -1,0 +1,41 @@
+id: gcp_kms_key_destroyed
+title: A Cloud KMS key version was destroyed or disabled
+description: >
+  A key version was scheduled for destruction, or disabled. When it is the
+  key that encrypts disks, buckets or databases, the data becomes
+  unreadable, which is ransom without encryption malware. Few companies of
+  this size use their own keys; where they do, this is rare and serious.
+  Planned clean-up after a key rotation looks the same.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1485]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  scope:
+    api.service.name: cloudkms.googleapis.com
+    status: Success
+  destroy:
+    api.operation|endswith: DestroyCryptoKeyVersion
+  disable:
+    api.operation|endswith: UpdateCryptoKeyVersion
+    raw.protoPayload.request.cryptoKeyVersion.state: [DISABLED, DESTROY_SCHEDULED, DESTROYED]
+  condition: scope and (destroy or disable)
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, cloud.account.uid]
+sources:
+  - name: Chronicle
+    title: GCP Multiple KMS Keys Disabled or Destroyed
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/gcp/gcp_multiple_kms_keys_disabled_or_destroyed.yaral
+    author: Google Cloud Security
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: GCP KMS Key Version Disabled or Destroyed
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/gcp_audit_rules/gcp_kms_erase_key.py
+    license: Apache-2.0
+    relation: adapted

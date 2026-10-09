@@ -61,5 +61,73 @@
       "user_agent": "python-httpx/0.27.0"
     },
     "compliance_api_enabled": false
+  },
+  {
+    "id": "activity_01IpOff",
+    "organization_id": "org_01",
+    "type": "org_ip_restriction_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "ip_allowlist_enabled": false
+  },
+  {
+    "id": "activity_01SpendSnoozed",
+    "organization_id": "org_01",
+    "type": "platform_spend_limit_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "ignore": true,
+    "spend_limit_id": "0b1c2d3e-0000-4000-8000-000000000001"
+  },
+  {
+    "id": "activity_01ExtraOff",
+    "organization_id": "org_01",
+    "type": "extra_usage_spend_limit_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "is_enabled": false,
+    "limit_type": "organization"
+  },
+  {
+    "id": "activity_01HooksOff",
+    "organization_id": "org_01",
+    "type": "inference_hooks_config_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "enabled": false,
+    "enforcement_mode": "prompt_and_response",
+    "fail_mode": "fail_closed"
+  },
+  {
+    "id": "activity_01DirSyncDel",
+    "organization_id": "org_01",
+    "type": "org_directory_sync_deleted",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    }
   }
 ]

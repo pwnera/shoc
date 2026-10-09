@@ -1,0 +1,103 @@
+id: endpoint_lolbin_downloads_payload
+title: A Windows system tool fetched a payload from the internet
+description: >
+  certutil (-urlcache, -verifyctl), mshta, regsvr32 (/i: scriptlet) or
+  bitsadmin (/transfer, /addfile) was given a URL, curl.exe saved a file from a
+  bare IP address, or finger.exe ran at all, also renamed. Loaders,
+  fake CAPTCHA pages and intruders fetch their next stage this way so it looks
+  like Windows at work; ClickFix variants such as CrashFix (2026) pull commands
+  with finger.exe. Downloads from Microsoft's update hosts are left out, and
+  mshta started by Explorer is endpoint_clickfix_paste_and_run's finding; an IT
+  script fetching an installer from an internal server by address looks the
+  same.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.7
+attack: [T1105, T1218.005, T1218.010, T1197]
+sources:
+  - name: Sigma
+    title: "Suspicious Download Via Certutil.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_certutil_download.yml
+    author: "Florian Roth (Nextron Systems), Jonhnathan Ribeiro, oscd.community, Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Remotely Hosted HTA File Executed Via Mshta.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_mshta_http.yml
+    author: "Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Potentially Suspicious Regsvr32 HTTP/FTP Pattern"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_regsvr32_network_pattern.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "File Download Via Bitsadmin"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_bitsadmin_download.yml
+    author: "Michael Haag, FPT.EagleEye"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Finger.EXE Execution"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_finger_execution.yml
+    author: "Florian Roth (Nextron Systems), omkar72, oscd.community"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "File Download From IP URL Via Curl.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_curl_download_direct_ip_exec.yml
+    author: "Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Microsoft
+    title: "New ClickFix variant 'CrashFix' deploying Python Remote Access Trojan"
+    url: https://www.microsoft.com/en-us/security/blog/2026/02/05/clickfix-variant-crashfix-deploying-python-rat-trojan/
+    author: "Microsoft Threat Intelligence"
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+  sel_url:
+    process.cmd_line|contains: ['http://', 'https://', 'ftp://']
+  sel_certutil:
+    process.name: certutil.exe
+    process.cmd_line|contains: [urlcache, verifyctl]
+  sel_regsvr32:
+    process.name: regsvr32.exe
+    process.cmd_line|contains: ['/i:', '-i:']
+  sel_bitsadmin:
+    process.name: bitsadmin.exe
+    process.cmd_line|contains: [/transfer, /addfile]
+  filter_microsoft:
+    process.cmd_line|contains: [.microsoft.com/, .windowsupdate.com/]
+  sel_mshta:
+    process.name: mshta.exe
+  # Explorer starting mshta with a URL is a pasted ClickFix command, which
+  # endpoint_clickfix_paste_and_run reports.
+  filter_explorer:
+    process.parent_process.name: explorer.exe
+  sel_curl_ip:
+    process.name: curl.exe
+    process.cmd_line|re: '://[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'
+  sel_curl_out:
+    process.cmd_line|contains: [' -o', --output, --remote-name]
+  sel_finger:
+    - process.name: finger.exe
+    - raw.properties.ProcessVersionInfoOriginalFileName: finger.exe
+  # Copying finger.exe under another name, as CrashFix does with ct.exe.
+  sel_finger_copy:
+    process.cmd_line|contains: finger.exe
+  sel_copy:
+    process.cmd_line|contains: ['copy ', Copy-Item]
+  condition: selection_process and ((((sel_certutil or sel_regsvr32 or sel_bitsadmin) and sel_url) and not filter_microsoft) or (sel_mshta and sel_url and not filter_explorer) or (sel_curl_ip and sel_curl_out) or sel_finger or (sel_finger_copy and sel_copy))
+  timeframe: 15m
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         process.parent_process.name, process.file.path]

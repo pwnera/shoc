@@ -1,0 +1,61 @@
+[
+  {
+    "insertId": "disk-labels",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_disk",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.disks.setLabels",
+      "resourceName": "projects/example-prod/zones/us-central1-a/disks/db-data",
+      "authenticationInfo": {
+        "principalEmail": "it-admin@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.40",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.disks.setLabels",
+        "labels": {
+          "team": "data"
+        }
+      }
+    }
+  },
+  {
+    "insertId": "image-denied",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "gce_image",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "beta.compute.images.setIamPolicy",
+      "resourceName": "projects/example-prod/global/images/golden-2026-10",
+      "authenticationInfo": {
+        "principalEmail": "dev@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    }
+  }
+]

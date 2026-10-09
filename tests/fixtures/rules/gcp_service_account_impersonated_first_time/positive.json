@@ -1,0 +1,59 @@
+[
+  {
+    "insertId": "gcp-history",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.setLabels",
+      "resourceName": "projects/example-prod/zones/europe-west1-b/instances/web-3",
+      "authenticationInfo": {
+        "principalEmail": "it-admin@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.40",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      }
+    },
+    "_day_offset": 40
+  },
+  {
+    "insertId": "imp-new",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "service_account",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.admin.v1.CreateServiceAccountKey",
+      "resourceName": "projects/-/serviceAccounts/100000000000000000031",
+      "authenticationInfo": {
+        "principalEmail": "deployer@example-prod.iam.gserviceaccount.com",
+        "principalSubject": "serviceAccount:deployer@example-prod.iam.gserviceaccount.com",
+        "serviceAccountDelegationInfo": [
+          {
+            "firstPartyPrincipal": {
+              "principalEmail": "mallory@example.com"
+            }
+          }
+        ]
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0 command/gcloud.iam.service-accounts.keys.create"
+      }
+    }
+  }
+]

@@ -1,0 +1,43 @@
+id: okta_factor_enrolled_for_another_user
+title: Okta MFA factor enrolled by an admin on someone else's account
+description: >
+  An administrator activated an MFA factor on another person's account. The
+  owner never held that factor, and an attacker with admin rights uses one to
+  sign in as the person, often an executive or another admin, without calling
+  the help desk. Okta itself and service apps such as Okta Workflows are left
+  out, since they do not act as a user. Pre-registering a security key or a
+  phone for a new hire fires too.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.65
+attack: [T1098.005, T1556.006]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation: user.mfa.factor.activate
+    status: Success
+    actor.user.type: User
+  # The first target is the user whose factor it is.
+  self_enrolment:
+    resource.uid|fieldref: actor.user.name
+  condition: selection and not self_enrolment
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, resource.uid, status_code, src_endpoint.ip, src_endpoint.asn]
+sources:
+  - name: Panther
+    title: Okta Authentication Bypass via Skeleton Key Injection - Behavioral
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/queries/okta_queries/okta_skeleton_key_bypass_behavioral_query.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Okta
+    title: "Cross-Tenant Impersonation: Prevention and Detection"
+    url: https://sec.okta.com/articles/2023/08/cross-tenant-impersonation-prevention-and-detection
+    relation: inspired
+  - name: Okta
+    title: Event types catalogue (user.mfa.factor.activate)
+    url: https://github.com/okta/okta-developer-docs/blob/master/packages/@okta/vuepress-site/data/event-types.json
+    relation: inspired

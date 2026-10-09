@@ -1,0 +1,295 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-app",
+    "eventName": "GetParameters",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.10",
+    "userAgent": "Boto3/1.34.0 md/Botocore#1.34.0 ua/2.0 os/linux#6.1.0 lang/python#3.11.9",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:1a2b3c4d5e6f",
+      "arn": "arn:aws:sts::123456789012:assumed-role/api-task-role/1a2b3c4d5e6f",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLETASK0001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/api-task-role",
+          "accountId": "123456789012",
+          "userName": "api-task-role"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "names": [
+        "/prod/db/password",
+        "/prod/stripe/secret_key",
+        "/prod/smtp/password"
+      ],
+      "withDecryption": true
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-one",
+    "eventName": "GetParameter",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.77",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/jane",
+      "accountId": "123456789012",
+      "userName": "jane",
+      "accessKeyId": "AKIAEXAMPLEJANE00001"
+    },
+    "requestParameters": {
+      "name": "/prod/db/password",
+      "withDecryption": true
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-one-describe",
+    "eventName": "DescribeParameters",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.200",
+    "userAgent": "Boto3/1.34.0 md/Botocore#1.34.0 ua/2.0 os/linux#6.1.0 lang/python#3.11.9",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/jane",
+      "accountId": "123456789012",
+      "userName": "jane",
+      "accessKeyId": "AKIAEXAMPLEJANE00001"
+    },
+    "requestParameters": {
+      "maxResults": 10
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-console",
+    "eventName": "GetParameters",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.200",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:jane@example.com",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b/jane@example.com",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLECONSOLE1",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b",
+          "accountId": "123456789012",
+          "userName": "AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "names": [
+        "/prod/db/password",
+        "/prod/stripe/secret_key",
+        "/prod/smtp/password"
+      ],
+      "withDecryption": true
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true,
+    "sessionCredentialFromConsole": "true"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-console-describe",
+    "eventName": "DescribeParameters",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.200",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:jane@example.com",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b/jane@example.com",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLECONSOLE1",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b",
+          "accountId": "123456789012",
+          "userName": "AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "maxResults": 10
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true,
+    "sessionCredentialFromConsole": "true"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-tf",
+    "eventName": "GetParameters",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.200",
+    "userAgent": "APN/1.0 HashiCorp/1.0 Terraform/1.9.5 (+https://www.terraform.io) terraform-provider-aws/5.70.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLETERRAFORM",
+      "arn": "arn:aws:iam::123456789012:user/terraform",
+      "accountId": "123456789012",
+      "userName": "terraform",
+      "accessKeyId": "AKIAEXAMPLETERRAFORM"
+    },
+    "requestParameters": {
+      "names": [
+        "/prod/db/password",
+        "/prod/stripe/secret_key",
+        "/prod/smtp/password"
+      ],
+      "withDecryption": true
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-tf-describe",
+    "eventName": "DescribeParameters",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.200",
+    "userAgent": "APN/1.0 HashiCorp/1.0 Terraform/1.9.5 (+https://www.terraform.io) terraform-provider-aws/5.70.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLETERRAFORM",
+      "arn": "arn:aws:iam::123456789012:user/terraform",
+      "accountId": "123456789012",
+      "userName": "terraform",
+      "accessKeyId": "AKIAEXAMPLETERRAFORM"
+    },
+    "requestParameters": {
+      "maxResults": 10
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-plain",
+    "eventName": "GetParameters",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.200",
+    "userAgent": "Boto3/1.34.0 md/Botocore#1.34.0 ua/2.0 os/linux#6.1.0 lang/python#3.11.9",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/ops",
+      "accountId": "123456789012",
+      "userName": "ops",
+      "accessKeyId": "AKIAEXAMPLEOPS000001"
+    },
+    "requestParameters": {
+      "names": [
+        "/prod/db/password",
+        "/prod/stripe/secret_key",
+        "/prod/smtp/password"
+      ],
+      "withDecryption": false
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-plain-describe",
+    "eventName": "DescribeParameters",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.200",
+    "userAgent": "Boto3/1.34.0 md/Botocore#1.34.0 ua/2.0 os/linux#6.1.0 lang/python#3.11.9",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/ops",
+      "accountId": "123456789012",
+      "userName": "ops",
+      "accessKeyId": "AKIAEXAMPLEOPS000001"
+    },
+    "requestParameters": {
+      "maxResults": 10
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  }
+]

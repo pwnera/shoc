@@ -1,0 +1,64 @@
+id: m365_exchange_role_assigned
+title: Exchange or Purview admin role given to an account or app
+description: >
+  Someone was given an Exchange or Purview role, joined a role group such as
+  Organization Management or eDiscovery Manager, or an app was registered in
+  Exchange and given a role such as Application Mail.ReadWrite. Exchange keeps
+  its own permissions beside Entra ID, so none of this shows as an Entra role
+  change, yet Organization Management or an unscoped app role reaches every
+  mailbox. An app role works with no user and survives every password reset.
+  Changes Exchange makes itself are left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1098.002, T1098.003]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation:
+      - New-ManagementRoleAssignment
+      - Add-RoleGroupMember
+      - Update-RoleGroupMember
+      - New-RoleGroup
+      - New-ServicePrincipal
+  filter_system:
+    actor.user.name|startswith: NT AUTHORITY
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_system and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, unmapped.params.Role, unmapped.params.User,
+         unmapped.params.App, unmapped.params.Member, src_endpoint.ip]
+sources:
+  - name: Splunk
+    title: O365 ApplicationImpersonation Role Assigned
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/o365_applicationimpersonation_role_assigned.yml
+    author: Mauricio Velazco, Splunk
+    license: Apache-2.0
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: Rare and potentially high-risk Office operations
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Microsoft%20365/Analytic%20Rules/RareOfficeOperations.yaml
+    license: MIT
+    relation: adapted
+  - name: Elastic
+    title: M365 Exchange Management Group Role Assigned
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/o365/persistence_exchange_management_role_assignment.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft
+    title: "Midnight Blizzard: guidance for responders on nation-state attack"
+    url: https://www.microsoft.com/en-us/security/blog/2024/01/25/midnight-blizzard-guidance-for-responders-on-nation-state-attack/
+    relation: inspired
+  - name: Microsoft
+    title: Role Based Access Control for Applications in Exchange Online
+    url: https://learn.microsoft.com/en-us/exchange/permissions-exo/application-rbac
+    relation: inspired
+  - name: Microsoft
+    title: "Critical Update: ApplicationImpersonation RBAC role deprecation in Exchange Online"
+    url: https://techcommunity.microsoft.com/blog/exchange/critical-update-applicationimpersonation-rbac-role-deprecation-in-exchange-online/4295762
+    relation: inspired

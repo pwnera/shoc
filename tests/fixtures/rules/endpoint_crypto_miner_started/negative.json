@@ -1,0 +1,23 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd15",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Lin",
+    "ImageFileName": "/usr/bin/gcc",
+    "CommandLine": "gcc -O2 -o pool.o -c pool.c",
+    "ParentBaseFileName": "make",
+    "RawProcessId": "2201"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "DnsRequest",
+    "aid": "0123456789abcdef0123456789abcd15",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Lin",
+    "DomainName": "pool.ntp.org",
+    "RequestType": "1",
+    "ContextProcessId": "3001"
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "activity_01FedIssuerArchived",
+    "organization_id": "org_01",
+    "type": "platform_federation_issuer_archived",
+    "actor": {"type": "user_actor", "email_address": "admin@example.com", "user_id": "user_01A", "ip_address": "198.51.100.20", "user_agent": "Mozilla/5.0"},
+    "federation_issuer_id": "fdis_01Old"
+  },
+  {
+    "id": "activity_01FedRuleRemoved",
+    "organization_id": "org_01",
+    "type": "platform_federation_rule_workspace_removed",
+    "actor": {"type": "user_actor", "email_address": "admin@example.com", "user_id": "user_01A", "ip_address": "198.51.100.20", "user_agent": "Mozilla/5.0"},
+    "federation_rule_id": "fdrl_01Old",
+    "workspace_id": "wrkspc_01Prod"
+  }
+]

@@ -1,0 +1,103 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd21",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "LAPTOP-21",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\reg.exe",
+    "CommandLine": "reg.exe save HKLM\\SAM C:\\ProgramData\\sam.save /y",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "5120",
+    "UserName": "jdoe"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770021"
+    },
+    "endpoint": {
+      "name": "dc01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "ntdsutil.exe",
+        "cmdline": "ntdsutil.exe \"ac i ntds\" ifm \"create full C:\\Windows\\Temp\\x\" q q",
+        "image": {
+          "path": "C:\\Windows\\System32\\ntdsutil.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "powershell.exe"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "4444444444444444444444444444444444444441",
+      "DeviceName": "dc01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "cmd.exe",
+      "FolderPath": "C:\\Windows\\System32\\cmd.exe",
+      "ProcessCommandLine": "cmd.exe /c copy \\\\?\\GLOBALROOT\\Device\\HarddiskVolumeShadowCopy1\\Windows\\NTDS\\ntds.dit C:\\Windows\\Temp\\n.dit",
+      "InitiatingProcessFileName": "wmiprvse.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "4444444444444444444444444444444444444441",
+      "DeviceName": "dc01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "esentutl.exe",
+      "FolderPath": "C:\\Windows\\System32\\esentutl.exe",
+      "ProcessCommandLine": "esentutl.exe /y /vss C:\\Windows\\System32\\config\\SAM /d C:\\Windows\\Temp\\s.tmp",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770022"
+    },
+    "endpoint": {
+      "name": "laptop-22.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "reg.exe",
+        "cmdline": "reg.exe save \"HKLM\\SECURITY\" C:\\Users\\Public\\sec.hiv",
+        "image": {
+          "path": "C:\\Windows\\System32\\reg.exe"
+        },
+        "user": "EXAMPLE\\jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  }
+]

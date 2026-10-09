@@ -1,0 +1,78 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "6666666666666666666666666666666666666666",
+      "DeviceName": "laptop-09.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "client32.exe",
+      "FolderPath": "C:\\Users\\jdoe\\AppData\\Roaming\\WinSysUpd\\client32.exe",
+      "ProcessCommandLine": "\"C:\\Users\\jdoe\\AppData\\Roaming\\WinSysUpd\\client32.exe\"",
+      "InitiatingProcessFileName": "powershell.exe",
+      "AccountName": "jdoe",
+      "ProcessVersionInfoProductName": "NetSupport Remote Control",
+      "ProcessVersionInfoOriginalFileName": "client32.exe"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "6666666666666666666666666666666666666667",
+      "DeviceName": "laptop-10.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "msupd.exe",
+      "FolderPath": "C:\\ProgramData\\MsUpd\\msupd.exe",
+      "ProcessCommandLine": "\"C:\\ProgramData\\MsUpd\\msupd.exe\"",
+      "InitiatingProcessFileName": "wscript.exe",
+      "AccountName": "asmith",
+      "ProcessVersionInfoProductName": "NetSupport Remote Control",
+      "ProcessVersionInfoOriginalFileName": "client32.exe"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcde6",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-FILE01",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\PerfLogs\\meshagent64-examplecorp.exe",
+    "CommandLine": "\"C:\\PerfLogs\\meshagent64-examplecorp.exe\" connect",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "6044",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770061"
+    },
+    "endpoint": {
+      "name": "laptop-11.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "rutserv.exe",
+        "cmdline": "\"C:\\Users\\jdoe\\AppData\\Local\\Temp\\RU\\rutserv.exe\" -second",
+        "image": {
+          "path": "C:\\Users\\jdoe\\AppData\\Local\\Temp\\RU\\rutserv.exe"
+        },
+        "user": "EXAMPLE\\jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "rfusclient.exe"
+      }
+    }
+  }
+]

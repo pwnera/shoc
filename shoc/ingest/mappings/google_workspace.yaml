@@ -82,12 +82,13 @@ derive:
     set: { activity_id: 2, activity_name: Logoff, type_uid: 300202 }
   - when: { "events[0].name": login_success, "events[0].parameters[name=is_suspicious].boolValue": true }
     set: { severity_id: 3 }
-  # A challenge is a step of the sign-in; Google records whether it was passed.
+  # A challenge is a step of the sign-in; Google records whether it was passed,
+  # as the reference's "Challenge Passed." or as the older short words.
   - when: { "events[0].name": { in: [login_challenge, login_verification] } }
     set: { activity_id: 6, activity_name: Preauth, type_uid: 300206, status: Unknown }
-  - when: { "events[0].name": { in: [login_challenge, login_verification] }, "events[0].parameters[name=login_challenge_status].value": passed }
+  - when: { "events[0].name": { in: [login_challenge, login_verification] }, "events[0].parameters[name=login_challenge_status].value": { in: [passed, "Challenge Passed."] } }
     set: { status: Success }
-  - when: { "events[0].name": { in: [login_challenge, login_verification] }, "events[0].parameters[name=login_challenge_status].value": { in: [incorrect_answer_entered, challenge_failed, failed] } }
+  - when: { "events[0].name": { in: [login_challenge, login_verification] }, "events[0].parameters[name=login_challenge_status].value": { in: [incorrect_answer_entered, challenge_failed, failed, "Challenge Failed."] } }
     set: { status: Failure, severity_id: 2 }
   # SAML sign-in to a third-party app: Google issues an assertion for it.
   - when: { "id.applicationName": saml }

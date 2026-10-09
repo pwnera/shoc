@@ -172,5 +172,185 @@
     "transport_protocol_name": "http",
     "programmatic_access_type": "Fine-grained personal access token",
     "hashed_token": "kQ8b2examplehashedtoken="
+  },
+  {
+    "_document_id": "gh-zip-public-0",
+    "action": "repo.download_zip",
+    "actor": "zoe",
+    "actor_id": 5252,
+    "actor_ip": "192.0.2.19",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/oss-0",
+    "public_repo": true,
+    "operation_type": "access"
+  },
+  {
+    "_document_id": "gh-zip-public-1",
+    "action": "repo.download_zip",
+    "actor": "zoe",
+    "actor_id": 5252,
+    "actor_ip": "192.0.2.19",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/oss-1",
+    "public_repo": true,
+    "operation_type": "access"
+  },
+  {
+    "_document_id": "gh-zip-public-2",
+    "action": "repo.download_zip",
+    "actor": "zoe",
+    "actor_id": 5252,
+    "actor_ip": "192.0.2.19",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/oss-2",
+    "public_repo": true,
+    "operation_type": "access"
+  },
+  {
+    "_document_id": "gh-zip-public-3",
+    "action": "repo.download_zip",
+    "actor": "zoe",
+    "actor_id": 5252,
+    "actor_ip": "192.0.2.19",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/oss-3",
+    "public_repo": true,
+    "operation_type": "access"
+  },
+  {
+    "_document_id": "gh-zip-public-4",
+    "action": "repo.download_zip",
+    "actor": "zoe",
+    "actor_id": 5252,
+    "actor_ip": "192.0.2.19",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/oss-4",
+    "public_repo": true,
+    "operation_type": "access"
+  },
+  {
+    "_document_id": "gh-zip-public-5",
+    "action": "repo.download_zip",
+    "actor": "zoe",
+    "actor_id": 5252,
+    "actor_ip": "192.0.2.19",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/oss-5",
+    "public_repo": true,
+    "operation_type": "access"
+  },
+  {
+    "_document_id": "gh-zip-public-6",
+    "action": "repo.download_zip",
+    "actor": "zoe",
+    "actor_id": 5252,
+    "actor_ip": "192.0.2.19",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/oss-6",
+    "public_repo": true,
+    "operation_type": "access"
+  },
+  {
+    "_document_id": "gh-zip-public-7",
+    "action": "repo.download_zip",
+    "actor": "zoe",
+    "actor_id": 5252,
+    "actor_ip": "192.0.2.19",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/oss-7",
+    "public_repo": true,
+    "operation_type": "access"
+  },
+  {
+    "_document_id": "gh-zip-public-8",
+    "action": "repo.download_zip",
+    "actor": "zoe",
+    "actor_id": 5252,
+    "actor_ip": "192.0.2.19",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/oss-8",
+    "public_repo": true,
+    "operation_type": "access"
+  },
+  {
+    "_document_id": "gh-zip-public-9",
+    "action": "repo.download_zip",
+    "actor": "zoe",
+    "actor_id": 5252,
+    "actor_ip": "192.0.2.19",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/oss-9",
+    "public_repo": true,
+    "operation_type": "access"
+  },
+  {
+    "_document_id": "gh-zip-public-10",
+    "action": "repo.download_zip",
+    "actor": "zoe",
+    "actor_id": 5252,
+    "actor_ip": "192.0.2.19",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/oss-10",
+    "public_repo": true,
+    "operation_type": "access"
+  },
+  {
+    "_document_id": "gh-zip-public-11",
+    "action": "repo.download_zip",
+    "actor": "zoe",
+    "actor_id": 5252,
+    "actor_ip": "192.0.2.19",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/oss-11",
+    "public_repo": true,
+    "operation_type": "access"
   }
 ]

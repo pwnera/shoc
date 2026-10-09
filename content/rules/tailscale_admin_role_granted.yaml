@@ -1,11 +1,13 @@
 id: tailscale_admin_role_granted
-title: Tailscale user made an owner or an admin
+title: Tailscale user or group made an owner or an admin
 description: >
   An admin edits the access policy, approves devices and mints keys for the
-  whole tailnet.
+  whole tailnet. A role given to a group reaches everyone the identity
+  provider puts in it. The billing admin role, which cannot touch the
+  network, is left out.
 status: stable
 date: 2026-09-30
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.6
 attack: [T1098]
@@ -14,17 +16,21 @@ sources:
     title: Configuration audit logging
     url: https://tailscale.com/docs/features/logging/audit-logging
     relation: inspired
+  - name: Tailscale
+    title: Tailscale API OpenAPI schema (audit event names)
+    url: https://api.tailscale.com/api/v2?outputOpenapiSchema=true
+    relation: inspired
 logsource:
   product: tailscale
   service: configuration_log
 detection:
-  # "Update role for user" is the only UPDATE on a user; no published record
-  # shows its property name, so the prefix is matched.
   selection:
-    api.operation|startswith: USER.UPDATE
+    api.operation: [USER.UPDATE.USER_ROLE, GROUP.UPDATE.USER_ROLE]
   privileged:
     raw.new|contains: [admin, owner]
-  condition: selection and privileged
+  billing:
+    raw.new: billing-admin
+  condition: selection and privileged and not billing
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, resource.uid, cloud.account.uid]

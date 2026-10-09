@@ -1,0 +1,68 @@
+[
+  {
+    "Id": "m365-SearchExported",
+    "Operation": "SearchExported",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 24,
+    "UserKey": "it-admin@example.com",
+    "UserType": 2,
+    "Version": 1,
+    "Workload": "SecurityComplianceCenter",
+    "ObjectId": "q3 search\\q3 search_Export",
+    "UserId": "it-admin@example.com",
+    "ClientIP": "203.0.113.30",
+    "Parameters": [
+      {
+        "Name": "CmdletOptions",
+        "Value": "-Format \"FxStream\" -Export \"True\" -Scope \"IndexedItemsOnly\" -SearchName (\"q3 search\") -ExchangeArchiveFormat \"PerUserPst\""
+      },
+      {
+        "Name": "Cmdlet",
+        "Value": "New-ComplianceSearchAction"
+      }
+    ],
+    "_content_type": "Audit.General",
+    "ObjectType": "SearchAction",
+    "Case": "",
+    "ExchangeLocations": "Include:[ceo@example.com,cfo@example.com,ap@example.com]",
+    "SharepointLocations": "",
+    "Query": "invoice OR \"wire transfer\" OR password",
+    "ExtendedProperties": [
+      {
+        "Name": "SearchIds",
+        "Value": "00000000-0000-0000-0000-00000000b001"
+      }
+    ]
+  },
+  {
+    "Id": "m365-New-ComplianceSearchAction-export",
+    "Operation": "New-ComplianceSearchAction",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 18,
+    "UserKey": "it-admin@example.com",
+    "UserType": 2,
+    "Version": 1,
+    "Workload": "SecurityComplianceCenter",
+    "ObjectId": "",
+    "UserId": "it-admin@example.com",
+    "ClientIP": "203.0.113.30",
+    "Parameters": "-Format \"FxStream\" -Export \"True\" -Scope \"IndexedItemsOnly\" -SearchName (\"q3 search\") -ExchangeArchiveFormat \"PerUserPst\"",
+    "_content_type": "Audit.General",
+    "ResultStatus": "Success",
+    "ClientApplication": "EMC"
+  },
+  {
+    "Id": "m365-PurviewSearchExportJobSubmitted",
+    "Operation": "PurviewSearchExportJobSubmitted",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 24,
+    "UserKey": "it-admin@example.com",
+    "UserType": 2,
+    "Version": 1,
+    "Workload": "SecurityComplianceCenter",
+    "ObjectId": "payroll export",
+    "UserId": "it-admin@example.com",
+    "ClientIP": "203.0.113.30",
+    "_content_type": "Audit.General"
+  }
+]

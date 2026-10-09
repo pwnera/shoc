@@ -1,0 +1,98 @@
+[
+  {
+    "id": "Device Registration Service_00000000l001_D_1",
+    "activityDisplayName": "Recover device local administrator password",
+    "category": "Device",
+    "loggedByService": "Device Registration Service",
+    "operationType": "Get",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a501",
+        "userPrincipalName": "helpdesk@example.com",
+        "ipAddress": "203.0.113.70"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000l201",
+        "displayName": "PC-01",
+        "type": "Device",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "AdditionalInfo",
+        "value": "Successfully recovered local credential by device id"
+      },
+      {
+        "key": "Device Id",
+        "value": "00000000-0000-0000-0000-00000000l201"
+      }
+    ],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Device Registration Service_00000000l002_D_1",
+    "activityDisplayName": "Recover device local administrator password",
+    "category": "Device",
+    "loggedByService": "Device Registration Service",
+    "operationType": "Get",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a501",
+        "userPrincipalName": "helpdesk@example.com",
+        "ipAddress": "203.0.113.70"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000l202",
+        "displayName": "PC-02",
+        "type": "Device",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "AdditionalInfo",
+        "value": "Successfully recovered local credential by device id"
+      },
+      {
+        "key": "Device Id",
+        "value": "00000000-0000-0000-0000-00000000l202"
+      }
+    ],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000l003_K_1",
+    "activityDisplayName": "Read BitLocker key",
+    "category": "KeyManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Get",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a501",
+        "userPrincipalName": "helpdesk@example.com",
+        "ipAddress": "203.0.113.70"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000l303",
+        "displayName": "00000000-0000-0000-0000-00000000l403",
+        "type": "Other",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  }
+]

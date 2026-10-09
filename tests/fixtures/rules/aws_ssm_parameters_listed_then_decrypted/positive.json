@@ -1,0 +1,139 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-get",
+    "eventName": "GetParameters",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.200",
+    "userAgent": "Boto3/1.34.0 md/Botocore#1.34.0 ua/2.0 os/linux#6.1.0 lang/python#3.11.9",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00004",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLEDEV00004"
+    },
+    "requestParameters": {
+      "names": [
+        "/prod/db/password",
+        "/prod/stripe/secret_key",
+        "/prod/smtp/password"
+      ],
+      "withDecryption": true
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-describe",
+    "eventName": "DescribeParameters",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.200",
+    "userAgent": "Boto3/1.34.0 md/Botocore#1.34.0 ua/2.0 os/linux#6.1.0 lang/python#3.11.9",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00004",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAEXAMPLEDEV00004"
+    },
+    "requestParameters": {
+      "maxResults": 10
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-path-cloudshell",
+    "eventName": "GetParametersByPath",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.44",
+    "userAgent": "aws-cli/2.17.0 md/awscrt#0.20.11 ua/2.0 os/linux#5.10.223 md/arch#x86_64 lang/python#3.11.8 exec-env/CloudShell md/command#ssm.get-parameters-by-path",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:mallory@example.com",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b/mallory@example.com",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLESHELL001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b",
+          "accountId": "123456789012",
+          "userName": "AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "path": "/prod",
+      "recursive": true,
+      "withDecryption": true
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true,
+    "sessionCredentialFromConsole": "true"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "ssm-describe-cloudshell",
+    "eventName": "DescribeParameters",
+    "eventSource": "ssm.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.44",
+    "userAgent": "aws-cli/2.17.0 md/awscrt#0.20.11 ua/2.0 os/linux#5.10.223 md/arch#x86_64 lang/python#3.11.8 exec-env/CloudShell md/command#ssm.get-parameters-by-path",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:mallory@example.com",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b/mallory@example.com",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLESHELL001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b",
+          "accountId": "123456789012",
+          "userName": "AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "maxResults": 10
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true,
+    "sessionCredentialFromConsole": "true"
+  }
+]

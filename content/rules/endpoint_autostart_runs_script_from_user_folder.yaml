@@ -1,0 +1,162 @@
+id: endpoint_autostart_runs_script_from_user_folder
+title: A scheduled task, Run key or Startup file was set to run a script from a user folder
+description: >
+  Something set itself to start again with Windows (a scheduled task, a Run or
+  RunOnce value, or a script in a Startup folder), and the command is a script
+  host such as PowerShell, wscript, mshta, rundll32, cmd, node or python, or a
+  script file, in AppData, ProgramData, Public, Temp or PerfLogs. Loaders, fake
+  CAPTCHA payloads and the Interlock and Lunar Spider crews survive a reboot
+  this way. A program in AppData is left out, because installers autostart
+  their own from there (OneDrive, Teams, Zoom, Spotify); a scheduled task that
+  runs any program from Public, Windows\Temp or PerfLogs still counts.
+  SentinelOne's task rows carry no command, so there only the schtasks command
+  is seen.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.6
+attack: [T1053.005, T1547.001, T1059]
+sources:
+  - name: Sigma
+    title: "Schedule Task Creation From Env Variable Or Potentially Suspicious Path Via Schtasks.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_schtasks_env_folder.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Schtasks From Suspicious Folders"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_schtasks_folder_combos.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "New RUN Key Pointing to Suspicious Folder"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_set/registry_set_susp_run_key_img_folder.yml
+    author: "Florian Roth (Nextron Systems), Markus Neis, Sander Wiebing, Swachchhanda Shrawan Poudel (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Suspicious PowerShell In Registry Run Keys"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_set/registry_set_powershell_in_run_keys.yml
+    author: "frack113, Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Splunk
+    title: "Suspicious Scheduled Task from Public Directory"
+    url: https://github.com/splunk/security_content/blob/develop/detections/endpoint/suspicious_scheduled_task_from_public_directory.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Splunk
+    title: "WinEvent Scheduled Task Created Within Public Path"
+    url: https://github.com/splunk/security_content/blob/develop/detections/endpoint/winevent_scheduled_task_created_within_public_path.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Elastic
+    title: "Persistent Scripts in the Startup Directory"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/persistence_startup_folder_scripts.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: "Execution of Persistent Suspicious Program"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/persistence_runtime_run_key_startup_susp_procs.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: CISA
+    title: "#StopRansomware: Interlock"
+    url: https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-203a
+    relation: inspired
+  - name: The DFIR Report
+    title: "From a Single Click: How Lunar Spider Enabled a Near Two-Month Intrusion"
+    url: https://thedfirreport.com/2025/09/29/from-a-single-click-how-lunar-spider-enabled-a-near-two-month-intrusion/
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  sel_schtasks:
+    class_uid: 1007
+    activity_id: 1
+    process.name: schtasks.exe
+    process.cmd_line|contains: create
+  sel_cmd_folder:
+    process.cmd_line|contains: ['\AppData\', '\Users\Public\', '\ProgramData\', '\Windows\Temp\', '\Perflogs\',
+                                '%AppData%', '%LocalAppData%', '%Temp%', '%Tmp%', '%Public%', '%ProgramData%',
+                                '%ALLUSERSPROFILE%']
+  # '.js' only before a space or a quote: a bare '.js' is in '.json'.
+  sel_cmd_script:
+    process.cmd_line|contains: [powershell, pwsh, wscript, cscript, mshta, rundll32, regsvr32, cmd.exe, 'cmd /c',
+                                conhost, node.exe, python.exe, pythonw.exe, .ps1, .vbs, .vbe, .jse, '.js ', '.js"',
+                                .hta, .bat, .cmd, .wsf]
+  # Any program where no installer puts one, such as Lunar Spider's
+  # %ALLUSERSPROFILE%\USOShared\lsassa.exe.
+  sel_cmd_drop_folder:
+    process.cmd_line|contains: ['\Users\Public\', '\Windows\Temp\', '\Perflogs\', '%Public%', '%ALLUSERSPROFILE%',
+                                '%ProgramData%']
+  sel_task_defender:
+    raw.category: AdvancedHunting-DeviceEvents
+    api.operation: [ScheduledTaskCreated, ScheduledTaskUpdated]
+  # TaskContent is JSON text inside AdditionalFields, so its backslashes can
+  # stay doubled after the connector's one decode; these tokens hold either way.
+  sel_task_defender_folder:
+    raw.properties.AdditionalFields.TaskContent|contains: [AppData, ProgramData, Perflogs, 'Users\Public',
+                                                           'Users\\Public', 'Windows\Temp', 'Windows\\Temp',
+                                                           '%Public%', '%ALLUSERSPROFILE%']
+  sel_task_defender_script:
+    raw.properties.AdditionalFields.TaskContent|contains: [powershell, pwsh, wscript, cscript, mshta, rundll32,
+                                                           regsvr32, cmd.exe, conhost, node.exe, python.exe,
+                                                           pythonw.exe, .ps1, .vbs, .vbe, .jse, .hta, .bat, .wsf]
+  sel_task_falcon:
+    api.operation: ScheduledTaskRegistered
+  sel_task_falcon_folder:
+    - raw.TaskExecCommand|contains: ['\AppData\', '\Users\Public\', '\ProgramData\', '\Windows\Temp\', '\Perflogs\',
+                                     '%AppData%', '%LocalAppData%', '%Temp%', '%Tmp%', '%Public%', '%ProgramData%',
+                                     '%ALLUSERSPROFILE%']
+    - raw.TaskExecArguments|contains: ['\AppData\', '\Users\Public\', '\ProgramData\', '\Windows\Temp\',
+                                       '\Perflogs\', '%AppData%', '%LocalAppData%', '%Temp%', '%Tmp%', '%Public%',
+                                       '%ProgramData%', '%ALLUSERSPROFILE%']
+  sel_task_falcon_script:
+    - raw.TaskExecCommand|contains: [powershell, pwsh, wscript, cscript, mshta, rundll32, regsvr32, cmd.exe,
+                                     conhost, node.exe, python.exe, pythonw.exe, .ps1, .vbs, .vbe, .jse, .hta, .bat,
+                                     .cmd, .wsf]
+    - raw.TaskExecArguments|contains: [.ps1, .vbs, .vbe, .jse, '.js ', '.js"', .hta, .bat, .cmd, .wsf]
+    - raw.TaskExecArguments|endswith: .js
+  sel_run_defender:
+    raw.category: AdvancedHunting-DeviceRegistryEvents
+    api.operation: RegistryValueSet
+    raw.properties.RegistryKey|contains: '\CurrentVersion\Run'
+  sel_run_defender_folder:
+    raw.properties.RegistryValueData|contains: ['\AppData\', '\Users\Public\', '\ProgramData\', '\Windows\Temp\',
+                                                '\Perflogs\', '%AppData%', '%LocalAppData%', '%Temp%', '%Tmp%',
+                                                '%Public%', '%ProgramData%', '%ALLUSERSPROFILE%']
+  sel_run_defender_script:
+    raw.properties.RegistryValueData|contains: [powershell, pwsh, wscript, cscript, mshta, rundll32, regsvr32,
+                                                cmd.exe, 'cmd /c', conhost, node.exe, python.exe, pythonw.exe,
+                                                .ps1, .vbs, .vbe, .jse, '.js ', '.js"', .hta, .bat, .cmd, .wsf]
+  sel_run_falcon:
+    api.operation: AsepValueUpdate
+    raw.RegObjectName|contains: '\CurrentVersion\Run'
+  sel_run_falcon_folder:
+    raw.RegStringValue|contains: ['\AppData\', '\Users\Public\', '\ProgramData\', '\Windows\Temp\', '\Perflogs\',
+                                  '%AppData%', '%LocalAppData%', '%Temp%', '%Tmp%', '%Public%', '%ProgramData%',
+                                  '%ALLUSERSPROFILE%']
+  sel_run_falcon_script:
+    raw.RegStringValue|contains: [powershell, pwsh, wscript, cscript, mshta, rundll32, regsvr32, cmd.exe, 'cmd /c',
+                                  conhost, node.exe, python.exe, pythonw.exe, .ps1, .vbs, .vbe, .jse, '.js ', '.js"',
+                                  .hta, .bat, .cmd, .wsf]
+  # Windows Update and installers clean their Temp folder through RunOnce.
+  filter_cleanup:
+    - raw.properties.RegistryValueData|contains: [DelNodeRunDLL32, ' /c del ', ' /c rd ', ' /c rmdir ']
+    - raw.RegStringValue|contains: [DelNodeRunDLL32, ' /c del ', ' /c rd ', ' /c rmdir ']
+  sel_startup_file:
+    class_uid: 1001
+    activity_id: 1
+    file.path|contains: '\Start Menu\Programs\Startup\'
+    file.path|endswith: [.vbs, .vbe, .js, .jse, .bat, .cmd, .ps1, .hta, .wsf]
+  condition: (sel_schtasks and ((sel_cmd_folder and sel_cmd_script) or sel_cmd_drop_folder)) or (sel_task_defender and sel_task_defender_folder and sel_task_defender_script) or (sel_task_falcon and sel_task_falcon_folder and sel_task_falcon_script) or (((sel_run_defender and sel_run_defender_folder and sel_run_defender_script) or (sel_run_falcon and sel_run_falcon_folder and sel_run_falcon_script)) and not filter_cleanup) or sel_startup_file
+  timeframe: 1h
+# A registry row's resource is its key and a SentinelOne task row's is the
+# task, so the device id comes first.
+entity: [device.uid, resource.uid]
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line, process.parent_process.name,
+         raw.properties.RegistryKey, raw.properties.RegistryValueData, raw.RegObjectName,
+         raw.RegStringValue, raw.TaskName, raw.TaskExecCommand, raw.TaskExecArguments, file.path]

@@ -1,0 +1,68 @@
+[
+  {
+    "insertId": "kms-destroy",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "cloudkms_cryptokeyversion",
+      "labels": {
+        "project_id": "example-prod",
+        "location": "europe-west1",
+        "key_ring_id": "prod",
+        "crypto_key_id": "db"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudkms.googleapis.com",
+      "methodName": "DestroyCryptoKeyVersion",
+      "resourceName": "projects/example-prod/locations/europe-west1/keyRings/prod/cryptoKeys/db/cryptoKeyVersions/1",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/google.cloud.kms.v1.DestroyCryptoKeyVersionRequest",
+        "name": "projects/example-prod/locations/europe-west1/keyRings/prod/cryptoKeys/db/cryptoKeyVersions/1"
+      }
+    }
+  },
+  {
+    "insertId": "kms-disable",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "cloudkms_cryptokeyversion",
+      "labels": {
+        "project_id": "example-prod",
+        "location": "europe-west1",
+        "key_ring_id": "prod",
+        "crypto_key_id": "db"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudkms.googleapis.com",
+      "methodName": "UpdateCryptoKeyVersion",
+      "resourceName": "projects/example-prod/locations/europe-west1/keyRings/prod/cryptoKeys/db/cryptoKeyVersions/1",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/google.cloud.kms.v1.UpdateCryptoKeyVersionRequest",
+        "updateMask": "state",
+        "cryptoKeyVersion": {
+          "name": "projects/example-prod/locations/europe-west1/keyRings/prod/cryptoKeys/db/cryptoKeyVersions/1",
+          "state": "DISABLED"
+        }
+      }
+    }
+  }
+]

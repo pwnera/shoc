@@ -1,0 +1,54 @@
+id: gcp_gpu_instance_created
+title: GPU virtual machine requested by an identity that has not requested one before
+description: >
+  A VM with GPUs was requested, either with attached accelerators or as an
+  accelerator-optimised machine type (A2, A3, A4, G2, G4), which carries GPUs
+  without listing them. GPUs are what a miner on a stolen GCP credential
+  wants, and two or three of them never reach gcp_instance_creation_burst's
+  ten VMs. Refused requests count: running into the GPU quota is part of the
+  pattern. An identity that has requested a GPU in the last 30 days is quiet,
+  and VMs that GKE or an instance group start as Google's own agents are left
+  out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1496.001, T1578.002]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection:
+    api.operation|endswith: [compute.instances.insert, compute.instances.bulkInsert, compute.instanceTemplates.insert]
+  # insert, bulkInsert and a template put the machine in different places.
+  gpu:
+    - raw.protoPayload.request.guestAccelerators|exists: true
+    - raw.protoPayload.request.instanceProperties.guestAccelerators|exists: true
+    - raw.protoPayload.request.properties.guestAccelerators|exists: true
+    - raw.protoPayload.request.machineType|re: '(^|/)(a2|a3|a4|a4x|g2|g4)-'
+    - raw.protoPayload.request.instanceProperties.machineType|re: '(^|/)(a2|a3|a4|a4x|g2|g4)-'
+    - raw.protoPayload.request.properties.machineType|re: '(^|/)(a2|a3|a4|a4x|g2|g4)-'
+  filter_google_agent:
+    actor.user.name|endswith: [cloudservices.gserviceaccount.com, compute-system.iam.gserviceaccount.com, container-engine-robot.iam.gserviceaccount.com]
+  condition: selection and gpu and not filter_google_agent
+  timeframe: 1h
+baseline:
+  first_seen: [actor.user.name]
+  lookback: 30d
+  while_learning: fire
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, cloud.region, cloud.account.uid, raw.protoPayload.request.machineType, status]
+sources:
+  - name: Stratus Red Team
+    title: Create a GCE GPU Virtual Machine
+    url: https://github.com/DataDog/stratus-red-team/blob/main/docs/attack-techniques/GCP/gcp.impact.create-gpu-vm.md
+    license: Apache-2.0
+    relation: adapted
+  - name: Google
+    title: GPU machine types
+    url: https://cloud.google.com/compute/docs/gpus
+    relation: inspired
+  - name: Google Cloud
+    title: Cloud Threat Horizons Report H1 2026
+    url: https://cloud.google.com/security/report/resources/cloud-threat-horizons-report-h1-2026
+    relation: inspired

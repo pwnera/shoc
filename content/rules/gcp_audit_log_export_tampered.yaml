@@ -2,11 +2,13 @@ id: gcp_audit_log_export_tampered
 title: GCP log sink, log bucket or audit-log configuration changed
 description: >
   A log sink was deleted or edited, a log bucket deleted, an exclusion added or
-  changed, or a Data Access audit log switched off. shoc reads GCP through a
-  sink, so each of these can make it blind without any other sign.
+  changed, a Data Access audit log switched off, or a principal exempted from
+  audit logging, so that its own calls stop being recorded while everything
+  else looks normal. shoc reads GCP through a sink, so each of these can make
+  it blind without any other sign.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-02
+modified: 2026-10-09
 severity: high
 confidence: 0.6
 attack: [T1562.008]
@@ -25,12 +27,19 @@ detection:
   selection_audit_config:
     api.operation|endswith: SetIamPolicy
     status: Success
-    raw.protoPayload.serviceData.policyDelta.auditConfigDeltas|contains: REMOVE
+    # REMOVE turns a log type off; an exemptedMember exempts a principal.
+    raw.protoPayload.serviceData.policyDelta.auditConfigDeltas|contains: [REMOVE, exemptedMember]
   condition: selection_*
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, src_endpoint.ip, resource.uid, api.operation]
 sources:
+  - name: Chronicle
+    title: GCP Exempt Principals From Audit Log
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/gcp/gcp_exempt_principals_from_audit_log.yaral
+    author: Google Cloud Security
+    license: Apache-2.0
+    relation: adapted
   - name: Elastic
     title: GCP Logging Sink Deletion
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/defense_evasion_gcp_logging_sink_deletion

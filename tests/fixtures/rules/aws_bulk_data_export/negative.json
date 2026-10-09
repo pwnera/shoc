@@ -79,5 +79,55 @@
       "userName": "deploy-ci",
       "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
     }
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "iam-user",
+    "eventName": "CreateUser",
+    "eventSource": "iam.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "userName": "reporting"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "datasync-describe",
+    "eventName": "DescribeTask",
+    "eventSource": "datasync.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "taskArn": "arn:aws:datasync:eu-west-1:123456789012:task/task-0a1b2c3d4e5f60718"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
   }
 ]

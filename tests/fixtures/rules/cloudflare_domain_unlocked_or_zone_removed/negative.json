@@ -1,0 +1,38 @@
+[
+  {
+    "id": "b1c2d3e4f5a64718293a4b5c6d7e9001",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Update registrar domain", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2401", "method": "PUT", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/registrar/domains/example.com", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "example.com", "product": "registrar", "request": {"auto_renew": false, "locked": true, "privacy": true}, "response": {}, "scope": "accounts", "type": "domains"},
+    "zone": {}
+  },
+  {
+    "id": "b1c2d3e4f5a64718293a4b5c6d7e9002",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Edit zone", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2402", "method": "PATCH", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "product": "zones", "request": {"paused": false}, "response": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "paused": false}, "scope": "zones", "type": "zones"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "b1c2d3e4f5a64718293a4b5c6d7e9003",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Delete DNS record", "result": "success", "type": "delete"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2403", "method": "DELETE", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records/372e67954025e0ba6aaa6d586b9e0d03", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "372e67954025e0ba6aaa6d586b9e0d03", "product": "dns_records", "request": {}, "response": {"id": "372e67954025e0ba6aaa6d586b9e0d03", "type": "A", "name": "old.example.com", "content": "192.0.2.10"}, "scope": "zones", "type": "dns_records"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "b1c2d3e4f5a64718293a4b5c6d7e9004",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Create zone hold", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2404", "method": "POST", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/hold", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "product": "zones", "request": {}, "response": {"hold": true}, "scope": "zones", "type": "hold"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  }
+]

@@ -1,11 +1,14 @@
 id: endpoint_local_admin_granted
-title: An account was added to a computer's local administrators
+title: An account was added to a computer's administrators or Remote Desktop users
 description: >
-  An account joined the Administrators group of a Windows machine or the admin
-  group of a Mac. It is the step after a foothold, the persistence of a
-  helpdesk-scam caller, and how an employee quietly makes themselves admin.
+  An account joined the Administrators or Remote Desktop Users group of a
+  Windows machine or the admin group of a Mac. It is the step after a foothold,
+  the persistence of a helpdesk-scam caller, and how an employee quietly makes
+  themselves admin; Remote Desktop Users lets an intruder come back over RDP
+  without being an admin.
 status: experimental
 date: 2026-10-02
+modified: 2026-10-09
 severity: medium
 confidence: 0.5
 attack: [T1098, T1078.003]
@@ -14,6 +17,12 @@ sources:
     title: "User Added to Local Administrators Group"
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_add_user_local_admin_group.yml
     author: "Florian Roth (Nextron Systems), Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "User Added to Remote Desktop Users Group"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_add_user_remote_desktop_group.yml
+    author: "Florian Roth (Nextron Systems)"
     license: DRL-1.1
     relation: adapted
   - name: Sigma
@@ -50,24 +59,27 @@ detection:
   sel_win_add:
     process.cmd_line|contains: [' /add', ' -Member ']
   sel_win_group:
-    process.cmd_line|contains: [administrators, administrateurs, administratoren]
+    process.cmd_line|contains: [administrators, administrateurs, administratoren, administradores,
+                                'Remote Desktop Users', 'Utilisateurs du Bureau à distance',
+                                'Usuarios de escritorio remoto', Remotedesktopbenutzer]
   sel_mac_cmd:
     class_uid: 1007
     process.name: [dseditgroup, dscl, sysadminctl]
     process.cmd_line|contains: ['-a ', '-append', '-addUser']
   sel_mac_group:
     process.cmd_line|contains: [' admin', /Groups/admin, '-admin']
-  # Falcon writes the group RID as eight hex digits: Administrators is 544.
+  # Falcon writes the group RID as eight hex digits: Administrators is 544,
+  # Remote Desktop Users 555.
   sel_falcon:
     api.operation: UserAccountAddedToGroup
-    raw.GroupRid: ['00000220', '220']
+    raw.GroupRid: ['00000220', '220', '0000022B', '22B']
   sel_s1:
     class_uid: 3006
     raw.winEventLog.data.event.system.eventID: '4732'
-    raw.winEventLog.data.event.eventData.targetSid: S-1-5-32-544
+    raw.winEventLog.data.event.eventData.targetSid: [S-1-5-32-544, S-1-5-32-555]
   sel_defender:
     api.operation: UserAccountAddedToLocalGroup
-    raw.properties.AdditionalFields|contains: S-1-5-32-544
+    raw.properties.AdditionalFields|contains: [S-1-5-32-544, S-1-5-32-555]
   condition: (sel_win_cmd and sel_win_add and sel_win_group) or (sel_mac_cmd and sel_mac_group) or sel_falcon or sel_s1 or sel_defender
   timeframe: 1h
 entity: resource.uid

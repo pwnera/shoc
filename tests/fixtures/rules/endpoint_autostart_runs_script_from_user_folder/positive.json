@@ -1,0 +1,100 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ScheduledTaskRegistered",
+    "aid": "0123456789abcdef0123456789abcd12",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "LAPTOP-12",
+    "UserName": "jdoe",
+    "TaskName": "\\ChromeUpdateTaskMachine",
+    "TaskExecCommand": "C:\\Windows\\System32\\wscript.exe",
+    "TaskExecArguments": "C:\\Users\\jdoe\\AppData\\Roaming\\ChromeUpd\\upd.js"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceRegistryEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "DeviceName": "laptop-13.example.com",
+      "ActionType": "RegistryValueSet",
+      "RegistryKey": "HKEY_CURRENT_USER\\S-1-5-21-1111111111-2222222222-3333333333-1104\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+      "RegistryValueName": "Chrome Updater",
+      "RegistryValueType": "String",
+      "RegistryValueData": "C:\\Users\\asmith\\AppData\\Roaming\\node-v22.12.0-win-x64\\node.exe C:\\Users\\asmith\\AppData\\Roaming\\node-v22.12.0-win-x64\\a1b2.log",
+      "InitiatingProcessFileName": "powershell.exe",
+      "InitiatingProcessAccountName": "asmith"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770012"
+    },
+    "endpoint": {
+      "name": "srv-app01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "schtasks.exe",
+        "cmdline": "schtasks /create /tn \"SchedulerLsass\" /tr \"%ALLUSERSPROFILE%\\USOShared\\lsassa.exe\" /sc onstart /ru system",
+        "image": {
+          "path": "C:\\Windows\\System32\\schtasks.exe"
+        },
+        "user": "NT AUTHORITY\\SYSTEM"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "lsassa.exe"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbe",
+      "DeviceName": "laptop-16.example.com",
+      "ActionType": "ScheduledTaskCreated",
+      "AdditionalFields": {
+        "TaskName": "\\OneDriveSync",
+        "TaskContent": "{\"Actions\":{\"Exec\":{\"Command\":\"powershell.exe\",\"Arguments\":\"-w hidden -ep bypass -f C:\\\\Users\\\\Public\\\\Documents\\\\sync.ps1\"}}}"
+      },
+      "InitiatingProcessFileName": "powershell.exe",
+      "InitiatingProcessAccountName": "bwhite"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "AsepValueUpdate",
+    "aid": "0123456789abcdef0123456789abcd14",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "LAPTOP-17",
+    "RegObjectName": "\\REGISTRY\\USER\\S-1-5-21-1111111111-2222222222-3333333333-1107\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+    "RegValueName": "Update",
+    "RegStringValue": "powershell.exe -w hidden -nop -f %AppData%\\Microsoft\\upd.ps1"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceFileEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbf",
+      "DeviceName": "laptop-18.example.com",
+      "ActionType": "FileCreated",
+      "FileName": "update.vbs",
+      "FolderPath": "C:\\Users\\cgreen\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\update.vbs",
+      "InitiatingProcessFileName": "wscript.exe",
+      "InitiatingProcessAccountName": "cgreen"
+    }
+  }
+]

@@ -1,0 +1,45 @@
+id: gitlab_runner_registered
+title: GitLab CI runner registered
+description: >
+  A CI runner was registered or created for the instance, a group or a
+  project. A runner receives every job routed to it, with the job's CI
+  variables and its job token. The Shai-Hulud worm registered its own runner
+  on GitHub to keep running code with its victims' secrets; on GitLab a
+  Maintainer token is enough to add one. A company this size adds a runner a
+  few times a year.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.55
+attack: [T1195.002, T1543]
+logsource:
+  product: gitlab
+  service: audit_events
+detection:
+  # Registered with a registration token (the legacy flow), or created with an
+  # authentication token (GitLab 16 and later).
+  selection:
+    api.operation: [ci_runner_registered, ci_runner_created]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, message, resource.uid, actor.invoked_by, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: New GitHub Self Hosted Action Runner
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/initial_access_github_register_self_hosted_runner
+    license: Elastic-2.0
+    relation: inspired
+  - name: Splunk
+    title: GitHub Enterprise Register Self Hosted Runner
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/github_enterprise_register_self_hosted_runner.yml
+    license: Apache-2.0
+    relation: inspired
+  - name: Wiz
+    title: Shai-Hulud 2.0 Supply Chain Attack
+    url: https://www.wiz.io/blog/shai-hulud-2-0-ongoing-supply-chain-attack
+    relation: inspired
+  - name: GitLab
+    title: Runner registration audit event, ee/app/services/ee/ci/runners/register_runner_service.rb
+    url: https://gitlab.com/gitlab-org/gitlab/-/blob/master/ee/app/services/ee/ci/runners/register_runner_service.rb
+    relation: inspired

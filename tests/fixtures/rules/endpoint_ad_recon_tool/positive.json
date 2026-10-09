@@ -1,0 +1,118 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "DeviceName": "laptop-31.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "adfind.exe",
+      "FolderPath": "C:\\ProgramData\\adfind.exe",
+      "ProcessCommandLine": "adfind.exe -f \"(objectcategory=person)\"",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "jdoe",
+      "ProcessVersionInfoOriginalFileName": "AdFind.exe"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd10",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "LAPTOP-31",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\nltest.exe",
+    "CommandLine": "nltest /domain_trusts /all_trusts",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "7712",
+    "UserName": "jdoe"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770010"
+    },
+    "endpoint": {
+      "name": "srv-app01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "svch.exe",
+        "cmdline": "svch.exe -c All -d example.local --zipfilename x.zip --CollectionMethods Session",
+        "image": {
+          "path": "C:\\Users\\Public\\svch.exe"
+        },
+        "user": "EXAMPLE\\svc-backup"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac",
+      "DeviceName": "laptop-32.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "find.exe",
+      "FolderPath": "C:\\Users\\Public\\find.exe",
+      "ProcessCommandLine": "find.exe -h dc01.example.local -b dc=example,dc=local -f objectcategory=computer",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "jdoe",
+      "ProcessVersionInfoOriginalFileName": "AdFind.exe"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd11",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "LAPTOP-33",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\ProgramData\\x.exe",
+    "CommandLine": "x.exe -sc trustdmp",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "7714",
+    "UserName": "jdoe"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770011"
+    },
+    "endpoint": {
+      "name": "srv-app03.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "ADExplorer64.exe",
+        "cmdline": "ADExplorer64.exe -snapshot \"\" C:\\Users\\Public\\ad.dat",
+        "image": {
+          "path": "C:\\Users\\Public\\ADExplorer64.exe"
+        },
+        "user": "EXAMPLE\\svc-backup"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  }
+]

@@ -35,7 +35,7 @@
     "resultReason": "User registered Authenticator App with Notification and Code",
     "initiatedBy": {
       "user": {
-        "userPrincipalName": "jane@example.com",
+        "userPrincipalName": "Jane@Example.com",
         "id": "u-jane",
         "ipAddress": "203.0.113.130"
       }

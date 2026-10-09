@@ -1,0 +1,115 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "vssadmin.exe",
+      "FolderPath": "C:\\Windows\\System32\\vssadmin.exe",
+      "ProcessCommandLine": "vssadmin.exe list shadows /for=C:",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "vssadmin.exe",
+      "FolderPath": "C:\\Windows\\System32\\vssadmin.exe",
+      "ProcessCommandLine": "vssadmin.exe delete shadows /for=D: /oldest /quiet",
+      "InitiatingProcessFileName": "svchost.exe",
+      "AccountName": "system"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778801"
+    },
+    "endpoint": {
+      "name": "srv-backup.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "wbadmin.exe",
+        "cmdline": "wbadmin delete systemstatebackup -keepVersions:3 -quiet",
+        "image": {
+          "path": "C:\\Windows\\System32\\wbadmin.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "taskeng.exe"
+      }
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\bcdedit.exe",
+    "CommandLine": "bcdedit /set {default} recoveryenabled Yes",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "4242",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "ReAgentc.exe",
+      "FolderPath": "C:\\Windows\\System32\\ReAgentc.exe",
+      "ProcessCommandLine": "reagentc.exe /info",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "vssadmin.exe",
+      "FolderPath": "C:\\Windows\\System32\\vssadmin.exe",
+      "ProcessCommandLine": "vssadmin resize shadowstorage /for=C: /on=C: /maxsize=20%",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\cipher.exe",
+    "CommandLine": "cipher.exe /e C:\\Users\\jdoe\\Documents\\Payroll",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "4242",
+    "UserName": "jdoe"
+  }
+]

@@ -1,0 +1,61 @@
+id: cloudflare_domain_unlocked_or_zone_removed
+title: Cloudflare Registrar lock removed, zone hold released, zone paused or deleted
+description: >
+  The company's domain carries its mail, its SSO and its website. Unlocking it
+  at Cloudflare Registrar is the step before transferring it away, and
+  releasing a zone hold lets the zone be added to another Cloudflare account.
+  Deleting the zone takes its DNS, WAF and Access off the domain at once, and
+  pausing it sends visitors straight to the origin. A registrar update that
+  keeps the lock on, such as an auto-renew toggle, is left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1584.001, T1485, T1562.007]
+logsource:
+  product: cloudflare
+  service: audit_log
+detection:
+  unlocked:
+    raw.raw.method: PUT
+    raw.raw.uri|contains: /registrar/domains/
+    raw.resource.request.locked: false
+  zone_deleted:
+    raw.raw.method: DELETE
+    raw.raw.uri|re: '/zones/[0-9a-f]{32}$'
+  zone_paused:
+    raw.raw.method: PATCH
+    raw.raw.uri|re: '/zones/[0-9a-f]{32}$'
+    raw.resource.request.paused: true
+  hold_released:
+    raw.raw.method: DELETE
+    raw.raw.uri|re: '/zones/[0-9a-f]{32}/hold$'
+  condition: unlocked or zone_deleted or zone_paused or hold_released
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, raw.raw.uri, resource.uid]
+sources:
+  - name: Sigma
+    title: AWS Route 53 Domain Transfer Lock Disabled
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_route_53_domain_transferred_lock_disabled.yml
+    author: Elastic, Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: inspired
+  - name: Sigma
+    title: AWS Route 53 Domain Transferred to Another Account
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_route_53_domain_transferred_to_another_account.yml
+    author: Elastic, Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: inspired
+  - name: Cloudflare
+    title: Update Domain (Registrar)
+    url: https://developers.cloudflare.com/api/resources/registrar/subresources/domains/methods/update/
+    relation: inspired
+  - name: Cloudflare
+    title: Remove Zone Hold
+    url: https://developers.cloudflare.com/api/resources/zones/subresources/holds/methods/delete/
+    relation: inspired
+  - name: CISA
+    title: "Emergency Directive 19-01: Mitigate DNS Infrastructure Tampering"
+    url: https://www.cisa.gov/news-events/directives/ed-19-01-mitigate-dns-infrastructure-tampering
+    relation: inspired

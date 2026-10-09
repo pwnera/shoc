@@ -1,0 +1,83 @@
+[
+  {
+    "eventDataId": "00000000-0000-0000-0000-0000000r003",
+    "correlationId": "00000000-0000-0000-0000-0000001r003",
+    "operationName": {
+      "value": "Microsoft.Automation/automationAccounts/runbooks/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "198.51.100.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "198.51.100.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Automation/automationAccounts/aa-ops/runbooks/AzureAutomationTutorialWithIdentity",
+    "properties": {
+      "eventCategory": "Administrative"
+    }
+  },
+  {
+    "eventDataId": "00000000-0000-0000-0000-0000000r004",
+    "correlationId": "00000000-0000-0000-0000-0000001r004",
+    "operationName": {
+      "value": "Microsoft.Automation/automationAccounts/runbooks/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Failed"
+    },
+    "level": "Error",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "198.51.100.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "198.51.100.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Automation/automationAccounts/aa-ops/runbooks/Update-Users",
+    "properties": {
+      "eventCategory": "Administrative"
+    }
+  },
+  {
+    "eventDataId": "00000000-0000-0000-0000-0000000r005",
+    "correlationId": "00000000-0000-0000-0000-0000001r005",
+    "operationName": {
+      "value": "Microsoft.Automation/automationAccounts/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "198.51.100.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "198.51.100.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Automation/automationAccounts/aa-ops",
+    "properties": {
+      "eventCategory": "Administrative"
+    }
+  }
+]

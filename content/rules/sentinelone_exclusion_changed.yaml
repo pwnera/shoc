@@ -1,13 +1,17 @@
 id: sentinelone_exclusion_changed
-title: A SentinelOne exclusion was added or changed
+title: A SentinelOne exclusion, blocklist entry or custom rule was weakened, or an agent passphrase was read
 description: >
   Someone in the SentinelOne console added or changed an exclusion, so the agent
-  no longer looks at a path, a file or a process. It is what an intruder with a
-  console account does before running their tools, and what an admin does to
-  quiet a noisy application.
+  no longer looks at a path, a file or a process; took a hash off the
+  blocklist; deleted a custom detection rule or switched one on or off; or
+  viewed an agent's passphrase, which is what disabling or removing the agent
+  on the machine itself takes. It is what an intruder with a console account
+  does before running their tools, and what an admin does to quiet a noisy
+  application. Uninstalling an agent is left out, since retiring a laptop does
+  that.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: medium
 confidence: 0.6
 attack: [T1562.001]
@@ -16,17 +20,40 @@ sources:
     title: "Microsoft Sentinel ASIM audit event parser for SentinelOne (activity types)"
     url: https://github.com/Azure/Azure-Sentinel/blob/master/Parsers/ASimAuditEvent/Parsers/ASimAuditEventSentinelOne.yaml
     relation: inspired
+  - name: Microsoft Sentinel
+    title: "Sentinel One - Blacklist hash deleted"
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/SentinelOne/Analytic%20Rules/SentinelOneBlacklistHashDeleted.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: "Sentinel One - Rule deleted"
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/SentinelOne/Analytic%20Rules/SentinelOneRuleDeleted.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: "Sentinel One - Rule disabled"
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/SentinelOne/Analytic%20Rules/SentinelOneRuleDisabled.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: "Sentinel One - User viewed agent's passphrase"
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/SentinelOne/Analytic%20Rules/SentinelOneViewAgentPassphrase.yaml
+    license: MIT
+    relation: adapted
 logsource:
   product: edr
   service: alerts
 detection:
   # Activity types: 3001 a hash exclusion added by a user; 3008 to 3011 a new
-  # path, signer, file type or browser exclusion; 3012 to 3015 one changed.
+  # path, signer, file type or browser exclusion; 3012 to 3015 one changed;
+  # 3020 a hash taken off the blocklist; 3602 a custom rule deleted; 3603 a
+  # custom rule's status changed; 64 an agent's passphrase viewed.
   selection:
     metadata.product.name: SentinelOne
-    raw.activityType: ['3001', '3008', '3009', '3010', '3011', '3012', '3013', '3014', '3015']
+    raw.activityType: ['3001', '3008', '3009', '3010', '3011', '3012', '3013', '3014', '3015', '3020',
+                       '3602', '3603', '64']
   condition: selection
   timeframe: 1h
 entity: actor.user.name
 fields: [actor.user.name, message, raw.data.exclusionType, raw.data.value, raw.data.osFamily,
-         raw.data.groupName]
+         raw.data.groupName, raw.data.ruleName, raw.data.computerName]

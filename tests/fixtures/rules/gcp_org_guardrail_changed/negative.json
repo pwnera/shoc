@@ -1,0 +1,54 @@
+[
+  {
+    "insertId": "orgpol-denied",
+    "logName": "organizations/123456789012/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "organization",
+      "labels": {
+        "organization_id": "123456789012"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "orgpolicy.googleapis.com",
+      "methodName": "google.cloud.orgpolicy.v2.OrgPolicy.UpdatePolicy",
+      "resourceName": "organizations/123456789012/policies/iam.allowedPolicyMemberDomains",
+      "authenticationInfo": {
+        "principalEmail": "dev@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    }
+  },
+  {
+    "insertId": "orgpol-create-constraint",
+    "logName": "organizations/123456789012/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "organization",
+      "labels": {
+        "organization_id": "123456789012"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "orgpolicy.googleapis.com",
+      "methodName": "google.cloud.orgpolicy.v2.OrgPolicy.CreateCustomConstraint",
+      "resourceName": "organizations/123456789012/customConstraints/custom.denyPublicIp",
+      "authenticationInfo": {
+        "principalEmail": "it-admin@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      }
+    }
+  }
+]

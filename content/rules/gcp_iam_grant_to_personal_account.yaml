@@ -1,0 +1,60 @@
+id: gcp_iam_grant_to_personal_account
+title: GCP role granted to a personal Google account
+description: >
+  A role on a project, folder, organisation, bucket or service account was
+  given to a gmail.com, googlemail.com or googlegroups.com member, or a
+  project ownership invite was sent to a Gmail address. Company identities
+  live on the company's domain. A consumer account in the IAM policy is a
+  founder's old login or an attacker's way back in that survives every
+  password reset and key rotation. Any role counts, Viewer included.
+  Removing such a member does not fire.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.7
+attack: [T1098.003, T1136.003]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection:
+    api.operation|endswith: [SetIamPolicy, setIamPermissions]
+    status: Success
+  # The members the change added, keyed by member with `:`, `.` and `@`
+  # written as `_` (user:x@gmail.com is user_x_gmail_com).
+  personal:
+    unmapped.members.ADD|re: '_(gmail|googlemail|googlegroups)_com"'
+  selection_invite:
+    api.operation|endswith: InsertProjectOwnershipInvite
+    raw.protoPayload.request.member|endswith: ["@gmail.com", "@googlemail.com"]
+    status: Success
+  condition: (selection and personal) or selection_invite
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, resource.uid, cloud.account.uid, raw.protoPayload.serviceData.policyDelta.bindingDeltas, raw.protoPayload.request.member]
+sources:
+  - name: Chronicle
+    title: GCP Free Gmail Domains Added To IAM Policy
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/gcp/gcp_free_gmail_domains_added_to_iam_policy.yaral
+    author: Google Cloud Security
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: GCP External User Ownership Invite
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/gcp_audit_rules/gcp_invite_external_user_as_owner.py
+    license: Apache-2.0
+    relation: adapted
+  - name: Stratus Red Team
+    title: Invite an External User to a GCP Project
+    url: https://github.com/DataDog/stratus-red-team/blob/main/docs/attack-techniques/GCP/gcp.persistence.invite-external-user.md
+    license: Apache-2.0
+    relation: adapted
+  - name: Stratus Red Team
+    title: Backdoor a GCP Service Account through its IAM Policy
+    url: https://github.com/DataDog/stratus-red-team/blob/main/docs/attack-techniques/GCP/gcp.persistence.backdoor-service-account-policy.md
+    license: Apache-2.0
+    relation: adapted
+  - name: Google
+    title: Restrict identities with domain-restricted sharing
+    url: https://cloud.google.com/resource-manager/docs/organization-policy/restricting-domains
+    relation: inspired

@@ -85,5 +85,76 @@
       "InitiatingProcessFileName": "explorer.exe",
       "AccountName": "jdoe"
     }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "cmd.exe",
+      "FolderPath": "C:\\Windows\\System32\\cmd.exe",
+      "ProcessCommandLine": "C:\\WINDOWS\\system32\\cmd.exe /d /c \"C:\\Program Files\\Example\\nmhost.exe\" chrome-extension://abcdefghijklmnopabcdefghijklmnop/ --parent-window=0",
+      "InitiatingProcessFileName": "chrome.exe",
+      "AccountName": "jdoe"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "CommandLine": "powershell.exe -File C:\\Scripts\\backup.ps1 # nightly",
+    "ParentBaseFileName": "explorer.exe",
+    "RawProcessId": "4251",
+    "UserName": "jdoe"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "host08.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "reg.exe",
+        "cmdline": "reg.exe query HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU",
+        "image": {
+          "path": "C:\\Windows\\System32\\reg.exe"
+        },
+        "user": "EXAMPLE\\jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceRegistryEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "RegistryValueSet",
+      "RegistryKey": "HKEY_CURRENT_USER\\S-1-5-21-1111111111-2222222222-3333333333-1104\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU",
+      "RegistryValueName": "b",
+      "RegistryValueData": "cmd\\1",
+      "InitiatingProcessFileName": "explorer.exe",
+      "InitiatingProcessAccountName": "jdoe"
+    }
   }
 ]

@@ -1,0 +1,59 @@
+id: entra_first_party_client_oauth_phishing
+title: First sign-in through the Azure CLI or VS Code client to the directory
+description: >
+  A user signed in to Microsoft Graph or Azure AD Graph through the Azure CLI,
+  Azure PowerShell or Visual Studio Code client, for the first time in 30 days.
+  OAuth code phishing skips the password prompt: the victim signs in on
+  Microsoft's real page for a client the attacker picked, then pastes the
+  address or code the sign-in ends with into the phishing page, and the
+  attacker redeems it for a refresh token. Push Security's ConsentFix used the
+  Azure CLI client against Azure AD Graph; Volexity's Russian actors used the
+  VS Code client against Graph. In a small company only IT and developers use
+  these clients, and they settle into the 30-day history. A plain az login,
+  which asks for Azure Resource Manager, is left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.55
+attack: [T1528, T1566.002]
+logsource:
+  product: entra
+  service: sign_ins
+detection:
+  # Azure CLI, Visual Studio Code, Azure PowerShell.
+  selection_app:
+    - raw.appId: [04b07795-8ddb-461a-bbee-02f9e1bf7b46, aebc6443-996d-45c2-90f0-388ff96faa56,
+                  1950a258-227b-4e31-a9cf-717495945fc2]
+    - raw.properties.appId: [04b07795-8ddb-461a-bbee-02f9e1bf7b46, aebc6443-996d-45c2-90f0-388ff96faa56,
+                             1950a258-227b-4e31-a9cf-717495945fc2]
+  selection_resource:
+    resource.uid: [Microsoft Graph, Windows Azure Active Directory]
+  selection_ok:
+    status: Success
+  condition: selection_app and selection_resource and selection_ok
+  timeframe: 1h
+baseline:
+  # The app's display name, so the Graph and Event Hub shapes key the same way.
+  first_seen: [actor.user.name, api.operation]
+  lookback: 30d
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, src_endpoint.asn, http_request.user_agent]
+sources:
+  - name: Panther
+    title: Azure VS Code OAuth Phishing
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/azure_signin_rules/azure_vscode_oauth_phishing.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Elastic
+    title: Entra ID OAuth Phishing via First-Party Microsoft Application
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/azure/initial_access_entra_id_oauth_phishing_via_first_party_microsoft_application.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Push Security
+    title: ConsentFix
+    url: https://pushsecurity.com/blog/consentfix
+    relation: inspired
+  - name: Volexity
+    title: "Phishing for codes: Russian threat actors target Microsoft 365 OAuth workflows"
+    url: https://www.volexity.com/blog/2025/04/22/phishing-for-codes-russian-threat-actors-target-microsoft-365-oauth-workflows/
+    relation: inspired

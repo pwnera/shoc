@@ -30,5 +30,44 @@
     "repo": "acme/payments",
     "public_repo": false,
     "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-ip_allow_list.enable",
+    "action": "ip_allow_list.enable",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-ip_allow_list_entry.create",
+    "action": "ip_allow_list_entry.create",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "operation_type": "create"
+  },
+  {
+    "_document_id": "gh-auto_approve_personal_access_token_requests.disable",
+    "action": "auto_approve_personal_access_token_requests.disable",
+    "actor": "dana",
+    "actor_id": 7,
+    "actor_ip": "192.0.2.10",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "operation_type": "modify"
   }
 ]

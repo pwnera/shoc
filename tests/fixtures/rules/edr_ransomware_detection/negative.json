@@ -79,5 +79,23 @@
       "agentId": "1000000000000000001",
       "agentUuid": "11112222333344445555666677778888"
     }
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "ldt:5d40e8a1c7b6:9003",
+    "type": "ldt",
+    "product": "epp",
+    "severity": 70,
+    "tactic": "Impact",
+    "technique": "Service Stop",
+    "technique_id": "T1489",
+    "description": "A process stopped a security service.",
+    "device": {
+      "device_id": "5d40e8a1c7b8",
+      "hostname": "laptop-34"
+    },
+    "user_name": "jdoe",
+    "filename": "net.exe",
+    "cmdline": "net stop WinDefend"
   }
 ]

@@ -1,0 +1,76 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "iip-replace",
+    "eventName": "ReplaceIamInstanceProfileAssociation",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.77",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00003",
+      "arn": "arn:aws:iam::123456789012:user/build",
+      "accountId": "123456789012",
+      "userName": "build",
+      "accessKeyId": "AKIAEXAMPLEDEV00003"
+    },
+    "requestParameters": {
+      "ReplaceIamInstanceProfileAssociationRequest": {
+        "AssociationId": "iip-assoc-0a1b2c3d4e5f60718",
+        "IamInstanceProfile": {
+          "Name": "ops-admin-profile"
+        }
+      }
+    },
+    "responseElements": {
+      "ReplaceIamInstanceProfileAssociationResponse": {
+        "iamInstanceProfileAssociation": {
+          "instanceId": "i-0a1b2c3d4e5f60718",
+          "state": "associating"
+        }
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "iip-associate",
+    "eventName": "AssociateIamInstanceProfile",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.77",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00003",
+      "arn": "arn:aws:iam::123456789012:user/build",
+      "accountId": "123456789012",
+      "userName": "build",
+      "accessKeyId": "AKIAEXAMPLEDEV00003"
+    },
+    "requestParameters": {
+      "AssociateIamInstanceProfileRequest": {
+        "InstanceId": "i-0b1c2d3e4f5a60718",
+        "IamInstanceProfile": {
+          "Name": "ops-admin-profile"
+        }
+      }
+    },
+    "responseElements": {
+      "AssociateIamInstanceProfileResponse": {
+        "iamInstanceProfileAssociation": {
+          "instanceId": "i-0b1c2d3e4f5a60718",
+          "state": "associating"
+        }
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  }
+]

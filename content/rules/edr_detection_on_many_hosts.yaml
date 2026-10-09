@@ -1,0 +1,70 @@
+id: edr_detection_on_many_hosts
+title: The same endpoint detection fired on three or more machines within an hour
+description: >
+  The EDR raised the same detection, by title or threat name, on at least three
+  machines in one hour. One laptop with a detection is one bad click; the same
+  detection on a third of a 20-person fleet is something spreading, such as
+  ransomware pushed with PsExec, a GPO or the company's own RMM, a worm or a
+  poisoned update. Each machine's alert is already a finding, and a medium one
+  never reaches a playbook on its own. Wazuh's file integrity, SSH and scan
+  alerts are left out, since they fire on every exposed server at once.
+status: experimental
+date: 2026-10-09
+severity: critical
+confidence: 0.6
+attack: [T1570, T1072, T1484.001]
+sources:
+  - name: Microsoft Sentinel
+    title: "Sentinel One - Same custom rule triggered on different hosts"
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/SentinelOne/Analytic%20Rules/SentinelOneSameCustomRuleHitOnDiffHosts.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: "Cisco SE - Malware outbreak"
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Cisco%20Secure%20Endpoint/Analytic%20Rules/CiscoSEMalwareOutbreak.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft
+    title: "Beyond ransomware: Tracking Storm-2570's consistent tradecraft across deployments"
+    url: https://www.microsoft.com/en-us/security/blog/2026/09/24/beyond-ransomware-tracking-storm-2570-consistent-tradecraft-across-deployments/
+    author: "Microsoft Threat Intelligence"
+    relation: inspired
+  - name: Microsoft
+    title: "Microsoft Graph security enum values (serviceSource)"
+    url: https://learn.microsoft.com/en-us/graph/api/resources/enums-security?view=graph-rest-1.0
+    relation: inspired
+logsource:
+  product: edr
+  service: alerts
+detection:
+  # Medium and up: what the vendor rated informational or low, or an analyst
+  # already ruled benign, does not count.
+  selection:
+    class_uid: 2004
+    severity_id|gte: 3
+    message|exists: true
+  # Wazuh's levels 7 to 9 hold every file integrity change.
+  filter_wazuh_low:
+    metadata.product.name: Wazuh
+    severity_id|lt: 4
+  filter_wazuh_noise:
+    metadata.product.name: Wazuh
+    raw.rule.groups|contains: [authentication_failed, authentication_failures, vulnerability-detector,
+                               web_scan, recon, syscheck]
+  # Office 365, Identity, Cloud Apps, Entra ID Protection, App Governance and
+  # Purview alerts from Defender, and Falcon Identity Protection: about an
+  # account, not a host.
+  filter_not_endpoint:
+    - api.service.name: [microsoftDefenderForOffice365, microsoftDefenderForIdentity,
+                         microsoftDefenderForCloudApps, azureAdIdentityProtection,
+                         microsoftAppGovernance, dataLossPrevention, microsoftDefenderForCloud,
+                         unknownFutureValue]
+    - api.service.name|startswith: idp
+  condition: selection and not filter_wazuh_low and not filter_wazuh_noise and not filter_not_endpoint
+  timeframe: 1h
+  group_by: [message]
+  count_distinct: resource.uid
+  count: ">= 3"
+entity: message
+fields: [message, resource.uid, device.hostname, actor.user.name, process.name, process.cmd_line,
+         file.path, file.hashes.sha256]

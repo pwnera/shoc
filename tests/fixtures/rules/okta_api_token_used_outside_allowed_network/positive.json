@@ -1,0 +1,44 @@
+[
+  {
+    "uuid": "okta-token-outside-zone",
+    "eventType": "system.api_token.request_outside_allowed_range",
+    "displayMessage": "Request with API tokens made from outside the allowed network zone",
+    "actor": {
+      "id": "00u1svc0001",
+      "type": "User",
+      "alternateId": "svc-hr-sync@example.com",
+      "displayName": "HR Sync"
+    },
+    "client": {
+      "ipAddress": "192.0.2.201",
+      "userAgent": {
+        "rawUserAgent": "curl/8.5.0",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Romania"
+      }
+    },
+    "outcome": {
+      "result": "DENY",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64520,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00T1token0002",
+        "type": "Token",
+        "alternateId": "unknown",
+        "displayName": "hr-sync"
+      }
+    ],
+    "severity": "WARN"
+  }
+]

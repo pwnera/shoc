@@ -38,5 +38,44 @@
     "repo": "acme/payments",
     "public_repo": false,
     "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-ip_allow_list.disable",
+    "action": "ip_allow_list.disable",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "203.0.113.90",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-org.disable_source_ip_disclosure",
+    "action": "org.disable_source_ip_disclosure",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "203.0.113.90",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-auto_approve_personal_access_token_requests.enable",
+    "action": "auto_approve_personal_access_token_requests.enable",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "203.0.113.90",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "operation_type": "modify"
   }
 ]

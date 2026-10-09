@@ -1,13 +1,15 @@
 id: gke_cluster_admin_bound
-title: cluster-admin bound to someone in a GKE cluster
+title: cluster-admin bound, or a ClusterRole allowed everything, in a GKE cluster
 description: >
-  A ClusterRoleBinding to cluster-admin was created or changed by a person, a
-  service account, a workload or an anonymous caller. cluster-admin reads every
-  secret in the cluster and runs anything on any node; Kubernetes' own
-  components are left out.
+  A ClusterRoleBinding to cluster-admin was created or changed, or a
+  ClusterRole was created or changed to allow every verb on every resource,
+  by a person, a service account, a workload or an anonymous caller.
+  cluster-admin reads every secret in the cluster and runs anything on any
+  node, and a role of one's own that allows everything is the same thing
+  under another name. Kubernetes' own components are left out.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.6
 attack: [T1098.003]
@@ -21,13 +23,20 @@ detection:
   cluster_admin:
     - raw.protoPayload.request.roleRef.name: cluster-admin
     - raw.protoPayload.response.roleRef.name: cluster-admin
+  selection_role:
+    api.operation|endswith: [clusterroles.create, clusterroles.patch, clusterroles.update]
+  # One rule of the role with verbs ["*"] and resources ["*"], in either key
+  # order; a rule holds no nested object, so [^{}]* stays inside it.
+  wildcard:
+    - raw.protoPayload.request.rules|re: '"verbs":\s*\[\s*"\*"\s*\][^{}]*"resources":\s*\[\s*"\*"\s*\]|"resources":\s*\[\s*"\*"\s*\][^{}]*"verbs":\s*\[\s*"\*"\s*\]'
+    - raw.protoPayload.response.rules|re: '"verbs":\s*\[\s*"\*"\s*\][^{}]*"resources":\s*\[\s*"\*"\s*\]|"resources":\s*\[\s*"\*"\s*\][^{}]*"verbs":\s*\[\s*"\*"\s*\]'
   filter_system:
     actor.user.name|startswith: "system:"
   # A pod's service account token or an unauthenticated request is how a
   # cluster is usually taken over; these stay in.
   workload:
     actor.user.name|startswith: ["system:serviceaccount:", "system:anonymous"]
-  condition: selection and cluster_admin and (workload or not filter_system)
+  condition: ((selection and cluster_admin) or (selection_role and wildcard)) and (workload or not filter_system)
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, src_endpoint.ip, resource.uid, cloud.account.uid]
@@ -40,6 +49,15 @@ sources:
   - name: Google
     title: GKE audit policy
     url: https://docs.cloud.google.com/kubernetes-engine/docs/concepts/audit-policy
+    relation: inspired
+  - name: Elastic
+    title: GKE RBAC Wildcard Elevation on Existing Role
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/gcp/privilege_escalation_gcp_gke_rbac_wildcard_elevation_on_existing_role.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Google
+    title: Event Threat Detection overview
+    url: https://cloud.google.com/security-command-center/docs/concepts-event-threat-detection-overview
     relation: inspired
   - name: Aqua Security
     title: First-ever attack leveraging Kubernetes RBAC to backdoor clusters

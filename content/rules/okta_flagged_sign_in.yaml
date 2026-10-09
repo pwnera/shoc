@@ -5,10 +5,12 @@ description: >
   or rated the risk high. A stolen password or a replayed session cookie looks
   normal in every other field; Okta's own score is the one signal that it is not.
   When no policy uses the score Okta logs it in a second field, so both fields
-  are read.
+  are read. Where the tenant has Identity Threat Protection, its own verdicts
+  on a user (high risk, a suspected session hijack, a hit on Okta's threat
+  intelligence) fire too.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.65
 attack: [T1078.004, T1539]
@@ -29,7 +31,14 @@ detection:
     raw.debugContext.debugData.logOnlySecurityData|contains:
       - '"Velocity":"POSITIVE"'
       - '"level":"HIGH"'
-  condition: selection_signin and (selection_threat or selection_velocity or selection_risk or selection_log_only)
+  # The leading space keeps "previousLevel=HIGH" out when the risk went down.
+  selection_itp:
+    api.operation: user.risk.detect
+    raw.debugContext.debugData.risk|contains:
+      - " level=HIGH"
+      - Associated sessionId is suspected to be hijacked
+      - detectionName=Okta Threat Intelligence
+  condition: (selection_signin and (selection_threat or selection_velocity or selection_risk or selection_log_only)) or selection_itp
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, src_endpoint.ip, src_endpoint.location.country, src_endpoint.asn, http_request.user_agent, actor.session.uid, raw.debugContext.debugData.behaviors, raw.debugContext.debugData.risk, raw.debugContext.debugData.logOnlySecurityData]
@@ -49,3 +58,18 @@ sources:
     title: Risk scoring
     url: https://help.okta.com/en-us/content/topics/security/security_risk_scoring.htm
     relation: inspired
+  - name: Okta
+    title: ITP User Risk Changed to High
+    url: https://github.com/okta/customer-detections/blob/master/detections/itp_user_risk_changed_to_high.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Okta
+    title: ITP Suspected Session Hijacking
+    url: https://github.com/okta/customer-detections/blob/master/detections/itp_suspected_session_hijacking.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Okta
+    title: ITP Okta Threat Intelligence Detection
+    url: https://github.com/okta/customer-detections/blob/master/detections/itp_okta_threat_intel_detection.yml
+    license: Apache-2.0
+    relation: adapted

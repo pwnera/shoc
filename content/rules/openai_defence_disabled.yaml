@@ -1,13 +1,15 @@
 id: openai_defence_disabled
-title: OpenAI IP allowlist or SCIM switched off
+title: OpenAI IP allowlist, SSO, SCIM or mutual TLS switched off
 description: >
   The organisation's IP allowlist was deleted, deactivated or opened to every
-  address, or SCIM provisioning was disabled. Without the allowlist a stolen
-  session works from anywhere; without SCIM a person removed from the IdP keeps
-  their account.
+  address, SCIM provisioning was disabled or its deletion requested, the SSO
+  connection or the session policy was deleted, or mutual TLS certificates
+  were deactivated. Without the allowlist or mutual TLS a stolen key or
+  session works from anywhere; without SSO a password login does; without SCIM
+  a person removed from the IdP keeps their account.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.6
 attack: [T1562.007, T1556]
@@ -16,7 +18,14 @@ logsource:
   service: audit_log
 detection:
   selection:
-    api.operation: [ip_allowlist.deleted, ip_allowlist.config.deactivated, scim.disabled]
+    api.operation:
+      - ip_allowlist.deleted
+      - ip_allowlist.config.deactivated
+      - scim.disabled
+      - tenant.scim.deletion.requested
+      - tenant.sso_connection.deleted
+      - tenant.session_policy.deleted
+      - certificates.deactivated
   selection_opened:
     api.operation: ip_allowlist.updated
     raw.details.allowed_ips|contains: ["0.0.0.0/0", "::/0"]
@@ -33,6 +42,11 @@ sources:
   - name: Monad
     title: Detection Engineering for OpenAI Enterprise Audit Logs
     url: https://www.monad.com/blog/openai-enterprise-audit-log-detections
+    relation: inspired
+  - name: Panther
+    title: OpenAI SCIM Configuration Change
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/openai_rules/openai_scim_configuration_change.yml
+    license: Apache-2.0
     relation: inspired
   - name: OpenAI
     title: OpenAI API OpenAPI specification (AuditLog)

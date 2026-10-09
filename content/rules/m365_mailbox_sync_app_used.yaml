@@ -1,0 +1,67 @@
+id: m365_mailbox_sync_app_used
+title: Mailbox opened with a tool BEC actors use to copy it (Microsoft 365 audit)
+description: >
+  An account signed in with, read mail through, or consented to PerfectData
+  Software, eM Client or rclone. After a takeover the attacker points one of
+  these ordinary desktop tools at the victim's mailbox or OneDrive; it copies
+  everything and keeps syncing after a password reset until its token is
+  revoked. Huntress, Darktrace, Datadog and Triskele Labs name them in business
+  email compromise cases, and none has a reason to appear in a small company.
+  This copy of the Entra rule covers tenants without Entra P1. A failed sign-in
+  counts too, since nobody tries these tools against an account by accident. A
+  person who really reads their mail in eM Client shows up on the first day and
+  is suppressed for that user once someone confirms it.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.65
+attack: [T1114.002, T1528]
+logsource:
+  product: m365
+  service: management
+detection:
+  # PerfectData Software, eM Client, rclone. ApplicationId is on sign-ins and
+  # on SharePoint and OneDrive file events alike.
+  selection_app:
+    actor.invoked_by: [ff8d92dc-3d82-41d6-bcbd-b9174d163620, e9a7fea1-1cc0-4cd9-a31b-9137ca5deedd,
+                       b15665d9-eda6-4092-8539-0eec376afd59]
+  selection_mail:
+    api.operation: MailItemsAccessed
+    raw.ClientAppId: [ff8d92dc-3d82-41d6-bcbd-b9174d163620, e9a7fea1-1cc0-4cd9-a31b-9137ca5deedd,
+                      b15665d9-eda6-4092-8539-0eec376afd59]
+  # A consent names the app by its id among the service principal's names.
+  selection_consent:
+    api.operation|contains: consent to application
+    unmapped.modified.TargetId_ServicePrincipalNames.NewValue|contains:
+      [ff8d92dc-3d82-41d6-bcbd-b9174d163620, e9a7fea1-1cc0-4cd9-a31b-9137ca5deedd,
+       b15665d9-eda6-4092-8539-0eec376afd59]
+  condition: selection_app or selection_mail or selection_consent
+  timeframe: 1h
+entity: actor.user.name
+fields: [actor.user.name, api.operation, actor.invoked_by, raw.ClientAppId, src_endpoint.ip, status]
+sources:
+  - name: Huntress
+    title: "Traitorware: how hackers abuse legitimate apps to hijack Microsoft 365"
+    url: https://www.huntress.com/resources/traitorware-how-hackers-abuse-legitimate-apps-to-hijack-microsoft-365
+    relation: inspired
+  - name: Huntress
+    title: Rogue Apps (eM Client and PerfectData Software app ids)
+    url: https://huntresslabs.github.io/rogueapps/
+    relation: inspired
+  - name: Darktrace
+    title: How abuse of PerfectData Software may create a perfect storm
+    url: https://www.darktrace.com/blog/how-abuse-of-perfectdata-software-may-create-a-perfect-storm-an-emerging-trend-in-account-takeovers
+    relation: inspired
+  - name: Datadog
+    title: Consent given to application associated with business email compromise attacks in Microsoft 365
+    url: https://docs.datadoghq.com/security/default_rules/microsoft-365-consent-to-known-bec-application
+    relation: inspired
+  - name: Triskele Labs
+    title: "Business email compromise: mailbox synchronisation via malicious OAuth applications"
+    url: https://www.triskelelabs.com/business-email-compromise-mailbox-synchronisation-malicious-oauth-applications
+    relation: inspired
+  - name: rclone
+    title: OneDrive backend (rcloneClientID)
+    url: https://github.com/rclone/rclone/blob/master/backend/onedrive/onedrive.go
+    license: MIT
+    relation: inspired

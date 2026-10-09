@@ -1,0 +1,107 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "r53-mx",
+    "eventName": "ChangeResourceRecordSets",
+    "eventSource": "route53.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "changeBatch": {
+        "changes": [
+          {
+            "action": "UPSERT",
+            "resourceRecordSet": {
+              "name": "example.com.",
+              "resourceRecords": [
+                {
+                  "value": "10 mx.example.net."
+                }
+              ],
+              "tTL": 300,
+              "type": "MX"
+            }
+          }
+        ]
+      },
+      "hostedZoneId": "Z1PA6795UKMFR9"
+    },
+    "responseElements": {
+      "changeInfo": {
+        "id": "/change/C156SRE0X2ZB10",
+        "status": "PENDING",
+        "submittedAt": "Oct 1, 2026, 12:41:43 AM"
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "additionalEventData": {
+      "Note": "Do not use to reconstruct hosted zone"
+    }
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "r53-ns",
+    "eventName": "ChangeResourceRecordSets",
+    "eventSource": "route53.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "changeBatch": {
+        "changes": [
+          {
+            "action": "CREATE",
+            "resourceRecordSet": {
+              "name": "mail.example.com.",
+              "resourceRecords": [
+                {
+                  "value": "ns1.example.net."
+                },
+                {
+                  "value": "ns2.example.net."
+                }
+              ],
+              "tTL": 300,
+              "type": "NS"
+            }
+          }
+        ]
+      },
+      "hostedZoneId": "Z1PA6795UKMFR9"
+    },
+    "responseElements": {
+      "changeInfo": {
+        "id": "/change/C156SRE0X2ZB10",
+        "status": "PENDING",
+        "submittedAt": "Oct 1, 2026, 12:41:43 AM"
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "additionalEventData": {
+      "Note": "Do not use to reconstruct hosted zone"
+    }
+  }
+]

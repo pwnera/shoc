@@ -78,6 +78,18 @@ ACTIVITIES: dict[int, dict[int, str]] = {
     1005: {1: "Load", 2: "Unload"},
     1006: {1: "Create", 2: "Update", 3: "Delete", 4: "Enable", 5: "Disable", 6: "Start", 7: "End"},
     1007: {1: "Launch", 2: "Terminate", 3: "Open", 4: "Inject", 5: "Set User ID"},
+    1008: {
+        1: "Clear",
+        2: "Delete",
+        3: "Export",
+        4: "Archive",
+        5: "Rotate",
+        6: "Start",
+        7: "Stop",
+        8: "Restart",
+        9: "Enable",
+        10: "Disable",
+    },
     2002: {1: "Create", 2: "Update", 3: "Close"},
     2004: {1: "Create", 2: "Update", 3: "Close"},
     201001: {

@@ -125,6 +125,26 @@ def test_only_a_dns_query_fills_the_query_name():
     assert (ldap["class_uid"], ldap["dns_query_hostname"]) == (6003, None)
 
 
+def test_an_inspected_dns_row_names_the_query_and_the_client_that_asked():
+    asked = row(
+        "DeviceNetworkEvents",
+        ActionType="DnsConnectionInspected",
+        LocalIP="192.0.2.15",
+        RemoteIP="192.0.2.1",
+        AdditionalFields={"direction": "Out", "query": "k3j4h5.oast.fun", "qtype_name": "A"},
+    )
+    assert (asked["class_uid"], asked["dns_query_hostname"]) == (4003, "k3j4h5.oast.fun")
+    assert (asked["src_endpoint_ip"], asked["dst_endpoint_ip"]) == ("192.0.2.15", "192.0.2.1")
+    served = row(
+        "DeviceNetworkEvents",
+        ActionType="DnsConnectionInspected",
+        LocalIP="192.0.2.53",
+        RemoteIP="192.0.2.15",
+        AdditionalFields={"direction": "In", "query": "k3j4h5.oast.fun", "qtype_name": "A"},
+    )
+    assert (served["src_endpoint_ip"], served["dst_endpoint_ip"]) == ("192.0.2.15", "192.0.2.53")
+
+
 def test_email_tables_use_the_ocsf_1_3_classes():
     assert row("EmailEvents", EmailDirection="Inbound")["type_uid"] == 400902
     assert row("EmailAttachmentInfo")["class_uid"] == 4011

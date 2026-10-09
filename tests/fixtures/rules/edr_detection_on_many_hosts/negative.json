@@ -1,0 +1,314 @@
+[
+  {
+    "_source": "crowdstrike",
+    "composite_id": "fedcba9876543210fedcba9876543210:ind:aaaa0000111122223333444455550001:4400771-10302-4",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "agent_id": "aaaa0000111122223333444455550001",
+    "device": {
+      "device_id": "aaaa0000111122223333444455550001",
+      "hostname": "LAPTOP-11"
+    },
+    "product": "epp",
+    "type": "ldt",
+    "severity": 70,
+    "severity_name": "High",
+    "tactic": "Machine Learning",
+    "technique": "Sensor-based ML",
+    "display_name": "MLSensorHigh",
+    "description": "This file meets the on-sensor machine learning high confidence threshold for malicious files.",
+    "filename": "svc_update.exe",
+    "sha256": "1f3a5c7e9b0d2f4a6c8e0b1d3f5a7c9e1b3d5f7a9c0e2b4d6f8a0c2e4b6d8f0a",
+    "user_name": "jdoe"
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "fedcba9876543210fedcba9876543210:ind:aaaa0000111122223333444455550001:4400771-10302-5",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "agent_id": "aaaa0000111122223333444455550001",
+    "device": {
+      "device_id": "aaaa0000111122223333444455550001",
+      "hostname": "LAPTOP-11"
+    },
+    "product": "epp",
+    "type": "ldt",
+    "severity": 70,
+    "severity_name": "High",
+    "tactic": "Machine Learning",
+    "technique": "Sensor-based ML",
+    "display_name": "MLSensorHigh",
+    "description": "This file meets the on-sensor machine learning high confidence threshold for malicious files.",
+    "filename": "svc_update.exe",
+    "sha256": "1f3a5c7e9b0d2f4a6c8e0b1d3f5a7c9e1b3d5f7a9c0e2b4d6f8a0c2e4b6d8f0a",
+    "user_name": "jdoe"
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "fedcba9876543210fedcba9876543210:ind:aaaa0000111122223333444455550001:4400771-10302-6",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "agent_id": "aaaa0000111122223333444455550001",
+    "device": {
+      "device_id": "aaaa0000111122223333444455550001",
+      "hostname": "LAPTOP-11"
+    },
+    "product": "epp",
+    "type": "ldt",
+    "severity": 70,
+    "severity_name": "High",
+    "tactic": "Machine Learning",
+    "technique": "Sensor-based ML",
+    "display_name": "MLSensorHigh",
+    "description": "This file meets the on-sensor machine learning high confidence threshold for malicious files.",
+    "filename": "svc_update.exe",
+    "sha256": "1f3a5c7e9b0d2f4a6c8e0b1d3f5a7c9e1b3d5f7a9c0e2b4d6f8a0c2e4b6d8f0a",
+    "user_name": "jdoe"
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "fedcba9876543210fedcba9876543210:ind:aaaa0000111122223333444455550002:4400771-10302-7",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "agent_id": "aaaa0000111122223333444455550002",
+    "device": {
+      "device_id": "aaaa0000111122223333444455550002",
+      "hostname": "LAPTOP-14"
+    },
+    "product": "epp",
+    "type": "ldt",
+    "severity": 50,
+    "severity_name": "Medium",
+    "tactic": "Machine Learning",
+    "technique": "Sensor-based ML",
+    "display_name": "MLSensorHigh",
+    "description": "A process launched with a suspicious command line.",
+    "filename": "powershell.exe",
+    "sha256": "1f3a5c7e9b0d2f4a6c8e0b1d3f5a7c9e1b3d5f7a9c0e2b4d6f8a0c2e4b6d8f0a",
+    "user_name": "asmith"
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "fedcba9876543210fedcba9876543210:ind:aaaa0000111122223333444455550004:4400771-10302-8",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "agent_id": "aaaa0000111122223333444455550004",
+    "device": {
+      "device_id": "aaaa0000111122223333444455550004",
+      "hostname": "LAPTOP-31"
+    },
+    "product": "idp",
+    "type": "ldt",
+    "severity": 70,
+    "severity_name": "High",
+    "tactic": "Machine Learning",
+    "technique": "Sensor-based ML",
+    "display_name": "MLSensorHigh",
+    "description": "Unusual login to an endpoint",
+    "filename": "svc_update.exe",
+    "sha256": "1f3a5c7e9b0d2f4a6c8e0b1d3f5a7c9e1b3d5f7a9c0e2b4d6f8a0c2e4b6d8f0a",
+    "user_name": "jdoe"
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "fedcba9876543210fedcba9876543210:ind:aaaa0000111122223333444455550005:4400771-10302-9",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "agent_id": "aaaa0000111122223333444455550005",
+    "device": {
+      "device_id": "aaaa0000111122223333444455550005",
+      "hostname": "LAPTOP-32"
+    },
+    "product": "idp",
+    "type": "ldt",
+    "severity": 70,
+    "severity_name": "High",
+    "tactic": "Machine Learning",
+    "technique": "Sensor-based ML",
+    "display_name": "MLSensorHigh",
+    "description": "Unusual login to an endpoint",
+    "filename": "svc_update.exe",
+    "sha256": "1f3a5c7e9b0d2f4a6c8e0b1d3f5a7c9e1b3d5f7a9c0e2b4d6f8a0c2e4b6d8f0a",
+    "user_name": "jdoe"
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "fedcba9876543210fedcba9876543210:ind:aaaa0000111122223333444455550006:4400771-10302-10",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "agent_id": "aaaa0000111122223333444455550006",
+    "device": {
+      "device_id": "aaaa0000111122223333444455550006",
+      "hostname": "LAPTOP-33"
+    },
+    "product": "idp",
+    "type": "ldt",
+    "severity": 70,
+    "severity_name": "High",
+    "tactic": "Machine Learning",
+    "technique": "Sensor-based ML",
+    "display_name": "MLSensorHigh",
+    "description": "Unusual login to an endpoint",
+    "filename": "svc_update.exe",
+    "sha256": "1f3a5c7e9b0d2f4a6c8e0b1d3f5a7c9e1b3d5f7a9c0e2b4d6f8a0c2e4b6d8f0a",
+    "user_name": "jdoe"
+  },
+  {
+    "_source": "defender",
+    "id": "da638104",
+    "severity": "low",
+    "title": "'Wacatac' unwanted software was detected",
+    "category": "Execution",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-24.example.org",
+        "mdeDeviceId": "2222222222222222222222222222222222222204"
+      }
+    ]
+  },
+  {
+    "_source": "defender",
+    "id": "da638105",
+    "severity": "low",
+    "title": "'Wacatac' unwanted software was detected",
+    "category": "Execution",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-25.example.org",
+        "mdeDeviceId": "2222222222222222222222222222222222222205"
+      }
+    ]
+  },
+  {
+    "_source": "defender",
+    "id": "da638106",
+    "severity": "low",
+    "title": "'Wacatac' unwanted software was detected",
+    "category": "Execution",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-26.example.org",
+        "mdeDeviceId": "2222222222222222222222222222222222222206"
+      }
+    ]
+  },
+  {
+    "_source": "wazuh",
+    "id": "wz-4",
+    "rule": {
+      "id": "510",
+      "level": 7,
+      "description": "Integrity checksum changed.",
+      "groups": [
+        "ossec",
+        "syscheck",
+        "syscheck_entry_modified",
+        "syscheck_file"
+      ]
+    },
+    "agent": {
+      "id": "001",
+      "name": "web-01",
+      "ip": "192.0.2.11"
+    }
+  },
+  {
+    "_source": "wazuh",
+    "id": "wz-5",
+    "rule": {
+      "id": "510",
+      "level": 7,
+      "description": "Integrity checksum changed.",
+      "groups": [
+        "ossec",
+        "syscheck",
+        "syscheck_entry_modified",
+        "syscheck_file"
+      ]
+    },
+    "agent": {
+      "id": "002",
+      "name": "web-02",
+      "ip": "192.0.2.12"
+    }
+  },
+  {
+    "_source": "wazuh",
+    "id": "wz-6",
+    "rule": {
+      "id": "510",
+      "level": 7,
+      "description": "Integrity checksum changed.",
+      "groups": [
+        "ossec",
+        "syscheck",
+        "syscheck_entry_modified",
+        "syscheck_file"
+      ]
+    },
+    "agent": {
+      "id": "003",
+      "name": "web-03",
+      "ip": "192.0.2.13"
+    }
+  },
+  {
+    "_source": "wazuh",
+    "id": "wz-7",
+    "rule": {
+      "id": "510",
+      "level": 10,
+      "description": "sshd: brute force trying to get access to the system.",
+      "groups": [
+        "syslog",
+        "sshd",
+        "authentication_failures"
+      ]
+    },
+    "agent": {
+      "id": "001",
+      "name": "web-01",
+      "ip": "192.0.2.11"
+    }
+  },
+  {
+    "_source": "wazuh",
+    "id": "wz-8",
+    "rule": {
+      "id": "510",
+      "level": 10,
+      "description": "sshd: brute force trying to get access to the system.",
+      "groups": [
+        "syslog",
+        "sshd",
+        "authentication_failures"
+      ]
+    },
+    "agent": {
+      "id": "002",
+      "name": "web-02",
+      "ip": "192.0.2.12"
+    }
+  },
+  {
+    "_source": "wazuh",
+    "id": "wz-9",
+    "rule": {
+      "id": "510",
+      "level": 10,
+      "description": "sshd: brute force trying to get access to the system.",
+      "groups": [
+        "syslog",
+        "sshd",
+        "authentication_failures"
+      ]
+    },
+    "agent": {
+      "id": "003",
+      "name": "web-03",
+      "ip": "192.0.2.13"
+    }
+  }
+]

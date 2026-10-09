@@ -1,0 +1,47 @@
+[
+  {
+    "_document_id": "gh-org.set_default_workflow_permissions-read",
+    "action": "org.set_default_workflow_permissions",
+    "actor": "it-admin",
+    "actor_id": 1001,
+    "actor_ip": "198.51.100.5",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "default_workflow_permissions_value": "read",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-repo.set_workflow_permission_can_approve_pr-false",
+    "action": "repo.set_workflow_permission_can_approve_pr",
+    "actor": "it-admin",
+    "actor_id": 1001,
+    "actor_ip": "198.51.100.5",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/payments",
+    "public_repo": false,
+    "workflow_permission_can_approve_pr_value": false,
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-environment.create_actions_secret",
+    "action": "environment.create_actions_secret",
+    "actor": "it-admin",
+    "actor_id": 1001,
+    "actor_ip": "198.51.100.5",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/payments",
+    "environment_name": "production",
+    "operation_type": "create"
+  }
+]

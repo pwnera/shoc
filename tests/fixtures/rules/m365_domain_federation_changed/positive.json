@@ -30,5 +30,40 @@
     "Parameters": [
       { "Name": "DomainName", "Value": "example.org" }
     ]
+  },
+  {
+    "Id": "m365-Update-user-sourceanchor",
+    "Operation": "Update user.",
+    "OrganizationId": "org-1",
+    "RecordType": 8,
+    "ResultStatus": "Success",
+    "UserKey": "u-2",
+    "UserType": 0,
+    "UserId": "admin@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "203.0.113.61",
+    "ObjectId": "ceo@example.com",
+    "ModifiedProperties": [
+      {
+        "Name": "SourceAnchor",
+        "NewValue": "[\r\n  \"ZXhhbXBsZS1iYWNrZG9vcg==\"\r\n]",
+        "OldValue": "[]"
+      },
+      {
+        "Name": "Included Updated Properties",
+        "NewValue": "SourceAnchor",
+        "OldValue": ""
+      }
+    ],
+    "Target": [
+      {
+        "ID": "User_00000000-0000-0000-0000-00000000a101",
+        "Type": 2
+      },
+      {
+        "ID": "ceo@example.com",
+        "Type": 5
+      }
+    ]
   }
 ]

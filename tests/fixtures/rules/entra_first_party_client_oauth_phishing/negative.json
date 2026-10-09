@@ -1,0 +1,84 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-00000000j000",
+    "userPrincipalName": "it-admin@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a300",
+    "appDisplayName": "Microsoft Azure CLI",
+    "appId": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+    "resourceDisplayName": "Microsoft Graph",
+    "resourceId": "00000003-0000-0000-c000-000000000000",
+    "authenticationProtocol": "none",
+    "ipAddress": "198.51.100.30",
+    "autonomousSystemNumber": 64503,
+    "userAgent": "python-requests/2.32.3",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns",
+    "createdDateTime": "2026-08-01T09:00:00Z"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000j002",
+    "userPrincipalName": "dan@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a302",
+    "appDisplayName": "Microsoft Azure CLI",
+    "appId": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+    "resourceDisplayName": "Windows Azure Service Management API",
+    "resourceId": "797f4846-ba00-4fd7-ba43-dac1f8f63013",
+    "authenticationProtocol": "none",
+    "ipAddress": "198.51.100.31",
+    "autonomousSystemNumber": 64503,
+    "userAgent": "python-requests/2.32.3",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000j003",
+    "userPrincipalName": "erin@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a303",
+    "appDisplayName": "Visual Studio Code",
+    "appId": "aebc6443-996d-45c2-90f0-388ff96faa56",
+    "resourceDisplayName": "Microsoft Graph",
+    "resourceId": "00000003-0000-0000-c000-000000000000",
+    "authenticationProtocol": "none",
+    "ipAddress": "203.0.113.151",
+    "autonomousSystemNumber": 64503,
+    "userAgent": "python-requests/2.32.3",
+    "status": {
+      "errorCode": 50126,
+      "failureReason": "Error validating credentials due to invalid username or password."
+    },
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000j004",
+    "userPrincipalName": "frank@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a304",
+    "appDisplayName": "Microsoft Office",
+    "appId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "resourceDisplayName": "Microsoft Graph",
+    "resourceId": "00000003-0000-0000-c000-000000000000",
+    "authenticationProtocol": "none",
+    "ipAddress": "198.51.100.32",
+    "autonomousSystemNumber": 64503,
+    "userAgent": "python-requests/2.32.3",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  }
+]

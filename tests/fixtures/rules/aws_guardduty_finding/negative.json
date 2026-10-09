@@ -41,43 +41,6 @@
     "accountId": "123456789012",
     "region": "eu-west-1",
     "partition": "aws",
-    "id": "gd-portscan",
-    "type": "Recon:EC2/Portscan",
-    "severity": 5,
-    "title": "Recon:EC2/Portscan",
-    "description": "GuardDuty finding Recon:EC2/Portscan.",
-    "resource": {
-      "resourceType": "Instance",
-      "instanceDetails": {
-        "instanceId": "i-0abc123def4567890",
-        "instanceType": "t3.large"
-      }
-    },
-    "service": {
-      "serviceName": "guardduty",
-      "detectorId": "12abc34d567e8fa901bc2d34e56789f0",
-      "archived": false,
-      "count": 3,
-      "action": {
-        "actionType": "AWS_API_CALL",
-        "awsApiCallAction": {
-          "api": "ListBuckets",
-          "serviceName": "s3.amazonaws.com",
-          "remoteIpDetails": {
-            "ipAddressV4": "203.0.113.55",
-            "country": {
-              "countryName": "Netherlands"
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "schemaVersion": "2.0",
-    "accountId": "123456789012",
-    "region": "eu-west-1",
-    "partition": "aws",
     "id": "gd-archived",
     "type": "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration.OutsideAWS",
     "severity": 8,
@@ -193,6 +156,58 @@
           }
         }
       }
+    }
+  },
+  {
+    "schemaVersion": "2.0",
+    "accountId": "123456789012",
+    "region": "eu-west-1",
+    "partition": "aws",
+    "id": "gd-new-binary",
+    "type": "Execution:Runtime/NewBinaryExecuted",
+    "severity": 5,
+    "title": "Execution:Runtime/NewBinaryExecuted",
+    "description": "GuardDuty finding Execution:Runtime/NewBinaryExecuted.",
+    "resource": {
+      "resourceType": "Instance",
+      "instanceDetails": {
+        "instanceId": "i-0abc123def4567890",
+        "instanceType": "t3.large"
+      }
+    },
+    "service": {
+      "serviceName": "guardduty",
+      "detectorId": "12abc34d567e8fa901bc2d34e56789f0",
+      "archived": false,
+      "count": 1
+    }
+  },
+  {
+    "schemaVersion": "2.0",
+    "accountId": "123456789012",
+    "region": "eu-west-1",
+    "partition": "aws",
+    "id": "gd-rds-failed-login",
+    "type": "CredentialAccess:RDS/AnomalousBehavior.FailedLogin",
+    "severity": 5,
+    "title": "CredentialAccess:RDS/AnomalousBehavior.FailedLogin",
+    "description": "GuardDuty finding CredentialAccess:RDS/AnomalousBehavior.FailedLogin.",
+    "resource": {
+      "resourceType": "RDSDBInstance",
+      "rdsDbInstanceDetails": {
+        "dbInstanceIdentifier": "prod-db",
+        "engine": "PostgreSQL"
+      },
+      "rdsDbUserDetails": {
+        "user": "app",
+        "application": "psql"
+      }
+    },
+    "service": {
+      "serviceName": "guardduty",
+      "detectorId": "12abc34d567e8fa901bc2d34e56789f0",
+      "archived": false,
+      "count": 1
     }
   }
 ]

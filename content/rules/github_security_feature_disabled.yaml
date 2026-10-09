@@ -1,14 +1,18 @@
 id: github_security_feature_disabled
-title: Secret scanning, push protection, 2FA requirement or app restrictions switched off
+title: GitHub secret scanning, 2FA, IP allow list or token restriction switched off
 description: >
-  Turning off secret scanning or push protection comes before pushing stolen
-  code or reading secrets out of history; dropping the 2FA requirement or the
-  OAuth app restrictions opens the organisation to the next login or app.
-  Repository settings arrive by webhook too; the organisation settings need the
+  Turning off secret scanning or push protection, or letting anyone with write
+  bypass it, comes before pushing stolen code or reading secrets out of
+  history. Dropping the 2FA requirement or its allowed methods, the OAuth app
+  restrictions, the IP allow list, the SSH certificate requirement, the
+  restriction on personal access tokens or the approval of fine-grained ones
+  opens the organisation to the next login, app or token. Hiding source
+  addresses in the audit log blinds every rule that reads one. Repository
+  settings arrive by webhook too; the organisation settings need the
   audit-log API.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.6
 attack: [T1562.001, T1556]
@@ -31,6 +35,17 @@ detection:
       - org.advanced_security_disabled_for_new_repos
       - org.disable_two_factor_requirement
       - org.disable_oauth_app_restrictions
+      - org_secret_scanning_push_protection_bypass_list.disable
+      - repository_secret_scanning_push_protection_bypass_list.disable
+      - org_secret_scanning_generic_secrets.disabled
+      - repository_secret_scanning_generic_secrets.disabled
+      - org.clear_disallowed_two_factor_methods
+      - ip_allow_list.disable
+      - ip_allow_list.disable_for_installed_apps
+      - ssh_certificate_requirement.disable
+      - personal_access_token.access_restriction_disabled
+      - auto_approve_personal_access_token_requests.enable
+      - org.disable_source_ip_disclosure
   condition: selection
   timeframe: 15m
 entity: actor.user.name
@@ -59,6 +74,32 @@ sources:
     author: Muhammad Faisal (@faisalusuf)
     license: DRL-1.1
     relation: adapted
+  - name: Splunk
+    title: GitHub Enterprise Disable IP Allow List
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/github_enterprise_disable_ip_allow_list.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: GitHub Org IP Allow List modified
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/github_rules/github_org_ip_allowlist.yml
+    license: Apache-2.0
+    relation: inspired
+  - name: Chronicle
+    title: GitHub Secret Scanning Disabled Or Bypassed
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/github/github_secret_scanning_disabled_or_bypassed.yaral
+    license: Apache-2.0
+    relation: adapted
+  - name: Chronicle
+    title: GitHub Personal Access Token Auto Approve Policy Modified
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/github/github_personal_access_token_auto_approve_policy_modified.yaral
+    license: Apache-2.0
+    relation: adapted
+  - name: Sigma
+    title: Github SSH Certificate Configuration Changed
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/application/github/audit/github_ssh_certificate_config_changed.yml
+    author: Romain Gaillard (@romain-gaillard)
+    license: DRL-1.1
+    relation: inspired
   - name: GitHub
     title: Audit log events for your organization
     url: https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization

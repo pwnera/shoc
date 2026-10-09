@@ -1,0 +1,70 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd09",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Mac",
+    "ImageFileName": "/usr/bin/ditto",
+    "CommandLine": "ditto -c -k --keepParent build/Release/MyApp.app build/MyApp.zip",
+    "ParentBaseFileName": "xcrun",
+    "RawProcessId": "9001",
+    "UserName": "dev1"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "8888888888888888888888888888888888888888",
+      "DeviceName": "mbp-pdev.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "xattr",
+      "FolderPath": "/usr/bin/xattr",
+      "ProcessCommandLine": "xattr -dr com.apple.quarantine /Applications/Tool.app",
+      "InitiatingProcessFileName": "zsh",
+      "AccountName": "pdev"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd0a",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Lin",
+    "ImageFileName": "/usr/bin/curl",
+    "CommandLine": "curl -sS -F file=@/tmp/db-backup.tar.gz https://backup.example.com/upload",
+    "ParentBaseFileName": "bash",
+    "RawProcessId": "4410",
+    "UserName": "backup"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "75084C59-0F8A-479D-A9C4-2232C37D9D53"
+    },
+    "endpoint": {
+      "name": "MBP-CGREEN",
+      "os": "osx"
+    },
+    "tgt": {
+      "process": {
+        "name": "osascript",
+        "cmdline": "osascript -e do shell script \"system_profiler SPHardwareDataType\"",
+        "image": {
+          "path": "/usr/bin/osascript"
+        },
+        "user": "root"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "jamf"
+      }
+    }
+  }
+]

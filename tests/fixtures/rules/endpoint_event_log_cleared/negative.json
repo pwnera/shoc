@@ -1,0 +1,88 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "4444444444444444444444444444444444444444",
+      "DeviceName": "srv-backup.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "wevtutil.exe",
+      "FolderPath": "C:\\Windows\\System32\\wevtutil.exe",
+      "ProcessCommandLine": "wevtutil qe Security /c:5 /rd:true /f:text",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "4444444444444444444444444444444444444444",
+      "DeviceName": "laptop-03.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "wevtutil.exe",
+      "FolderPath": "C:\\Windows\\System32\\wevtutil.exe",
+      "ProcessCommandLine": "wevtutil.exe sl Microsoft-RMS-MSIPC/Debug /q:true /e:true /l:4 /rt:false",
+      "InitiatingProcessFileName": "msiexec.exe",
+      "AccountName": "system"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "windows_event_logs",
+      "type": "Windows Event Log Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "dc01.example.com",
+      "os": "windows"
+    },
+    "winEventLog": {
+      "data": {
+        "event": {
+          "system": {
+            "eventID": "104",
+            "channel": "Application",
+            "provider": {
+              "name": "Example-Backup-Agent"
+            }
+          },
+          "eventData": {
+            "param1": "job finished"
+          }
+        }
+      }
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd41",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "CommandLine": "powershell.exe -c Get-EventLog -LogName Security -Newest 5",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "4242",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "4444444444444444444444444444444444444444",
+      "DeviceName": "srv-backup.example.com",
+      "ActionType": "PowerShellCommand",
+      "InitiatingProcessFileName": "powershell.exe",
+      "AdditionalFields": {
+        "Command": "Get-WinEvent"
+      }
+    }
+  }
+]

@@ -1,0 +1,35 @@
+id: okta_api_token_used_outside_allowed_network
+title: Okta API token presented from outside its network zone
+description: >
+  An Okta API token that is restricted to a network zone was presented from
+  an address outside it. The integration that owns a token does not move, so
+  this is the token in someone else's hands, or an integration moved to a new
+  host without its zone. A token allowed from any network never raises this
+  event; okta_api_token_created fires when one is made or opened up to any
+  network.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.8
+attack: [T1550.001, T1078.004]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation: system.api_token.request_outside_allowed_range
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip, src_endpoint.asn, src_endpoint.location.country,
+         http_request.user_agent]
+sources:
+  - name: Okta
+    title: Event types catalogue (system.api_token.request_outside_allowed_range)
+    url: https://github.com/okta/okta-developer-docs/blob/master/packages/@okta/vuepress-site/data/event-types.json
+    relation: inspired
+  - name: Okta
+    title: API Token Excessive Network Access
+    url: https://github.com/okta/customer-detections/blob/master/detections/api_token_excessive_network_access.yml
+    license: Apache-2.0
+    relation: inspired

@@ -55,5 +55,49 @@
       "InitiatingProcessCommandLine": "sh -c dscl . authonly jdoe example-not-a-real-password",
       "AccountName": "jdoe"
     }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "5555555555555555555555555555555555555556",
+      "DeviceName": "mbp-asmith.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "security",
+      "FolderPath": "/usr/bin/security",
+      "ProcessCommandLine": "security dump-keychain -d /Users/asmith/Library/Keychains/login.keychain-db",
+      "InitiatingProcessFileName": "bash",
+      "AccountName": "asmith"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778889"
+    },
+    "endpoint": {
+      "name": "host06.example.com",
+      "os": "osx"
+    },
+    "tgt": {
+      "process": {
+        "name": "cp",
+        "cmdline": "cp /Users/bwhite/Library/Keychains/login.keychain-db /tmp/shub_8812/keychain",
+        "image": {
+          "path": "/bin/cp"
+        },
+        "user": "bwhite"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "bash"
+      }
+    }
   }
 ]

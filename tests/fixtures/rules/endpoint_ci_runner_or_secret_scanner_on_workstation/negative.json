@@ -39,5 +39,34 @@
         "name": "zsh"
       }
     }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677779999"
+    },
+    "endpoint": {
+      "name": "build-01.example.com",
+      "os": "linux"
+    },
+    "tgt": {
+      "process": {
+        "name": "docker",
+        "cmdline": "docker run -d --privileged --volume=/:/rootfs:ro --volume=/var/run:/var/run:ro --name=cadvisor gcr.io/cadvisor/cadvisor:v0.49.1",
+        "image": {
+          "path": "/usr/bin/docker"
+        },
+        "user": "ops"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "bash"
+      }
+    }
   }
 ]

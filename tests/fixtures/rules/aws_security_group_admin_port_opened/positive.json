@@ -1,0 +1,169 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "sg-rdp",
+    "eventName": "AuthorizeSecurityGroupIngress",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.90",
+    "userAgent": "aws-cli/2.17.0 md/command#ec2.authorize-security-group-ingress",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00002",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEDEV00002"
+    },
+    "requestParameters": {
+      "cidrIp": "0.0.0.0/0",
+      "fromPort": 3389,
+      "groupId": "sg-003dc7f1f1c686164",
+      "ipPermissions": {},
+      "ipProtocol": "tcp",
+      "toPort": 3389
+    },
+    "responseElements": {
+      "_return": true,
+      "requestId": "dc1dabbf-d7cb-4966-a3de-ac69d5cfc633",
+      "securityGroupRuleSet": {
+        "items": [
+          {
+            "cidrIpv4": "0.0.0.0/0",
+            "fromPort": 3389,
+            "groupId": "sg-003dc7f1f1c686164",
+            "groupOwnerId": "123456789012",
+            "ipProtocol": "tcp",
+            "isEgress": false,
+            "securityGroupRuleId": "sgr-09b3e3d2ca1edf2a2",
+            "toPort": 3389
+          }
+        ]
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "sg-ssh-v6",
+    "eventName": "AuthorizeSecurityGroupIngress",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.90",
+    "userAgent": "aws-cli/2.17.0 md/command#ec2.authorize-security-group-ingress",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00002",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEDEV00002"
+    },
+    "requestParameters": {
+      "groupId": "sg-0a1b2c3d4e5f60718",
+      "ipPermissions": {
+        "items": [
+          {
+            "ipProtocol": "tcp",
+            "fromPort": 22,
+            "toPort": 22,
+            "groups": {},
+            "ipRanges": {},
+            "ipv6Ranges": {
+              "items": [
+                {
+                  "cidrIpv6": "::/0"
+                }
+              ]
+            },
+            "prefixListIds": {}
+          }
+        ]
+      }
+    },
+    "responseElements": {
+      "_return": true,
+      "requestId": "dc1dabbf-d7cb-4966-a3de-ac69d5cfc633",
+      "securityGroupRuleSet": {
+        "items": [
+          {
+            "fromPort": 22,
+            "toPort": 22,
+            "ipProtocol": "tcp",
+            "cidrIpv6": "::/0",
+            "groupId": "sg-0a1b2c3d4e5f60718",
+            "isEgress": false,
+            "securityGroupRuleId": "sgr-0c1d2e3f4a5b6c7d8"
+          }
+        ]
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "sg-all",
+    "eventName": "AuthorizeSecurityGroupIngress",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.90",
+    "userAgent": "aws-cli/2.17.0 md/command#ec2.authorize-security-group-ingress",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00002",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEDEV00002"
+    },
+    "requestParameters": {
+      "groupId": "sg-0a1b2c3d4e5f60718",
+      "ipPermissions": {
+        "items": [
+          {
+            "ipProtocol": "-1",
+            "fromPort": -1,
+            "toPort": -1,
+            "groups": {},
+            "ipRanges": {
+              "items": [
+                {
+                  "cidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            "ipv6Ranges": {},
+            "prefixListIds": {}
+          }
+        ]
+      }
+    },
+    "responseElements": {
+      "_return": true,
+      "requestId": "dc1dabbf-d7cb-4966-a3de-ac69d5cfc633",
+      "securityGroupRuleSet": {
+        "items": [
+          {
+            "ipProtocol": "-1",
+            "fromPort": -1,
+            "toPort": -1,
+            "cidrIpv4": "0.0.0.0/0",
+            "groupId": "sg-0a1b2c3d4e5f60718",
+            "isEgress": false,
+            "securityGroupRuleId": "sgr-0d1e2f3a4b5c6d7e8"
+          }
+        ]
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  }
+]

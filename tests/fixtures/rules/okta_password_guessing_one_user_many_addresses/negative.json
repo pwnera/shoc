@@ -1,0 +1,936 @@
+[
+  {
+    "uuid": "okta-guess-jane-one-address",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u1jane0001",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "198.51.100.23",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {}
+    },
+    "_repeat": 8
+  },
+  {
+    "uuid": "okta-guess-bob-richclient-0",
+    "eventType": "user.authentication.auth_via_richclient",
+    "displayMessage": "user authentication auth_via_richclient",
+    "actor": {
+      "id": "00u1bob0001",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob Martin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.10",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64540,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-guess-bob-richclient-1",
+    "eventType": "user.authentication.auth_via_richclient",
+    "displayMessage": "user authentication auth_via_richclient",
+    "actor": {
+      "id": "00u1bob0001",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob Martin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.11",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64540,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-guess-bob-richclient-2",
+    "eventType": "user.authentication.auth_via_richclient",
+    "displayMessage": "user authentication auth_via_richclient",
+    "actor": {
+      "id": "00u1bob0001",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob Martin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.12",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64540,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-guess-bob-richclient-3",
+    "eventType": "user.authentication.auth_via_richclient",
+    "displayMessage": "user authentication auth_via_richclient",
+    "actor": {
+      "id": "00u1bob0001",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob Martin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.13",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64540,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-guess-bob-richclient-4",
+    "eventType": "user.authentication.auth_via_richclient",
+    "displayMessage": "user authentication auth_via_richclient",
+    "actor": {
+      "id": "00u1bob0001",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob Martin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.14",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64540,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-guess-bob-richclient-5",
+    "eventType": "user.authentication.auth_via_richclient",
+    "displayMessage": "user authentication auth_via_richclient",
+    "actor": {
+      "id": "00u1bob0001",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob Martin"
+    },
+    "client": {
+      "ipAddress": "198.51.100.71",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64540,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-guess-bob-richclient-6",
+    "eventType": "user.authentication.auth_via_richclient",
+    "displayMessage": "user authentication auth_via_richclient",
+    "actor": {
+      "id": "00u1bob0001",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob Martin"
+    },
+    "client": {
+      "ipAddress": "198.51.100.72",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64540,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-guess-bob-richclient-7",
+    "eventType": "user.authentication.auth_via_richclient",
+    "displayMessage": "user authentication auth_via_richclient",
+    "actor": {
+      "id": "00u1bob0001",
+      "type": "User",
+      "alternateId": "bob@example.com",
+      "displayName": "Bob Martin"
+    },
+    "client": {
+      "ipAddress": "192.0.2.81",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64540,
+      "isProxy": false
+    }
+  },
+  {
+    "uuid": "okta-guess-carol-push-0",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1carol0001",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "Carol Diaz"
+    },
+    "client": {
+      "ipAddress": "203.0.113.10",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "OKTA_VERIFY_PUSH"
+      }
+    }
+  },
+  {
+    "uuid": "okta-guess-carol-push-1",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1carol0001",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "Carol Diaz"
+    },
+    "client": {
+      "ipAddress": "203.0.113.11",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "OKTA_VERIFY_PUSH"
+      }
+    }
+  },
+  {
+    "uuid": "okta-guess-carol-push-2",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1carol0001",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "Carol Diaz"
+    },
+    "client": {
+      "ipAddress": "203.0.113.12",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "OKTA_VERIFY_PUSH"
+      }
+    }
+  },
+  {
+    "uuid": "okta-guess-carol-push-3",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1carol0001",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "Carol Diaz"
+    },
+    "client": {
+      "ipAddress": "203.0.113.13",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "OKTA_VERIFY_PUSH"
+      }
+    }
+  },
+  {
+    "uuid": "okta-guess-carol-push-4",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1carol0001",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "Carol Diaz"
+    },
+    "client": {
+      "ipAddress": "203.0.113.14",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "OKTA_VERIFY_PUSH"
+      }
+    }
+  },
+  {
+    "uuid": "okta-guess-carol-push-5",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1carol0001",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "Carol Diaz"
+    },
+    "client": {
+      "ipAddress": "198.51.100.71",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "OKTA_VERIFY_PUSH"
+      }
+    }
+  },
+  {
+    "uuid": "okta-guess-carol-push-6",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1carol0001",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "Carol Diaz"
+    },
+    "client": {
+      "ipAddress": "198.51.100.72",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "OKTA_VERIFY_PUSH"
+      }
+    }
+  },
+  {
+    "uuid": "okta-guess-carol-push-7",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1carol0001",
+      "type": "User",
+      "alternateId": "carol@example.com",
+      "displayName": "Carol Diaz"
+    },
+    "client": {
+      "ipAddress": "192.0.2.81",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "OKTA_VERIFY_PUSH"
+      }
+    }
+  },
+  {
+    "uuid": "okta-guess-dave-0",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1dave0001",
+      "type": "User",
+      "alternateId": "dave@example.com",
+      "displayName": "Dave Kim"
+    },
+    "client": {
+      "ipAddress": "203.0.113.10",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-dave-1",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1dave0001",
+      "type": "User",
+      "alternateId": "dave@example.com",
+      "displayName": "Dave Kim"
+    },
+    "client": {
+      "ipAddress": "203.0.113.11",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-dave-2",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1dave0001",
+      "type": "User",
+      "alternateId": "dave@example.com",
+      "displayName": "Dave Kim"
+    },
+    "client": {
+      "ipAddress": "203.0.113.12",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-dave-3",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1dave0001",
+      "type": "User",
+      "alternateId": "dave@example.com",
+      "displayName": "Dave Kim"
+    },
+    "client": {
+      "ipAddress": "203.0.113.13",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-dave-4",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1dave0001",
+      "type": "User",
+      "alternateId": "dave@example.com",
+      "displayName": "Dave Kim"
+    },
+    "client": {
+      "ipAddress": "203.0.113.14",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-dave-5",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1dave0001",
+      "type": "User",
+      "alternateId": "dave@example.com",
+      "displayName": "Dave Kim"
+    },
+    "client": {
+      "ipAddress": "198.51.100.71",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-dave-6",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1dave0001",
+      "type": "User",
+      "alternateId": "dave@example.com",
+      "displayName": "Dave Kim"
+    },
+    "client": {
+      "ipAddress": "198.51.100.72",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  }
+]

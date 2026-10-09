@@ -1,0 +1,33 @@
+id: tailscale_node_shared_out
+title: Tailscale device shared with another tailnet
+description: >
+  A node share invite was created or accepted. The device then answers to
+  people in another tailnet, outside the company's users, device approval and
+  access policy. Small companies share a server with a contractor now and
+  then. Only the sharing tailnet logs node share invites. SHARE.CREATE is left
+  out: both tailnets log it, so it cannot tell a device shared out from one
+  shared in.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.4
+attack: [T1133]
+logsource:
+  product: tailscale
+  service: configuration_log
+detection:
+  selection:
+    api.operation: [INVITE.CREATE.NODE_SHARE, INVITE.ACCEPT.NODE_SHARE]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.invoked_by, resource.uid, api.operation, cloud.account.uid]
+sources:
+  - name: Tailscale
+    title: Configuration audit logging (events for shared nodes)
+    url: https://tailscale.com/docs/features/logging/audit-logging
+    relation: inspired
+  - name: Tailscale
+    title: Tailscale API OpenAPI schema (audit event names)
+    url: https://api.tailscale.com/api/v2?outputOpenapiSchema=true
+    relation: inspired

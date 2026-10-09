@@ -1,0 +1,47 @@
+id: okta_org_attack_protection_relaxed
+title: Okta org-wide attack protection changed or switched off
+description: >
+  ThreatInsight, bot protection, CAPTCHA, protected actions (signing in again
+  before a sensitive admin change), the password attack protections
+  (possession factor before password, blocking suspicious password attempts
+  from unknown devices) or a behaviour that sign-on policies rely on was
+  changed or removed. Each protects every user at once, and an attacker about
+  to spray passwords or make several admin changes switches them off first.
+  Okta logs most of these as updates without saying in a readable field which
+  way they went, so turning a protection on fires too; each changes a few
+  times in an organisation's life.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.55
+attack: [T1562.001, T1556]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation:
+      - security.threat.configuration.update
+      - security.attack_protection.settings.update
+      - security.bot_protection.status.update
+      - system.org.captcha.deactivate
+      - security.protected_action.settings.update
+      - security.behavior.settings.delete
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, message]
+sources:
+  - name: Okta
+    title: Protected Action Settings Update
+    url: https://github.com/okta/customer-detections/blob/master/detections/protected_action_settings_update.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Okta
+    title: Event types catalogue (security.attack_protection.settings.update, security.bot_protection.status.update)
+    url: https://github.com/okta/okta-developer-docs/blob/master/packages/@okta/vuepress-site/data/event-types.json
+    relation: inspired
+  - name: Okta
+    title: How to Block Anonymizing Services using Okta
+    url: https://sec.okta.com/articles/blockanonymizers/
+    relation: inspired

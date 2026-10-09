@@ -1,0 +1,378 @@
+[
+  {
+    "uuid": "okta-guess-ceo-0",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1ceo0001",
+      "type": "User",
+      "alternateId": "ceo@example.com",
+      "displayName": "CEO"
+    },
+    "client": {
+      "ipAddress": "203.0.113.10",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-ceo-1",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1ceo0001",
+      "type": "User",
+      "alternateId": "ceo@example.com",
+      "displayName": "CEO"
+    },
+    "client": {
+      "ipAddress": "203.0.113.11",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-ceo-2",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1ceo0001",
+      "type": "User",
+      "alternateId": "ceo@example.com",
+      "displayName": "CEO"
+    },
+    "client": {
+      "ipAddress": "203.0.113.12",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-ceo-3",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1ceo0001",
+      "type": "User",
+      "alternateId": "ceo@example.com",
+      "displayName": "CEO"
+    },
+    "client": {
+      "ipAddress": "203.0.113.13",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-ceo-4",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1ceo0001",
+      "type": "User",
+      "alternateId": "ceo@example.com",
+      "displayName": "CEO"
+    },
+    "client": {
+      "ipAddress": "203.0.113.14",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-ceo-5",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1ceo0001",
+      "type": "User",
+      "alternateId": "ceo@example.com",
+      "displayName": "CEO"
+    },
+    "client": {
+      "ipAddress": "198.51.100.71",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-ceo-6",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1ceo0001",
+      "type": "User",
+      "alternateId": "ceo@example.com",
+      "displayName": "CEO"
+    },
+    "client": {
+      "ipAddress": "198.51.100.72",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-guess-ceo-7",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "Authentication of user via MFA",
+    "actor": {
+      "id": "00u1ceo0001",
+      "type": "User",
+      "alternateId": "ceo@example.com",
+      "displayName": "CEO"
+    },
+    "client": {
+      "ipAddress": "192.0.2.81",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "United States"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "PASSWORD_AS_FACTOR",
+        "requestUri": "/idp/idx/challenge/answer"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1ceo0001",
+        "type": "User",
+        "alternateId": "ceo@example.com",
+        "displayName": "CEO"
+      }
+    ]
+  }
+]

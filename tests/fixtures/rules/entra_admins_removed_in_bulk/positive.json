@@ -1,0 +1,113 @@
+[
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k001_R_1",
+    "activityDisplayName": "Remove member from role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a401",
+        "userPrincipalName": "omega@example.onmicrosoft.com",
+        "ipAddress": "203.0.113.12"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k501",
+        "userPrincipalName": "owner@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k002_R_1",
+    "activityDisplayName": "Remove eligible member from role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a401",
+        "userPrincipalName": "omega@example.onmicrosoft.com",
+        "ipAddress": "203.0.113.12"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k502",
+        "userPrincipalName": "cfo@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k003_R_1",
+    "activityDisplayName": "Remove member from role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a401",
+        "userPrincipalName": "omega@example.onmicrosoft.com",
+        "ipAddress": "203.0.113.12"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k503",
+        "userPrincipalName": "it-lead@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  }
+]

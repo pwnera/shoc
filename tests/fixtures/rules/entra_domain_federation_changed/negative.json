@@ -34,5 +34,107 @@
     ],
     "tenantId": "tid-1",
     "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Update user ImmutableId by Entra Connect",
+    "activityDisplayName": "Update user",
+    "category": "UserManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "id": "u-9",
+        "userPrincipalName": "Sync_DC01_3f2a9b1c7d4e@example.onmicrosoft.com",
+        "ipAddress": "198.51.100.5"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000u701",
+        "type": "User",
+        "userPrincipalName": "cfo@example.com",
+        "modifiedProperties": [
+          {
+            "displayName": "SourceAnchor",
+            "oldValue": "[]",
+            "newValue": "[\"dGVzdC1pbW11dGFibGUtaWQ=\"]"
+          },
+          {
+            "displayName": "Included Updated Properties",
+            "oldValue": null,
+            "newValue": "\"SourceAnchor\""
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Update user ImmutableId by cloud sync",
+    "activityDisplayName": "Update user",
+    "category": "UserManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "app": {
+        "displayName": "Microsoft.Azure.SyncFabric",
+        "servicePrincipalId": "00000000-0000-0000-0000-00000000u702"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000u701",
+        "type": "User",
+        "userPrincipalName": "cfo@example.com",
+        "modifiedProperties": [
+          {
+            "displayName": "SourceAnchor",
+            "oldValue": "[]",
+            "newValue": "[\"dGVzdC1pbW11dGFibGUtaWQ=\"]"
+          },
+          {
+            "displayName": "Included Updated Properties",
+            "oldValue": null,
+            "newValue": "\"SourceAnchor\""
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Update user job title",
+    "activityDisplayName": "Update user",
+    "category": "UserManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "id": "u-2",
+        "userPrincipalName": "admin@example.com",
+        "ipAddress": "203.0.113.62"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000u701",
+        "type": "User",
+        "userPrincipalName": "cfo@example.com",
+        "modifiedProperties": [
+          {
+            "displayName": "JobTitle",
+            "oldValue": "[]",
+            "newValue": "[\"CFO\"]"
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
   }
 ]

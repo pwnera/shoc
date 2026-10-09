@@ -1,0 +1,45 @@
+id: aws_ec2_serial_console_used
+title: EC2 serial console access switched on, or an SSH key pushed to a serial console
+description: >
+  Serial console access was enabled for the account in a region, or a
+  temporary SSH key was pushed to an instance's serial console. The serial
+  console reaches the instance without going through its network, so
+  security groups and flow logs see nothing; LUCR-3 (Scattered Spider) used it
+  to avoid network monitoring. Small companies use it to rescue an instance
+  that no longer boots, a few times a year at most. The ordinary EC2 Instance
+  Connect key push (SendSSHPublicKey) is in the first-call hunt.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.75
+attack: [T1021.008]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.operation: [EnableSerialConsoleAccess, SendSerialConsoleSSHPublicKey]
+    status: Success
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, raw.requestParameters.instanceId, cloud.region]
+sources:
+  - name: Permiso
+    title: "LUCR-3: Scattered Spider Getting SaaS-y in the Cloud"
+    url: https://permiso.io/blog/lucr-3-scattered-spider-getting-saas-y-in-the-cloud
+    relation: inspired
+  - name: Stratus Red Team
+    title: Usage of EC2 Serial Console to push SSH public key
+    url: https://stratus-red-team.cloud/attack-techniques/AWS/aws.lateral-movement.ec2-serial-console-send-ssh-public-key/
+    license: Apache-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS EC2 Serial Console Access Enabled
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_ec2_serial_console_access_enabled
+    license: Elastic-2.0
+    relation: inspired
+  - name: AWS
+    title: SendSerialConsoleSSHPublicKey
+    url: https://docs.aws.amazon.com/ec2-instance-connect/latest/APIReference/API_SendSerialConsoleSSHPublicKey.html
+    relation: inspired

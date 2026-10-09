@@ -55,5 +55,32 @@
       "InitiatingProcessCommandLine": "-zsh",
       "AccountName": "jdoe"
     }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "5555555555555555555555555555555555555556",
+      "DeviceName": "mbp-asmith.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "security",
+      "FolderPath": "/usr/bin/security",
+      "ProcessCommandLine": "security list-keychains -d user",
+      "InitiatingProcessFileName": "zsh",
+      "AccountName": "asmith"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Mac",
+    "ImageFileName": "/bin/ls",
+    "CommandLine": "ls -l /Users/jdoe/Library/Keychains/login.keychain-db",
+    "ParentBaseFileName": "zsh",
+    "RawProcessId": "4243",
+    "UserName": "jdoe"
   }
 ]

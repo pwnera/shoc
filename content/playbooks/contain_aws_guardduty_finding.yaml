@@ -2,8 +2,9 @@ id: contain_aws_guardduty_finding
 title: Act on a GuardDuty finding
 description: >
   GuardDuty reported a compromised access key, an instance or its credentials
-  misused, crypto mining, or anomalous S3 access. When the finding names a
-  long-term access key, disabling it stops the API access it describes. A
+  misused, crypto mining, anomalous S3 or database access, or a process
+  escalating on a monitored host. When the finding names a long-term access
+  key, disabling it stops the API access it describes. A
   finding about an instance's role credentials carries a session key that IAM
   cannot disable; after the page, revoking the sessions of the role it was
   assumed from, or of the user behind a long-term key, waits for a human. A

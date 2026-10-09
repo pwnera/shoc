@@ -1,0 +1,26 @@
+[
+  {
+    "id": "activity_01FedIssuer",
+    "organization_id": "org_01",
+    "type": "platform_federation_issuer_created",
+    "actor": {"type": "user_actor", "email_address": "mallory@example.com", "user_id": "user_01M", "ip_address": "203.0.113.44", "user_agent": "Mozilla/5.0"},
+    "federation_issuer_id": "fdis_01Fake",
+    "issuer_url": "https://idp.example.net",
+    "jwks_source": "discovery",
+    "discovery_base": null,
+    "jwks_url": null
+  },
+  {
+    "id": "activity_01FedRule",
+    "organization_id": "org_01",
+    "type": "platform_federation_rule_created",
+    "actor": {"type": "user_actor", "email_address": "mallory@example.com", "user_id": "user_01M", "ip_address": "203.0.113.44", "user_agent": "Mozilla/5.0"},
+    "federation_rule_id": "fdrl_01Fake",
+    "federation_issuer_id": "fdis_01Fake",
+    "target_type": "service_account",
+    "target_id": "svac_01Fake",
+    "oauth_scope": "org:admin",
+    "applies_to_all_workspaces": true,
+    "match_subject_prefix": "*"
+  }
+]

@@ -1,0 +1,71 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-00000000s001",
+    "userPrincipalName": "jane@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a601",
+    "appDisplayName": "Microsoft Office",
+    "appId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "198.51.100.5",
+    "autonomousSystemNumber": 64500,
+    "location": {
+      "countryOrRegion": "FR"
+    },
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+    "authenticationProtocol": "none",
+    "sessionId": "00000000-0000-0000-0000-00000000d601",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000s002",
+    "userPrincipalName": "jane@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a601",
+    "appDisplayName": "Microsoft Office",
+    "appId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "198.51.100.200",
+    "autonomousSystemNumber": 64500,
+    "location": {
+      "countryOrRegion": "FR"
+    },
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+    "authenticationProtocol": "none",
+    "sessionId": "00000000-0000-0000-0000-00000000d601",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "nonInteractiveUser"
+    ],
+    "_stream": "nonInteractiveSignIns"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000s003",
+    "userPrincipalName": "jane@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a601",
+    "appDisplayName": "Microsoft Office",
+    "appId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "203.0.113.66",
+    "autonomousSystemNumber": 64511,
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36",
+    "authenticationProtocol": "none",
+    "sessionId": "00000000-0000-0000-0000-00000000d601",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "nonInteractiveUser"
+    ],
+    "_stream": "nonInteractiveSignIns"
+  }
+]

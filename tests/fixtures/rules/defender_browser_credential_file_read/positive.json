@@ -14,5 +14,21 @@
       "InitiatingProcessCommandLine": "svc_update.exe",
       "InitiatingProcessAccountName": "jdoe"
     }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "SensitiveFileRead",
+      "FileName": "Login Data For Account",
+      "FolderPath": "C:\\Users\\jdoe\\AppData\\Local\\Google\\Chrome\\User Data\\Default",
+      "InitiatingProcessFileName": "AdobeUpdate.exe",
+      "InitiatingProcessFolderPath": "c:\\users\\jdoe\\appdata\\roaming\\adobeupdate.exe",
+      "InitiatingProcessCommandLine": "AdobeUpdate.exe",
+      "InitiatingProcessAccountName": "jdoe"
+    }
   }
 ]

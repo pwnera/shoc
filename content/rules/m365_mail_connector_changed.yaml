@@ -1,0 +1,44 @@
+id: m365_mail_connector_changed
+title: Exchange inbound or outbound mail connector created or changed
+description: >
+  A mail connector was created or changed. In a 2022 campaign Microsoft
+  described, actors took over admin accounts without MFA and created an inbound
+  connector that let mail from their own servers flow through the victim's
+  Exchange Online and out as spam. An outbound connector with a smart host
+  routes the company's outgoing mail through a server the attacker reads. A
+  small company touches connectors once, when it adopts a mail filter or a
+  signature service, and somebody can name that change. Changes Exchange makes
+  itself are left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.65
+attack: [T1114.003, T1586.003]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation: [New-InboundConnector, Set-InboundConnector, New-OutboundConnector, Set-OutboundConnector]
+  filter_system:
+    actor.user.name|startswith: NT AUTHORITY
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_system and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, unmapped.params.SenderIPAddresses,
+         unmapped.params.SmartHosts]
+sources:
+  - name: Microsoft
+    title: Malicious OAuth applications used to compromise email servers and spread spam
+    url: https://www.microsoft.com/en-us/security/blog/2022/09/22/malicious-oauth-applications-used-to-compromise-email-servers-and-spread-spam/
+    relation: inspired
+  - name: Microsoft
+    title: New-InboundConnector
+    url: https://learn.microsoft.com/en-us/powershell/module/exchangepowershell/new-inboundconnector
+    relation: inspired
+  - name: Microsoft
+    title: New-OutboundConnector
+    url: https://learn.microsoft.com/en-us/powershell/module/exchangepowershell/new-outboundconnector
+    relation: inspired

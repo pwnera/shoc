@@ -1,0 +1,125 @@
+[
+  {
+    "uuid": "okta-factor-self",
+    "eventType": "user.mfa.factor.activate",
+    "displayMessage": "user mfa factor activate",
+    "actor": {
+      "id": "00u1jane0001",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "198.51.100.23",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": "User set up OKTA_VERIFY_PUSH factor"
+    },
+    "authenticationContext": {
+      "externalSessionId": "102Jane01"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1jane0001",
+        "type": "User",
+        "alternateId": "jane@example.com",
+        "displayName": "Jane Doe"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-factor-by-okta",
+    "eventType": "user.mfa.factor.activate",
+    "displayMessage": "user mfa factor activate",
+    "actor": {
+      "id": "0oa1system",
+      "type": "SystemPrincipal",
+      "alternateId": "system@okta.com",
+      "displayName": "Okta System"
+    },
+    "client": {
+      "ipAddress": "198.51.100.250",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": "User set up EMAIL_FACTOR factor"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1bob0001",
+        "type": "User",
+        "alternateId": "bob@example.com",
+        "displayName": "Bob Martin"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-factor-for-cfo-failed",
+    "eventType": "user.mfa.factor.activate",
+    "displayMessage": "user mfa factor activate",
+    "actor": {
+      "id": "00u1admin0001",
+      "type": "User",
+      "alternateId": "it-admin@example.com",
+      "displayName": "IT Admin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "102AdminSess7Qx"
+    },
+    "securityContext": {
+      "asNumber": 64511,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00u1cfo0001",
+        "type": "User",
+        "alternateId": "cfo@example.com",
+        "displayName": "Chief Financial Officer"
+      }
+    ]
+  }
+]

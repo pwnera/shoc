@@ -1,17 +1,21 @@
 id: aws_recovery_disabled
-title: Bucket versioning, backups or database backups switched off
+title: Bucket versioning or backups switched off, or a database deleted with no way back
 description: >
   Versioning was suspended, MFA delete removed by the root user, a backup
-  vault or its lock deleted, a recovery point deleted by a person, or database
-  backups set to zero days. Ransomware in the cloud removes the way back
-  before it encrypts. These are management events, so the rule works on
+  vault or its lock deleted, a recovery point deleted by a person, database
+  backups set to zero days, a database snapshot or retained backup deleted by
+  a person, or a database deleted without a final snapshot. Ransomware in the
+  cloud removes the way back before it encrypts, and for a small company the
+  production database is the business. Terraform destroying a development
+  database with skip_final_snapshot, or a person tidying old manual
+  snapshots, matches too. These are management events, so the rule works on
   LookupEvents too.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.7
-attack: [T1490]
+attack: [T1490, T1485]
 logsource:
   product: aws
   service: cloudtrail
@@ -29,6 +33,14 @@ detection:
   selection_rds:
     api.operation: [ModifyDBInstance, ModifyDBCluster]
     raw.requestParameters.backupRetentionPeriod: 0
+  # RDS expires its own automated snapshots without these calls.
+  selection_rds_backups:
+    api.service.name: rds.amazonaws.com
+    api.operation: [DeleteDBSnapshot, DeleteDBClusterSnapshot, DeleteDBInstanceAutomatedBackup, DeleteDBClusterAutomatedBackup]
+  selection_rds_no_final_snapshot:
+    api.service.name: rds.amazonaws.com
+    api.operation: [DeleteDBInstance, DeleteDBCluster]
+    raw.requestParameters.skipFinalSnapshot: true
   success:
     status: Success
   filter_aws:
@@ -38,7 +50,7 @@ detection:
   condition: success and selection_* and not filter_aws and not filter_aws_type
   timeframe: 15m
 entity: actor.user.name
-fields: [actor.user.name, actor.session.uid, api.operation, resource.uid, raw.requestParameters.bucketName]
+fields: [actor.user.name, actor.session.uid, api.operation, resource.uid, raw.requestParameters.bucketName, raw.requestParameters.dBInstanceIdentifier, raw.requestParameters.dBSnapshotIdentifier]
 sources:
   - name: Elastic
     title: AWS S3 Object Versioning Suspended
@@ -63,6 +75,26 @@ sources:
   - name: Elastic
     title: AWS RDS Snapshot Deleted
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_rds_snapshot_deleted
+    license: Elastic-2.0
+    relation: inspired
+  - name: Panther
+    title: AWS RDS Instance or Cluster Deleted
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/aws_cloudtrail_rules/aws_rds_instance_deletion.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: AWS RDS Snapshot Deleted
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/aws_cloudtrail_rules/aws_rds_snapshot_deleted.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: AWS RDS Automated Backup Deleted
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/aws_cloudtrail_rules/aws_rds_automated_backup_deleted.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Elastic
+    title: AWS RDS DB Instance or Cluster Deleted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/impact_rds_instance_cluster_deletion
     license: Elastic-2.0
     relation: inspired
   - name: Sigma

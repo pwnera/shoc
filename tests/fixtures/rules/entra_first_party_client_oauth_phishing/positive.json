@@ -1,0 +1,43 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-00000000j000",
+    "userPrincipalName": "it-admin@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a300",
+    "appDisplayName": "Microsoft Azure CLI",
+    "appId": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+    "resourceDisplayName": "Microsoft Graph",
+    "resourceId": "00000003-0000-0000-c000-000000000000",
+    "authenticationProtocol": "none",
+    "ipAddress": "198.51.100.30",
+    "autonomousSystemNumber": 64503,
+    "userAgent": "python-requests/2.32.3",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns",
+    "createdDateTime": "2026-08-01T09:00:00Z"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000j001",
+    "userPrincipalName": "carla@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a301",
+    "appDisplayName": "Microsoft Azure CLI",
+    "appId": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+    "resourceDisplayName": "Windows Azure Active Directory",
+    "resourceId": "00000002-0000-0000-c000-000000000000",
+    "authenticationProtocol": "none",
+    "ipAddress": "203.0.113.150",
+    "autonomousSystemNumber": 64503,
+    "userAgent": "python-requests/2.32.3",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "nonInteractiveUser"
+    ],
+    "_stream": "nonInteractiveSignIns"
+  }
+]

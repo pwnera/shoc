@@ -1,0 +1,66 @@
+id: aws_security_group_admin_port_opened
+title: Security group opened to the internet on an admin or database port
+description: >
+  A security group rule now accepts SSH, RDP, SMB, WinRM, VNC, Docker, a
+  database or cache port, or all traffic, from 0.0.0.0/0 or ::/0. Such a port
+  is brute-forced within hours, exposed RDP is a common way in for
+  ransomware, and an attacker opens one to keep a way back in. Port 443 and
+  other web ports are left out because every load balancer opens them. A
+  port range is matched by the port it starts at, so 3000-4000 is missed
+  although it holds 3306. Packer's temporary group for image builds and
+  groups created by CloudFormation are left out; Terraform is not, since a
+  Terraform change that opens RDP to the world is still the exposure. The
+  newer ModifySecurityGroupRules call is not covered.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.55
+attack: [T1562.007, T1133]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.service.name: ec2.amazonaws.com
+    api.operation: AuthorizeSecurityGroupIngress
+    status: Success
+  # The response lists each rule added, in either request shape. Each pattern
+  # pairs an open range with a port, or with "all protocols", inside one rule
+  # item, in either key order.
+  open_admin_port:
+    raw.responseElements.securityGroupRuleSet|re: '"cidrIpv[46]"\s*:\s*"(0\.0\.0\.0/0|::/0)"[^{}]*"fromPort"\s*:\s*(0|1|20|21|22|23|135|139|445|1433|1521|2375|2376|3306|3389|5432|5900|5985|5986|6379|9200|11211|27017)\s*[,}]|"fromPort"\s*:\s*(0|1|20|21|22|23|135|139|445|1433|1521|2375|2376|3306|3389|5432|5900|5985|5986|6379|9200|11211|27017)\s*[,}][^{}]*"cidrIpv[46]"\s*:\s*"(0\.0\.0\.0/0|::/0)"'
+  open_all_traffic:
+    raw.responseElements.securityGroupRuleSet|re: '"cidrIpv[46]"\s*:\s*"(0\.0\.0\.0/0|::/0)"[^{}]*"ipProtocol"\s*:\s*"-1"|"ipProtocol"\s*:\s*"-1"[^{}]*"cidrIpv[46]"\s*:\s*"(0\.0\.0\.0/0|::/0)"'
+  # Packer opens 22 to the world on a temporary group for each image build.
+  filter_packer:
+    http_request.user_agent|contains: packer-plugin-amazon
+  filter_aws:
+    actor.invoked_by|exists: true
+  condition: selection and (open_admin_port or open_all_traffic) and not filter_packer and not filter_aws
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, raw.requestParameters.groupId, raw.responseElements.securityGroupRuleSet, cloud.region]
+sources:
+  - name: Chronicle
+    title: AWS Security Group Open To The World
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/aws/cloudtrail/aws_security_group_open_to_world.yaral
+    license: Apache-2.0
+    relation: adapted
+  - name: Stratus Red Team
+    title: Open Ingress Port 22 on a Security Group
+    url: https://stratus-red-team.cloud/attack-techniques/AWS/aws.exfiltration.ec2-security-group-open-port-22-ingress/
+    license: Apache-2.0
+    relation: adapted
+  - name: Datadog Security Labs
+    title: Opening a security group to the Internet
+    url: https://securitylabs.datadoghq.com/cloud-security-atlas/attacks/opening-security-group-port/
+    relation: inspired
+  - name: Elastic
+    title: Insecure AWS EC2 VPC Security Group Ingress Rule Added
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/defense_evasion_vpc_security_group_ingress_rule_added_for_remote_connections
+    license: Elastic-2.0
+    relation: inspired
+  - name: Packer
+    title: packer-plugin-amazon access configuration (user agent)
+    url: https://github.com/hashicorp/packer-plugin-amazon/blob/main/common/access_config.go
+    relation: inspired

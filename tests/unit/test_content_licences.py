@@ -11,6 +11,7 @@ from tests.support import ROOT
 
 ADAPTABLE = {"Apache-2.0", "MIT", "BSD-2-Clause", "BSD-3-Clause", "DRL-1.1"}
 CONTENT = sorted(p for d in ("rules", "hunts") for p in (ROOT / "content" / d).glob("*.yaml"))
+NOTICE = (ROOT / "NOTICE").read_text()
 
 
 @pytest.mark.parametrize("path", CONTENT, ids=lambda p: f"{p.parent.name}/{p.stem}")
@@ -22,3 +23,6 @@ def test_adapted_sources_carry_a_compatible_licence(path: Path):
             assert source.get("license") in ADAPTABLE, f"{url}: not adaptable, mark it inspired"
         if source.get("license") == "DRL-1.1":
             assert source.get("author"), f"{url}: DRL-1.1 requires the author"
+        # Apache-2.0 and MIT ask a derivative to keep the upstream's notices (D156).
+        if source["relation"] == "adapted":
+            assert f"\n  {source['name']} " in NOTICE, f"{url}: credit {source['name']} in NOTICE"

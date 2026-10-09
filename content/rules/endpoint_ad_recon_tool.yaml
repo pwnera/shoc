@@ -1,0 +1,92 @@
+id: endpoint_ad_recon_tool
+title: AdFind, SharpHound, an ADExplorer snapshot or nltest trust discovery ran
+description: >
+  AdFind ran or one of its dump shortcuts did (also renamed), SharpHound or
+  BloodHound collected, ADExplorer took a snapshot, or nltest listed the domain
+  trusts or domain controllers. Intruders map the admins, computers, trusts and
+  subnets of the Active Directory this way in the first hours after a
+  foothold; The DFIR Report and CISA describe it before most ransomware
+  deployments. A small company's IT person rarely runs any of them. net group
+  "domain admins" /domain is left out because IT runs it; an MSP auditing AD
+  with AdFind looks the same.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.65
+attack: [T1087.002, T1069.002, T1482, T1018]
+sources:
+  - name: Sigma
+    title: "PUA - AdFind Suspicious Execution"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_pua_adfind_susp_usage.yml
+    author: "Janantha Marasinghe (https://github.com/blueteam0ps), FPT.EagleEye Team, omkar72, oscd.community"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Renamed AdFind Execution"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_renamed_adfind.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "HackTool - Bloodhound/Sharphound Execution"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_hktl_bloodhound_sharphound.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Suspicious Active Directory Database Snapshot Via ADExplorer"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_sysinternals_adexplorer_susp_execution.yml
+    author: "Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Potential Recon Activity Via Nltest.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_nltest_recon.yml
+    author: "Craig Young, oscd.community, Georg Lauenstein"
+    license: DRL-1.1
+    relation: adapted
+  - name: Splunk
+    title: "NLTest Domain Trust Discovery"
+    url: https://github.com/splunk/security_content/blob/develop/detections/endpoint/nltest_domain_trust_discovery.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Splunk
+    title: "Detect SharpHound Command-Line Arguments"
+    url: https://github.com/splunk/security_content/blob/develop/detections/endpoint/detect_sharphound_command_line_arguments.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: The DFIR Report
+    title: "From a Single Click: How Lunar Spider Enabled a Near Two-Month Intrusion"
+    url: https://thedfirreport.com/2025/09/29/from-a-single-click-how-lunar-spider-enabled-a-near-two-month-intrusion/
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+  sel_adfind:
+    - process.name: adfind.exe
+    - raw.properties.ProcessVersionInfoOriginalFileName: AdFind.exe
+  # AdFind's own shortcuts, which survive a rename. 'adinfo' is left out: it is
+  # also Centrify's AD status command on Linux and Mac servers.
+  sel_adfind_flags:
+    process.cmd_line|contains: [trustdmp, dcmodes, '-sc dclist', computers_pwdnotreqd, computer_pwdnotreqd,
+                                subnetdmp, gpodmp, admincountdmp, users_noexpire, computers_active,
+                                '-sc u:', dompol, ' oudmp', fspdmp, '-subnets -f', exchaddresses, domainncs]
+  sel_sharphound:
+    - process.name: [SharpHound.exe, BloodHound.exe, SOAPHound.exe]
+    - process.cmd_line|contains: [' -CollectionMethod', ' --CollectionMethods', Invoke-BloodHound,
+                                  Get-BloodHoundData, ' --Loop --Loopduration ', '.exe -c All -d ']
+  sel_adexplorer:
+    process.name: [ADExplorer.exe, ADExplorer64.exe, ADExplorer64a.exe, ADExp.exe]
+    process.cmd_line|contains: snapshot
+  sel_nltest:
+    process.name: nltest.exe
+    process.cmd_line|contains: [domain_trusts, all_trusts, trusted_domains, 'dclist:']
+  condition: selection_process and (sel_adfind or sel_adfind_flags or sel_sharphound or sel_adexplorer or sel_nltest)
+  timeframe: 1h
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         process.parent_process.name, process.file.path]

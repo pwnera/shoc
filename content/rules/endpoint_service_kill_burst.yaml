@@ -1,0 +1,65 @@
+id: endpoint_service_kill_burst
+title: Ten or more services or processes were stopped on one machine within ten minutes
+description: >
+  One machine ran net stop, sc stop or sc config start= disabled, Stop-Service,
+  Stop-Process or taskkill against ten or more different targets within ten
+  minutes. Ransomware crews run a batch file that stops the database, mail,
+  backup and antivirus services so the files are unlocked and nothing can
+  restore them, minutes before encrypting. Each command alone is everyday admin
+  work and repeating one command does not add to the count; an upgrade script
+  that stops a dozen services of one product looks the same.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1489, T1562.001]
+sources:
+  - name: Splunk
+    title: "Excessive Usage Of Taskkill"
+    url: https://github.com/splunk/security_content/blob/develop/detections/endpoint/excessive_usage_of_taskkill.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Splunk
+    title: "Excessive Attempt To Disable Services"
+    url: https://github.com/splunk/security_content/blob/develop/detections/endpoint/excessive_attempt_to_disable_services.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Splunk
+    title: "Windows Excessive Service Stop Attempt"
+    url: https://github.com/splunk/security_content/blob/develop/detections/endpoint/windows_excessive_service_stop_attempt.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: "Stopping multiple processes using taskkill"
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Microsoft%20Defender%20XDR/Analytic%20Rules/Ransomware/MultiProcessKillWithTaskKill.yaml
+    license: MIT
+    relation: adapted
+  - name: CISA
+    title: "#StopRansomware: Medusa Ransomware"
+    url: https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-071a
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  # net1.exe is left out: net.exe starts it with the same arguments, which
+  # would count every stop twice.
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+  sel_svc_tool:
+    process.name: [net.exe, sc.exe, powershell.exe, pwsh.exe, wmic.exe]
+  sel_svc_verb:
+    process.cmd_line|contains: [' stop ', 'start= disabled', 'start=disabled', Stop-Service, Stop-Process,
+                                stopservice, ' delete ']
+  sel_kill:
+    process.name: taskkill.exe
+    process.cmd_line|contains: ['/im ', '-im ', '/pid ', '-pid ']
+  condition: selection_process and ((sel_svc_tool and sel_svc_verb) or sel_kill)
+  timeframe: 10m
+  group_by: [device.uid]
+  count_distinct: process.cmd_line
+  count: ">= 10"
+entity: device.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         process.parent_process.name]

@@ -110,5 +110,132 @@
         "name": "bash"
       }
     }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "MpCmdRun.exe",
+      "FolderPath": "C:\\Program Files\\Windows Defender\\MpCmdRun.exe",
+      "ProcessCommandLine": "\"C:\\Program Files\\Windows Defender\\MpCmdRun.exe\" -RemoveDefinitions -All",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "CommandLine": "powershell.exe -c Uninstall-WindowsFeature -Name Windows-Defender",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "4244",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "host07.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "powershell.exe",
+        "cmdline": "powershell.exe -c Set-MpPreference -HighThreatDefaultAction 6 -Force",
+        "image": {
+          "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+        },
+        "user": "EXAMPLE\\jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "SystemSettingsAdminFlows.exe",
+      "FolderPath": "C:\\Windows\\System32\\SystemSettingsAdminFlows.exe",
+      "ProcessCommandLine": "SystemSettingsAdminFlows.exe Defender RTP 1",
+      "InitiatingProcessFileName": "powershell.exe",
+      "AccountName": "jdoe"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "CommandLine": "powershell.exe -c Remove-MpPreference -AttackSurfaceReductionRules_Ids 56a863a9-875e-4185-98a7-b882c64b5ce5",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "4245",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "host07.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "reg.exe",
+        "cmdline": "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows Defender\\Windows Defender Exploit Guard\\Controlled Folder Access\" /v EnableControlledFolderAccess /t REG_DWORD /d 0 /f",
+        "image": {
+          "path": "C:\\Windows\\System32\\reg.exe"
+        },
+        "user": "EXAMPLE\\jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "reg.exe",
+      "FolderPath": "C:\\Windows\\System32\\reg.exe",
+      "ProcessCommandLine": "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows Defender\\Scan\" /v DisableArchiveScanning /t REG_DWORD /d 1 /f",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "jdoe"
+    }
   }
 ]

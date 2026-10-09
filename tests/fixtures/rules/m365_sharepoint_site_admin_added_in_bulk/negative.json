@@ -1,0 +1,141 @@
+[
+  {
+    "Id": "m365-SiteCollectionAdminAdded-leaver_example_com",
+    "Operation": "SiteCollectionAdminAdded",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 14,
+    "UserKey": "i:0h.f|membership|00000000-0000-0000-0000-00000000a401@live.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "OneDrive",
+    "ClientIP": "198.51.100.7",
+    "ObjectId": "https://example-my.sharepoint.com/personal/leaver_example_com",
+    "UserId": "it-admin@example.com",
+    "SiteUrl": "https://example-my.sharepoint.com/personal/leaver_example_com",
+    "ModifiedProperties": [
+      {
+        "Name": "SiteAdmin",
+        "NewValue": "it-admin@example.com",
+        "OldValue": ""
+      }
+    ],
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "_content_type": "Audit.SharePoint",
+    "_repeat": 3
+  },
+  {
+    "Id": "m365-SiteCollectionAdminAdded-marketing",
+    "Operation": "SiteCollectionAdminAdded",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 14,
+    "UserKey": "i:0h.f|membership|00000000-0000-0000-0000-00000000a401@live.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "SharePoint",
+    "ClientIP": "198.51.100.8",
+    "ObjectId": "https://example.sharepoint.com/sites/marketing",
+    "UserId": "manager@example.com",
+    "SiteUrl": "https://example.sharepoint.com/sites/marketing",
+    "ModifiedProperties": [
+      {
+        "Name": "SiteAdmin",
+        "NewValue": "manager@example.com",
+        "OldValue": ""
+      }
+    ],
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "_content_type": "Audit.SharePoint"
+  },
+  {
+    "Id": "m365-SiteCollectionAdminAdded-sales",
+    "Operation": "SiteCollectionAdminAdded",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 14,
+    "UserKey": "i:0h.f|membership|00000000-0000-0000-0000-00000000a401@live.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "SharePoint",
+    "ClientIP": "198.51.100.8",
+    "ObjectId": "https://example.sharepoint.com/sites/sales",
+    "UserId": "manager@example.com",
+    "SiteUrl": "https://example.sharepoint.com/sites/sales",
+    "ModifiedProperties": [
+      {
+        "Name": "SiteAdmin",
+        "NewValue": "manager@example.com",
+        "OldValue": ""
+      }
+    ],
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "_content_type": "Audit.SharePoint"
+  },
+  {
+    "Id": "m365-SiteCollectionAdminRemoved-finance",
+    "Operation": "SiteCollectionAdminRemoved",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 14,
+    "UserKey": "i:0h.f|membership|00000000-0000-0000-0000-00000000a401@live.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "SharePoint",
+    "ClientIP": "198.51.100.7",
+    "ObjectId": "https://example.sharepoint.com/sites/finance",
+    "UserId": "it-admin@example.com",
+    "SiteUrl": "https://example.sharepoint.com/sites/finance",
+    "ModifiedProperties": [
+      {
+        "Name": "SiteAdmin",
+        "NewValue": "it-admin@example.com",
+        "OldValue": ""
+      }
+    ],
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "_content_type": "Audit.SharePoint"
+  },
+  {
+    "Id": "m365-SiteCollectionAdminRemoved-hr",
+    "Operation": "SiteCollectionAdminRemoved",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 14,
+    "UserKey": "i:0h.f|membership|00000000-0000-0000-0000-00000000a401@live.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "SharePoint",
+    "ClientIP": "198.51.100.7",
+    "ObjectId": "https://example.sharepoint.com/sites/hr",
+    "UserId": "it-admin@example.com",
+    "SiteUrl": "https://example.sharepoint.com/sites/hr",
+    "ModifiedProperties": [
+      {
+        "Name": "SiteAdmin",
+        "NewValue": "it-admin@example.com",
+        "OldValue": ""
+      }
+    ],
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "_content_type": "Audit.SharePoint"
+  },
+  {
+    "Id": "m365-SiteCollectionAdminRemoved-legal",
+    "Operation": "SiteCollectionAdminRemoved",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 14,
+    "UserKey": "i:0h.f|membership|00000000-0000-0000-0000-00000000a401@live.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "SharePoint",
+    "ClientIP": "198.51.100.7",
+    "ObjectId": "https://example.sharepoint.com/sites/legal",
+    "UserId": "it-admin@example.com",
+    "SiteUrl": "https://example.sharepoint.com/sites/legal",
+    "ModifiedProperties": [
+      {
+        "Name": "SiteAdmin",
+        "NewValue": "it-admin@example.com",
+        "OldValue": ""
+      }
+    ],
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "_content_type": "Audit.SharePoint"
+  }
+]

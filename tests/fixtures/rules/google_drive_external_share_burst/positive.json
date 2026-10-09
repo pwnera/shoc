@@ -1,0 +1,1682 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-0",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "edit",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": false
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000000"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "visibility",
+            "value": "private"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      },
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000000"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-0.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-1",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000001"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-1.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-2",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "edit",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": false
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000002"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "visibility",
+            "value": "private"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      },
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000002"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-2.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-3",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000003"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-3.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-4",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "edit",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": false
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000004"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "visibility",
+            "value": "private"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      },
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000004"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-4.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-5",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000005"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-5.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-6",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "edit",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": false
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000006"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "visibility",
+            "value": "private"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      },
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000006"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-6.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-7",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000007"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-7.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-8",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "edit",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": false
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000008"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "visibility",
+            "value": "private"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      },
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000008"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-8.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-9",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000009"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-9.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-10",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "edit",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": false
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000010"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "visibility",
+            "value": "private"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      },
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000010"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-10.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-11",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000011"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-11.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-12",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "edit",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": false
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000012"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "visibility",
+            "value": "private"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      },
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000012"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-12.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-13",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000013"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-13.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-14",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "edit",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": false
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000014"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "visibility",
+            "value": "private"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      },
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000014"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-14.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-15",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000015"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-15.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-16",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "edit",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": false
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000016"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "visibility",
+            "value": "private"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      },
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000016"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-16.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-17",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000017"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-17.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-18",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "edit",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": false
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000018"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "visibility",
+            "value": "private"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      },
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000018"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-18.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-external-19",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          },
+          {
+            "name": "target_user",
+            "value": "leaver.private@example.org"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_externally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000019"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-19.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
+  }
+]

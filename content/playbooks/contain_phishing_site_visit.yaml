@@ -1,11 +1,11 @@
 id: contain_phishing_site_visit
 title: Contain a visit to a phishing site
 description: >
-  Someone reached a site Cloudflare classes as phishing. If they typed their
-  password there, the attacker signs in next, so the sessions of the IdP login
-  the Gateway user is linked to are revoked (RFC 0027). It acts on cases the
-  crew raised to high: a visit alone is medium, and a medium case can neither
-  page nor revoke on its own.
+  Someone reached a site Cloudflare classes as phishing, a look-alike of a
+  brand or a hijacked site. If they typed their password there, the attacker
+  signs in next, so the sessions of the IdP login the Gateway user is linked
+  to are revoked (RFC 0027). It acts on cases the crew raised to high: a visit
+  alone is medium, and a medium case can neither page nor revoke on its own.
 rules:
   - cloudflare_gateway_phishing_resolved
 questions:

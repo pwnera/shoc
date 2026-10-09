@@ -1,0 +1,33 @@
+[
+  {
+    "_document_id": "gh-org.update_saml_provider_settings",
+    "action": "org.update_saml_provider_settings",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "203.0.113.90",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "actor_is_bot": false,
+    "issuer": "https://idp.example.net/saml/metadata",
+    "sso_url": "https://idp.example.net/saml/sso",
+    "operation_type": "modify",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+  },
+  {
+    "_document_id": "gh-org.recovery_code_used",
+    "action": "org.recovery_code_used",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "203.0.113.90",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "actor_is_bot": false,
+    "operation_type": "authentication"
+  }
+]

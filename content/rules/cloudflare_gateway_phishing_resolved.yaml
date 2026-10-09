@@ -1,20 +1,27 @@
 id: cloudflare_gateway_phishing_resolved
-title: Someone reached a phishing domain Cloudflare did not block
+title: Someone reached a phishing, look-alike or hijacked domain Cloudflare did not block
 description: >
-  Gateway resolved a name it classes as phishing and let it through. The person
-  reached a page Cloudflare already knows is fake; the next step is a sign-in
-  to the identity provider from the attacker's proxy.
+  Gateway resolved a name it classes as phishing, as a look-alike of a known
+  brand (Brand Embedding) or as a real site with malicious content planted on
+  it (Compromised Domain), and let it through. The person reached a page
+  Cloudflare already knows is fake or tampered with; the next step is a
+  sign-in to the identity provider from the attacker's proxy, or a fake update
+  or CAPTCHA page asking them to run something.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-02
+modified: 2026-10-09
 severity: medium
 confidence: 0.6
-attack: [T1566.002]
+attack: [T1566.002, T1189]
 sources:
   - name: Elastic hunting
     title: "Potential Spoofed `microsoftonline.com` via Fuzzy Match"
     url: https://github.com/elastic/detection-rules/blob/main/hunting/cross-platform/queries/potentially_spoofed_microsoft_authentication_domain.toml
     license: Elastic-2.0
+    relation: inspired
+  - name: Cloudflare
+    title: Domain categories
+    url: https://developers.cloudflare.com/cloudflare-one/traffic-policies/domain-categories/
     relation: inspired
 logsource:
   product: cloudflare
@@ -22,7 +29,7 @@ logsource:
 detection:
   selection:
     class_uid: 4003
-    raw.QueryCategoryNames|contains: Phishing
+    raw.QueryCategoryNames|contains: [Phishing, Brand Embedding, Compromised Domain]
     status|startswith: allowed
   condition: selection
   timeframe: 1h

@@ -1,0 +1,54 @@
+id: cloudflare_mail_auth_record_changed
+title: SPF, DKIM or DMARC record changed in Cloudflare
+description: >
+  These records decide whose mail passes as the company's. An include or an
+  address added to SPF, a DKIM key the intruder holds, or a relaxed or deleted
+  DMARC policy lets their mail to customers and the finance team pass every
+  check. Mail tools such as a newsletter or CRM add SPF includes and DKIM
+  records a few times a year, which is why this is medium. MX and NS records
+  belong to cloudflare_mail_dns_record_changed.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.45
+attack: [T1584.002, T1656]
+logsource:
+  product: cloudflare
+  service: audit_log
+detection:
+  dns:
+    raw.raw.uri|contains: /dns_records
+  # A request may leave a field out; the response holds the record.
+  content:
+    - raw.resource.request.content|contains: [v=spf1, v=DMARC1, v=DKIM1]
+    - raw.resource.response.content|contains: [v=spf1, v=DMARC1, v=DKIM1]
+  name:
+    - raw.resource.request.name|contains: [_domainkey, _dmarc]
+    - raw.resource.response.name|contains: [_domainkey, _dmarc]
+  # The batch endpoint lists every record it changed in its response.
+  batch:
+    raw.raw.uri|contains: /dns_records/batch
+    raw.resource.response|re: 'v=spf1|v=DMARC1|v=DKIM1|_domainkey|_dmarc'
+  condition: dns and (content or name or batch)
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, src_endpoint.ip, resource.uid, raw.resource.request.name, raw.resource.request.content]
+sources:
+  - name: Mandiant
+    title: "Global DNS Hijacking Campaign: DNS Record Manipulation at Scale"
+    url: https://cloud.google.com/blog/topics/threat-intelligence/global-dns-hijacking-campaign-dns-record-manipulation-at-scale
+    relation: inspired
+  - name: CISA
+    title: "Emergency Directive 19-01: Mitigate DNS Infrastructure Tampering"
+    url: https://www.cisa.gov/news-events/directives/ed-19-01-mitigate-dns-infrastructure-tampering
+    relation: inspired
+  - name: Cloudflare
+    title: Batch DNS Records
+    url: https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/batch/
+    relation: inspired
+  - name: Sigma
+    title: Google Cloud DNS Zone Modified or Deleted
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/gcp/audit/gcp_dns_zone_modified_or_deleted.yml
+    author: Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: inspired

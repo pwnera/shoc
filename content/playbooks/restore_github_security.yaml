@@ -1,8 +1,9 @@
 id: restore_github_security
 title: Turn GitHub security features back on
 description: >
-  Secret scanning, push protection, the 2FA requirement or the OAuth app
-  restrictions were switched off. Turning secret scanning back on for the
+  Secret scanning, push protection, the 2FA requirement, the OAuth app
+  restrictions, the IP allow list, a token restriction or the audit log's
+  source addresses were switched off. Turning secret scanning back on for the
   repository is undone by switching it off, but changes what developers see on
   push, so it waits for a human, who is paged first. The organisation settings
   need a person in the GitHub console.

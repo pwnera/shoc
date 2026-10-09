@@ -63,5 +63,37 @@
         "name": "projects/-/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com"
       }
     }
+  },
+  {
+    "insertId": "hmac-create",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gcs_bucket",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "storage.googleapis.com",
+      "methodName": "storage.hmacKeys.create",
+      "resourceName": "projects/_/hmacKeys/GOOG1EXAMPLEACCESSID000000000000000000000000000000000",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "authorizationInfo": [
+        {
+          "resource": "projects/_/hmacKeys/",
+          "permission": "storage.hmacKeys.create",
+          "granted": true,
+          "resourceAttributes": {}
+        }
+      ]
+    }
   }
 ]

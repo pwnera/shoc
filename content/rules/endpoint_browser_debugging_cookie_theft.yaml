@@ -1,0 +1,76 @@
+id: endpoint_browser_debugging_cookie_theft
+title: A browser was started hidden with remote debugging and its own profile folder
+description: >
+  Chrome, Edge or Brave started with remote debugging on, a --user-data-dir and
+  a hidden window (--headless or a window placed off screen), by something
+  other than a test framework. Infostealers drive the browser this way to read
+  every cookie in clear text, which gets around Chrome's app-bound cookie
+  encryption; since Chrome 136 refuses remote debugging on the default profile,
+  they copy the profile and point --user-data-dir at the copy. The cookies log
+  the attacker into the person's SaaS accounts without a password or MFA.
+  Puppeteer, Playwright, Selenium, Cypress and editor debuggers are left out by
+  their parent process or profile name; a team's own test runner may need
+  adding.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1539, T1185, T1555.003]
+sources:
+  - name: Sigma
+    title: "Potential Data Stealing Via Chromium Headless Debugging"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_browsers_chromium_headless_debugging.yml
+    author: "Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Browser Started with Remote Debugging"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_browsers_remote_debugging.yml
+    author: "pH-T (Nextron Systems), Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: inspired
+  - name: Elastic
+    title: "Potential Cookies Theft via Browser Debugging"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/cross-platform/credential_access_cookies_chromium_browsers_debugging.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Google
+    title: "Changes to remote debugging switches to improve security"
+    url: https://developer.chrome.com/blog/remote-debugging-port
+    relation: inspired
+  - name: Elastic Security Labs
+    title: "Katz and Mouse Game: MaaS Infostealers Adapt to Patched Chrome Defenses"
+    url: https://www.elastic.co/security-labs/katz-and-mouse-game
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+    process.name: [chrome.exe, msedge.exe, brave.exe, opera.exe, vivaldi.exe, Google Chrome, Microsoft Edge,
+                   Brave Browser, chrome, google-chrome, chromium, microsoft-edge]
+  # --remote-debugging-port, -pipe, -address and the rest.
+  sel_debug:
+    process.cmd_line|contains: --remote-debugging-
+  sel_profile:
+    process.cmd_line|contains: --user-data-dir
+  sel_hidden:
+    process.cmd_line|contains: [--headless, '--window-position=-']
+  # The browser's own renderer and helper processes repeat its switches.
+  filter_child:
+    process.cmd_line|contains: --type=
+  # Puppeteer, Playwright, Selenium, Cypress and editor debuggers.
+  filter_automation_parent:
+    process.parent_process.name: [node, node.exe, chromedriver, chromedriver.exe, msedgedriver, msedgedriver.exe,
+                                  Code.exe, Code Helper, Code Helper (Plugin), Cursor.exe, Cursor Helper, java,
+                                  java.exe, Cypress, Cypress.exe]
+  filter_automation_profile:
+    process.cmd_line|contains: [puppeteer_dev_chrome_profile, playwright_chromiumdev_profile, scoped_dir, .vscode,
+                                Cypress]
+  condition: selection_process and sel_debug and sel_profile and sel_hidden and not filter_child and not filter_automation_parent and not filter_automation_profile
+  timeframe: 15m
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line, process.parent_process.name,
+         process.file.path]

@@ -1,0 +1,22 @@
+[
+  {
+    "action": "CREATE",
+    "actor": {"displayName": "Mallory", "id": "u999CNTRL", "loginName": "mallory@example.com", "type": "USER"},
+    "eventGroupID": "34568b2c3d4e5f60718293a4b5c6d801",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "inv123CNTRL", "name": "contractor-share", "type": "INVITE", "property": "NODE_SHARE"},
+    "type": "CONFIG",
+    "event": "INVITE.CREATE.NODE_SHARE",
+    "tailnet": "T1234CNTRL"
+  },
+  {
+    "action": "ACCEPT",
+    "actor": {"displayName": "Eve", "id": "u777CNTRL", "loginName": "eve@example.net", "type": "USER"},
+    "eventGroupID": "34568b2c3d4e5f60718293a4b5c6d802",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "inv123CNTRL", "name": "contractor-share", "type": "INVITE", "property": "NODE_SHARE"},
+    "type": "CONFIG",
+    "event": "INVITE.ACCEPT.NODE_SHARE",
+    "tailnet": "T1234CNTRL"
+  }
+]

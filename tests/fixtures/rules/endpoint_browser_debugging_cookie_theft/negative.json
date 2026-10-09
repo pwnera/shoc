@@ -1,0 +1,58 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd21",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "CommandLine": "\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --headless=new --remote-debugging-port=0 --user-data-dir=C:\\Users\\dev1\\AppData\\Local\\Temp\\puppeteer_dev_chrome_profile-AbC123",
+    "ParentBaseFileName": "node.exe",
+    "RawProcessId": "9945",
+    "UserName": "dev1"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "ffffffffffffffffffffffffffffffffffffff02",
+      "DeviceName": "laptop-43.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "chrome.exe",
+      "FolderPath": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "ProcessCommandLine": "\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --type=renderer --headless --user-data-dir=C:\\Users\\dev2\\AppData\\Local\\Temp\\run-77 --remote-debugging-port=9222 --lang=en-US",
+      "InitiatingProcessFileName": "chrome.exe",
+      "AccountName": "dev2"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "55cf574b-9fd7-5278-2ee0-badefd0d2221"
+    },
+    "endpoint": {
+      "name": "MBP-DBLUE",
+      "os": "osx"
+    },
+    "tgt": {
+      "process": {
+        "name": "Google Chrome",
+        "cmdline": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --flag-switches-begin --flag-switches-end",
+        "image": {
+          "path": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        },
+        "user": "dblue"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "launchd"
+      }
+    }
+  }
+]

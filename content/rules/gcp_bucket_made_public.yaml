@@ -1,12 +1,14 @@
 id: gcp_bucket_made_public
-title: Cloud Storage bucket readable by anyone
+title: Cloud Storage bucket or BigQuery dataset readable by anyone
 description: >
-  allUsers or allAuthenticatedUsers was added to a bucket's permissions. It is
-  the GCP version of a public S3 bucket: every object in it can be listed or
-  read by anyone with the name.
+  allUsers or allAuthenticatedUsers was added to a bucket's or a BigQuery
+  dataset's permissions. It is the GCP version of a public S3 bucket: every
+  object or table in it can be read by anyone with the name. Cloud Run and
+  Cloud Functions are left out, since a public invoker is how a public
+  website works.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-02
+modified: 2026-10-09
 severity: critical
 confidence: 0.7
 attack: [T1530]
@@ -20,13 +22,28 @@ detection:
   public:
     - unmapped.members.ADD.allUsers.role|exists: true
     - unmapped.members.ADD.allAuthenticatedUsers.role|exists: true
-  condition: selection and public
+  selection_dataset:
+    api.service.name: bigquery.googleapis.com
+    api.operation|endswith: SetIamPolicy
+    status: Success
+  # BigQuery logs a dataset's IAM change in its own metadata. "action" comes
+  # before "member" in Google's order and in Postgres jsonb order (shorter key
+  # first, then bytewise), and [^}]* keeps the match inside one delta.
+  public_dataset:
+    raw.protoPayload.metadata.datasetChange.bindingDeltas|re: '"action":\s*"ADD"[^}]*"member":\s*"(allUsers|allAuthenticatedUsers)"'
+  condition: (selection and public) or (selection_dataset and (public or public_dataset))
   timeframe: 15m
 entity: resource.uid
-fields: [actor.user.name, src_endpoint.ip, resource.uid, raw.protoPayload.serviceData.policyDelta.bindingDeltas]
+fields: [actor.user.name, src_endpoint.ip, resource.uid, raw.protoPayload.serviceData.policyDelta.bindingDeltas, raw.protoPayload.metadata.datasetChange.bindingDeltas]
 sources:
   - name: Elastic
     title: GCP Storage Bucket Permissions Modification
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/defense_evasion_gcp_storage_bucket_permissions_modified
     license: Elastic-2.0
     relation: inspired
+  - name: Chronicle
+    title: GCP BigQuery Datasets Opened To Public
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/gcp/gcp_bigquery_datasets_opened_to_public.yaral
+    author: Google Cloud Security
+    license: Apache-2.0
+    relation: adapted

@@ -1,0 +1,160 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "vssadmin.exe",
+      "FolderPath": "C:\\Windows\\System32\\vssadmin.exe",
+      "ProcessCommandLine": "vssadmin.exe Delete Shadows /all /quiet",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "FS02",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "CommandLine": "powershell.exe -Command \"Get-WmiObject Win32_Shadowcopy | Remove-WmiObject\"",
+    "ParentBaseFileName": "w.exe",
+    "RawProcessId": "4242",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778801"
+    },
+    "endpoint": {
+      "name": "srv-backup.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "wbadmin.exe",
+        "cmdline": "wbadmin delete catalog -quiet",
+        "image": {
+          "path": "C:\\Windows\\System32\\wbadmin.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "bcdedit.exe",
+      "FolderPath": "C:\\Windows\\System32\\bcdedit.exe",
+      "ProcessCommandLine": "bcdedit /set {default} recoveryenabled No",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcde1",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-APP03",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\ReAgentc.exe",
+    "CommandLine": "reagentc.exe /disable",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "4242",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778802"
+    },
+    "endpoint": {
+      "name": "srv-files02.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "cipher.exe",
+        "cmdline": "cipher.exe /w:C:\\",
+        "image": {
+          "path": "C:\\Windows\\System32\\cipher.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "vssadmin.exe",
+      "FolderPath": "C:\\Windows\\System32\\vssadmin.exe",
+      "ProcessCommandLine": "vssadmin resize shadowstorage /for=C: /on=C: /maxsize=401MB",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778803"
+    },
+    "endpoint": {
+      "name": "srv-db01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "wbadmin.exe",
+        "cmdline": "wbadmin delete systemstatebackup -keepVersions:0 -quiet",
+        "image": {
+          "path": "C:\\Windows\\System32\\wbadmin.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  }
+]

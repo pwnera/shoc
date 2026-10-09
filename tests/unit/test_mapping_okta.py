@@ -20,6 +20,7 @@ def _row(event_type, result="SUCCESS"):
         ("policy.lifecycle.update", 3004),
         ("user.account.privilege.grant", 3005),
         ("iam.resourceset.bindings.add", 3005),
+        ("app.oauth2.client.privilege.grant", 3005),
         ("application.policy.sign_on.update", 3004),
         ("application.policy.sign_on.rule.delete", 3004),
         ("group.user_membership.add", 3006),
@@ -29,6 +30,20 @@ def _row(event_type, result="SUCCESS"):
 )
 def test_event_type_picks_the_class(event_type, class_uid):
     assert _row(event_type)["class_uid"] == class_uid
+
+
+@pytest.mark.parametrize(
+    ("result", "status"),
+    [
+        ("UNANSWERED", "Failure"),
+        ("ABANDONED", "Failure"),
+        ("RATE_LIMIT", "Failure"),
+        ("DEFERRED", "Other"),
+        ("SCHEDULED", "Other"),
+    ],
+)
+def test_an_unanswered_or_throttled_outcome_is_not_a_success(result, status):
+    assert _row("user.authentication.auth_via_mfa", result)["status"] == status
 
 
 def test_a_rejected_push_is_a_failed_sign_in_step():

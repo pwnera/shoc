@@ -1,0 +1,104 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "serial-status",
+    "eventName": "GetSerialConsoleAccessStatus",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.41",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:ops@example.com",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_account-admin_599c9e90e350d2ff/ops@example.com",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLEOPS00001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWSReservedSSO_account-admin_599c9e90e350d2ff",
+          "accountId": "123456789012",
+          "userName": "AWSReservedSSO_account-admin_599c9e90e350d2ff"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "GetSerialConsoleAccessStatusRequest": ""
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "readOnly": true
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "serial-disable",
+    "eventName": "DisableSerialConsoleAccess",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.41",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:ops@example.com",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_account-admin_599c9e90e350d2ff/ops@example.com",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLEOPS00001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWSReservedSSO_account-admin_599c9e90e350d2ff",
+          "accountId": "123456789012",
+          "userName": "AWSReservedSSO_account-admin_599c9e90e350d2ff"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "DisableSerialConsoleAccessRequest": ""
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "serial-enable-denied",
+    "eventName": "EnableSerialConsoleAccess",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "EnableSerialConsoleAccessRequest": ""
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "errorCode": "Client.UnauthorizedOperation",
+    "errorMessage": "You are not authorized to perform this operation."
+  }
+]

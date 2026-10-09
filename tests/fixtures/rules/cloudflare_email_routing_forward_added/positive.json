@@ -1,0 +1,38 @@
+[
+  {
+    "id": "7a2b3c4d5e6f40718293a4b5c6d7e801",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Create routing rule", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1f01", "method": "POST", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/email/routing/rules", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "", "product": "email_routing", "request": {"name": "ceo", "enabled": true, "actions": [{"type": "forward", "value": ["ceo.backup@example.net"]}], "matchers": [{"type": "literal", "field": "to", "value": "ceo@example.com"}]}, "response": {"id": "a7e6f7cdc1d24b5d8e2c3f4a5b6c7d01"}, "scope": "zones", "type": "rules"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "7a2b3c4d5e6f40718293a4b5c6d7e802",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Update catch-all rule", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1f02", "method": "PUT", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/email/routing/rules/catch_all", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "catch_all", "product": "email_routing", "request": {"enabled": true, "actions": [{"type": "worker", "value": ["mail-archiver"]}], "matchers": [{"type": "all"}]}, "response": {}, "scope": "zones", "type": "rules"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "7a2b3c4d5e6f40718293a4b5c6d7e803",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Create destination address", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1f03", "method": "POST", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/email/routing/addresses", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "", "product": "email_routing", "request": {"email": "ceo.backup@example.net"}, "response": {"id": "ea95132c15732412d22c1476fa83f803"}, "scope": "accounts", "type": "addresses"},
+    "zone": {}
+  },
+  {
+    "id": "7a2b3c4d5e6f40718293a4b5c6d7e804",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Enable Email Routing", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1f04", "method": "POST", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/email/routing/dns", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "", "product": "email_routing", "request": {}, "response": {}, "scope": "zones", "type": "dns"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  }
+]

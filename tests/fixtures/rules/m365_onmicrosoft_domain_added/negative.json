@@ -1,0 +1,100 @@
+[
+  {
+    "Id": "m365-Add unverified domain.-example.org",
+    "Operation": "Add unverified domain.",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 8,
+    "ResultStatus": "Success",
+    "UserKey": "10032001A2B3C4D5",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.7",
+    "ObjectId": "Not Available",
+    "UserId": "it-admin@example.com",
+    "AzureActiveDirectoryEventType": 1,
+    "ExtendedProperties": [
+      {
+        "Name": "additionalDetails",
+        "Value": "{}"
+      },
+      {
+        "Name": "extendedAuditEventCategory",
+        "Value": "Domain"
+      }
+    ],
+    "ModifiedProperties": [
+      {
+        "Name": "Name",
+        "NewValue": "[\r\n  \"example.org\"\r\n]",
+        "OldValue": "[\r\n  \"\"\r\n]"
+      },
+      {
+        "Name": "LiveType",
+        "NewValue": "[\r\n  \"Managed\"\r\n]",
+        "OldValue": "[\r\n  \"None\"\r\n]"
+      },
+      {
+        "Name": "Included Updated Properties",
+        "NewValue": "Name,LiveType",
+        "OldValue": ""
+      }
+    ],
+    "Target": [
+      {
+        "ID": "example.org",
+        "Type": 1
+      }
+    ],
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-Add verified domain.-example-support.onmicrosoft.com",
+    "Operation": "Add verified domain.",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 8,
+    "ResultStatus": "Failure",
+    "UserKey": "10032001A2B3C4D5",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "203.0.113.61",
+    "ObjectId": "Not Available",
+    "UserId": "it-admin@example.com",
+    "AzureActiveDirectoryEventType": 1,
+    "ExtendedProperties": [
+      {
+        "Name": "additionalDetails",
+        "Value": "{}"
+      },
+      {
+        "Name": "extendedAuditEventCategory",
+        "Value": "Domain"
+      }
+    ],
+    "ModifiedProperties": [
+      {
+        "Name": "Name",
+        "NewValue": "[\r\n  \"example-support.onmicrosoft.com\"\r\n]",
+        "OldValue": "[\r\n  \"\"\r\n]"
+      },
+      {
+        "Name": "LiveType",
+        "NewValue": "[\r\n  \"Managed\"\r\n]",
+        "OldValue": "[\r\n  \"None\"\r\n]"
+      },
+      {
+        "Name": "Included Updated Properties",
+        "NewValue": "Name,LiveType",
+        "OldValue": ""
+      }
+    ],
+    "Target": [
+      {
+        "ID": "example-support.onmicrosoft.com",
+        "Type": 1
+      }
+    ],
+    "_content_type": "Audit.AzureActiveDirectory"
+  }
+]

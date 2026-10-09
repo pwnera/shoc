@@ -56,5 +56,22 @@
     "primaryDescription": "The Management user it.admin@example.com added a new agent package.",
     "threatId": null,
     "userId": "000000000000000001"
+  },
+  {
+    "_source": "sentinelone",
+    "accountId": "000000000000000000",
+    "activityType": 51,
+    "agentId": "1000000000000000009",
+    "data": {
+      "accountName": "example.com",
+      "username": "it.admin@example.com",
+      "computerName": "LAPTOP-09",
+      "uuid": "11112222333344445555666677770009"
+    },
+    "id": "act-51-1",
+    "primaryDescription": "The Management user it.admin@example.com uninstalled the Agent LAPTOP-09.",
+    "secondaryDescription": null,
+    "threatId": null,
+    "userId": "000000000000000001"
   }
 ]

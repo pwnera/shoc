@@ -1,0 +1,68 @@
+[
+  {
+    "id": 91301,
+    "author_id": 42,
+    "entity_id": 18,
+    "entity_type": "Project",
+    "event_name": "protected_branch_allow_force_push_updated",
+    "details": {
+      "event_name": "protected_branch_allow_force_push_updated",
+      "change": "allow force push",
+      "from": true,
+      "to": false,
+      "target_id": 21,
+      "target_type": "ProtectedBranch",
+      "target_details": "main",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform/api"
+    }
+  },
+  {
+    "id": 91303,
+    "author_id": 42,
+    "entity_id": 18,
+    "entity_type": "Project",
+    "event_name": "protected_branch_added",
+    "details": {
+      "event_name": "protected_branch_added",
+      "custom_message": "Added protected branch",
+      "target_id": 23,
+      "target_type": "ProtectedBranch",
+      "target_details": "release",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform/api"
+    }
+  },
+  {
+    "id": 91304,
+    "author_id": 42,
+    "entity_id": 18,
+    "entity_type": "Project",
+    "event_name": "protected_branch_updated",
+    "details": {
+      "event_name": "protected_branch_updated",
+      "custom_message": "Changed allowed to merge from [\"Maintainers\"] to [\"Developers + Maintainers\"]",
+      "change": "allowed to merge",
+      "from": [
+        "Maintainers"
+      ],
+      "to": [
+        "Developers + Maintainers"
+      ],
+      "target_id": 21,
+      "target_type": "ProtectedBranch",
+      "target_details": "main",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform/api"
+    }
+  }
+]

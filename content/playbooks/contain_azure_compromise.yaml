@@ -2,10 +2,13 @@ id: contain_azure_compromise
 title: Contain a compromised Azure subscription
 description: >
   Someone granted Owner or opened a Key Vault, turned off logging, deleted
-  backups and resources in bulk, or Defender for Cloud raised a high alert.
+  backups and resources in bulk, opened an admin port or a storage account to
+  the internet, made a disk downloadable by link, wrote an Automation runbook,
+  or Defender for Cloud raised a high alert.
   Revoking the caller's Entra sessions stops further changes from that sign-in
-  and is reversible. Removing a role assignment or restoring a diagnostic
-  setting needs actions shoc does not have yet, so a human is paged. Commands
+  and is reversible. Removing a role assignment, closing a port or restoring a
+  diagnostic setting needs actions shoc does not have yet, so a human is
+  paged. Commands
   run on a VM are answered in contain_azure_vm_command, which can power it off.
 rules:
   - azure_privileged_access_granted
@@ -14,6 +17,10 @@ rules:
   - azure_vendor_alert
   - hunt:azure_principal_first_operation
   - hunt:azure_storage_keys_listed_first_seen
+  - azure_nsg_opened_to_internet
+  - azure_storage_opened_to_public
+  - azure_disk_download_link_created
+  - azure_automation_runbook_or_webhook_created
 questions:
   - id: caller
     ask: Is the caller a person or an app, and did it sign in from an address, country or device it has used in the last 30 days?
@@ -23,6 +30,8 @@ questions:
     ask: Which vault, role assignment or resources were touched, and what do they hold or serve?
   - id: still_off
     ask: If logging was deleted, is it still off, and what happened while it was?
+  - id: exposure
+    ask: If a port, a storage account or a disk link was opened, is it still open, and what does it expose?
 benign_when:
   - A named engineer ran a documented maintenance command from the office egress, and the pipeline's usual service principal made the change.
   - A test environment was torn down with terraform destroy by its owner.

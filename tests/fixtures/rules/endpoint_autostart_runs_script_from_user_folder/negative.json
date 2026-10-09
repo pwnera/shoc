@@ -1,0 +1,86 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbc",
+      "DeviceName": "laptop-14.example.com",
+      "ActionType": "ScheduledTaskCreated",
+      "AdditionalFields": {
+        "TaskName": "\\OneDrive Standalone Update Task-S-1-5-21-1111111111-2222222222-3333333333-1105",
+        "TaskContent": "{\"Actions\":{\"Exec\":{\"Command\":\"%localappdata%\\\\Microsoft\\\\OneDrive\\\\OneDriveStandaloneUpdater.exe\",\"Arguments\":\"/reporting\"}}}"
+      },
+      "InitiatingProcessFileName": "OneDrive.exe",
+      "InitiatingProcessAccountName": "bwhite"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "AsepValueUpdate",
+    "aid": "0123456789abcdef0123456789abcd13",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "RegObjectName": "\\REGISTRY\\MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce",
+    "RegValueName": "wextract_cleanup0",
+    "RegStringValue": "rundll32.exe C:\\WINDOWS\\system32\\advpack.dll,DelNodeRunDLL32 \"C:\\Users\\jdoe\\AppData\\Local\\Temp\\IXP000.TMP\\\""
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceRegistryEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbd",
+      "DeviceName": "laptop-15.example.com",
+      "ActionType": "RegistryValueSet",
+      "RegistryKey": "HKEY_CURRENT_USER\\S-1-5-21-1111111111-2222222222-3333333333-1106\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+      "RegistryValueName": "Spotify",
+      "RegistryValueType": "String",
+      "RegistryValueData": "\"C:\\Users\\cgreen\\AppData\\Roaming\\Spotify\\Spotify.exe\" --autostart --minimized",
+      "InitiatingProcessFileName": "Spotify.exe"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770013"
+    },
+    "endpoint": {
+      "name": "srv-app02.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "schtasks.exe",
+        "cmdline": "schtasks /create /tn \"BackupAgent\" /tr \"C:\\Program Files\\Backup\\agent.exe --run\" /sc daily /st 02:00",
+        "image": {
+          "path": "C:\\Windows\\System32\\schtasks.exe"
+        },
+        "user": "NT AUTHORITY\\SYSTEM"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "msiexec.exe"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceFileEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0",
+      "DeviceName": "laptop-19.example.com",
+      "ActionType": "FileCreated",
+      "FileName": "Slack.lnk",
+      "FolderPath": "C:\\Users\\dblue\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\Slack.lnk",
+      "InitiatingProcessFileName": "slack.exe",
+      "InitiatingProcessAccountName": "dblue"
+    }
+  }
+]

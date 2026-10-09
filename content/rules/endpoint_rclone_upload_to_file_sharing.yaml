@@ -1,12 +1,15 @@
 id: endpoint_rclone_upload_to_file_sharing
-title: Rclone or MEGA tools copied files to a file-sharing service
+title: Rclone, MEGA tools or curl copied files to a file-sharing service
 description: >
-  Rclone copied files to MEGA, pCloud or FTP, or a MEGA command-line tool
-  uploaded them. Extortion crews take the data this way before they encrypt;
-  a company's own backups go to S3, B2 or GCS with a config file.
+  Rclone copied files to MEGA, pCloud or FTP, a MEGA command-line tool uploaded
+  them, or curl posted a file to a public drop such as transfer.sh, 0x0.st or
+  file.io. Extortion crews take the data this way before they encrypt, and use
+  curl when rclone is blocked; a company's own backups go to S3, B2 or GCS with
+  a config file. WeTransfer and Pastebin are left out because people use them
+  on purpose.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.7
 attack: [T1567.002, T1048]
@@ -17,6 +20,12 @@ sources:
     author: "Bhabesh Raj, Sittikorn S, Aaron Greetham (@beardofbinary) - NCC Group"
     license: DRL-1.1
     relation: inspired
+  - name: Sigma
+    title: "Curl File Upload To File Sharing Websites"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_curl_upload_file_sharing_websites.yml
+    author: "Swachchhanda Shrawan Poudel (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
   - name: Elastic
     title: "Potential Data Exfiltration via Rclone"
     url: https://github.com/elastic/detection-rules/blob/main/rules/windows/exfiltration_rclone_cloud_upload.toml
@@ -47,7 +56,16 @@ detection:
                                 '--auto-confirm']
   sel_mega_cli:
     process.cmd_line|contains: [mega-put, megaput, megatools put, megacopy]
-  condition: selection_process and ((sel_rclone and sel_rclone_verb and sel_rclone_dest) or sel_mega_cli)
+  # A bare 'temp.sh' or 'file.io' is also a local file name.
+  sel_curl:
+    process.name: [curl.exe, curl]
+    process.cmd_line|contains: [transfer.sh/, //temp.sh, //file.io, 0x0.st, bashupload.com, //x0.at,
+                                filebin.net, ufile.io]
+  # -F and -T are case-sensitive in curl, hence the regular expression.
+  sel_curl_upload:
+    - process.cmd_line|contains: [' --form', ' --upload-file', ' --data-binary', ' -X POST']
+    - process.cmd_line|re: '\s-[FT]'
+  condition: selection_process and ((sel_rclone and sel_rclone_verb and sel_rclone_dest) or sel_mega_cli or (sel_curl and sel_curl_upload))
   timeframe: 1h
 entity: resource.uid
 fields: [device.hostname, actor.user.name, process.name, process.cmd_line,

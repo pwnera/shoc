@@ -25,5 +25,41 @@
     ],
     "tenantId": "tid-1",
     "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Update user ImmutableId by a person",
+    "activityDisplayName": "Update user",
+    "category": "UserManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "id": "u-2",
+        "userPrincipalName": "admin@example.com",
+        "ipAddress": "203.0.113.62"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000u701",
+        "type": "User",
+        "userPrincipalName": "cfo@example.com",
+        "modifiedProperties": [
+          {
+            "displayName": "SourceAnchor",
+            "oldValue": "[]",
+            "newValue": "[\"dGVzdC1pbW11dGFibGUtaWQ=\"]"
+          },
+          {
+            "displayName": "Included Updated Properties",
+            "oldValue": null,
+            "newValue": "\"SourceAnchor\""
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
   }
 ]

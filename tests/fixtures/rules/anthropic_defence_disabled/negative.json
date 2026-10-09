@@ -64,5 +64,50 @@
     },
     "ignore": false,
     "spend_limit_id": "0b1c2d3e-0000-4000-8000-000000000002"
+  },
+  {
+    "id": "activity_01IpRange",
+    "organization_id": "org_01",
+    "type": "org_ip_restriction_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "admin@example.com",
+      "user_id": "user_01A",
+      "ip_address": "198.51.100.20",
+      "user_agent": "Mozilla/5.0"
+    },
+    "ip_allowlist_enabled": true,
+    "ip_range": "198.51.100.0/24",
+    "previous_ip_range": "192.0.2.0/24"
+  },
+  {
+    "id": "activity_01ExtraRaised",
+    "organization_id": "org_01",
+    "type": "extra_usage_spend_limit_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "admin@example.com",
+      "user_id": "user_01A",
+      "ip_address": "198.51.100.20",
+      "user_agent": "Mozilla/5.0"
+    },
+    "is_enabled": true,
+    "amount": 50000,
+    "limit_type": "organization"
+  },
+  {
+    "id": "activity_01HooksOn",
+    "organization_id": "org_01",
+    "type": "inference_hooks_config_updated",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "admin@example.com",
+      "user_id": "user_01A",
+      "ip_address": "198.51.100.20",
+      "user_agent": "Mozilla/5.0"
+    },
+    "enabled": true,
+    "enforcement_mode": "prompt_only",
+    "fail_mode": "fail_open"
   }
 ]

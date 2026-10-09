@@ -1,0 +1,81 @@
+[
+  {
+    "uuid": "okta-captcha-on",
+    "eventType": "system.org.captcha.activate",
+    "displayMessage": "system org captcha activate",
+    "actor": {
+      "id": "00u1admin0001",
+      "type": "User",
+      "alternateId": "it-admin@example.com",
+      "displayName": "IT Admin"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102AdminSess7Qx"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "cap1hcap0001",
+        "type": "Captcha",
+        "alternateId": "unknown",
+        "displayName": "hCaptcha"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-threat-detected",
+    "eventType": "security.threat.detected",
+    "displayMessage": "security threat detected",
+    "actor": {
+      "id": "unknown",
+      "type": "User",
+      "alternateId": "unknown",
+      "displayName": "unknown"
+    },
+    "client": {
+      "ipAddress": "192.0.2.66",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "DENY",
+      "reason": "Password Spray"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64530,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "threatDetections": "{\"Password Spray\":\"HIGH\"}"
+      }
+    }
+  }
+]

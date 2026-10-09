@@ -1,15 +1,17 @@
 id: anthropic_defence_disabled
 title: Claude organisation protection or audit logging switched off
 description: >
-  The Compliance API or its activity logging was turned off, SSO or the
-  magic-link second factor disabled, the IP restriction deleted, an API or
-  extra-usage spend limit removed, or an Admin key deleted. The first blinds
-  shoc's activity feed; the others open the Console, raise what a stolen key
-  can cost, or remove shoc's own key. Editing a spend limit is logged as a
-  delete and a create, so an edit matches too.
+  The Compliance API or its activity logging was turned off; SSO, the
+  magic-link second factor, the IP restriction, directory sync or the
+  inference hooks filter was removed or switched off; a spend limit was
+  removed, snoozed or disabled; or an Admin key was deleted. The first blinds
+  shoc's activity feed; the others open the Console, keep in people the
+  identity provider removed, let prompts skip the company's filter, raise what
+  a stolen key can cost, or remove shoc's own key. Editing a spend limit is
+  logged as a delete and a create, so an edit matches too.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.6
 attack: [T1562.008, T1556, T1562.007]
@@ -25,10 +27,25 @@ detection:
       - extra_usage_spend_limit_deleted
       - platform_spend_limit_deleted
       - workspace_spend_limit_deleted
+      - workspace_member_spend_limit_deleted
       - admin_api_key_deleted
+      - inference_hooks_config_deleted
+      - org_directory_sync_deleted
   selection_toggled_off:
     api.operation: [org_sso_toggled, org_magic_link_second_factor_toggled]
     raw.enabled: "false"
+  # The same protections switched off by an update instead of a delete.
+  selection_updated_off:
+    - api.operation: org_ip_restriction_updated
+      raw.ip_allowlist_enabled: false
+    # A snoozed org spend limit stops pausing usage, as a deleted one does.
+    - api.operation: platform_spend_limit_updated
+      raw.ignore: true
+    - api.operation: extra_usage_spend_limit_updated
+      raw.is_enabled: false
+    # Inference hooks send prompts and responses to the company's own filter.
+    - api.operation: inference_hooks_config_updated
+      raw.enabled: false
   selection_logging_off:
     - api.operation: org_compliance_api_settings_updated
       raw.compliance_api_logging_enabled: "false"

@@ -2,11 +2,12 @@ id: okta_admin_privilege_granted
 title: Okta administrator privilege granted
 description: >
   An administrator role was granted in the identity provider: to a user, to a
-  group (every member, present and future, becomes an admin), or as a custom
-  role binding.
+  group (every member, present and future, becomes an admin), as a custom
+  role binding, or to an OAuth service app, which then acts as an admin
+  without anyone signing in and outlives every password reset.
 status: stable
 date: 2026-09-24
-modified: 2026-10-02
+modified: 2026-10-09
 severity: high
 confidence: 0.7
 attack: [T1098.003]
@@ -19,6 +20,7 @@ detection:
       - user.account.privilege.grant
       - group.privilege.grant
       - iam.resourceset.bindings.add
+      - app.oauth2.client.privilege.grant
   condition: selection
   timeframe: 15m
 entity: actor.user.name
@@ -46,3 +48,7 @@ sources:
     author: Nikita Khalimonenkov
     license: DRL-1.1
     relation: adapted
+  - name: Okta
+    title: Event types catalogue (app.oauth2.client.privilege.grant)
+    url: https://github.com/okta/okta-developer-docs/blob/master/packages/@okta/vuepress-site/data/event-types.json
+    relation: inspired

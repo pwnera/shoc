@@ -1,0 +1,203 @@
+[
+  {
+    "id": "Directory_00000000-0000-0000-0000-0000000c202_DRS_1",
+    "activityDisplayName": "Register device",
+    "category": "Device",
+    "loggedByService": "Device Registration Service",
+    "operationType": "Add",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a102",
+        "userPrincipalName": "carla@example.com",
+        "ipAddress": "203.0.113.20"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-0000000c302",
+        "displayName": "LAPTOP-CARLA",
+        "type": "Device",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "Device OS",
+        "value": "Windows"
+      },
+      {
+        "key": "Device Trust Type",
+        "value": "Workplace"
+      }
+    ],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000c103",
+    "userPrincipalName": "dan@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a103",
+    "appDisplayName": "Microsoft Authentication Broker",
+    "appId": "29d9ed98-a469-4536-ade2-f981bc1d605e",
+    "resourceDisplayName": "Device Registration Service",
+    "resourceId": "01cb2876-7ebd-4aa4-9cc9-d28bd4d359a9",
+    "authenticationProtocol": "deviceCode",
+    "ipAddress": "198.51.100.141",
+    "autonomousSystemNumber": 64501,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-0000000c204_DRS_1",
+    "activityDisplayName": "Register device",
+    "category": "Device",
+    "loggedByService": "Device Registration Service",
+    "operationType": "Add",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a104",
+        "userPrincipalName": "erin@example.com",
+        "ipAddress": "203.0.113.21"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-0000000c304",
+        "displayName": "LAPTOP-ERIN",
+        "type": "Device",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "Device OS",
+        "value": "Windows"
+      },
+      {
+        "key": "Device Trust Type",
+        "value": "Workplace"
+      }
+    ],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-0000000c205_DRS_1",
+    "activityDisplayName": "Register device",
+    "category": "Device",
+    "loggedByService": "Device Registration Service",
+    "operationType": "Add",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a105",
+        "userPrincipalName": "frank@example.com",
+        "ipAddress": "203.0.113.22"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-0000000c305",
+        "displayName": "LAPTOP-FRANK",
+        "type": "Device",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "Device OS",
+        "value": "Windows"
+      },
+      {
+        "key": "Device Trust Type",
+        "value": "Workplace"
+      }
+    ],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000c105",
+    "userPrincipalName": "frank@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a105",
+    "appDisplayName": "Microsoft Authentication Broker",
+    "appId": "29d9ed98-a469-4536-ade2-f981bc1d605e",
+    "resourceDisplayName": "Device Registration Service",
+    "resourceId": "01cb2876-7ebd-4aa4-9cc9-d28bd4d359a9",
+    "authenticationProtocol": "deviceCode",
+    "ipAddress": "203.0.113.22",
+    "autonomousSystemNumber": 64501,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000c106",
+    "userPrincipalName": "gina@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a106",
+    "appDisplayName": "Microsoft Authentication Broker",
+    "appId": "29d9ed98-a469-4536-ade2-f981bc1d605e",
+    "resourceDisplayName": "Device Registration Service",
+    "resourceId": "01cb2876-7ebd-4aa4-9cc9-d28bd4d359a9",
+    "authenticationProtocol": "deviceCode",
+    "ipAddress": "198.51.100.142",
+    "autonomousSystemNumber": 64501,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "status": {
+      "errorCode": 70016,
+      "failureReason": "Authorization is pending."
+    },
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-0000000c206_DRS_1",
+    "activityDisplayName": "Register device",
+    "category": "Device",
+    "loggedByService": "Device Registration Service",
+    "operationType": "Add",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a106",
+        "userPrincipalName": "gina@example.com",
+        "ipAddress": "203.0.113.23"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-0000000c306",
+        "displayName": "LAPTOP-GINA",
+        "type": "Device",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "Device OS",
+        "value": "Windows"
+      },
+      {
+        "key": "Device Trust Type",
+        "value": "Workplace"
+      }
+    ],
+    "_stream": "directoryAudits"
+  }
+]

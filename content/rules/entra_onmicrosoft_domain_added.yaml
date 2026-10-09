@@ -1,0 +1,51 @@
+id: entra_onmicrosoft_domain_added
+title: New onmicrosoft.com domain added to the tenant
+description: >
+  A second onmicrosoft.com domain was added to the tenant. Midnight Blizzard
+  took over small businesses' tenants, added an onmicrosoft.com domain with a
+  security-sounding name and sent Teams phishing from it to other companies, so
+  the victim's tenant became the attacker's infrastructure under the victim's
+  name. A company adds such a domain almost never; its own custom domains do
+  not match.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.8
+attack: [T1585.003, T1586.003]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection:
+    api.operation|contains: [add verified domain, add unverified domain]
+  # The domain is the target's name, and the Name property holds it too.
+  onmicrosoft:
+    - resource.uid|endswith: .onmicrosoft.com
+    - unmapped.modified.Name.newValue|contains: .onmicrosoft.com
+  filter_failed:
+    status: Failure
+  condition: selection and onmicrosoft and not filter_failed
+  timeframe: 1h
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
+sources:
+  - name: Microsoft Sentinel
+    title: New onmicrosoft domain added to tenant
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Microsoft%20Entra%20ID/Analytic%20Rules/NewOnmicrosoftDomainAdded.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft
+    title: Midnight Blizzard conducts targeted social engineering over Microsoft Teams
+    url: https://www.microsoft.com/en-us/security/blog/2023/08/02/midnight-blizzard-conducts-targeted-social-engineering-over-microsoft-teams/
+    relation: inspired
+  - name: Splunk
+    title: Azure AD New Custom Domain Added
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/azure_ad_new_custom_domain_added.yml
+    author: Mauricio Velazco, Gowthamaraj Rajendran, Splunk
+    license: Apache-2.0
+    relation: inspired
+  - name: Elastic
+    title: Entra ID Custom Domain Added or Verified
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/azure/resource_development_entra_id_custom_domain_added_and_verified.toml
+    license: Elastic-2.0
+    relation: inspired

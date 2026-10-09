@@ -1,0 +1,187 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "idc-readonly",
+    "eventName": "AttachManagedPolicyToPermissionSet",
+    "eventSource": "sso.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.77",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:mallory@example.com",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b/mallory@example.com",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLEIDC00001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b",
+          "accountId": "123456789012",
+          "userName": "AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "instanceArn": "arn:aws:sso:::instance/ssoins-72230a1b2c3d4e5f",
+      "permissionSetArn": "arn:aws:sso:::permissionSet/ssoins-72230a1b2c3d4e5f/ps-1a2b3c4d5e6f7a8b",
+      "managedPolicyArn": "arn:aws:iam::aws:policy/ReadOnlyAccess"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "idc-inline-narrow",
+    "eventName": "PutInlinePolicyToPermissionSet",
+    "eventSource": "sso.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.77",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:mallory@example.com",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b/mallory@example.com",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLEIDC00001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b",
+          "accountId": "123456789012",
+          "userName": "AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "instanceArn": "arn:aws:sso:::instance/ssoins-72230a1b2c3d4e5f",
+      "permissionSetArn": "arn:aws:sso:::permissionSet/ssoins-72230a1b2c3d4e5f/ps-1a2b3c4d5e6f7a8b",
+      "inlinePolicy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:GetObject\"],\"Resource\":\"*\"}]}"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "idc-self-service",
+    "eventName": "DeleteMfaDeviceForUser",
+    "eventSource": "sso-directory.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.77",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IdentityCenterUser",
+      "accountId": "123456789012",
+      "onBehalfOf": {
+        "userId": "a1b2c3d4-0000-1111-2222-333344445555",
+        "identityStoreArn": "arn:aws:identitystore::123456789012:identitystore/d-1234567890"
+      },
+      "credentialId": "EXAMPLECREDENTIALID"
+    },
+    "requestParameters": {
+      "userId": "a1b2c3d4-0000-1111-2222-333344445555",
+      "deviceId": "EXAMPLEDEVICEID"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "idc-mfa-denied",
+    "eventName": "UpdateSsoConfiguration",
+    "eventSource": "sso.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.77",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:mallory@example.com",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b/mallory@example.com",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLEIDC00001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b",
+          "accountId": "123456789012",
+          "userName": "AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "instanceArn": "arn:aws:sso:::instance/ssoins-72230a1b2c3d4e5f",
+      "configurationType": "APP_AUTHENTICATION_CONFIGURATION"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "errorCode": "AccessDeniedException",
+    "errorMessage": "User is not authorized to perform: sso:UpdateSSOConfiguration"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "idc-control-tower",
+    "eventName": "AttachManagedPolicyToPermissionSet",
+    "eventSource": "sso.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "controltower.amazonaws.com",
+    "userAgent": "controltower.amazonaws.com",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:AWSControlTower",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSControlTowerAdmin/AWSControlTower",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLECTOWER01",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWSControlTowerAdmin",
+          "accountId": "123456789012",
+          "userName": "AWSControlTowerAdmin"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      },
+      "invokedBy": "controltower.amazonaws.com"
+    },
+    "requestParameters": {
+      "instanceArn": "arn:aws:sso:::instance/ssoins-72230a1b2c3d4e5f",
+      "permissionSetArn": "arn:aws:sso:::permissionSet/ssoins-72230a1b2c3d4e5f/ps-1a2b3c4d5e6f7a8b",
+      "managedPolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  }
+]

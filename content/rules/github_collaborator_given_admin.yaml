@@ -1,0 +1,57 @@
+id: github_collaborator_given_admin
+title: GitHub repository admin given to a collaborator
+description: >
+  Someone was added to a repository as a collaborator with admin, or an
+  existing collaborator was raised to admin. Admin on a repository includes
+  its secrets, webhooks, deploy keys and branch protection. With a stolen
+  owner or admin token, an attacker adds their own account this way, and the
+  access survives revoking the token and resetting the owner's password
+  without ever showing as a new owner. Read, triage, write and maintain grants
+  are left out. Webhook organisations see additions only; a raise to admin
+  needs the audit-log API.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.5
+attack: [T1098.003]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  selection:
+    api.operation: [org.add_outside_collaborator, repo.add_member, repo.update_member]
+  # The audit log names the role in `permission` or `new_repo_permission`, the
+  # member webhook in `changes.permission.to`.
+  admin_added:
+    raw.permission: admin
+  admin_raised:
+    raw.new_repo_permission: admin
+  admin_webhook:
+    raw.changes.permission.to: admin
+  condition: selection and admin_*
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, api.operation, resource.uid, raw.user, raw.invitee, raw.member.login,
+         raw.permission, raw.new_repo_permission]
+sources:
+  - name: Sigma
+    title: Github Outside Collaborator Detected
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/application/github/audit/github_outside_collaborator_detected.yml
+    author: Muhammad Faisal (@faisalusuf)
+    license: DRL-1.1
+    relation: inspired
+  - name: Panther
+    title: GitHub Repository Collaborator Change
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/github_rules/github_repo_collaborator_change.yml
+    license: Apache-2.0
+    relation: inspired
+  - name: Microsoft Sentinel
+    title: GitHub - User was invited to the repository
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/GitHub/Analytic%20Rules/GitHub%20-%20User%20was%20invited%20to%20the%20repository.yaml
+    license: MIT
+    relation: inspired
+  - name: octokit/webhooks
+    title: member added payload schema
+    url: https://github.com/octokit/webhooks/blob/main/payload-schemas/api.github.com/member/added.schema.json
+    license: MIT
+    relation: inspired

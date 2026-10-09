@@ -1,0 +1,57 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-0000000c101",
+    "userPrincipalName": "ben@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a101",
+    "appDisplayName": "Microsoft Authentication Broker",
+    "appId": "29d9ed98-a469-4536-ade2-f981bc1d605e",
+    "resourceDisplayName": "Device Registration Service",
+    "resourceId": "01cb2876-7ebd-4aa4-9cc9-d28bd4d359a9",
+    "authenticationProtocol": "deviceCode",
+    "ipAddress": "198.51.100.140",
+    "autonomousSystemNumber": 64501,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "status": {
+      "errorCode": 0
+    },
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-0000000c201_DRS_1",
+    "activityDisplayName": "Register device",
+    "category": "Device",
+    "loggedByService": "Device Registration Service",
+    "operationType": "Add",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a101",
+        "userPrincipalName": "Ben@example.com",
+        "ipAddress": "198.51.100.140"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-0000000c301",
+        "displayName": "DESKTOP-7Q3K2LM",
+        "type": "Device",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "Device OS",
+        "value": "Windows"
+      },
+      {
+        "key": "Device Trust Type",
+        "value": "Workplace"
+      }
+    ],
+    "_stream": "directoryAudits"
+  }
+]

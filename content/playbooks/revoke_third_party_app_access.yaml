@@ -1,8 +1,10 @@
 id: revoke_third_party_app_access
 title: Contain a malicious or backdoored app
 description: >
-  A user or admin granted an OAuth app access to mail, files or code, or a
-  secret was added to an app registration. The grant and the secret outlive a
+  A user or admin granted an OAuth app access to mail, files, code or directory
+  roles, a secret or federated credential was added to an app registration, a
+  mailbox copying tool signed in, or an app that never read mail here started
+  to. The grant and the secret outlive a
   password reset. Revoking the user's sessions stops the account that granted
   it or added the secret. For Microsoft, the Commander revokes the grant itself with
   `m365.revoke_app_consent`, using the grant id `m365.list_app_consents`
@@ -16,6 +18,10 @@ rules:
   - hunt:entra_app_consent_first_seen
   - entra_app_credential_added
   - hunt:entra_service_principal_new_network
+  - m365_mailbox_sync_app_used
+  - hunt:m365_mailbox_read_by_new_application
+  - entra_mailbox_sync_app_used
+  - entra_app_granted_mailbox_or_directory_permission
 questions:
   - id: scopes
     ask: Which scopes or permissions did the app receive?

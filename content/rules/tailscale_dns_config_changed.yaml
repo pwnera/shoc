@@ -1,0 +1,42 @@
+id: tailscale_dns_config_changed
+title: Tailnet DNS nameservers or split DNS changed
+description: >
+  The tailnet's DNS settings, its global nameservers, the override of local
+  DNS and the nameserver for each split-DNS domain, are pushed to every
+  device. Pointing them, or one internal domain, at a resolver someone else
+  runs sends every laptop's lookups to that resolver. A tailnet changes them a
+  few times in its life. Turning MagicDNS on or off writes the same event.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.5
+attack: [T1557]
+logsource:
+  product: tailscale
+  service: configuration_log
+detection:
+  selection:
+    api.operation: TAILNET.UPDATE.DNS_CONFIG
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.invoked_by, raw.old, raw.new, cloud.account.uid]
+sources:
+  - name: Tailscale
+    title: Configuration audit logging
+    url: https://tailscale.com/docs/features/logging/audit-logging
+    relation: inspired
+  - name: Tailscale
+    title: Tailscale API OpenAPI schema (audit event names)
+    url: https://api.tailscale.com/api/v2?outputOpenapiSchema=true
+    relation: inspired
+  - name: Microsoft Sentinel
+    title: "Tailscale: DNS nameservers modified"
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Tailscale%20(CCF)/Analytic%20Rules/TailscaleDnsNameserversModified.yaml
+    license: MIT
+    relation: inspired
+  - name: Microsoft Sentinel
+    title: "Tailscale: Split-DNS configuration modified"
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Tailscale%20(CCF)/Analytic%20Rules/TailscaleSplitDnsModified.yaml
+    license: MIT
+    relation: inspired

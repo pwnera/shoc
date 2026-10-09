@@ -1,0 +1,100 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "s3-del-invoices",
+    "eventName": "DeleteBucket",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#s3.rb",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEBACKUP001",
+      "arn": "arn:aws:iam::123456789012:user/s3-backup",
+      "accountId": "123456789012",
+      "userName": "s3-backup",
+      "accessKeyId": "AKIAEXAMPLEBACKUP001"
+    },
+    "requestParameters": {
+      "bucketName": "acme-invoices-prod",
+      "Host": "acme-invoices-prod.s3.eu-west-1.amazonaws.com"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-invoices-prod"
+      }
+    ]
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "s3-del-exports",
+    "eventName": "DeleteBucket",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#s3.rb",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEBACKUP001",
+      "arn": "arn:aws:iam::123456789012:user/s3-backup",
+      "accountId": "123456789012",
+      "userName": "s3-backup",
+      "accessKeyId": "AKIAEXAMPLEBACKUP001"
+    },
+    "requestParameters": {
+      "bucketName": "acme-exports-prod",
+      "Host": "acme-exports-prod.s3.eu-west-1.amazonaws.com"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-exports-prod"
+      }
+    ]
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "s3-del-backups",
+    "eventName": "DeleteBucket",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#s3.rb",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEBACKUP001",
+      "arn": "arn:aws:iam::123456789012:user/s3-backup",
+      "accountId": "123456789012",
+      "userName": "s3-backup",
+      "accessKeyId": "AKIAEXAMPLEBACKUP001"
+    },
+    "requestParameters": {
+      "bucketName": "acme-db-backups",
+      "Host": "acme-db-backups.s3.eu-west-1.amazonaws.com"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "resources": [
+      {
+        "type": "AWS::S3::Bucket",
+        "ARN": "arn:aws:s3:::acme-db-backups"
+      }
+    ],
+    "errorCode": "BucketNotEmpty",
+    "errorMessage": "The bucket you tried to delete is not empty"
+  }
+]

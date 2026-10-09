@@ -1,0 +1,80 @@
+[
+  {
+    "id": 91400,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "group_require_two_factor_authentication_updated",
+    "details": {
+      "event_name": "group_require_two_factor_authentication_updated",
+      "change": "require_two_factor_authentication",
+      "from": true,
+      "to": false,
+      "target_id": 17,
+      "target_type": "Group",
+      "target_details": "acme",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme"
+    }
+  },
+  {
+    "id": 91402,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "group_saml_provider_update",
+    "details": {
+      "event_name": "group_saml_provider_update",
+      "custom_message": "Group SAML SSO configuration changed: enforced_sso changed from true to false. ",
+      "target_id": 17,
+      "target_type": "Group",
+      "target_details": "acme",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme"
+    }
+  },
+  {
+    "id": 91403,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "ip_restrictions_changed",
+    "details": {
+      "event_name": "ip_restrictions_changed",
+      "custom_message": "Group IP restrictions updated",
+      "target_id": 17,
+      "target_type": "Group",
+      "target_details": "acme",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme"
+    }
+  },
+  {
+    "id": 91404,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "user_disable_two_factor",
+    "details": {
+      "event_name": "user_disable_two_factor",
+      "custom_message": "Disabled two-factor authentication",
+      "target_id": 99,
+      "target_type": "User",
+      "target_details": "marc@example.com",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme"
+    }
+  }
+]

@@ -23,5 +23,55 @@
         "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
       }
     }
+  },
+  {
+    "insertId": "hunt-gcp-default-sa-surfaced",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "europe-west1-b"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.setMetadata",
+      "resourceName": "projects/example-prod/zones/europe-west1-b/instances/web-3",
+      "authenticationInfo": {
+        "principalEmail": "123456789012-compute@developer.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.44",
+        "callerSuppliedUserAgent": "google-api-python-client/2.140.0"
+      }
+    }
+  },
+  {
+    "insertId": "hunt-gcp-default-sa-internal",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "europe-west1-b"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.setMetadata",
+      "resourceName": "projects/example-prod/zones/europe-west1-b/instances/web-3",
+      "authenticationInfo": {
+        "principalEmail": "123456789012-compute@developer.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "gce-internal-ip",
+        "callerSuppliedUserAgent": "google-api-python-client/2.140.0"
+      }
+    }
   }
 ]

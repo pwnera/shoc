@@ -1,0 +1,38 @@
+id: gcp_disk_image_or_snapshot_shared
+title: GCE disk, image, machine image or snapshot shared through its IAM policy
+description: >
+  The IAM policy of a disk, image, machine image or snapshot was set. Sharing
+  one with an outside account lets that account copy the data into its own
+  project, and nothing in the source project shows the copy. A small company
+  rarely sets IAM on these; sharing a golden image between its own projects
+  looks the same, and the finding lists the policy's members. These calls log
+  the whole new policy, so gcp_iam_grant_to_personal_account does not read
+  them.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.55
+attack: [T1537]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection:
+    api.operation|endswith: [compute.disks.setIamPolicy, compute.images.setIamPolicy, compute.snapshots.setIamPolicy, compute.machineImages.setIamPolicy]
+    status: Success
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip, cloud.account.uid, raw.protoPayload.request.policy.bindings]
+sources:
+  - name: Stratus Red Team
+    title: GCP attack techniques, share a compute disk, image or snapshot
+    url: https://github.com/DataDog/stratus-red-team/tree/main/docs/attack-techniques/GCP
+    license: Apache-2.0
+    relation: adapted
+  - name: Chronicle
+    title: GCP GCE Image Open To Public
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/gcp/gcp_gce_image_open_to_public.yaral
+    author: Google Cloud Security
+    license: Apache-2.0
+    relation: adapted

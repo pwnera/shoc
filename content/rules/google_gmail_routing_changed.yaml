@@ -1,15 +1,18 @@
 id: google_gmail_routing_changed
-title: Gmail routing, alias or forwarding rule changed by an admin
+title: Gmail routing, alias, forwarding rule or mailbox copy set up by an admin
 description: >
   An admin created or changed a domain-level Gmail route, alias table, mail
-  host or message rule. A route can copy every mailbox in the company to an
-  outside server, and no user sees it.
+  host or message rule, added an extra delivery address for one user, set up
+  an email monitor that copies a user's mail elsewhere, or asked for a
+  mailbox export. A domain route can copy every mailbox in the company to an
+  outside server, and a per-user one is usually set on the CEO or the CFO.
+  No user sees either.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.65
-attack: [T1114.003]
+attack: [T1114.003, T1114.002]
 logsource:
   product: google
   service: reports
@@ -21,10 +24,13 @@ detection:
   selection:
     api.operation: [CREATE_GMAIL_SETTING, CHANGE_GMAIL_SETTING, CREATE_APPLICATION_SETTING, CHANGE_APPLICATION_SETTING]
     raw.events|contains: [EMAIL_ROUTE, UNIFIED_MAIL_ROUTING, ALIAS_TABLE, MESSAGE_SECURITY_RULE]
-  condition: selection
+  # One user's mail: an extra delivery address, an email monitor, an export.
+  selection_user:
+    api.operation: [MAIL_ROUTING_DESTINATION_ADDED, CREATE_EMAIL_MONITOR, REQUEST_MAILBOX_DUMP]
+  condition: selection or selection_user
   timeframe: 15m
 entity: actor.user.name
-fields: [actor.user.name, api.operation, unmapped.params.SETTING_NAME, src_endpoint.ip]
+fields: [actor.user.name, api.operation, resource.uid, unmapped.params.SETTING_NAME, unmapped.params.NEW_VALUE, unmapped.params.EMAIL_MONITOR_DEST_EMAIL, src_endpoint.ip]
 sources:
   - name: Elastic
     title: Google Workspace Gmail Routing or Forwarding Rule Created or Modified
@@ -39,4 +45,8 @@ sources:
   - name: Google
     title: Admin audit activity events, email settings
     url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/admin-gmail-settings
+    relation: inspired
+  - name: Google
+    title: Admin audit activity events, user settings
+    url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/admin-user-settings
     relation: inspired

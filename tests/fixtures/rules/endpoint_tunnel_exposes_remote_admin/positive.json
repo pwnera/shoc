@@ -54,5 +54,61 @@
         "name": "cmd.exe"
       }
     }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "ProcessCreated",
+      "FileName": "netsh.exe",
+      "FolderPath": "C:\\Windows\\System32\\netsh.exe",
+      "ProcessCommandLine": "netsh interface portproxy add v4tov4 listenport=8443 listenaddress=192.0.2.15 connectport=3389 connectaddress=192.0.2.15",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "host09.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "devtunnel.exe",
+        "cmdline": "devtunnel.exe host -p 3389",
+        "image": {
+          "path": "C:\\Users\\jdoe\\AppData\\Local\\Temp\\devtunnel.exe"
+        },
+        "user": "EXAMPLE\\jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Users\\Public\\zrok.exe",
+    "CommandLine": "zrok.exe share private --backend-mode tcpTunnel localhost:3389",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "4260",
+    "UserName": "jdoe"
   }
 ]

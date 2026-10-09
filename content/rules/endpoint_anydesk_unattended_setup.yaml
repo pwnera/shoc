@@ -1,11 +1,14 @@
 id: endpoint_anydesk_unattended_setup
-title: AnyDesk was set up for unattended access from a script
+title: AnyDesk or RustDesk was set up for unattended access from a script
 description: >
-  AnyDesk was given a password, or installed silently to start with Windows.
-  Helpdesk-scam callers and intruders set it up this way to come back without
-  anyone accepting the session; an MSP's deployment script looks the same.
+  AnyDesk was given a password, or installed silently to start with Windows, or
+  RustDesk was given a permanent password or pointed at a relay server by its
+  config string. Helpdesk-scam callers and intruders set it up this way to come
+  back without anyone accepting the session, and RustDesk lets them use their
+  own relay for free; an MSP's deployment script looks the same.
 status: experimental
 date: 2026-10-02
+modified: 2026-10-09
 severity: medium
 confidence: 0.6
 attack: [T1219]
@@ -22,6 +25,10 @@ sources:
     author: "Ján Trenčanský"
     license: DRL-1.1
     relation: adapted
+  - name: RustDesk
+    title: "Client deployment"
+    url: https://rustdesk.com/docs/en/self-host/client-deployment/
+    relation: inspired
 logsource:
   product: edr
   service: telemetry
@@ -37,7 +44,11 @@ detection:
     process.cmd_line|contains: --silent
   sel_autostart:
     process.cmd_line|contains: --start-with-win
-  condition: selection_process and sel_anydesk and (sel_password or (sel_silent and sel_autostart))
+  sel_rustdesk:
+    process.cmd_line|contains: rustdesk
+  sel_rustdesk_unattended:
+    process.cmd_line|contains: [' --password', ' --config ']
+  condition: selection_process and ((sel_anydesk and (sel_password or (sel_silent and sel_autostart))) or (sel_rustdesk and sel_rustdesk_unattended))
   timeframe: 1h
 entity: resource.uid
 fields: [device.hostname, actor.user.name, process.name, process.cmd_line,

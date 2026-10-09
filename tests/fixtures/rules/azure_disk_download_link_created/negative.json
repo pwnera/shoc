@@ -1,0 +1,83 @@
+[
+  {
+    "eventDataId": "00000000-0000-0000-0000-0000000q003",
+    "correlationId": "00000000-0000-0000-0000-0000001q003",
+    "operationName": {
+      "value": "Microsoft.Compute/disks/endGetAccess/action"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "198.51.100.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "198.51.100.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/disks/dc01_OsDisk_1",
+    "properties": {
+      "eventCategory": "Administrative"
+    }
+  },
+  {
+    "eventDataId": "00000000-0000-0000-0000-0000000q004",
+    "correlationId": "00000000-0000-0000-0000-0000001q004",
+    "operationName": {
+      "value": "Microsoft.Compute/disks/beginGetAccess/action"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Failed"
+    },
+    "level": "Error",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "198.51.100.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "198.51.100.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/disks/dc01_OsDisk_1",
+    "properties": {
+      "eventCategory": "Administrative"
+    }
+  },
+  {
+    "eventDataId": "00000000-0000-0000-0000-0000000q005",
+    "correlationId": "00000000-0000-0000-0000-0000001q005",
+    "operationName": {
+      "value": "Microsoft.Compute/disks/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "198.51.100.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "198.51.100.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Compute/disks/dc01_OsDisk_1",
+    "properties": {
+      "eventCategory": "Administrative"
+    }
+  }
+]

@@ -30,5 +30,36 @@
     "old": "",
     "event": "TAILNET.DISABLE.HTTPS",
     "tailnet": "example.com"
+  },
+  {
+    "action": "ENABLE",
+    "actor": {"displayName": "Mallory", "id": "u999CNTRL", "loginName": "mallory@example.com", "type": "USER"},
+    "eventGroupID": "6dae044c7a8998599e94657b511d2b04",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "T1234CNTRL", "name": "example.com", "type": "TAILNET", "property": "TKA"},
+    "type": "CONFIG",
+    "event": "TAILNET.ENABLE.TKA",
+    "tailnet": "example.com"
+  },
+  {
+    "action": "CREATE",
+    "actor": {"displayName": "Mallory", "id": "u999CNTRL", "loginName": "mallory@example.com", "type": "USER"},
+    "eventGroupID": "6dae044c7a8998599e94657b511d2b05",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "T1234CNTRL", "name": "example.com", "type": "TAILNET", "property": "POSTURE_INTEGRATION"},
+    "type": "CONFIG",
+    "new": {"provider": "intune"},
+    "event": "TAILNET.CREATE.POSTURE_INTEGRATION",
+    "tailnet": "example.com"
+  },
+  {
+    "action": "VERIFY",
+    "actor": {"displayName": "Mallory", "id": "u999CNTRL", "loginName": "mallory@example.com", "type": "USER"},
+    "eventGroupID": "6dae044c7a8998599e94657b511d2b06",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "T1234CNTRL", "name": "example.com", "type": "TAILNET", "property": "SECURITY_EMAIL"},
+    "type": "CONFIG",
+    "event": "TAILNET.VERIFY.SECURITY_EMAIL",
+    "tailnet": "example.com"
   }
 ]

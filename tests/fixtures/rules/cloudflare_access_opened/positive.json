@@ -1,0 +1,47 @@
+[
+  {
+    "id": "5e1d0b6c2f7a4e3b9c8d7f6a5b4c3d01",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Create Access application policy", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1c01", "method": "POST", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/access/apps/0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4a5b/policies", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "", "product": "access", "request": {"name": "temp", "decision": "bypass", "include": [{"everyone": {}}], "precedence": 1}, "response": {"id": "6a0c1f2e-3d4b-5a69-8c7d-9e0f1a2b3c01"}, "scope": "accounts", "type": "policies"},
+    "zone": {}
+  },
+  {
+    "id": "5e1d0b6c2f7a4e3b9c8d7f6a5b4c3d02",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Update Access reusable policy", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1c02", "method": "PUT", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/access/policies/6a0c1f2e-3d4b-5a69-8c7d-9e0f1a2b3c02", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "6a0c1f2e-3d4b-5a69-8c7d-9e0f1a2b3c02", "product": "access", "request": {"name": "Staff", "decision": "allow", "include": [{"everyone": {}}], "exclude": [], "require": []}, "response": {"id": "6a0c1f2e-3d4b-5a69-8c7d-9e0f1a2b3c02"}, "scope": "accounts", "type": "policies"},
+    "zone": {}
+  },
+  {
+    "id": "5e1d0b6c2f7a4e3b9c8d7f6a5b4c3d03",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Create Access service token", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1c03", "method": "POST", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/access/service_tokens", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "", "product": "access", "request": {"name": "backup-sync", "duration": "8760h"}, "response": {"id": "3f2e1d0c-9b8a-4776-8564-534231201f03"}, "scope": "accounts", "type": "service_tokens"},
+    "zone": {}
+  },
+  {
+    "id": "5e1d0b6c2f7a4e3b9c8d7f6a5b4c3d04",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Rotate Access service token", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "api", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1c04", "method": "POST", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/access/service_tokens/3f2e1d0c-9b8a-4776-8564-534231201f04/rotate", "user_agent": "curl/8.7.1"},
+    "resource": {"id": "3f2e1d0c-9b8a-4776-8564-534231201f04", "product": "access", "request": {}, "response": {"id": "3f2e1d0c-9b8a-4776-8564-534231201f04"}, "scope": "accounts", "type": "service_tokens"},
+    "zone": {}
+  },
+  {
+    "id": "5e1d0b6c2f7a4e3b9c8d7f6a5b4c3d05",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Delete Access application", "result": "success", "type": "delete"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e1c05", "method": "DELETE", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/access/apps/0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4a05", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4a05", "product": "access", "request": {}, "response": {}, "scope": "zones", "type": "apps"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  }
+]

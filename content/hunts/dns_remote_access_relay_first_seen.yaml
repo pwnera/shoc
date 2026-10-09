@@ -4,7 +4,9 @@ hypothesis: >
   A remote-access session reaches its vendor's relay by name, and a
   ScreenConnect instance has a relay name of its own. A relay this company
   never looked up before is a tool, or a ScreenConnect server, that is not the
-  company's. Gateway sees it from Macs and unmanaged laptops too.
+  company's. Windows' own Quick Assist counts too, since callers posing as IT
+  support start there before they install anything. Gateway also sees it from
+  Macs and unmanaged laptops.
 attack: [T1219]
 sources:
   - name: Sigma
@@ -23,6 +25,11 @@ sources:
     url: https://github.com/elastic/detection-rules/blob/main/rules/windows/command_and_control_dns_rmm_domains_non_browser.toml
     license: Elastic-2.0
     relation: inspired
+  - name: Microsoft
+    title: "Threat actors misusing Quick Assist in social engineering attacks leading to ransomware"
+    url: https://www.microsoft.com/en-us/security/blog/2024/05/15/threat-actors-misusing-quick-assist-in-social-engineering-attacks-leading-to-ransomware/
+    author: "Microsoft Threat Intelligence"
+    relation: inspired
 logsource:
   product: dns
 window: 1d
@@ -33,7 +40,9 @@ detection:
                               atera.com, splashtop.com, getscreen.me, logmein.com, logmeininc.com,
                               gotoassist.com, remoteutilities.com, netsupportsoftware.com,
                               dwservice.net, tmate.io, zohoassist.com, beyondtrustcloud.com,
-                              parsec.app, helpwire.app]
+                              parsec.app, helpwire.app, remoteassistance.support.services.microsoft.com,
+                              remotedesktop-pa.googleapis.com, ammyy.com, kaseya.net, swi-rc.com,
+                              swi-tc.com, remotepc.com, bomgar.com]
   condition: selection
 baseline:
   first_seen: [query.hostname]

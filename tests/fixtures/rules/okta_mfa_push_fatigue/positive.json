@@ -87,5 +87,78 @@
       }
     ],
     "_repeat": 2
+  },
+  {
+    "uuid": "okta-push-unanswered",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1kim0001",
+      "type": "User",
+      "alternateId": "kim@example.com",
+      "displayName": "Kim Lee"
+    },
+    "client": {
+      "ipAddress": "198.51.100.31",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "UNANSWERED",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "_repeat": 3
+  },
+  {
+    "uuid": "okta-push-wrong-number",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1kim0001",
+      "type": "User",
+      "alternateId": "kim@example.com",
+      "displayName": "Kim Lee"
+    },
+    "client": {
+      "ipAddress": "198.51.100.31",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "FAILURE",
+      "reason": "INVALID_CREDENTIALS"
+    },
+    "authenticationContext": {
+      "externalSessionId": "unknown"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "pushWithNumberChallengeResponseType": "OV_WITH_CHALLENGE_RESPONSE_INVALID"
+      }
+    },
+    "_repeat": 2
   }
 ]

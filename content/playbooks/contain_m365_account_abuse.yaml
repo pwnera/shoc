@@ -2,7 +2,9 @@ id: contain_m365_account_abuse
 title: Contain a compromised Microsoft 365 mailbox
 description: >
   A mailbox gained a rule that forwards, hides or deletes mail, gave another
-  account access, or published a file to anyone with the link. These are the
+  account access, or published a file to anyone with the link, or an account
+  exported mail through eDiscovery, changed a mail connector or added a site
+  admin to many SharePoint sites. These are the
   steps of business email compromise. Revoking the user's sessions is reversible
   and stops the attacker; after the page Microsoft 365 signs them out too, which
   needs no Entra credential when the company signs in with Okta. The Commander deletes the rule with
@@ -21,6 +23,9 @@ rules:
   - hunt:m365_inbox_rule_from_new_address
   - m365_transport_rule_changed
   - m365_mail_protection_weakened
+  - m365_ediscovery_search_exported
+  - m365_mail_connector_changed
+  - m365_sharepoint_site_admin_added_in_bulk
 questions:
   - id: rule_effect
     ask: Does the rule forward mail outside the company, or move or delete mail about invoices, payments or security?
@@ -36,6 +41,10 @@ questions:
     ask: After a Teams chat from outside the company, did the user install remote-access software or approve a sign-in?
   - id: internal_phish
     ask: Did the mailbox send mail to colleagues or customers after the change?
+  - id: export_scope
+    ask: What did the eDiscovery search look for, which mailboxes and sites did it cover, and was the export downloaded?
+  - id: connector_route
+    ask: Which sender addresses does the connector trust, or which smart host does it send the company's mail through?
 benign_when:
   - An admin gave an assistant delegate access, from the office egress.
   - The user shares a public document the same way every week.

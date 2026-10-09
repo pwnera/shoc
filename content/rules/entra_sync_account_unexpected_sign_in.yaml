@@ -1,0 +1,53 @@
+id: entra_sync_account_unexpected_sign_in
+title: Entra Connect sync account signed in to something other than sync
+description: >
+  The Sync_ account that Entra Connect uses to write on-premises users into the
+  tenant signed in to an app other than the ones sync uses. The Connect server
+  keeps that account's password, so whoever controls the server has it:
+  Storm-0501 pulled it off Connect servers in clear text, got Graph tokens with
+  it, and the account can set the password of any synced user. Microsoft
+  describes the account's normal sign-ins as the same app from the same address
+  every few minutes. Hybrid AD with Entra Connect is common in companies of this
+  size. Only sign-ins are read: the directory changes the account makes during
+  sync are its job.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.7
+attack: [T1078.004]
+logsource:
+  product: entra
+  service: sign_ins
+detection:
+  selection:
+    class_uid: 3002
+    actor.user.name|startswith: sync_
+    status: Success
+  # The apps Microsoft lists for this account, and Entra Connect's app id.
+  filter_sync_app:
+    - api.operation|contains: [Active Directory Connect, Entra Connect, Syndication Partner Portal]
+    - api.operation: Windows Azure Active Directory
+    - raw.appId: cb1056e2-e479-49de-ae31-7812af012ed8
+    - raw.properties.appId: cb1056e2-e479-49de-ae31-7812af012ed8
+  condition: selection and not filter_sync_app
+  timeframe: 1h
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, src_endpoint.asn, http_request.user_agent]
+sources:
+  - name: Microsoft Sentinel
+    title: Suspicious Sign In by Entra ID Connect Sync Account
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Detections/BehaviorAnalytics/SuspiciousSigninByAADConnectAccount.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft
+    title: "Storm-0501: Ransomware attacks expanding to hybrid cloud environments"
+    url: https://www.microsoft.com/en-us/security/blog/2024/09/26/storm-0501-ransomware-attacks-expanding-to-hybrid-cloud-environments/
+    relation: inspired
+  - name: Microsoft
+    title: Storm-0501's evolving techniques lead to cloud-based ransomware
+    url: https://www.microsoft.com/en-us/security/blog/2025/08/27/storm-0501s-evolving-techniques-lead-to-cloud-based-ransomware/
+    relation: inspired
+  - name: Microsoft
+    title: Commonly used Microsoft first-party services and portal apps (Microsoft Azure Active Directory Connect app id)
+    url: https://learn.microsoft.com/en-us/power-platform/admin/apps-to-allow
+    relation: inspired

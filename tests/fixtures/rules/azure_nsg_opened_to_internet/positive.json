@@ -1,0 +1,86 @@
+[
+  {
+    "eventDataId": "00000000-0000-0000-0000-00000000o001",
+    "correlationId": "00000000-0000-0000-0000-00000000o101",
+    "operationName": {
+      "value": "Microsoft.Network/networkSecurityGroups/securityRules/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Started"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "203.0.113.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Network/networkSecurityGroups/vm-app-nsg/securityRules/AllowRDP",
+    "properties": {
+      "eventCategory": "Administrative",
+      "requestbody": "{\"properties\":{\"protocol\":\"TCP\",\"sourcePortRange\":\"*\",\"destinationPortRange\":\"3389\",\"sourceAddressPrefix\":\"*\",\"destinationAddressPrefix\":\"*\",\"access\":\"Allow\",\"priority\":300,\"direction\":\"Inbound\",\"sourcePortRanges\":[],\"destinationPortRanges\":[],\"sourceAddressPrefixes\":[],\"destinationAddressPrefixes\":[]}}"
+    }
+  },
+  {
+    "eventDataId": "00000000-0000-0000-0000-00000000o002",
+    "correlationId": "00000000-0000-0000-0000-00000000o102",
+    "operationName": {
+      "value": "Microsoft.Network/networkSecurityGroups/securityRules/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Accepted"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "203.0.113.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Network/networkSecurityGroups/vm-app-nsg/securityRules/AllowSSH",
+    "properties": {
+      "eventCategory": "Administrative",
+      "responseBody": "{\"name\":\"AllowSSH\",\"type\":\"Microsoft.Network/networkSecurityGroups/securityRules\",\"properties\":{\"provisioningState\":\"Updating\",\"protocol\":\"TCP\",\"sourcePortRange\":\"*\",\"destinationPortRange\":\"\",\"sourceAddressPrefix\":\"Internet\",\"destinationAddressPrefix\":\"*\",\"access\":\"Allow\",\"priority\":300,\"direction\":\"Inbound\",\"sourcePortRanges\":[],\"destinationPortRanges\":[\"443\",\"22\"],\"sourceAddressPrefixes\":[],\"destinationAddressPrefixes\":[]}}"
+    }
+  },
+  {
+    "eventDataId": "00000000-0000-0000-0000-00000000o003",
+    "correlationId": "00000000-0000-0000-0000-00000000o103",
+    "operationName": {
+      "value": "Microsoft.Network/networkSecurityGroups/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Started"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "203.0.113.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Network/networkSecurityGroups/vm-app-nsg",
+    "properties": {
+      "eventCategory": "Administrative",
+      "requestbody": "{\"location\":\"westeurope\",\"properties\":{\"securityRules\":[{\"name\":\"SSH\",\"properties\":{\"protocol\":\"TCP\",\"sourcePortRange\":\"*\",\"destinationPortRange\":\"\",\"sourceAddressPrefix\":\"\",\"destinationAddressPrefix\":\"*\",\"access\":\"Allow\",\"priority\":1001,\"direction\":\"Inbound\",\"sourcePortRanges\":[],\"destinationPortRanges\":[\"22\"],\"sourceAddressPrefixes\":[\"0.0.0.0/0\"],\"destinationAddressPrefixes\":[]}}]}}"
+    }
+  }
+]

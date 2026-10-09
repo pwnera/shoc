@@ -32,6 +32,7 @@ rules:
   - aws_ses_identity_verified_then_deleted
   - aws_bedrock_models_listed_then_invoked
   - aws_compute_region_sweep
+  - aws_ssm_parameters_listed_then_decrypted
   - hunt:aws_identity_first_api_call
   - hunt:aws_rare_api_operation
   - hunt:aws_bedrock_first_use

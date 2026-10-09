@@ -1,0 +1,128 @@
+[
+  {
+    "id": "Directory_00000000-0000-0000-0000-0000000g003_XYZ_1",
+    "activityDisplayName": "Add app role assignment to service principal",
+    "category": "ApplicationManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Assign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a003",
+        "userPrincipalName": "it-admin@example.com",
+        "ipAddress": "198.51.100.9"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-0000000g103",
+        "displayName": "Microsoft Graph",
+        "type": "ServicePrincipal",
+        "modifiedProperties": [
+          {
+            "displayName": "AppRole.Id",
+            "oldValue": null,
+            "newValue": "\"df021288-bdef-4463-88db-98f22de89214\""
+          },
+          {
+            "displayName": "AppRole.Value",
+            "oldValue": null,
+            "newValue": "\"User.Read.All\""
+          },
+          {
+            "displayName": "AppRole.DisplayName",
+            "oldValue": null,
+            "newValue": "\"Read all users' full profiles\""
+          },
+          {
+            "displayName": "ServicePrincipal.DisplayName",
+            "oldValue": null,
+            "newValue": "\"HR Directory Sync\""
+          },
+          {
+            "displayName": "ServicePrincipal.AppId",
+            "oldValue": null,
+            "newValue": "\"00000000-0000-0000-0000-0000000g203\""
+          }
+        ]
+      },
+      {
+        "id": "00000000-0000-0000-0000-0000000g303",
+        "displayName": "HR Directory Sync",
+        "type": "ServicePrincipal",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "User-Agent",
+        "value": "python-requests/2.31.0"
+      }
+    ],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-0000000g004_XYZ_1",
+    "activityDisplayName": "Add app role assignment to service principal",
+    "category": "ApplicationManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Assign",
+    "result": "failure",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a003",
+        "userPrincipalName": "it-admin@example.com",
+        "ipAddress": "198.51.100.9"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-0000000g104",
+        "displayName": "Microsoft Graph",
+        "type": "ServicePrincipal",
+        "modifiedProperties": [
+          {
+            "displayName": "AppRole.Id",
+            "oldValue": null,
+            "newValue": "\"810c84a8-4a9e-49e6-bf7d-12d183f40d01\""
+          },
+          {
+            "displayName": "AppRole.Value",
+            "oldValue": null,
+            "newValue": "\"Mail.Read\""
+          },
+          {
+            "displayName": "AppRole.DisplayName",
+            "oldValue": null,
+            "newValue": "\"Read mail in all mailboxes\""
+          },
+          {
+            "displayName": "ServicePrincipal.DisplayName",
+            "oldValue": null,
+            "newValue": "\"Mail Sync Helper\""
+          },
+          {
+            "displayName": "ServicePrincipal.AppId",
+            "oldValue": null,
+            "newValue": "\"00000000-0000-0000-0000-0000000g204\""
+          }
+        ]
+      },
+      {
+        "id": "00000000-0000-0000-0000-0000000g304",
+        "displayName": "Mail Sync Helper",
+        "type": "ServicePrincipal",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "User-Agent",
+        "value": "python-requests/2.31.0"
+      }
+    ],
+    "_stream": "directoryAudits"
+  }
+]

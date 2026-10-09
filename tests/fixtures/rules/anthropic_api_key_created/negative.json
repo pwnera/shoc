@@ -25,5 +25,18 @@
         "current_value": "prod-eu"
       }
     ]
+  },
+  {
+    "id": "activity_01ServiceAccountArchived",
+    "organization_id": "org_01",
+    "type": "platform_service_account_archived",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "admin@example.com",
+      "user_id": "user_01A",
+      "ip_address": "198.51.100.20",
+      "user_agent": "Mozilla/5.0"
+    },
+    "service_account_id": "svac_01Old"
   }
 ]

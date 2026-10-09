@@ -1,0 +1,32 @@
+[
+  {
+    "action": "DELETE",
+    "actor": {"displayName": "Admin", "id": "u111CNTRL", "loginName": "admin@example.com", "type": "USER"},
+    "eventGroupID": "34568b2c3d4e5f60718293a4b5c6d901",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "inv123CNTRL", "name": "contractor-share", "type": "INVITE", "property": "NODE_SHARE"},
+    "type": "CONFIG",
+    "event": "INVITE.DELETE.NODE_SHARE",
+    "tailnet": "T1234CNTRL"
+  },
+  {
+    "action": "CREATE",
+    "actor": {"displayName": "Admin", "id": "u111CNTRL", "loginName": "admin@example.com", "type": "USER"},
+    "eventGroupID": "34568b2c3d4e5f60718293a4b5c6d902",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "n456CNTRL", "name": "vendor-printer.example.net", "type": "SHARE"},
+    "type": "CONFIG",
+    "event": "SHARE.CREATE",
+    "tailnet": "T1234CNTRL"
+  },
+  {
+    "action": "CREATE",
+    "actor": {"displayName": "Admin", "id": "u111CNTRL", "loginName": "admin@example.com", "type": "USER"},
+    "eventGroupID": "34568b2c3d4e5f60718293a4b5c6d903",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "inv789CNTRL", "name": "new-hire", "type": "INVITE", "property": "TAILNET_INVITE"},
+    "type": "CONFIG",
+    "event": "INVITE.CREATE.TAILNET_INVITE",
+    "tailnet": "T1234CNTRL"
+  }
+]

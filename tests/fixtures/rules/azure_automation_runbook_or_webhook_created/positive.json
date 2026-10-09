@@ -1,0 +1,56 @@
+[
+  {
+    "eventDataId": "00000000-0000-0000-0000-0000000r001",
+    "correlationId": "00000000-0000-0000-0000-0000001r001",
+    "operationName": {
+      "value": "Microsoft.Automation/automationAccounts/runbooks/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Succeeded"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "203.0.113.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Automation/automationAccounts/aa-ops/runbooks/Update-Users",
+    "properties": {
+      "eventCategory": "Administrative"
+    }
+  },
+  {
+    "eventDataId": "00000000-0000-0000-0000-0000000r002",
+    "correlationId": "00000000-0000-0000-0000-0000001r002",
+    "operationName": {
+      "value": "Microsoft.Automation/automationAccounts/webhooks/write"
+    },
+    "category": {
+      "value": "Administrative"
+    },
+    "status": {
+      "value": "Started"
+    },
+    "level": "Informational",
+    "caller": "dana@example.com",
+    "claims": {
+      "upn": "dana@example.com",
+      "ipaddr": "203.0.113.24"
+    },
+    "httpRequest": {
+      "clientIpAddress": "203.0.113.24"
+    },
+    "subscriptionId": "00000000-1111-2222-3333-444444444444",
+    "resourceId": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/rg-prod/providers/Microsoft.Automation/automationAccounts/aa-ops/webhooks/update-users-hook",
+    "properties": {
+      "eventCategory": "Administrative"
+    }
+  }
+]

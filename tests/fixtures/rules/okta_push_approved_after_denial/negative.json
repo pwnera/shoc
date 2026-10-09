@@ -1,5 +1,43 @@
 [
   {
+    "uuid": "okta-unanswered-after-denial",
+    "eventType": "user.authentication.auth_via_mfa",
+    "displayMessage": "user authentication auth_via_mfa",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "203.0.113.200",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Russia"
+      }
+    },
+    "outcome": {
+      "result": "UNANSWERED",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-x"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "factor": "OKTA_VERIFY_PUSH"
+      }
+    }
+  },
+  {
     "uuid": "okta-denied-only",
     "eventType": "user.mfa.okta_verify.deny_push",
     "displayMessage": "user mfa okta_verify deny_push",

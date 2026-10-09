@@ -4,10 +4,13 @@ description: >
   A domain was switched to federated sign-in, or its federation settings were
   changed. Whoever controls the federation's signing key can sign in as any
   user of that domain without a password or MFA. A company that does not
-  federate should never see this.
+  federate should never see this. A person setting a user's ImmutableId counts
+  too: the same backdoor needs it to sign in as a user who was never synced
+  from on-premises. Entra Connect and cloud sync set it as part of their job,
+  so their changes are left out.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-02
+modified: 2026-10-09
 severity: critical
 confidence: 0.8
 attack: [T1484.002, T1556.007]
@@ -17,9 +20,17 @@ logsource:
 detection:
   selection:
     api.operation|contains: [set domain authentication, set federation settings on domain]
+  selection_immutable_id:
+    api.operation: Update user
+    unmapped.modified.SourceAnchor.newValue|exists: true
+  # The sync account, or a sync app with no person behind it.
+  filter_sync:
+    - actor.user.name|startswith: sync_
+    - actor.user.type: ServicePrincipal
+      raw.initiatedBy.user.userPrincipalName|exists: false
   filter_failed:
     status: Failure
-  condition: selection and not filter_failed
+  condition: (selection or (selection_immutable_id and not filter_sync)) and not filter_failed
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
@@ -34,4 +45,10 @@ sources:
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_federation_modified.yml
     author: Austin Songer
     license: DRL-1.1
+    relation: adapted
+  - name: Splunk
+    title: Azure AD User ImmutableId Attribute Updated
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/azure_ad_user_immutableid_attribute_updated.yml
+    author: Mauricio Velazco, Gowthamaraj Rajendran, Splunk
+    license: Apache-2.0
     relation: adapted

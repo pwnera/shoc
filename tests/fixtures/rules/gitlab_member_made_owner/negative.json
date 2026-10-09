@@ -70,5 +70,26 @@
       "target_type": "User",
       "target_details": "Existing Owner"
     }
+  },
+  {
+    "id": 9108,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "User",
+    "event_name": "user_admin_status_updated",
+    "details": {
+      "event_name": "user_admin_status_updated",
+      "change": "admin status",
+      "from": true,
+      "to": false,
+      "target_id": 104,
+      "target_type": "User",
+      "target_details": "former-admin",
+      "author_name": "Administrator",
+      "author_class": "User",
+      "author_email": "root@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "former-admin"
+    }
   }
 ]

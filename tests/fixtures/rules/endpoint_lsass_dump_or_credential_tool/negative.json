@@ -1,0 +1,73 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "3333333333333333333333333333333333333333",
+      "DeviceName": "dev-12.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "procdump64.exe",
+      "FolderPath": "C:\\Tools\\Sysinternals\\procdump64.exe",
+      "ProcessCommandLine": "procdump64.exe -accepteula -ma 4321 C:\\dumps\\api-server.dmp",
+      "InitiatingProcessFileName": "pwsh.exe",
+      "AccountName": "dev1"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "3333333333333333333333333333333333333333",
+      "DeviceName": "laptop-07.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "rundll32.exe",
+      "FolderPath": "C:\\Windows\\System32\\rundll32.exe",
+      "ProcessCommandLine": "rundll32.exe shell32.dll,Control_RunDLL desk.cpl",
+      "InitiatingProcessFileName": "explorer.exe",
+      "AccountName": "jdoe"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd02",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Python312\\Scripts\\pip.exe",
+    "CommandLine": "pip.exe install lazagne",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "4242",
+    "UserName": "dev1"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "srv-app01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "tasklist.exe",
+        "cmdline": "tasklist /fi \"imagename eq lsass.exe\"",
+        "image": {
+          "path": "C:\\Windows\\System32\\tasklist.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  }
+]

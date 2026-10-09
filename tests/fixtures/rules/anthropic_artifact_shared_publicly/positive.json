@@ -1,0 +1,24 @@
+[
+  {
+    "id": "activity_01ArtifactPublic",
+    "organization_id": "org_01",
+    "type": "claude_artifact_sharing_updated",
+    "actor": {"type": "user_actor", "email_address": "dev@example.com", "user_id": "user_01D", "ip_address": "198.51.100.31", "user_agent": "Mozilla/5.0"},
+    "claude_artifact_id": "claude_artifact_01ABC",
+    "claude_artifact_version_id": "claude_artifact_version_01ABC",
+    "audience": [{"type": "anyone_with_link"}],
+    "new_mode": "public",
+    "previous_mode": "org"
+  },
+  {
+    "id": "activity_01ArtifactLink",
+    "organization_id": "org_01",
+    "type": "claude_artifact_sharing_updated",
+    "actor": {"type": "user_actor", "email_address": "dev@example.com", "user_id": "user_01D", "ip_address": "198.51.100.31", "user_agent": "Mozilla/5.0"},
+    "claude_artifact_id": "claude_artifact_01DEF",
+    "claude_artifact_version_id": "claude_artifact_version_01DEF",
+    "audience": [{"type": "organization"}, {"type": "anyone_with_link"}],
+    "new_mode": null,
+    "previous_mode": null
+  }
+]

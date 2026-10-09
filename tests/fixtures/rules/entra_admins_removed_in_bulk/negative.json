@@ -1,0 +1,372 @@
+[
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k004_R_1",
+    "activityDisplayName": "Remove member from role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a403",
+        "userPrincipalName": "it-admin@example.com",
+        "ipAddress": "198.51.100.12"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k504",
+        "userPrincipalName": "intern@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k005_R_1",
+    "activityDisplayName": "Remove member from role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a403",
+        "userPrincipalName": "it-admin@example.com",
+        "ipAddress": "198.51.100.12"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k505",
+        "userPrincipalName": "contractor@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k006_R_1",
+    "activityDisplayName": "Remove member from role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "failure",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a403",
+        "userPrincipalName": "it-admin@example.com",
+        "ipAddress": "198.51.100.12"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k506",
+        "userPrincipalName": "owner@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k007_R_1",
+    "activityDisplayName": "Remove member from role (PIM activation expired)",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a404",
+        "displayName": "Azure AD PIM",
+        "userPrincipalName": null,
+        "ipAddress": null
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k507",
+        "userPrincipalName": "owner@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k008_R_1",
+    "activityDisplayName": "Remove member from role (PIM activation expired)",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a404",
+        "displayName": "Azure AD PIM",
+        "userPrincipalName": null,
+        "ipAddress": null
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k508",
+        "userPrincipalName": "cfo@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k009_R_1",
+    "activityDisplayName": "Remove member from role (PIM activation expired)",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a404",
+        "displayName": "Azure AD PIM",
+        "userPrincipalName": null,
+        "ipAddress": null
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k509",
+        "userPrincipalName": "it-lead@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k010_R_1",
+    "activityDisplayName": "Remove member from role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "app": {
+        "displayName": "MS-PIM",
+        "servicePrincipalId": "00000000-0000-0000-0000-00000000k900"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k510",
+        "userPrincipalName": "owner@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k011_R_1",
+    "activityDisplayName": "Remove member from role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "app": {
+        "displayName": "MS-PIM",
+        "servicePrincipalId": "00000000-0000-0000-0000-00000000k900"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k511",
+        "userPrincipalName": "cfo@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k012_R_1",
+    "activityDisplayName": "Remove member from role",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "app": {
+        "displayName": "MS-PIM",
+        "servicePrincipalId": "00000000-0000-0000-0000-00000000k900"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k512",
+        "userPrincipalName": "it-lead@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000k013_R_1",
+    "activityDisplayName": "Remove member from role completed (PIM deactivate)",
+    "category": "RoleManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Unassign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a405",
+        "userPrincipalName": "dev1@example.com",
+        "ipAddress": "198.51.100.13"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000k513",
+        "userPrincipalName": "dev1@example.com",
+        "type": "User",
+        "modifiedProperties": [
+          {
+            "displayName": "Role.DisplayName",
+            "oldValue": "\"Global Administrator\"",
+            "newValue": null
+          },
+          {
+            "displayName": "Role.TemplateId",
+            "oldValue": "\"62e90394-69f5-4237-9190-012177145e10\"",
+            "newValue": null
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  }
+]

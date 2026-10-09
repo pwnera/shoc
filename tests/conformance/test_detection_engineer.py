@@ -106,21 +106,23 @@ def test_a_coverage_gap_carries_what_the_report_saw_the_attacker_do(ctx, tenant)
 
 def test_a_coverage_gap_says_what_would_show_it_and_whether_we_receive_it(ctx, tenant):
     said = {
-        "id": "T1105",
-        "name": "Ingress Tool Transfer",
-        "evidence": "curl fetched the second stage into the temp folder",
+        "id": "T1140",
+        "name": "Deobfuscate/Decode Files or Information",
+        "evidence": "certutil decoded the second stage in the temp folder",
         "seen_in": ["process", "admin_api"],
     }
-    _report(ctx, tenant, ["T1105"], [said], deliver="CrowdStrike Falcon")
+    _report(ctx, tenant, ["T1140"], [said], deliver="CrowdStrike Falcon")
     execute(
         ctx.db,
         "INSERT INTO shoc.source_history (tenant_id, source, products) VALUES (%s,'aws',%s)",
         (tenant, ["AWS CloudTrail"]),
     )
     page = call("detection.backlog", ctx, {"run": True}).data
-    (item,) = [i for i in page.items if i["evidence"].get("technique") == "T1105"]
+    (item,) = [i for i in page.items if i["evidence"].get("technique") == "T1140"]
     context = item["context"]
-    assert context["techniques"] == [{"id": "T1105", "name": "Ingress Tool Transfer"}]
+    assert context["techniques"] == [
+        {"id": "T1140", "name": "Deobfuscate/Decode Files or Information"}
+    ]
     assert context["reports"][0]["said"][0]["procedure"] == said["evidence"]
     shows = {s["kind"]: s for s in context["seen_in"]}
     carriers = {p["source"]: p["product"] for p in shows["process"]["products"]}

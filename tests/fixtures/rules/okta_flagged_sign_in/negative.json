@@ -188,5 +188,51 @@
         "logOnlySecurityData": "{\"risk\":{\"reasons\":\"Anomalous Location, Anomalous Device\",\"level\":\"HIGH\"},\"behaviors\":{\"New Geo-Location\":\"POSITIVE\",\"New Device\":\"POSITIVE\",\"New IP\":\"POSITIVE\",\"New State\":\"POSITIVE\",\"New Country\":\"POSITIVE\",\"Velocity\":\"POSITIVE\",\"New City\":\"POSITIVE\"}}"
       }
     }
+  },
+  {
+    "uuid": "okta-user.risk.detect-lowered",
+    "eventType": "user.risk.detect",
+    "displayMessage": "User risk detected",
+    "actor": {
+      "id": "00u1abcd",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "jane"
+    },
+    "client": {
+      "ipAddress": "203.0.113.40",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Brazil"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "sess-abc"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "risk": "{previousLevel=HIGH, level=LOW, detectionName=Admin Reported User Risk, reasons=Risk level set by an admin}"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1abcd",
+        "type": "User",
+        "alternateId": "jane@example.com",
+        "displayName": "jane"
+      }
+    ]
   }
 ]

@@ -1,0 +1,95 @@
+[
+  {
+    "insertId": "wif-create-end",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "audited_resource",
+      "labels": {
+        "project_id": "example-prod",
+        "service": "iam.googleapis.com",
+        "method": "google.iam.v1.WorkloadIdentityPools.CreateWorkloadIdentityPoolProvider"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.v1.WorkloadIdentityPools.CreateWorkloadIdentityPoolProvider",
+      "resourceName": "projects/example-prod/locations/global/workloadIdentityPools/ci/providers/gh",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      }
+    },
+    "operation": {
+      "id": "projects/example-prod/locations/global/workloadIdentityPools/ci/providers/gh/operations/op-wif-create-end",
+      "producer": "iam.googleapis.com",
+      "last": true
+    }
+  },
+  {
+    "insertId": "wif-delete",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "audited_resource",
+      "labels": {
+        "project_id": "example-prod",
+        "service": "iam.googleapis.com",
+        "method": "google.iam.v1.WorkloadIdentityPools.DeleteWorkloadIdentityPoolProvider"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.v1.WorkloadIdentityPools.DeleteWorkloadIdentityPoolProvider",
+      "resourceName": "projects/example-prod/locations/global/workloadIdentityPools/ci/providers/gh",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      }
+    },
+    "operation": {
+      "id": "projects/example-prod/locations/global/workloadIdentityPools/ci/providers/gh/operations/op-wif-delete",
+      "producer": "iam.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "wif-pool",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "audited_resource",
+      "labels": {
+        "project_id": "example-prod",
+        "service": "iam.googleapis.com",
+        "method": "google.iam.v1.WorkloadIdentityPools.CreateWorkloadIdentityPool"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.v1.WorkloadIdentityPools.CreateWorkloadIdentityPool",
+      "resourceName": "projects/example-prod/locations/global/workloadIdentityPools/ci",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      }
+    },
+    "operation": {
+      "id": "projects/example-prod/locations/global/workloadIdentityPools/ci/operations/op-wif-pool",
+      "producer": "iam.googleapis.com",
+      "first": true
+    }
+  }
+]

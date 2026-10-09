@@ -1,0 +1,47 @@
+id: azure_automation_runbook_or_webhook_created
+title: Azure Automation runbook or webhook created or changed
+description: >
+  A runbook or a webhook was written in an Azure Automation account. A runbook
+  runs code as the Automation account's managed identity, on a schedule or
+  whenever its webhook URL is called, and the URL needs no sign-in: a way back
+  in that outlives every user's password. The tutorial runbooks a new
+  Automation account comes with are left out. A team that really uses
+  Automation will see its own edits here.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.45
+attack: [T1648]
+logsource:
+  product: azure
+  service: activity
+detection:
+  selection:
+    api.operation: [Microsoft.Automation/automationAccounts/runbooks/write,
+                    Microsoft.Automation/automationAccounts/webhooks/write]
+  filter_tutorial:
+    resource.uid|contains: /runbooks/AzureAutomationTutorial
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_tutorial and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, cloud.account.uid]
+sources:
+  - name: Splunk
+    title: Azure Automation Runbook Created
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/azure_automation_runbook_created.yml
+    author: Mauricio Velazco, Brian Serocki, Splunk
+    license: Apache-2.0
+    relation: adapted
+  - name: Splunk
+    title: Azure Runbook Webhook Created
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/azure_runbook_webhook_created.yml
+    author: Mauricio Velazco, Brian Serocki, Splunk
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: Azure Automation Runbook Created or Modified
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/azure_activity_rules/azure_automation_runbook_created_or_modified.yml
+    license: Apache-2.0
+    relation: inspired

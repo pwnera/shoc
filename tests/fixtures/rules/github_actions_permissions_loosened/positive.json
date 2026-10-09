@@ -1,0 +1,47 @@
+[
+  {
+    "_document_id": "gh-org.set_default_workflow_permissions-write",
+    "action": "org.set_default_workflow_permissions",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "203.0.113.90",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "default_workflow_permissions_value": "write",
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-repo.set_workflow_permission_can_approve_pr-true",
+    "action": "repo.set_workflow_permission_can_approve_pr",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "203.0.113.90",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/payments",
+    "public_repo": false,
+    "workflow_permission_can_approve_pr_value": true,
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "gh-org.update_actions_settings",
+    "action": "org.update_actions_settings",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "203.0.113.90",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "old_policy": "selected_actions",
+    "new_policy": "all_actions",
+    "operation_type": "modify"
+  }
+]

@@ -1,0 +1,52 @@
+id: anthropic_federation_trust_added
+title: Claude organisation trusts a new OIDC issuer for keyless access
+description: >
+  Workload identity federation lets tokens from an outside OIDC issuer act as
+  a Claude service account or user, with scopes up to org:admin. Someone who
+  registers their own issuer and a rule keeps API access that no key
+  revocation removes. Setting up GitHub Actions or a cloud workload to call
+  Claude without a key does the same once per integration. Archiving an issuer
+  or a rule is left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1484.002, T1098.001]
+logsource:
+  product: anthropic
+  service: activity_feed
+detection:
+  selection:
+    api.operation:
+      - platform_federation_issuer_created
+      - platform_federation_issuer_updated
+      - platform_federation_rule_created
+      - platform_federation_rule_updated
+      - platform_federation_rule_workspace_added
+  condition: selection
+  timeframe: 15m
+# An Admin key that acts has no email, so its id keys the finding.
+entity: [actor.user.name, actor.session.uid]
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, raw.issuer_url, raw.oauth_scope, raw.target_type]
+sources:
+  - name: Anthropic
+    title: Query compliance activities
+    url: https://platform.claude.com/docs/en/api/compliance/activities/list
+    relation: inspired
+  - name: Sigma
+    title: Okta Identity Provider Created
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_identity_provider_created.yml
+    author: kelnage
+    license: DRL-1.1
+    relation: inspired
+  - name: Sigma
+    title: New Federated Domain Added
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/m365/audit/microsoft365_new_federated_domain_added_audit.yml
+    author: Splunk Threat Research Team (original rule), Harjot Singh @cyb3rjy0t (sigma rule)
+    license: DRL-1.1
+    relation: inspired
+  - name: Push Security
+    title: Inbound federation
+    url: https://github.com/pushsecurity/saas-attacks/blob/main/techniques/inbound_federation/description.md
+    license: CC-BY-4.0
+    relation: inspired

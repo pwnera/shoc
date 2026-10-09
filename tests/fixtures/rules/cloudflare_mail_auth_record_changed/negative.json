@@ -1,0 +1,38 @@
+[
+  {
+    "id": "9c8d7e6f5a4b40c1b2d3e4f5a6b7c901",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Create DNS record", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2201", "method": "POST", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "", "product": "dns_records", "request": {"type": "TXT", "name": "example.com", "content": "google-site-verification=abc123fakeverification"}, "response": {"id": "372e67954025e0ba6aaa6d586b9e0c01", "type": "TXT", "name": "example.com", "content": "google-site-verification=abc123fakeverification"}, "scope": "zones", "type": "dns_records"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "9c8d7e6f5a4b40c1b2d3e4f5a6b7c902",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Update DNS record", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2202", "method": "PATCH", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records/372e67954025e0ba6aaa6d586b9e0c02", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "372e67954025e0ba6aaa6d586b9e0c02", "product": "dns_records", "request": {"content": "192.0.2.80"}, "response": {"id": "372e67954025e0ba6aaa6d586b9e0c02", "type": "A", "name": "www.example.com", "content": "192.0.2.80"}, "scope": "zones", "type": "dns_records"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "9c8d7e6f5a4b40c1b2d3e4f5a6b7c903",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Update DNS record", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "admin@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2203", "method": "PATCH", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records/372e67954025e0ba6aaa6d586b9e0c03", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "372e67954025e0ba6aaa6d586b9e0c03", "product": "dns_records", "request": {"type": "MX", "content": "mx2.example.com", "priority": 20}, "response": {"id": "372e67954025e0ba6aaa6d586b9e0c03", "type": "MX", "name": "example.com", "content": "mx2.example.com", "priority": 20}, "scope": "zones", "type": "dns_records"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "9c8d7e6f5a4b40c1b2d3e4f5a6b7c904",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Batch DNS Records", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "api", "email": "deploy@example.com", "ip_address": "198.51.100.20", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2204", "method": "POST", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records/batch", "user_agent": "terraform/1.9.0"},
+    "resource": {"type": "batch", "scope": "zones", "product": "dns_records", "request": {"posts": [{"name": "app.example.com", "type": "CNAME", "content": "app.example.net"}]}, "response": {"posts": [{"id": "372e67954025e0ba6aaa6d586b9e0c04", "name": "app.example.com", "tags": [], "type": "CNAME", "content": "app.example.net", "proxied": true}]}},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  }
+]

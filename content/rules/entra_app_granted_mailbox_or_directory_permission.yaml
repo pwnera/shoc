@@ -1,0 +1,74 @@
+id: entra_app_granted_mailbox_or_directory_permission
+title: App granted access to every mailbox or to directory roles
+description: >
+  An application was given an application permission that reads or sends mail
+  in any mailbox (full_access_as_app, Exchange.ManageAsApp, Mail.Read and its
+  variants, Mail.Send, MailboxSettings.ReadWrite), or one that lets it rewrite
+  the directory (RoleManagement.ReadWrite.Directory,
+  AppRoleAssignment.ReadWrite.All, Application.ReadWrite.All,
+  Directory.ReadWrite.All). Midnight Blizzard read Microsoft's corporate mail
+  through apps it had given full_access_as_app, and the directory permissions
+  let an app make itself Global Administrator. An application permission works with no user
+  signed in, so no password reset touches it. entra_app_consent_granted fires on
+  the same grant; this is the one to act on first. A backup or archiving
+  product installed by a named admin is the usual benign case.
+status: experimental
+date: 2026-10-09
+severity: critical
+confidence: 0.8
+attack: [T1098.003, T1114.002, T1528]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection:
+    api.operation|contains: add app role assignment to service principal
+    # The permission's name, written as JSON text with its quotes.
+    unmapped.modified.AppRole_Value.newValue|contains:
+      [full_access_as_app, Exchange.ManageAsApp, Mail.Read, Mail.Send, MailboxSettings.ReadWrite,
+       RoleManagement.ReadWrite.Directory, AppRoleAssignment.ReadWrite.All,
+       Application.ReadWrite.All, Directory.ReadWrite.All]
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, unmapped.modified.AppRole_Value.newValue,
+         unmapped.modified.ServicePrincipal_DisplayName.newValue, src_endpoint.ip]
+sources:
+  - name: Microsoft Sentinel
+    title: Microsoft Entra ID Role Management Permission Grant
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Microsoft%20Entra%20ID/Analytic%20Rules/AzureADRoleManagementPermissionGrant.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: full_access_as_app Granted To Application
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Microsoft%20Entra%20ID/Analytic%20Rules/ExchangeFullAccessGrantedToApp.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: Mail.Read Permissions Granted to Application
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Microsoft%20Entra%20ID/Analytic%20Rules/MailPermissionsAddedToApplication.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: Service Principal Assigned App Role With Sensitive Access
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Detections/AuditLogs/ServicePrincipalAssignedAppRoleWithSensitiveAccess.yaml
+    license: MIT
+    relation: inspired
+  - name: Splunk
+    title: O365 FullAccessAsApp Permission Assigned
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/o365_fullaccessasapp_permission_assigned.yml
+    author: Mauricio Velazco, Splunk
+    license: Apache-2.0
+    relation: inspired
+  - name: Splunk
+    title: O365 Privileged Graph API Permission Assigned
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/o365_privileged_graph_api_permission_assigned.yml
+    author: Mauricio Velazco, Splunk
+    license: Apache-2.0
+    relation: inspired
+  - name: Microsoft
+    title: "Midnight Blizzard: Guidance for responders on nation-state attack"
+    url: https://www.microsoft.com/en-us/security/blog/2024/01/25/midnight-blizzard-guidance-for-responders-on-nation-state-attack/
+    relation: inspired

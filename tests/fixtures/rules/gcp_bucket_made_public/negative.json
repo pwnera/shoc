@@ -67,5 +67,88 @@
         }
       }
     }
+  },
+  {
+    "insertId": "bq-closed",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "bigquery_dataset",
+      "labels": {
+        "project_id": "example-prod",
+        "dataset_id": "sales"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "google.iam.v1.IAMPolicy.SetIamPolicy",
+      "resourceName": "projects/example-prod/datasets/sales",
+      "authenticationInfo": {
+        "principalEmail": "it-admin@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "metadata": {
+        "@type": "type.googleapis.com/google.cloud.audit.BigQueryAuditMetadata",
+        "datasetChange": {
+          "dataset": {
+            "datasetName": "projects/example-prod/datasets/sales"
+          },
+          "bindingDeltas": [
+            {
+              "action": "REMOVE",
+              "role": "roles/bigquery.dataViewer",
+              "member": "allUsers"
+            },
+            {
+              "action": "ADD",
+              "role": "roles/bigquery.dataViewer",
+              "member": "group:analysts@example.com"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "insertId": "run-public",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "example-prod",
+        "service_name": "www",
+        "location": "europe-west1"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "run.googleapis.com",
+      "methodName": "google.cloud.run.v1.Services.SetIamPolicy",
+      "resourceName": "projects/example-prod/locations/europe-west1/services/www",
+      "authenticationInfo": {
+        "principalEmail": "it-admin@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "serviceData": {
+        "@type": "type.googleapis.com/google.iam.v1.logging.AuditData",
+        "policyDelta": {
+          "bindingDeltas": [
+            {
+              "action": "ADD",
+              "role": "roles/run.invoker",
+              "member": "allUsers"
+            }
+          ]
+        }
+      }
+    }
   }
 ]

@@ -1,10 +1,13 @@
 id: contain_gcp_compromise
 title: Contain a compromised GCP identity or an exposed GCP resource
 description: >
-  A service account key was made, an owner role granted, audit logging cut, a
-  bucket opened to the internet, a burst of VMs started, or cluster-admin
-  bound. When the calls were signed with a service account key, that key is
-  disabled, which is reversible. Removing a role binding or closing a bucket
+  A service account key was made, an owner role or any role for a personal
+  account granted, audit logging, an organisation policy or an identity
+  provider changed, a bucket, dataset, disk image or cluster opened to
+  outsiders, GPUs or many VMs started, a KMS key destroyed, a privileged
+  workload run, a credential probed, a service account impersonated, or
+  cluster-admin bound. When the calls were signed with a service account
+  key, that key is disabled, which is reversible. Removing a role binding or closing a bucket
   needs actions shoc does not have, so a human is paged. A firewall opened to
   the internet is answered in contain_gcp_open_firewall.
 rules:
@@ -14,6 +17,18 @@ rules:
   - gcp_bucket_made_public
   - gcp_instance_creation_burst
   - gke_cluster_admin_bound
+  - gcp_iam_grant_to_personal_account
+  - gcp_gpu_instance_created
+  - gke_cluster_opened_to_anonymous
+  - gcp_org_guardrail_changed
+  - gcp_identity_federation_changed
+  - gcp_permission_denied_burst
+  - gcp_compute_zone_sweep
+  - gcp_service_account_impersonated_first_time
+  - gke_privileged_workload_created
+  - gcp_disk_image_or_snapshot_shared
+  - gcp_kms_key_destroyed
+  - gcp_instance_group_scaled_up
   - hunt:gcp_identity_first_write_operation
   - hunt:gcp_service_account_key_new_address
   - hunt:gcp_impersonation_role_first_grant

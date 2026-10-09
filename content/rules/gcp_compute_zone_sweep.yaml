@@ -1,0 +1,41 @@
+id: gcp_compute_zone_sweep
+title: One identity requested VMs in five or more zones within an hour
+description: >
+  A miner on a stolen credential spreads VMs over many zones and regions to
+  stay under each one's quota, while the company's own deploys stay in the
+  one or two regions it runs in. Six small VMs in six zones never reach
+  gcp_instance_creation_burst's ten. Refused requests count: a quota error in
+  each zone is part of the sweep. VMs that GKE or an instance group start as
+  Google's own agents are left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.55
+attack: [T1496.001, T1535]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection:
+    api.operation|endswith: [compute.instances.insert, compute.instances.bulkInsert]
+  filter_google_agent:
+    actor.user.name|endswith: [cloudservices.gserviceaccount.com, compute-system.iam.gserviceaccount.com, container-engine-robot.iam.gserviceaccount.com]
+  condition: selection and not filter_google_agent
+  timeframe: 1h
+  group_by: [actor.user.name]
+  # The zone, from the VM's resource labels.
+  count_distinct: cloud.region
+  count: ">= 5"
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, cloud.region, status]
+sources:
+  - name: Stratus Red Team
+    title: Create GCE Instances in Multiple Zones
+    url: https://github.com/DataDog/stratus-red-team/blob/main/docs/attack-techniques/GCP/gcp.impact.create-instances-in-multiple-zones.md
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: GCP Resource in Unused Region
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/gcp_audit_rules/gcp_unused_regions.py
+    license: Apache-2.0
+    relation: inspired

@@ -117,5 +117,102 @@
         ]
       }
     ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-user-route",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "it-admin@example.com",
+      "profileId": "100000000000000000001",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.40",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "USER_SETTINGS",
+        "name": "MAIL_ROUTING_DESTINATION_ADDED",
+        "parameters": [
+          {
+            "name": "NEW_VALUE",
+            "value": "archive@example.net"
+          },
+          {
+            "name": "USER_EMAIL",
+            "value": "ceo@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-email-monitor",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "it-admin@example.com",
+      "profileId": "100000000000000000001",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.40",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "USER_SETTINGS",
+        "name": "CREATE_EMAIL_MONITOR",
+        "parameters": [
+          {
+            "name": "BEGIN_DATE_TIME",
+            "value": "2026-10-09T00:00:00Z"
+          },
+          {
+            "name": "END_DATE_TIME",
+            "value": "2026-12-31T00:00:00Z"
+          },
+          {
+            "name": "EMAIL_MONITOR_DEST_EMAIL",
+            "value": "copy@example.net"
+          },
+          {
+            "name": "USER_EMAIL",
+            "value": "cfo@example.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-mailbox-dump",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "it-admin@example.com",
+      "profileId": "100000000000000000001",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.40",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "USER_SETTINGS",
+        "name": "REQUEST_MAILBOX_DUMP",
+        "parameters": [
+          {
+            "name": "USER_EMAIL",
+            "value": "cfo@example.com"
+          }
+        ]
+      }
+    ]
   }
 ]

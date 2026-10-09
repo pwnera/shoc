@@ -1,13 +1,15 @@
 id: gitlab_member_made_owner
-title: GitLab group or project member made an Owner
+title: GitLab member made an Owner, or a user made an administrator
 description: >
-  A member was added as, or changed to, Owner of a group or project. An Owner
-  changes protected branches, CI variables and who else gets in, across every
-  project below the group. A change to an existing Owner's expiry date does not
-  fire.
+  A member was added as, or changed to, Owner of a group or project, or a user
+  was made an administrator of the instance. An Owner changes protected
+  branches, CI variables and who else gets in, across every project below the
+  group; an administrator does that everywhere. A change to an existing
+  Owner's expiry date does not fire. Group mode reads only group and project
+  events, so it never sees a user made an administrator.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.6
 attack: [T1098.003]
@@ -24,7 +26,10 @@ detection:
   selection_added:
     api.operation: member_created
     raw.details.as: [Owner, "Default role: Owner"]
-  condition: (selection_change and not filter_was_owner) or selection_added
+  selection_admin:
+    api.operation: user_admin_status_updated
+    raw.details.to: true
+  condition: (selection_change and not filter_was_owner) or selection_added or selection_admin
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, actor.invoked_by, resource.uid, src_endpoint.ip]
@@ -45,4 +50,8 @@ sources:
   - name: GitLab
     title: Role labels, lib/gitlab/access.rb
     url: https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/access.rb
+    relation: inspired
+  - name: GitLab
+    title: Admin status audit event, ee/app/services/ee/users/update_service.rb
+    url: https://gitlab.com/gitlab-org/gitlab/-/blob/master/ee/app/services/ee/users/update_service.rb
     relation: inspired

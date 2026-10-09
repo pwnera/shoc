@@ -1,0 +1,70 @@
+[
+  {
+    "_document_id": "gh-org.add_outside_collaborator-admin",
+    "action": "org.add_outside_collaborator",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "203.0.113.90",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "invitee": "free-helper-77",
+    "inviter": "mallory",
+    "permission": "admin",
+    "public_repo": false,
+    "repo": "acme/payments",
+    "operation_type": "create"
+  },
+  {
+    "_document_id": "gh-repo.update_member-admin",
+    "action": "repo.update_member",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "203.0.113.90",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/infra",
+    "user": "contractor-ann",
+    "old_repo_permission": "write",
+    "new_repo_permission": "admin",
+    "public_repo": false,
+    "operation_type": "modify"
+  },
+  {
+    "_document_id": "github-webhook-member-added-admin",
+    "action": "repo.add_member",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "org": "acme",
+    "repo": "acme/payments",
+    "member": {
+      "login": "free-helper-77",
+      "id": 9002
+    },
+    "changes": {
+      "permission": {
+        "to": "admin"
+      }
+    },
+    "repository": {
+      "full_name": "acme/payments",
+      "private": true
+    },
+    "organization": {
+      "login": "acme"
+    },
+    "sender": {
+      "login": "mallory",
+      "id": 4242
+    },
+    "webhook": {
+      "event": "member",
+      "action": "added"
+    }
+  }
+]

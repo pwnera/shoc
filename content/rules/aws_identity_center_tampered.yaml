@@ -1,0 +1,77 @@
+id: aws_identity_center_tampered
+title: Identity Center permission set made admin, MFA settings changed, or a user's MFA device removed
+description: >
+  In IAM Identity Center, a permission set was given AdministratorAccess,
+  IAMFullAccess or an inline policy allowing every action, or lost its
+  permissions boundary; the instance's MFA settings were changed; an admin
+  removed a user's MFA device; or a SCIM provisioning token was created. An
+  attacker with an admin session builds a sign-in that outlives a password
+  reset this way (a permission set, a user, an assignment), then relaxes MFA
+  so that user needs only a password. Removing a user's MFA device is also
+  the help-desk step attackers talk support staff into. Identity Center logs
+  these in its home region of the management account, or of the delegated
+  administrator account, so that account must be connected. A person
+  removing their own device in the access portal is left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.7
+attack: [T1098.003, T1556.006, T1098]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  # The casing of the policy ARN's key in this event is unconfirmed, so the
+  # whole request is read.
+  selection_admin_policy:
+    api.operation: AttachManagedPolicyToPermissionSet
+    raw.requestParameters|re: 'policy/(AdministratorAccess|IAMFullAccess)"'
+  # The policy is a JSON string inside the request, so its quotes may be escaped.
+  selection_inline:
+    api.operation: PutInlinePolicyToPermissionSet
+    raw.requestParameters|re: '\\?"Action\\?"\s*:\s*(\[[^\]]*)?\\?"(\*|iam:\*)\\?"'
+  selection_boundary_removed:
+    api.operation: DeletePermissionsBoundaryFromPermissionSet
+  selection_mfa_settings:
+    api.operation: [UpdateSSOConfiguration, PutMfaDeviceManagementForDirectory]
+  selection_mfa_removed:
+    api.operation: DeleteMfaDeviceForUser
+  selection_scim_token:
+    api.operation: CreateBearerToken
+  scope:
+    api.service.name: [sso.amazonaws.com, sso-directory.amazonaws.com]
+    status: Success
+  # Since July 2025 a person acting on their own account is an IdentityCenterUser.
+  self_service:
+    actor.user.type: IdentityCenterUser
+  filter_aws:
+    actor.invoked_by|exists: true
+  condition: scope and selection_* and not self_service and not filter_aws
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, raw.requestParameters]
+sources:
+  - name: Datadog Security Labs
+    title: "Tales from the cloud trenches: The Attacker doth persist too much, methinks"
+    url: https://securitylabs.datadoghq.com/articles/tales-from-the-cloud-trenches-the-attacker-doth-persist-too-much/
+    relation: inspired
+  - name: Datadog
+    title: AWS IAM Identity Center SSO configuration updated
+    url: https://docs.datadoghq.com/security/default_rules/def-000-t3z/
+    relation: inspired
+  - name: AWS
+    title: IAM Identity Center information in CloudTrail
+    url: https://docs.aws.amazon.com/singlesignon/latest/userguide/sso-info-in-cloudtrail.html
+    relation: inspired
+  - name: AWS
+    title: Actions, resources, and condition keys for AWS IAM Identity Center
+    url: https://docs.aws.amazon.com/service-authorization/latest/reference/list_iam-identity-center.html
+    relation: inspired
+  - name: AWS
+    title: Actions, resources, and condition keys for AWS IAM Identity Center directory
+    url: https://docs.aws.amazon.com/service-authorization/latest/reference/list_sso-directory.html
+    relation: inspired
+  - name: AWS
+    title: Important changes to CloudTrail events for AWS IAM Identity Center
+    url: https://aws.amazon.com/blogs/security/modifications-to-aws-cloudtrail-event-data-of-iam-identity-center/
+    relation: inspired

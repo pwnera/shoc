@@ -44,5 +44,103 @@
     ],
     "tenantId": "tid-1",
     "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Update authorization policy risky apps",
+    "activityDisplayName": "Update authorization policy",
+    "category": "Policy",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Policy",
+        "displayName": "Authorization Policy",
+        "id": "Authorization Policy",
+        "modifiedProperties": [
+          {
+            "displayName": "AllowUserConsentForRiskyApps",
+            "oldValue": "[false]",
+            "newValue": "[true]"
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Set Company Information trusted IPs",
+    "activityDisplayName": "Set Company Information",
+    "category": "DirectoryManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Company",
+        "displayName": "Example Ltd",
+        "id": "Example Ltd",
+        "modifiedProperties": [
+          {
+            "displayName": "StrongAuthenticationPolicy",
+            "oldValue": "[]",
+            "newValue": "[{\"EnabledRememberDevice\":false,\"IPAddressesWhitelist\":[\"203.0.113.0/24\"]}]"
+          },
+          {
+            "displayName": "Included Updated Properties",
+            "oldValue": null,
+            "newValue": "\"StrongAuthenticationPolicy\""
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Set Company Information root CA",
+    "activityDisplayName": "Set Company Information",
+    "category": "DirectoryManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Company",
+        "displayName": "Example Ltd",
+        "id": "Example Ltd",
+        "modifiedProperties": [
+          {
+            "displayName": "Included Updated Properties",
+            "oldValue": null,
+            "newValue": "\"TrustedCAsForPasswordlessAuth\""
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
   }
 ]

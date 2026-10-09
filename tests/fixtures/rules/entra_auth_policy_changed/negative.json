@@ -36,5 +36,72 @@
     ],
     "tenantId": "tid-1",
     "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Update authorization policy risky apps off",
+    "activityDisplayName": "Update authorization policy",
+    "category": "Policy",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.61"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Policy",
+        "displayName": "Authorization Policy",
+        "id": "Authorization Policy",
+        "modifiedProperties": [
+          {
+            "displayName": "AllowUserConsentForRiskyApps",
+            "oldValue": "[true]",
+            "newValue": "[false]"
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-Set Company Information name",
+    "activityDisplayName": "Set Company Information",
+    "category": "DirectoryManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Update",
+    "result": "success",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "admin@example.com",
+        "id": "u-2",
+        "ipAddress": "198.51.100.61"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "Company",
+        "displayName": "Example Ltd",
+        "id": "Example Ltd",
+        "modifiedProperties": [
+          {
+            "displayName": "DisplayName",
+            "oldValue": "[\"Example\"]",
+            "newValue": "[\"Example Ltd\"]"
+          },
+          {
+            "displayName": "Included Updated Properties",
+            "oldValue": null,
+            "newValue": "\"DisplayName\""
+          }
+        ]
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
   }
 ]

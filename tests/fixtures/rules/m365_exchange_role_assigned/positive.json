@@ -1,0 +1,67 @@
+[
+  {
+    "Id": "m365-New-ManagementRoleAssignment",
+    "Operation": "New-ManagementRoleAssignment",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "1003BFFD98415B4E",
+    "UserType": 2,
+    "Version": 1,
+    "Workload": "Exchange",
+    "ClientIP": "203.0.113.30:61528",
+    "ObjectId": "example.onmicrosoft.com\\mail-sync",
+    "UserId": "it-admin@example.com",
+    "AppId": "fb78d390-0c51-40cd-8e17-fdbfab77341b",
+    "ClientAppId": "",
+    "ExternalAccess": false,
+    "OrganizationName": "example.onmicrosoft.com",
+    "Parameters": [
+      {
+        "Name": "App",
+        "Value": "00000000-0000-0000-0000-00000000h001"
+      },
+      {
+        "Name": "Name",
+        "Value": "mail-sync"
+      },
+      {
+        "Name": "Role",
+        "Value": "Application Mail.ReadWrite"
+      }
+    ],
+    "_content_type": "Audit.Exchange",
+    "AppAccessContext": {
+      "UniqueTokenId": "g7oAmNhLoU-8qJVeWeAwAA"
+    }
+  },
+  {
+    "Id": "m365-Add-RoleGroupMember",
+    "Operation": "Add-RoleGroupMember",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "1003BFFD98415B4E",
+    "UserType": 2,
+    "Version": 1,
+    "Workload": "Exchange",
+    "ClientIP": "203.0.113.30:61530",
+    "ObjectId": "Organization Management",
+    "UserId": "it-admin@example.com",
+    "AppId": "fb78d390-0c51-40cd-8e17-fdbfab77341b",
+    "ClientAppId": "",
+    "ExternalAccess": false,
+    "OrganizationName": "example.onmicrosoft.com",
+    "Parameters": [
+      {
+        "Name": "Identity",
+        "Value": "Organization Management"
+      },
+      {
+        "Name": "Member",
+        "Value": "contractor@example.com"
+      }
+    ],
+    "_content_type": "Audit.Exchange"
+  }
+]

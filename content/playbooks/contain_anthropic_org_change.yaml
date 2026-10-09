@@ -2,15 +2,18 @@ id: contain_anthropic_org_change
 title: Contain a change to the Claude organisation
 description: >
   Audit logging, SSO, the IP restriction or the spend limit was switched off,
-  an admin was added, or the organisation's data was exported. When the change
-  came through an API key, that key is disabled, which is reversible. A Console
-  session cannot be ended through the API and a role cannot be taken back, so a
-  human is paged to undo the change in the Console.
+  an admin or an outside OIDC issuer was added, or the organisation's data was
+  exported or an artifact made public. When the change came through an API
+  key, that key is disabled, which is reversible. A Console session cannot be
+  ended through the API and a role cannot be taken back, so a human is paged
+  to undo the change in the Console.
 rules:
   - anthropic_defence_disabled
   - anthropic_admin_role_granted
   - anthropic_admin_added_then_admin_key
   - anthropic_org_data_exported
+  - anthropic_federation_trust_added
+  - anthropic_artifact_shared_publicly
   - hunt:anthropic_mcp_server_first_seen
 questions:
   - id: actor

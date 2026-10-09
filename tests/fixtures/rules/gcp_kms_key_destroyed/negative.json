@@ -1,0 +1,101 @@
+[
+  {
+    "insertId": "kms-enable",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "cloudkms_cryptokeyversion",
+      "labels": {
+        "project_id": "example-prod",
+        "location": "europe-west1",
+        "key_ring_id": "prod",
+        "crypto_key_id": "db"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudkms.googleapis.com",
+      "methodName": "UpdateCryptoKeyVersion",
+      "resourceName": "projects/example-prod/locations/europe-west1/keyRings/prod/cryptoKeys/db/cryptoKeyVersions/1",
+      "authenticationInfo": {
+        "principalEmail": "it-admin@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/google.cloud.kms.v1.UpdateCryptoKeyVersionRequest",
+        "updateMask": "state",
+        "cryptoKeyVersion": {
+          "name": "projects/example-prod/locations/europe-west1/keyRings/prod/cryptoKeys/db/cryptoKeyVersions/1",
+          "state": "ENABLED"
+        }
+      }
+    }
+  },
+  {
+    "insertId": "kms-restore",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "cloudkms_cryptokeyversion",
+      "labels": {
+        "project_id": "example-prod",
+        "location": "europe-west1",
+        "key_ring_id": "prod",
+        "crypto_key_id": "db"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudkms.googleapis.com",
+      "methodName": "RestoreCryptoKeyVersion",
+      "resourceName": "projects/example-prod/locations/europe-west1/keyRings/prod/cryptoKeys/db/cryptoKeyVersions/1",
+      "authenticationInfo": {
+        "principalEmail": "it-admin@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "name": "projects/example-prod/locations/europe-west1/keyRings/prod/cryptoKeys/db/cryptoKeyVersions/1"
+      }
+    }
+  },
+  {
+    "insertId": "kms-destroy-denied",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "cloudkms_cryptokeyversion",
+      "labels": {
+        "project_id": "example-prod",
+        "location": "europe-west1",
+        "key_ring_id": "prod",
+        "crypto_key_id": "db"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudkms.googleapis.com",
+      "methodName": "DestroyCryptoKeyVersion",
+      "resourceName": "projects/example-prod/locations/europe-west1/keyRings/prod/cryptoKeys/db/cryptoKeyVersions/1",
+      "authenticationInfo": {
+        "principalEmail": "dev@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      },
+      "request": {
+        "name": "projects/example-prod/locations/europe-west1/keyRings/prod/cryptoKeys/db/cryptoKeyVersions/1"
+      }
+    }
+  }
+]

@@ -73,5 +73,165 @@
     },
     "errorCode": "AccessDenied",
     "errorMessage": "User is not authorized to perform this operation"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "lc-trail-1y",
+    "eventName": "PutBucketLifecycle",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "bucketName": "aws-cloudtrail-logs-123456789012-1a2b3c4d",
+      "Host": "aws-cloudtrail-logs-123456789012-1a2b3c4d.s3.eu-west-1.amazonaws.com",
+      "lifecycle": "",
+      "LifecycleConfiguration": {
+        "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+        "Rule": {
+          "Expiration": {
+            "Days": 365
+          },
+          "Filter": {
+            "Prefix": ""
+          },
+          "ID": "expire",
+          "Status": "Enabled"
+        }
+      }
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "lc-trail-14d",
+    "eventName": "PutBucketLifecycle",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "bucketName": "aws-cloudtrail-logs-123456789012-1a2b3c4d",
+      "Host": "aws-cloudtrail-logs-123456789012-1a2b3c4d.s3.eu-west-1.amazonaws.com",
+      "lifecycle": "",
+      "LifecycleConfiguration": {
+        "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+        "Rule": {
+          "Expiration": {
+            "Days": 14
+          },
+          "Filter": {
+            "Prefix": ""
+          },
+          "ID": "expire",
+          "Status": "Enabled"
+        }
+      }
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "lc-trail-noncurrent",
+    "eventName": "PutBucketLifecycle",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "bucketName": "aws-cloudtrail-logs-123456789012-1a2b3c4d",
+      "Host": "aws-cloudtrail-logs-123456789012-1a2b3c4d.s3.eu-west-1.amazonaws.com",
+      "lifecycle": "",
+      "LifecycleConfiguration": {
+        "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+        "Rule": {
+          "NoncurrentVersionExpiration": {
+            "NoncurrentDays": 1
+          },
+          "Filter": {
+            "Prefix": ""
+          },
+          "ID": "expire",
+          "Status": "Enabled"
+        }
+      }
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "lc-athena",
+    "eventName": "PutBucketLifecycle",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "bucketName": "acme-athena-query-results",
+      "Host": "acme-athena-query-results.s3.eu-west-1.amazonaws.com",
+      "lifecycle": "",
+      "LifecycleConfiguration": {
+        "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+        "Rule": {
+          "Expiration": {
+            "Days": 1
+          },
+          "Filter": {
+            "Prefix": ""
+          },
+          "ID": "expire",
+          "Status": "Enabled"
+        }
+      }
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
   }
 ]

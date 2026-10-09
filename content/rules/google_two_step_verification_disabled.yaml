@@ -3,10 +3,12 @@ title: Two-step verification turned off
 description: >
   Second factors were removed for a user, an admin turned two-step
   verification off for someone, or an admin stopped allowing or enforcing it
-  for an org unit. Everything that depends on MFA quietly stops depending on it.
+  for an org unit. Taking an account out of Advanced Protection, or letting
+  an org unit held to security keys use any method again (SMS included),
+  counts too. Everything that depends on MFA quietly stops depending on it.
 status: stable
 date: 2026-09-24
-modified: 2026-10-03
+modified: 2026-10-09
 severity: critical
 confidence: 0.75
 attack: [T1556.006]
@@ -23,7 +25,13 @@ detection:
   # A user turning their own second factor off.
   selection_user:
     api.operation: 2sv_disable
-  condition: selection_unenroll or selection_off or selection_user
+  # Advanced Protection removed by the user or by an admin.
+  selection_advanced_protection:
+    api.operation: [titanium_unenroll, UNENROLL_USER_FROM_TITANIUM]
+  selection_any_method:
+    api.operation: CHANGE_ALLOWED_TWO_STEP_VERIFICATION_METHODS
+    unmapped.params.ALLOWED_TWO_STEP_VERIFICATION_METHOD: ANY
+  condition: selection_*
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, api.operation, resource.uid]
@@ -44,6 +52,15 @@ sources:
     author: Austin Songer
     license: DRL-1.1
     relation: adapted
+  - name: Panther
+    title: GSuite User Advanced Protection Change
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/gsuite_activityevent_rules/gsuite_advanced_protection.py
+    license: Apache-2.0
+    relation: adapted
+  - name: Google
+    title: Admin audit activity events, security settings
+    url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/admin-security-settings
+    relation: inspired
   - name: Google
     title: Admin audit activity events, user settings
     url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/admin-user-settings

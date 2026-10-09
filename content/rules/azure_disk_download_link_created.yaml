@@ -1,0 +1,35 @@
+id: azure_disk_download_link_created
+title: Download link created for an Azure disk or snapshot
+description: >
+  Someone generated a SAS download link for a managed disk or a snapshot.
+  Anyone holding the link can download the whole disk with no further sign-in,
+  which for a domain controller includes the AD database and every password
+  hash in it. A migration, or a backup product that exports disks this way, is
+  the usual benign case.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.5
+attack: [T1530]
+logsource:
+  product: azure
+  service: activity
+detection:
+  selection:
+    api.operation: [Microsoft.Compute/disks/beginGetAccess/action, Microsoft.Compute/snapshots/beginGetAccess/action]
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, cloud.account.uid]
+sources:
+  - name: Panther
+    title: Azure VM Disk SAS URI Generated
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/azure_activity_rules/azure_vm_disk_sas_uri_generated.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Azure Threat Research Matrix
+    title: AZT701.1 VM Disk SAS URI
+    url: https://microsoft.github.io/Azure-Threat-Research-Matrix/Impact/AZT701/AZT701-1
+    relation: inspired

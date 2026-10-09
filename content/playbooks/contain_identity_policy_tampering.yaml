@@ -1,20 +1,28 @@
 id: contain_identity_policy_tampering
 title: Contain tampering with sign-in policy
 description: >
-  A sign-on, password or conditional access policy changed, or an external
-  identity provider was added. Either can let an attacker back in without a
-  password. Revoking the actor's sessions stops further changes. Reverting the
-  policy or disabling the identity provider needs actions shoc does not have
-  yet, so a human is paged.
+  A sign-on, password or conditional access policy changed, an authenticator
+  or an org-wide attack protection was switched off, or an external identity
+  provider, an Active Directory agent or a trusted partner tenant was added.
+  Each makes signing in
+  easier for an attacker, or possible without a password. Revoking the
+  actor's sessions stops further changes. Reverting the policy or disabling
+  the identity provider needs actions shoc does not have yet, so a human is
+  paged.
 rules:
   - okta_security_policy_changed
   - entra_conditional_access_changed
   - okta_identity_provider_added
   - okta_network_zone_changed
+  - okta_org_authenticator_deactivated
+  - okta_org_attack_protection_relaxed
+  - okta_ad_agent_created
   - hunt:okta_sign_in_via_new_identity_provider
   - entra_domain_federation_changed
   - m365_domain_federation_changed
   - entra_auth_policy_changed
+  - google_sso_profile_changed
+  - entra_cross_tenant_access_partner_added
 questions:
   - id: what_changed
     ask: What did the policy allow before and after the change, and which users does it apply to?
@@ -42,6 +50,11 @@ steps:
       user: "{{ entity.user }}"
   - name: revoke the actor's sessions in Entra ID
     action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: sign the actor out of every Google session
+    action: google.revoke_sessions
     optional: true
     params:
       user: "{{ entity.user }}"

@@ -1,0 +1,64 @@
+id: m365_ediscovery_search_exported
+title: Mailbox or site content exported through eDiscovery
+description: >
+  Someone exported or downloaded the results of an eDiscovery search, in the
+  Purview portal or with PowerShell. An eDiscovery Manager or Global
+  Administrator can search every mailbox and site for "invoice" or "password"
+  and take the hits away as PST files. Octo Tempest steals mailboxes as PST
+  files, and in Exchange Online a search export is how one is made. A
+  company of fifty people runs eDiscovery once a year for a lawyer, if ever, and
+  Microsoft's own alert for it is only informational, so it never opens a case.
+  A purge, which pulls a phishing mail out of every inbox, is left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.75
+attack: [T1114.002, T1213]
+logsource:
+  product: m365
+  service: management
+detection:
+  # The classic names still log for 21Vianet tenants; the Purview names
+  # replaced them everywhere else in August 2025.
+  selection_export:
+    api.operation:
+      - SearchExported
+      - SearchExportDownloaded
+      - ExportJob
+      - PurviewSearchExportJobSubmitted
+      - ReviewSetExportJobSubmitted
+  # Security & Compliance PowerShell logs its parameters as one string.
+  selection_cmdlet:
+    api.operation: New-ComplianceSearchAction
+    raw.Parameters|contains: '-Export "True"'
+  filter_failed:
+    status: Failure
+  condition: (selection_export or selection_cmdlet) and not filter_failed
+  timeframe: 30m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, raw.Query, raw.ExchangeLocations]
+sources:
+  - name: Sigma
+    title: PST Export Alert Using New-ComplianceSearchAction
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/m365/threat_management/microsoft365_pst_export_alert_using_new_compliancesearchaction.yml
+    author: Nikita Khalimonenkov
+    license: DRL-1.1
+    relation: adapted
+  - name: Splunk
+    title: O365 Compliance Content Search Exported
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/o365_compliance_content_search_exported.yml
+    author: Mauricio Velazco, Splunk
+    license: Apache-2.0
+    relation: adapted
+  - name: Microsoft
+    title: Octo Tempest crosses boundaries to facilitate extortion, encryption, and destruction
+    url: https://www.microsoft.com/en-us/security/blog/2023/10/25/octo-tempest-crosses-boundaries-to-facilitate-extortion-encryption-and-destruction/
+    relation: inspired
+  - name: Microsoft
+    title: Audit log activities (eDiscovery activities)
+    url: https://learn.microsoft.com/en-us/purview/audit-log-activities
+    relation: inspired
+  - name: Microsoft
+    title: Search for eDiscovery (classic) activities in the audit log
+    url: https://learn.microsoft.com/en-us/purview/ediscovery-search-for-activities-in-the-audit-log
+    relation: inspired

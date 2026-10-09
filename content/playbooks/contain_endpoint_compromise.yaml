@@ -1,10 +1,12 @@
 id: contain_endpoint_compromise
 title: Contain a compromised endpoint
 description: >
-  The EDR raised a high-severity or ransomware detection. Isolating the host is
-  reversible but takes someone's laptop off the network, so the policy holds it
-  for a human while the page goes out. Blocking the file the alert named stops
-  it on every other laptop too.
+  The EDR raised a high-severity or ransomware detection, or the same detection
+  on several machines, or its telemetry shows a step of a hands-on intrusion
+  such as dumped credentials, deleted backups, cleared logs or a miner.
+  Isolating the host is reversible but takes someone's laptop off the network,
+  so the policy holds it for a human while the page goes out. Blocking the file
+  the alert named stops it on every other laptop too.
 rules:
   - edr_high_severity_detection
   - edr_ransomware_detection
@@ -18,6 +20,20 @@ rules:
   - endpoint_local_admin_granted
   - endpoint_ci_runner_or_secret_scanner_on_workstation
   - endpoint_anydesk_unattended_setup
+  - endpoint_backups_or_shadow_copies_deleted
+  - endpoint_lsass_dump_or_credential_tool
+  - endpoint_sam_or_ntds_copied
+  - endpoint_event_log_cleared
+  - endpoint_lolbin_downloads_payload
+  - endpoint_remote_control_tool_from_user_folder
+  - endpoint_service_kill_burst
+  - endpoint_ad_recon_tool
+  - endpoint_remote_desktop_enabled
+  - edr_detection_on_many_hosts
+  - endpoint_autostart_runs_script_from_user_folder
+  - endpoint_crypto_miner_started
+  - dns_oob_interaction_domain_lookup
+  - endpoint_unix_shell_download_and_run
   - hunt:endpoint_remote_access_tool_first_seen
   - hunt:endpoint_tunnel_client_first_seen_on_host
   - hunt:endpoint_cloud_storage_client_first_seen_on_host

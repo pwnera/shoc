@@ -1,0 +1,19 @@
+[
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-01WipDeleted",
+    "type": "workload_identity_provider.deleted",
+    "actor": {"type": "session", "session": {"user": {"id": "user-1", "email": "admin@example.com"}, "ip_address": "198.51.100.20", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "workload_identity_provider.deleted": {"id": "wip_old01", "name": "old-ci"},
+    "details": {"id": "wip_old01", "name": "old-ci"},
+    "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-01TenantMappingArchived",
+    "type": "tenant.workload_identity.mapping.archived",
+    "actor": {"type": "session", "session": {"user": {"id": "user-1", "email": "admin@example.com"}, "ip_address": "198.51.100.20", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "details": {},
+    "key_id": null
+  }
+]

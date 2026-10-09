@@ -1,0 +1,53 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-risky-blocked",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "100000000000000000002",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.23",
+    "networkInfo": {
+      "ipAsn": [
+        64500
+      ],
+      "regionCode": "NL"
+    },
+    "_application": "login",
+    "events": [
+      {
+        "type": "login",
+        "name": "risky_sensitive_action_blocked",
+        "parameters": [
+          {
+            "name": "login_type",
+            "value": "google_password"
+          },
+          {
+            "name": "is_suspicious",
+            "boolValue": true
+          },
+          {
+            "name": "login_challenge_method",
+            "multiValue": [
+              "google_prompt"
+            ]
+          },
+          {
+            "name": "login_challenge_status",
+            "value": "Challenge Failed."
+          },
+          {
+            "name": "sensitive_action_name",
+            "value": "Adding a forwarding address"
+          }
+        ]
+      }
+    ]
+  }
+]

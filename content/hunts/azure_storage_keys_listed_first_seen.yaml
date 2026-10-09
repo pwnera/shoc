@@ -1,9 +1,10 @@
 id: azure_storage_keys_listed_first_seen
-title: An identity reads or regenerates a storage account's keys for the first time
+title: An identity reads, regenerates or signs with a storage account's keys for the first time
 hypothesis: >
   A storage account key opens every blob, file and queue in the account and is
   not tied to anyone's sign-in. Reading the keys is how an attacker with an
-  Azure role takes the data out quietly. The portal's Access keys page and
+  Azure role takes the data out quietly, and a SAS minted from the key gives
+  the same access without reading it. The portal's Access keys page and
   restarting function apps read them too, so this is a hunt: the question is
   whether this identity has ever needed this account's keys before.
 attack: [T1552.005, T1078.004]
@@ -14,7 +15,8 @@ window: 1d
 cadence_days: 1
 detection:
   selection:
-    api.operation: [Microsoft.Storage/storageAccounts/listKeys/action, Microsoft.Storage/storageAccounts/regenerateKey/action]
+    api.operation: [Microsoft.Storage/storageAccounts/listKeys/action, Microsoft.Storage/storageAccounts/regenerateKey/action,
+                    Microsoft.Storage/storageAccounts/listAccountSas/action, Microsoft.Storage/storageAccounts/listServiceSas/action]
     status: Success
   condition: selection
 baseline:
@@ -45,4 +47,8 @@ sources:
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/activity_logs/azure_rare_operations.yml
     author: sawwinnnaung
     license: DRL-1.1
+    relation: inspired
+  - name: Microsoft
+    title: Azure permissions for Storage
+    url: https://learn.microsoft.com/en-us/azure/role-based-access-control/permissions/storage
     relation: inspired

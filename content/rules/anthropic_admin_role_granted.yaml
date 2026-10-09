@@ -1,12 +1,13 @@
 id: anthropic_admin_role_granted
 title: Claude organisation admin added
 description: >
-  A member was made an admin or owner, an invitation went out for one, or the
-  primary owner changed. An admin creates Admin keys and changes SSO, so it is
-  the role to take after getting into the Console.
+  A member was made an admin or owner, directly or through a role assignment,
+  an invitation went out for one, or the primary owner changed. An admin
+  creates Admin keys and changes SSO, so it is the role to take after getting
+  into the Console. Owning one chat project, skill or plugin is left out.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.6
 attack: [T1098.003]
@@ -22,11 +23,18 @@ detection:
     raw.invited_role: [admin, owner]
   selection_owner:
     api.operation: primary_owner_transferred
-  condition: selection_*
+  # A role is a bare name or one scoped to a resource type, such as
+  # platform:admin or chat_project:owner.
+  selection_assignment:
+    api.operation: role_assignment_granted
+    raw.role|re: '(^|:)(admin|owner|primary_owner|membership_admin)$'
+  resource_scoped:
+    raw.resource_type: [chat_project, skill, plugin]
+  condition: selection_role or selection_invite or selection_owner or (selection_assignment and not resource_scoped)
   timeframe: 15m
 # An Admin key that acts has no email, so its id keys the finding.
 entity: [actor.user.name, actor.session.uid]
-fields: [actor.user.name, src_endpoint.ip, api.operation, raw.user_email, raw.invited_email, raw.new_owner_id]
+fields: [actor.user.name, src_endpoint.ip, api.operation, raw.user_email, raw.invited_email, raw.new_owner_id, raw.role, raw.target_id]
 sources:
   - name: Elastic
     title: Anthropic Admin Role Assigned to User
@@ -42,6 +50,15 @@ sources:
     title: Anthropic Organization User Invite Sent
     url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/persistence_anthropic_organization_user_invite_sent.toml
     license: Elastic-2.0
+    relation: inspired
+  - name: Datadog
+    title: Anthropic Compliance admin role assignment granted
+    url: https://docs.datadoghq.com/security/default_rules/def-000-gb2/
+    relation: inspired
+  - name: Panther
+    title: Anthropic Role Granted
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/anthropic_rules/anthropic_role_granted.yml
+    license: Apache-2.0
     relation: inspired
   - name: Anthropic
     title: Query compliance activities

@@ -1,0 +1,45 @@
+id: anthropic_artifact_shared_publicly
+title: Claude artifact shared with anyone on the internet
+description: >
+  A member set an artifact's sharing to public, so anyone with the link can
+  open it without signing in. Artifacts are built from conversations and can
+  hold customer data, code or internal numbers. It is a member exposing data
+  more often than an intrusion step. An artifact that was already public is
+  left out.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.5
+attack: [T1567]
+logsource:
+  product: anthropic
+  service: activity_feed
+detection:
+  selection:
+    api.operation: claude_artifact_sharing_updated
+  # `new_mode` may be absent; the audience then says the same.
+  public:
+    - raw.new_mode: public
+    - raw.audience|contains: anyone_with_link
+  # A change to who may edit an artifact that is already public.
+  already:
+    raw.previous_mode: public
+  condition: selection and public and not already
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, raw.claude_artifact_id, raw.previous_mode, raw.new_mode]
+sources:
+  - name: Panther
+    title: Anthropic Artifact Shared Publicly
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/anthropic_rules/anthropic_artifact_shared_publicly.yml
+    license: Apache-2.0
+    relation: inspired
+  - name: Elastic
+    title: Anthropic Artifact Shared Publicly
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/anthropic/exfiltration_anthropic_artifact_shared_publicly.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Anthropic
+    title: Query compliance activities
+    url: https://platform.claude.com/docs/en/api/compliance/activities/list
+    relation: inspired

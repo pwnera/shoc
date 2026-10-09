@@ -1,0 +1,21 @@
+[
+  {
+    "id": 91501,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "ci_runner_unregistered",
+    "details": {
+      "event_name": "ci_runner_unregistered",
+      "custom_message": "Unregistered group CI runner",
+      "target_id": 377,
+      "target_type": "Ci::Runner",
+      "target_details": "/groups/acme/-/runners/377",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "198.51.100.61",
+      "entity_path": "acme"
+    }
+  }
+]

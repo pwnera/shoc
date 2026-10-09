@@ -1,0 +1,69 @@
+[
+  {
+    "_document_id": "github-webhook-member-added-write",
+    "action": "repo.add_member",
+    "actor": "it-admin",
+    "actor_id": 1001,
+    "org": "acme",
+    "repo": "acme/website",
+    "member": {
+      "login": "contractor-ann",
+      "id": 9001
+    },
+    "changes": {
+      "permission": {
+        "to": "write"
+      }
+    },
+    "repository": {
+      "full_name": "acme/website",
+      "private": true
+    },
+    "organization": {
+      "login": "acme"
+    },
+    "sender": {
+      "login": "it-admin",
+      "id": 1001
+    },
+    "webhook": {
+      "event": "member",
+      "action": "added"
+    }
+  },
+  {
+    "_document_id": "gh-repo.add_member-write",
+    "action": "repo.add_member",
+    "actor": "it-admin",
+    "actor_id": 1001,
+    "actor_ip": "198.51.100.5",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/website",
+    "user": "contractor-ann",
+    "permission": "write",
+    "public_repo": false,
+    "operation_type": "create"
+  },
+  {
+    "_document_id": "gh-repo.update_member-lowered",
+    "action": "repo.update_member",
+    "actor": "it-admin",
+    "actor_id": 1001,
+    "actor_ip": "198.51.100.5",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/infra",
+    "user": "contractor-ann",
+    "old_repo_permission": "admin",
+    "new_repo_permission": "write",
+    "public_repo": false,
+    "operation_type": "modify"
+  }
+]

@@ -7,7 +7,7 @@ description: >
   person's own access tokens are left out; developers make those every week.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-02
+modified: 2026-10-09
 severity: medium
 confidence: 0.5
 attack: [T1098.001]

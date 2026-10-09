@@ -34,5 +34,36 @@
     "scopes": [
       "read:compliance_activities"
     ]
+  },
+  {
+    "id": "activity_01ServiceKey",
+    "organization_id": "org_01",
+    "type": "service_key_created",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "is_service_created": true,
+    "key_name": "sync",
+    "service_name": "external:sync",
+    "scopes": ["user:inference"],
+    "service_key_id": "svck_01Fake"
+  },
+  {
+    "id": "activity_01ServiceAccount",
+    "organization_id": "org_01",
+    "type": "platform_service_account_created",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "mallory@example.com",
+      "user_id": "user_01M",
+      "ip_address": "203.0.113.44",
+      "user_agent": "Mozilla/5.0"
+    },
+    "organization_role": "admin",
+    "service_account_id": "svac_01Fake"
   }
 ]

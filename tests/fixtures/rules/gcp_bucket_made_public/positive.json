@@ -36,5 +36,45 @@
         }
       }
     }
+  },
+  {
+    "insertId": "bq-public",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "bigquery_dataset",
+      "labels": {
+        "project_id": "example-prod",
+        "dataset_id": "sales"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "google.iam.v1.IAMPolicy.SetIamPolicy",
+      "resourceName": "projects/example-prod/datasets/sales",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "metadata": {
+        "@type": "type.googleapis.com/google.cloud.audit.BigQueryAuditMetadata",
+        "datasetChange": {
+          "dataset": {
+            "datasetName": "projects/example-prod/datasets/sales"
+          },
+          "bindingDeltas": [
+            {
+              "action": "ADD",
+              "role": "roles/bigquery.dataViewer",
+              "member": "allUsers"
+            }
+          ]
+        }
+      }
+    }
   }
 ]

@@ -1,0 +1,79 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd14",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Lin",
+    "ComputerName": "web-01",
+    "ImageFileName": "/var/tmp/.cache/systemd-devd",
+    "CommandLine": "/var/tmp/.cache/systemd-devd -o pool.supportxmr.com:443 -u 4XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX -k --tls --donate-level=0",
+    "ParentBaseFileName": "sh",
+    "RawProcessId": "31337",
+    "UserName": "www-data"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "dns",
+      "type": "DNS Resolved",
+      "dns": {
+        "request": "pool.supportxmr.com",
+        "response": "198.51.100.90;"
+      }
+    },
+    "agent": {
+      "uuid": "55cf574b-9fd7-5278-2ee0-badefd0d2214"
+    },
+    "endpoint": {
+      "name": "web-02",
+      "os": "linux"
+    },
+    "src": {
+      "process": {
+        "name": "kworkerds",
+        "cmdline": "/dev/shm/kworkerds"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "dddddddddddddddddddddddddddddddddddddddd",
+      "DeviceName": "srv-app03.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "svchost32.exe",
+      "FolderPath": "C:\\ProgramData\\Microsoft\\svchost32.exe",
+      "ProcessCommandLine": "C:\\ProgramData\\Microsoft\\svchost32.exe -o stratum+tcp://203.0.113.90:3333 -u worker1 -p x -t 4",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "system"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceNetworkEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "ddddddddddddddddddddddddddddddddddddddde",
+      "DeviceName": "srv-app04.example.com",
+      "ActionType": "DnsConnectionInspected",
+      "LocalIP": "192.0.2.24",
+      "LocalPort": 50111,
+      "RemoteIP": "192.0.2.1",
+      "RemotePort": 53,
+      "Protocol": "Udp",
+      "InitiatingProcessId": 0,
+      "AdditionalFields": {
+        "direction": "Out",
+        "query": "gulf.moneroocean.stream",
+        "qtype_name": "A",
+        "rcode_name": "NOERROR",
+        "answers": [
+          "198.51.100.91"
+        ]
+      }
+    }
+  }
+]

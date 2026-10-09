@@ -5,12 +5,38 @@
     "userId": "u-1",
     "appDisplayName": "Office 365 Exchange Online",
     "clientAppUsed": "IMAP4",
+    "authenticationProtocol": "none",
     "ipAddress": "198.51.100.7",
     "location": { "countryOrRegion": "FR" },
     "status": { "errorCode": 0 },
     "correlationId": "c-0",
     "tenantId": "tid-1",
     "signInEventTypes": ["interactiveUser"],
+    "_stream": "signIns",
+    "_repeat": 2
+  },
+  {
+    "id": "hunt-entra-ropc-known",
+    "userPrincipalName": "bob@example.com",
+    "userId": "u-2",
+    "appDisplayName": "Microsoft Office",
+    "appId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "clientAppUsed": "Mobile Apps and Desktop clients",
+    "authenticationProtocol": "ropc",
+    "authenticationRequirement": "singleFactorAuthentication",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "ipAddress": "198.51.100.8",
+    "location": {
+      "countryOrRegion": "FR"
+    },
+    "status": {
+      "errorCode": 0
+    },
+    "correlationId": "c-2",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
     "_stream": "signIns",
     "_repeat": 2
   }

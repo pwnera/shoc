@@ -2,10 +2,12 @@ id: entra_conditional_access_changed
 title: Conditional access policy changed
 description: >
   Conditional access is where MFA and device rules live. Changing or disabling
-  a policy removes the control everything else assumes.
+  a policy removes the control everything else assumes. A named location is
+  often the exception a policy makes: an address range marked trusted skips
+  MFA, and a deleted blocked-countries list lets those countries in.
 status: stable
 date: 2026-09-24
-modified: 2026-10-02
+modified: 2026-10-09
 severity: high
 confidence: 0.75
 attack: [T1562.001, T1556.009]
@@ -14,7 +16,7 @@ logsource:
   service: audit_logs
 detection:
   selection:
-    api.operation|contains: conditional access policy
+    api.operation|contains: [conditional access policy, named location]
   condition: selection
   timeframe: 15m
 entity: actor.user.name
@@ -42,4 +44,9 @@ sources:
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/audit_logs/azure_aad_secops_ca_policy_removedby_bad_actor.yml
     author: Corissa Koopmans, '@corissalea'
     license: DRL-1.1
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: Entra ID named location deleted or modified
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Hunting%20Queries/AuditLogs/NamedLocationDeletedOrModified.yaml
+    license: MIT
     relation: adapted

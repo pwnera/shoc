@@ -16,5 +16,47 @@
       "userName": "deploy-ci",
       "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
     }
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "idc-create-user",
+    "eventName": "CreateUser",
+    "eventSource": "sso-directory.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.77",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:mallory@example.com",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b/mallory@example.com",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLEIDC00001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b",
+          "accountId": "123456789012",
+          "userName": "AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "requestParameters": {
+      "identityStoreId": "d-1234567890",
+      "userName": "Secret"
+    },
+    "responseElements": {
+      "user": {
+        "userId": "c3d4e5f6-0000-1111-2222-333344445555"
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
   }
 ]

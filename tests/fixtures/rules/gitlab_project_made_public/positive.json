@@ -1,0 +1,44 @@
+[
+  {
+    "id": 91210,
+    "author_id": 42,
+    "entity_id": 18,
+    "entity_type": "Project",
+    "event_name": "project_visibility_level_updated",
+    "details": {
+      "event_name": "project_visibility_level_updated",
+      "change": "visibility_level",
+      "from": "Private",
+      "to": "Public",
+      "target_id": 18,
+      "target_type": "Project",
+      "target_details": "acme/platform/api",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform/api"
+    }
+  },
+  {
+    "id": 91212,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "group_visibility_level_updated",
+    "details": {
+      "event_name": "group_visibility_level_updated",
+      "change": "visibility",
+      "from": "Internal",
+      "to": "Public",
+      "target_id": 19,
+      "target_type": "Group",
+      "target_details": "acme/oss",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/oss"
+    }
+  }
+]

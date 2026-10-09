@@ -1,0 +1,135 @@
+[
+  {
+    "Id": "m365-UserLoggedIn-d3590ed6",
+    "Operation": "UserLoggedIn",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 15,
+    "ResultStatus": "Success",
+    "UserKey": "00000000-0000-0000-0000-00000000a002",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.20",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "UserId": "anna@example.com",
+    "AzureActiveDirectoryEventType": 1,
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "OAuth2:Token"
+      },
+      {
+        "Name": "ResultStatusDetail",
+        "Value": "Success"
+      }
+    ],
+    "ModifiedProperties": [],
+    "ActorIpAddress": "198.51.100.20",
+    "ApplicationId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-MailItemsAccessed-d3590ed6",
+    "Operation": "MailItemsAccessed",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 50,
+    "ResultStatus": "Succeeded",
+    "UserKey": "100320030DF47B14",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "Exchange",
+    "UserId": "anna@example.com",
+    "AppId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "ClientAppId": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+    "ClientIPAddress": "198.51.100.20",
+    "ClientInfoString": "Client=REST;",
+    "MailboxOwnerUPN": "anna@example.com",
+    "OperationProperties": [
+      {
+        "Name": "MailAccessType",
+        "Value": "Bind"
+      },
+      {
+        "Name": "IsThrottled",
+        "Value": "False"
+      }
+    ],
+    "Folders": [
+      {
+        "Path": "\\Inbox",
+        "FolderItems": []
+      }
+    ],
+    "OperationCount": 1,
+    "_content_type": "Audit.Exchange"
+  },
+  {
+    "Id": "m365-Consent-00000000",
+    "Operation": "Consent to application.",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 8,
+    "ResultStatus": "Success",
+    "UserKey": "100320030DF47B14@example.com",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "AzureActiveDirectory",
+    "ObjectId": "00000000-0000-0000-0000-00000000c020",
+    "UserId": "anna@example.com",
+    "AzureActiveDirectoryEventType": 1,
+    "ExtendedProperties": [
+      {
+        "Name": "additionalDetails",
+        "Value": "{\"User-Agent\": \"EvoSTS\", \"AppId\": \"00000000-0000-0000-0000-00000000c020\"}"
+      },
+      {
+        "Name": "extendedAuditEventCategory",
+        "Value": "ServicePrincipal"
+      }
+    ],
+    "ModifiedProperties": [
+      {
+        "Name": "ConsentContext.IsAdminConsent",
+        "NewValue": "False",
+        "OldValue": ""
+      },
+      {
+        "Name": "ConsentContext.IsAppOnly",
+        "NewValue": "False",
+        "OldValue": ""
+      },
+      {
+        "Name": "ConsentAction.Permissions",
+        "NewValue": "[] => [[Id: 00000000-0000-0000-0000-00000000c010, ClientId: 00000000-0000-0000-0000-00000000c011, PrincipalId: 00000000-0000-0000-0000-00000000a002, ResourceId: 00000000-0000-0000-0000-00000000c012, ConsentType: Principal, Scope:  Files.ReadWrite.All offline_access, CreatedDateTime: , LastModifiedDateTime ]]; ",
+        "OldValue": ""
+      },
+      {
+        "Name": "TargetId.ServicePrincipalNames",
+        "NewValue": "00000000-0000-0000-0000-00000000c020",
+        "OldValue": ""
+      }
+    ],
+    "Target": [
+      {
+        "ID": "ServicePrincipal_00000000-0000-0000-0000-00000000c011",
+        "Type": 2
+      },
+      {
+        "ID": "ServicePrincipal",
+        "Type": 2
+      },
+      {
+        "ID": "Expense Tracker",
+        "Type": 1
+      },
+      {
+        "ID": "00000000-0000-0000-0000-00000000c020",
+        "Type": 2
+      }
+    ],
+    "_content_type": "Audit.AzureActiveDirectory"
+  }
+]

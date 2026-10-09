@@ -1,11 +1,13 @@
 id: okta_api_token_created
-title: Okta API token created
+title: Okta API token created or opened to any network
 description: >
   An API token gives long-lived, non-interactive access to the identity
-  provider and survives a password reset.
+  provider and survives a password reset. An existing token updated while it
+  is allowed from any network fires too, since a token not pinned to a
+  network zone works for whoever holds it, from anywhere.
 status: stable
 date: 2026-09-24
-modified: 2026-09-24
+modified: 2026-10-09
 severity: high
 confidence: 0.7
 attack: [T1098.001]
@@ -15,7 +17,16 @@ logsource:
 detection:
   selection:
     api.operation|contains: system.api_token.create
-  condition: selection
+  selection_any_network:
+    api.operation: system.api_token.update
+    raw.debugContext.debugData.networkConnection: ANYWHERE
+  condition: selection or selection_any_network
   timeframe: 15m
 entity: actor.user.name
-fields: [actor.user.name, src_endpoint.ip, resource.uid]
+fields: [actor.user.name, src_endpoint.ip, resource.uid, raw.debugContext.debugData.networkConnection]
+sources:
+  - name: Okta
+    title: API Token Excessive Network Access
+    url: https://github.com/okta/customer-detections/blob/master/detections/api_token_excessive_network_access.yml
+    license: Apache-2.0
+    relation: adapted

@@ -1,0 +1,117 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "dddddddddddddddddddddddddddddddddddddddd",
+      "DeviceName": "laptop-22.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "reg.exe",
+      "FolderPath": "C:\\Windows\\System32\\reg.exe",
+      "ProcessCommandLine": "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\" /v fDenyTSConnections /t REG_DWORD /d 0 /f",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770014"
+    },
+    "endpoint": {
+      "name": "srv-acct01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "netsh.exe",
+        "cmdline": "netsh advfirewall firewall add rule name=\"rdp\" dir=in protocol=tcp localport=3389 action=allow",
+        "image": {
+          "path": "C:\\Windows\\System32\\netsh.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceRegistryEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "ddddddddddddddddddddddddddddddddddddddde",
+      "DeviceName": "laptop-23.example.com",
+      "ActionType": "RegistryValueSet",
+      "RegistryKey": "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Terminal Server",
+      "RegistryValueName": "fDenyTSConnections",
+      "RegistryValueType": "Dword",
+      "RegistryValueData": "0",
+      "PreviousRegistryValueData": "1",
+      "InitiatingProcessFileName": "powershell.exe",
+      "InitiatingProcessAccountName": "system"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd14",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-ACCT02",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "CommandLine": "powershell.exe -c Set-ItemProperty -Path 'HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server' -Name fDenyTSConnections -Value 0",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "9140",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770016"
+    },
+    "endpoint": {
+      "name": "srv-acct03.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "powershell.exe",
+        "cmdline": "powershell.exe -c Enable-NetFirewallRule -DisplayGroup \"Remote Desktop\"",
+        "image": {
+          "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd15",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\wbem\\WMIC.exe",
+    "CommandLine": "wmic /namespace:\\\\root\\cimv2\\terminalservices path win32_terminalservicesetting where (__CLASS != \"\") call setallowtsconnections 1",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "9141",
+    "UserName": "administrator"
+  }
+]

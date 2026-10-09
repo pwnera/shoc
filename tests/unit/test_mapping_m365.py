@@ -49,6 +49,12 @@ def test_a_failed_sign_in_fails_whatever_result_status_says():
     assert mapped["status"] == "Failure" and mapped["status_code"] == "500121"
 
 
+def test_a_compliance_cmdlet_that_errored_failed():
+    record = next(r for r in RECORDS if r["Operation"] == "New-InboxRule")
+    mapped = ocsf.load_mapping("m365").map_record({**record, "ResultStatus": "Error"}, "t1")
+    assert mapped["status"] == "Failure"
+
+
 def test_alert_severity_comes_from_the_record():
     assert row("AlertTriggered")["severity_id"] == 1  # Severity: Informational
     assert row("MCAS_ALERT_ANUBIS_DETECTION_VELOCITY")["severity_id"] == 3  # AlertSeverity: Medium

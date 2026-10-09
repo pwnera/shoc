@@ -1,0 +1,52 @@
+id: google_drive_external_share_burst
+title: One account made twenty Drive files visible outside the company in an hour
+description: >
+  Twenty or more different Drive items went from internal to external
+  visibility, shared with an outside address or opened to anyone with the
+  link, by one account within an hour. An employee leaving with the customer
+  list, or an attacker in someone's account, moves data out this way without
+  downloading anything. Sharing a folder is one event, however many files it
+  holds, and shares with colleagues are left out.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.5
+attack: [T1537, T1530]
+logsource:
+  product: google
+  service: reports
+detection:
+  # Drive often logs an edit and the sharing change as one activity, edit
+  # first, and only the first event is keyed, so the sharing event and its
+  # visibility_change are read from the activity's whole event list. A
+  # parameter's "name" comes before its "value" in Google's order and in
+  # Postgres jsonb order (shorter key first).
+  selection:
+    api.service.name: drive
+    raw.events|re: '"name":\s*"(change_user_access|change_document_visibility|change_document_access_scope|change_acl_editors)"'
+  external:
+    raw.events|re: '"visibility_change",\s*"value":\s*"external"'
+  condition: selection and external
+  timeframe: 1h
+  group_by: [actor.user.name]
+  count_distinct: resource.uid
+  count: ">= 20"
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip]
+sources:
+  - name: Chronicle
+    title: Google Workspace File Shared from Google Drive to Free Email Domain
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/workspace/google_workspace_file_shared_from_google_drive_to_free_email_domain.yaral
+    author: Google Cloud Security
+    license: Apache-2.0
+    relation: adapted
+  - name: Splunk
+    title: Gsuite Drive Share In External Email
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/gsuite_drive_share_in_external_email.yml
+    author: Teoderick Contreras, Splunk
+    license: Apache-2.0
+    relation: inspired
+  - name: Google
+    title: Drive audit activity events
+    url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/drive
+    relation: inspired

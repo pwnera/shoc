@@ -1,13 +1,16 @@
 id: contain_google_workspace_compromise
 title: Contain a compromised Google Workspace account
 description: >
-  A Google account lost its second factor, gained an admin role, delegated
-  domain-wide access, forwarded or rerouted mail, exported data, or Google
-  itself flagged it. Signing the user out everywhere is reversible and runs
+  A Google account lost its second factor, failed it again and again after
+  the right password, gained an admin role, delegated domain-wide access,
+  loosened which apps may reach company data, forwarded or rerouted mail,
+  exported or shared data out, or Google itself flagged it or blocked it from
+  a sensitive change. Signing the user out everywhere is reversible and runs
   first. After the page the mailbox's automatic forwarding is turned off and
   kept for undo. Resetting the password and suspending them wait for a human. Removing a forwarding
-  filter or a mail route, uninstalling a Marketplace app and cancelling an
-  export need actions shoc does not have yet, so a human is paged. An app a user authorised is
+  filter or a mail route, uninstalling a Marketplace app, cancelling an
+  export, unsharing files and putting an app access setting back need actions
+  shoc does not have yet, so a human is paged. An app a user authorised is
   answered in contain_google_app_grant.
 rules:
   - google_two_step_verification_disabled
@@ -21,6 +24,10 @@ rules:
   - google_customer_takeout_started
   - google_custom_admin_role_changed
   - google_suspended_user_reactivated
+  - google_risky_session_action_blocked
+  - google_second_factor_failure_burst
+  - google_third_party_app_access_loosened
+  - google_drive_external_share_burst
   - hunt:gws_first_login_country
   - hunt:gws_user_two_countries_in_a_day
   - hunt:gws_admin_first_console_operation
@@ -30,7 +37,7 @@ questions:
   - id: who_changed
     ask: Who turned off two-step verification or granted super admin, the user or an admin?
   - id: files
-    ask: How many files were downloaded, whose were they, and is the user leaving the company?
+    ask: How many files were downloaded or shared outside, whose were they, who received them, and is the user leaving the company?
   - id: mail_out
     ask: Where does a new forward or mail route send mail, who set it, and did mail already flow through it?
 benign_when:

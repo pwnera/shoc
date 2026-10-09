@@ -1,0 +1,57 @@
+id: entra_device_registered_after_device_code
+title: Device registered within an hour of a device code sign-in
+description: >
+  A user signed in through the device code flow and, within the hour,
+  registered a device in Entra ID. Storm-2372 and the device code campaign
+  Microsoft described in April 2026 both registered a device minutes after the
+  phish, to get a Primary Refresh Token that survives a password reset and
+  passes device-based conditional access. entra_device_code_sign_in already
+  fires on the sign-in; this one adds the device, so the response has to delete
+  it as well as revoke the sessions. The two events are joined on the user's
+  object id, because the sign-in log writes the UPN in lower case and the audit
+  log keeps the directory's casing. A laptop joined during Windows setup, with
+  no device code sign-in before it, is left out.
+status: experimental
+date: 2026-10-09
+severity: critical
+confidence: 0.85
+attack: [T1098.005, T1550.001, T1566.002]
+logsource:
+  product: entra
+detection:
+  device_code:
+    - raw.authenticationProtocol: deviceCode
+    - raw.properties.authenticationProtocol: deviceCode
+  signed_in:
+    status: Success
+  # The Device Registration Service's record names the user; Core Directory's
+  # "Add device" names the service, so it cannot be joined to the user.
+  registered:
+    api.operation: Register device
+    status: Success
+  sequence:
+    by: [actor.user.uid]
+    first: device_code and signed_in
+    then: registered
+    within: 1h
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, http_request.user_agent]
+sources:
+  - name: Microsoft
+    title: Storm-2372 conducts device code phishing campaign
+    url: https://www.microsoft.com/en-us/security/blog/2025/02/13/storm-2372-conducts-device-code-phishing-campaign/
+    relation: inspired
+  - name: Microsoft
+    title: Inside an AI-enabled device code phishing campaign
+    url: https://www.microsoft.com/en-us/security/blog/2026/04/06/ai-enabled-device-code-phishing-campaign-april-2026/
+    relation: inspired
+  - name: Elastic
+    title: Entra ID Multiple Device Registrations by a Single User
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/azure/persistence_entra_id_multiple_device_registrations.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: Entra ID Protection User Alert and Device Registration
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/persistence_identity_protect_alert_followed_by_device_reg
+    license: Elastic-2.0
+    relation: inspired

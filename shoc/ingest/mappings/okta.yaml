@@ -1,9 +1,10 @@
 # Okta System Log -> OCSF. ING-1, ING-3.
 # Sign-ins and MFA are Authentication (3002); user lifecycle, password and
-# factor changes are Account Change (3001); admin roles, custom role bindings
-# (iam.*) and app assignments are User Access Management (3005); groups are
-# Group Management (3006); policy, app sign-on policy, IdP, app, token and
-# network-zone administration is Entity Management (3004);
+# factor changes are Account Change (3001); admin roles of users and OAuth
+# apps, custom role bindings (iam.*) and app assignments are User Access
+# Management (3005); groups are Group Management (3006); policy, app sign-on
+# policy, IdP, app, token and network-zone administration is Entity Management
+# (3004);
 # Okta's own threat detections are Detection Finding (2004).
 source: okta
 ocsf_version: "1.3.0"
@@ -55,6 +56,12 @@ derive:
     set: { status: Other }
   - when: { outcome.result: UNKNOWN }
     set: { status: Unknown }
+  # An MFA prompt nobody answered or that was walked away from, and a request
+  # Okta throttled, did not get anyone in.
+  - when: { outcome.result: { in: [ABANDONED, UNANSWERED, RATE_LIMIT] } }
+    set: { status: Failure }
+  - when: { outcome.result: { in: [DEFERRED, SCHEDULED] } }
+    set: { status: Other }
   # Okta writes "unknown" when the event has no session.
   - when: { actor_session_uid: unknown }
     set: { actor_session_uid: null }
@@ -102,6 +109,13 @@ derive:
   - when: { eventType: { contains: "user.account.privilege.grant" } }
     set: { activity_id: 1, activity_name: "Assign Privileges", type_uid: 300501 }
   - when: { eventType: { contains: "user.account.privilege.revoke" } }
+    set: { activity_id: 2, activity_name: "Revoke Privileges", type_uid: 300502 }
+  # An admin role given to an OAuth service app.
+  - when: { eventType: { contains: "app.oauth2.client.privilege." } }
+    set: { category_uid: 3, class_uid: 3005, class_name: "User Access Management", activity_id: 99, activity_name: Other, type_uid: 300599, severity_id: 3 }
+  - when: { eventType: { contains: "app.oauth2.client.privilege.grant" } }
+    set: { activity_id: 1, activity_name: "Assign Privileges", type_uid: 300501 }
+  - when: { eventType: { contains: "app.oauth2.client.privilege.revoke" } }
     set: { activity_id: 2, activity_name: "Revoke Privileges", type_uid: 300502 }
   # Custom admin roles, resource sets and their bindings (iam.*).
   - when: { eventType: { contains: "iam." } }

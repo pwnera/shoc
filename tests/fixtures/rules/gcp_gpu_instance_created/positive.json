@@ -1,0 +1,81 @@
+[
+  {
+    "insertId": "gpu-t4",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a",
+        "instance_id": "5500000000000000001"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/worker-7",
+      "authenticationInfo": {
+        "principalEmail": "ci-deployer@example-prod.iam.gserviceaccount.com",
+        "serviceAccountKeyName": "//iam.googleapis.com/projects/example-prod/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com/keys/0a1b2c3d4e5f60718293a4b5c6d7e8f901234567"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.61",
+        "callerSuppliedUserAgent": "python-requests/2.32.3"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "worker-7",
+        "machineType": "zones/us-central1-a/machineTypes/n1-standard-8",
+        "guestAccelerators": [
+          {
+            "acceleratorCount": "1",
+            "acceleratorType": "projects/example-prod/zones/us-central1-a/acceleratorTypes/nvidia-tesla-t4"
+          }
+        ]
+      }
+    },
+    "operation": {
+      "id": "operation-gpu-t4",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "gpu-a2",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-b",
+        "instance_id": "5500000000000000001"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-b/instances/worker-8",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.instances.insert",
+        "name": "worker-8",
+        "machineType": "zones/us-central1-b/machineTypes/a2-highgpu-1g"
+      }
+    },
+    "operation": {
+      "id": "operation-gpu-a2",
+      "producer": "compute.googleapis.com",
+      "first": true
+    }
+  }
+]

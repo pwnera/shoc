@@ -119,5 +119,73 @@
         "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/"
       }
     }
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "rds-backup-expiry",
+    "eventName": "DeleteDBSnapshot",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#rds",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:AWSBackup",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWSBackupDefaultServiceRole/AWSBackup",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLEBACKUP01",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWSBackupDefaultServiceRole",
+          "accountId": "123456789012",
+          "userName": "AWSBackupDefaultServiceRole"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      },
+      "invokedBy": "backup.amazonaws.com"
+    },
+    "requestParameters": {
+      "dBSnapshotIdentifier": "awsbackup:job-0a1b2c3d"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "rds-delete-with-snapshot",
+    "eventName": "DeleteDBInstance",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#rds",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00001",
+      "arn": "arn:aws:iam::123456789012:user/dev-ci",
+      "accountId": "123456789012",
+      "userName": "dev-ci",
+      "accessKeyId": "AKIAEXAMPLEDEV00001"
+    },
+    "requestParameters": {
+      "dBInstanceIdentifier": "staging-db",
+      "skipFinalSnapshot": false,
+      "finalDBSnapshotIdentifier": "staging-db-final"
+    },
+    "responseElements": {
+      "dBInstanceIdentifier": "staging-db",
+      "dBInstanceStatus": "deleting"
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
   }
 ]

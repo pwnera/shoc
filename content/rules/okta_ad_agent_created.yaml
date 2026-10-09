@@ -1,0 +1,30 @@
+id: okta_ad_agent_created
+title: Okta Active Directory agent registered
+description: >
+  A new Active Directory agent was registered in Okta. With delegated
+  authentication, Okta asks the agent whether a password is right, so an
+  agent an attacker runs decides which passwords Okta accepts for the users
+  it serves. It is most telling where the company does not use Active
+  Directory with Okta, which is most companies this size. Upgrading an
+  existing agent does not fire.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1556.007]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  selection:
+    api.operation: system.agent.ad.create
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, resource.uid]
+sources:
+  - name: Okta
+    title: New AD Agent Created
+    url: https://github.com/okta/customer-detections/blob/master/detections/new_ad_agent_created.yml
+    license: Apache-2.0
+    relation: adapted

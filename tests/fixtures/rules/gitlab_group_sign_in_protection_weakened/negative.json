@@ -1,0 +1,61 @@
+[
+  {
+    "id": 91401,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "group_require_two_factor_authentication_updated",
+    "details": {
+      "event_name": "group_require_two_factor_authentication_updated",
+      "change": "require_two_factor_authentication",
+      "from": false,
+      "to": true,
+      "target_id": 17,
+      "target_type": "Group",
+      "target_details": "acme",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme"
+    }
+  },
+  {
+    "id": 91405,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "group_saml_provider_update",
+    "details": {
+      "event_name": "group_saml_provider_update",
+      "custom_message": "Group SAML SSO configuration changed: enforced_sso changed from false to true. ",
+      "target_id": 17,
+      "target_type": "Group",
+      "target_details": "acme",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme"
+    }
+  },
+  {
+    "id": 91406,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "Group",
+    "event_name": "group_saml_provider_update",
+    "details": {
+      "event_name": "group_saml_provider_update",
+      "custom_message": "Group SAML SSO configuration changed: default_membership_role changed from 10 to 20. ",
+      "target_id": 17,
+      "target_type": "Group",
+      "target_details": "acme",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme"
+    }
+  }
+]

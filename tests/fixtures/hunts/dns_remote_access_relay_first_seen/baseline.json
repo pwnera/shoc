@@ -13,5 +13,30 @@
     "SrcIP": "203.0.113.81",
     "QueryTypeName": "A",
     "RCode": 0
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceNetworkEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "cccccccccccccccccccccccccccccccccccccc61",
+      "DeviceName": "laptop-61.example.com",
+      "ActionType": "DnsConnectionInspected",
+      "LocalIP": "192.0.2.61",
+      "LocalPort": 50333,
+      "RemoteIP": "192.0.2.1",
+      "RemotePort": 53,
+      "Protocol": "Udp",
+      "InitiatingProcessId": 0,
+      "AdditionalFields": {
+        "direction": "Out",
+        "query": "remoteassistance.support.services.microsoft.com",
+        "qtype_name": "A",
+        "rcode_name": "NOERROR",
+        "answers": [
+          "198.51.100.70"
+        ]
+      }
+    }
   }
 ]

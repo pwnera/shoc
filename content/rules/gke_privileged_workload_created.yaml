@@ -1,0 +1,64 @@
+id: gke_privileged_workload_created
+title: A person or a workload created a privileged pod or controller in GKE
+description: >
+  A Pod, Deployment, DaemonSet, StatefulSet, ReplicaSet, Job or CronJob was
+  created with a privileged container, the node's PID, IPC or network
+  namespace, or the node's root filesystem mounted. Each one is a way out of
+  the container onto the node, and miners run as privileged DaemonSets to sit
+  on every node. Pods that Kubernetes' own controllers make are left out (the
+  person who created the controller is caught at that step), as are the
+  system namespaces. A workload created again under the same name by the same
+  identity within 30 days is quiet.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.5
+attack: [T1610, T1611]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection:
+    api.service.name: k8s.io
+    api.operation|endswith: [pods.create, deployments.create, daemonsets.create, statefulsets.create, replicasets.create, jobs.create, cronjobs.create]
+    status: Success
+  # The whole object is in the request: writes are logged with their body.
+  privileged:
+    - raw.protoPayload.request|re: '"(privileged|hostPID|hostIPC|hostNetwork)"\s*:\s*true'
+    - raw.protoPayload.request|re: '"hostPath"\s*:\s*\{[^}]*"path"\s*:\s*"/"'
+  system_namespace:
+    resource.uid|re: '/namespaces/(kube-system|kube-node-lease|gke-[a-z-]+|gmp-[a-z-]+)/'
+  filter_system:
+    actor.user.name|startswith: "system:"
+  workload:
+    actor.user.name|startswith: "system:serviceaccount:"
+  # Kubernetes' controllers run as kube-system service accounts.
+  kube_system_workload:
+    actor.user.name|startswith: "system:serviceaccount:kube-system:"
+  condition: selection and privileged and not system_namespace and (not filter_system or (workload and not kube_system_workload))
+  timeframe: 15m
+baseline:
+  first_seen: [actor.user.name, resource.uid]
+  lookback: 30d
+  while_learning: fire
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, src_endpoint.ip, http_request.user_agent, cloud.account.uid]
+sources:
+  - name: Panther
+    title: GCP K8s Privileged Pod Created
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/gcp_k8s_rules/gcp_k8s_privileged_pod_created.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Google
+    title: Event Threat Detection overview
+    url: https://cloud.google.com/security-command-center/docs/concepts-event-threat-detection-overview
+    relation: inspired
+  - name: Splunk
+    title: Kubernetes Create or Update Privileged Pod
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/kubernetes_create_or_update_privileged_pod.yml
+    license: Apache-2.0
+    relation: inspired
+  - name: Google Cloud
+    title: Cloud Threat Horizons Report H1 2026
+    url: https://cloud.google.com/security/report/resources/cloud-threat-horizons-report-h1-2026
+    relation: inspired

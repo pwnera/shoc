@@ -1,0 +1,61 @@
+id: cloudflare_access_opened
+title: Cloudflare Access opened to everyone, bypassed, or given a new service token
+description: >
+  Access is the login in front of the company's internal apps. A bypass
+  policy, an allow policy that includes everyone (which, with the one-time PIN
+  login, means anyone with an email address), a deleted Access application, or
+  a new or rotated service token each lets someone reach an app without
+  signing in as a person of the company. In Cloudflare's own November 2023 incident the
+  intruder passed its Access gateway with a service token left over from the
+  Okta breach. A policy that includes everyone but requires an email domain, a
+  group or a device check is left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1562.007, T1098.001, T1556]
+logsource:
+  product: cloudflare
+  service: audit_log
+detection:
+  # Reusable policies and the per-application ones, under an account or a zone.
+  policy:
+    raw.raw.method: [POST, PUT]
+    raw.raw.uri|contains: /access/
+    raw.raw.uri|re: '/policies(/[^/]+)?$'
+  bypass:
+    raw.resource.request.decision: bypass
+  everyone:
+    raw.resource.request.decision: allow
+    raw.resource.request.include|contains: '"everyone"'
+  # Any require rule is how a company narrows a policy that includes everyone.
+  narrowed:
+    raw.resource.request.require|contains: '{'
+  # Rotating a token hands out a new secret, as creating one does.
+  service_token:
+    raw.raw.method: POST
+    raw.raw.uri|re: '/access/service_tokens(/[^/]+/rotate)?$'
+  app_deleted:
+    raw.raw.method: DELETE
+    raw.raw.uri|re: '/access/apps/[^/]+$'
+  condition: (policy and (bypass or (everyone and not narrowed))) or service_token or app_deleted
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, raw.raw.uri, raw.resource.request.decision]
+sources:
+  - name: Cloudflare
+    title: Thanksgiving 2023 security incident
+    url: https://blog.cloudflare.com/thanksgiving-2023-security-incident/
+    relation: inspired
+  - name: Cloudflare
+    title: Policies (common Cloudflare Access misconfigurations)
+    url: https://developers.cloudflare.com/cloudflare-one/access-controls/policies/
+    relation: inspired
+  - name: Cloudflare
+    title: Create an Access reusable policy
+    url: https://developers.cloudflare.com/api/resources/zero_trust/subresources/access/subresources/policies/methods/create/
+    relation: inspired
+  - name: Cloudflare
+    title: Rotate a service token
+    url: https://developers.cloudflare.com/api/resources/zero_trust/subresources/access/subresources/service_tokens/methods/rotate/
+    relation: inspired

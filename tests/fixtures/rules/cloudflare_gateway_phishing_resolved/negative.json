@@ -29,5 +29,22 @@
     "SrcIP": "203.0.113.81",
     "QueryTypeName": "A",
     "RCode": 0
+  },
+  {
+    "_source": "cloudflare_logs",
+    "_dataset": "gateway_dns",
+    "QueryName": "bakery.example.org",
+    "QueryCategoryNames": [
+      "Food & Drink",
+      "Security threats",
+      "Compromised Domain"
+    ],
+    "ResolverDecision": "blockedByCategory",
+    "DeviceName": "LAPTOP-0042",
+    "DeviceID": "7f3e2a10-0c4d-4b8e-9a61-5d2c8e0f0042",
+    "Email": "john.doe@example.com",
+    "SrcIP": "203.0.113.81",
+    "QueryTypeName": "A",
+    "RCode": 0
   }
 ]

@@ -1,21 +1,34 @@
 id: contain_admin_account_misuse
 title: Contain a misused identity admin account
 description: >
-  An Okta administrator minted or revoked an API token, removed a user, let
-  Okta support in, or signed in to the admin console from somewhere new. The
-  admin is the account to contain: revoking their sessions is reversible and
-  stops further changes. Suspending an admin locks the company out of its own
-  identity provider, so it waits for a human. Revoking an API token needs an
-  action shoc does not have yet. Admin rights given to someone are answered on
-  the grantee in contain_privilege_grant; a reset of someone else's password or
-  MFA, on the reset account in contain_account_recovery_abuse.
+  An Okta administrator minted or revoked an API token, removed a user or
+  another admin, let Okta support in, or signed in to the admin console from
+  somewhere new, or Okta saw the admin's session or API token used from a
+  network it does not belong to, or a Microsoft 365 admin added an
+  onmicrosoft.com domain, or an Entra ID admin removed other admins or read
+  device recovery keys in bulk, or the Entra Connect sync account signed in
+  somewhere sync never goes. The admin is the account to contain: revoking
+  their sessions is reversible and stops further changes. Suspending an admin
+  locks the company out of its own identity provider, so it waits for a human.
+  Revoking an API token needs an action shoc does not have yet. Admin rights
+  given to someone are answered on the grantee in contain_privilege_grant; a
+  reset of someone else's password or MFA, on the reset account in
+  contain_account_recovery_abuse.
 rules:
   - okta_api_token_created
   - okta_admin_console_sign_in
   - okta_user_deactivated_or_deleted
   - okta_support_impersonation
   - okta_api_token_revoked
+  - okta_admin_session_roaming
+  - okta_api_token_used_outside_allowed_network
+  - okta_super_admin_revoked
   - hunt:okta_admin_console_new_network
+  - m365_onmicrosoft_domain_added
+  - entra_onmicrosoft_domain_added
+  - entra_admins_removed_in_bulk
+  - entra_device_recovery_keys_read_in_bulk
+  - entra_sync_account_unexpected_sign_in
 questions:
   - id: origin
     ask: Did the admin act from an address and device they have used in the last 30 days?
@@ -25,6 +38,8 @@ questions:
     ask: If an API token was created, has it been used, and from where?
   - id: support_ticket
     ask: If Okta support was let in or a token was revoked, does an open support ticket or a planned token rotation explain it?
+  - id: recovery_keys
+    ask: If BitLocker keys or LAPS passwords were read, for which devices, and was any of them locked out or being rebuilt that day?
 benign_when:
   - A named IT admin made the change from the office egress and the target used the account normally afterwards.
   - The deactivation matches an employee leaving that day.
@@ -42,6 +57,11 @@ steps:
     optional: true
     params:
       user: "{{ entity.user }}"
+  - name: revoke the admin's sessions in Entra ID
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.user }}"
   - name: page the on-call engineer
     action: notify.page
     params:
@@ -50,6 +70,11 @@ steps:
       dedup_key: "{{ case.case_uid }}"
   - name: suspend the admin
     action: okta.suspend_user
+    optional: true
+    params:
+      user: "{{ entity.user }}"
+  - name: suspend the admin in Entra ID
+    action: entra.suspend_user
     optional: true
     params:
       user: "{{ entity.user }}"

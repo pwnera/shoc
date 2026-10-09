@@ -178,5 +178,68 @@
       }
     ],
     "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-New-InboxRule-short-word",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:63073",
+    "AppPoolName": "MSExchangeOWAAppPool",
+    "ObjectId": "EXAMPLE01.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/example.onmicrosoft.com/jane\\AP",
+    "Parameters": [
+      {
+        "Name": "Name",
+        "Value": "AP"
+      },
+      {
+        "Name": "From",
+        "Value": "billing@example.org"
+      },
+      {
+        "Name": "MoveToFolder",
+        "Value": "Archive"
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-UpdateInboxRules-dot-removed",
+    "Operation": "UpdateInboxRules",
+    "OrganizationId": "org-1",
+    "RecordType": 2,
+    "ResultStatus": "Succeeded",
+    "UserKey": "10032001A2B3C4D5",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11",
+    "ClientIPAddress": "198.51.100.11",
+    "ClientInfoString": "Client=MSExchangeRPC",
+    "MailboxOwnerUPN": "jane@example.com",
+    "OperationProperties": [
+      {
+        "Name": "RuleOperation",
+        "Value": "RemoveMailboxRule"
+      },
+      {
+        "Name": "RuleState",
+        "Value": "Enabled"
+      },
+      {
+        "Name": "RuleName",
+        "Value": "."
+      },
+      {
+        "Name": "RuleActions",
+        "Value": "[{\"ActionType\":\"MoveToFolder\",\"Folder\":\"Archive\"},{\"ActionType\":\"MarkAsRead\"}]"
+      }
+    ],
+    "SessionId": "s-1"
   }
 ]

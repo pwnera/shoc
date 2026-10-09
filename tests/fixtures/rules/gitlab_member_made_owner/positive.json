@@ -65,5 +65,26 @@
       "target_type": "User",
       "target_details": "Marc Example"
     }
+  },
+  {
+    "id": 9107,
+    "author_id": 42,
+    "entity_id": 17,
+    "entity_type": "User",
+    "event_name": "user_admin_status_updated",
+    "details": {
+      "event_name": "user_admin_status_updated",
+      "change": "admin status",
+      "from": false,
+      "to": true,
+      "target_id": 99,
+      "target_type": "User",
+      "target_details": "marc",
+      "author_name": "Administrator",
+      "author_class": "User",
+      "author_email": "root@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "marc"
+    }
   }
 ]

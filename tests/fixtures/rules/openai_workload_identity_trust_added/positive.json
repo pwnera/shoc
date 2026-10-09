@@ -1,0 +1,29 @@
+[
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-01WipCreated",
+    "type": "workload_identity_provider.created",
+    "actor": {"type": "session", "session": {"user": {"id": "user-9", "email": "mallory@example.com"}, "ip_address": "203.0.113.44", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "workload_identity_provider.created": {"id": "wip_fake01", "data": {"name": "ci", "issuer": "https://idp.example.net"}},
+    "details": {"id": "wip_fake01", "data": {"name": "ci", "issuer": "https://idp.example.net"}},
+    "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-01WipMapping",
+    "type": "workload_identity_provider_mapping.created",
+    "project": {"id": "proj_abc", "name": "Default project"},
+    "actor": {"type": "session", "session": {"user": {"id": "user-9", "email": "mallory@example.com"}, "ip_address": "203.0.113.44", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "workload_identity_provider_mapping.created": {"id": "wipm_fake01", "identity_provider_id": "wip_fake01", "data": {"subject": "*"}},
+    "details": {"id": "wipm_fake01", "identity_provider_id": "wip_fake01", "data": {"subject": "*"}},
+    "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-01TenantBinding",
+    "type": "tenant.workload_identity.binding.created",
+    "actor": {"type": "session", "session": {"user": {"id": "user-9", "email": "mallory@example.com"}, "ip_address": "203.0.113.44", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "details": {},
+    "key_id": null
+  }
+]

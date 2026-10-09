@@ -1,0 +1,31 @@
+id: aws_route53_mail_records_changed
+title: MX or NS record changed in Route 53
+description: >
+  An MX or NS record set was created, changed or deleted in a Route 53 hosted
+  zone. Whoever controls the MX records receives the company's mail, password
+  resets included, and an NS record hands a zone or subdomain to another
+  server. Small companies change these once in years. SPF and DKIM records
+  are left out, since onboarding a new mail sender changes them.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1584.002]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.service.name: route53.amazonaws.com
+    api.operation: ChangeResourceRecordSets
+    raw.requestParameters.changeBatch|re: '"type"\s*:\s*"(MX|NS)"'
+    status: Success
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, raw.requestParameters.hostedZoneId, raw.requestParameters.changeBatch]
+sources:
+  - name: AWS
+    title: Logging Amazon Route 53 API calls with AWS CloudTrail
+    url: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/logging-using-cloudtrail.html
+    relation: inspired

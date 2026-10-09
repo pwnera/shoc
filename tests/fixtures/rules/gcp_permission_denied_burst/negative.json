@@ -1,0 +1,312 @@
+[
+  {
+    "insertId": "deny-retry",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.admin.v1.CreateServiceAccountKey",
+      "resourceName": "projects/-/serviceAccounts/100000000000000000031",
+      "authenticationInfo": {
+        "principalEmail": "ci-deployer@example-prod.iam.gserviceaccount.com",
+        "serviceAccountKeyName": "//iam.googleapis.com/projects/example-prod/serviceAccounts/ci-deployer@example-prod.iam.gserviceaccount.com/keys/0a1b2c3d4e5f60718293a4b5c6d7e8f901234567"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.61",
+        "callerSuppliedUserAgent": "python-requests/2.32.3"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    },
+    "_repeat": 5
+  },
+  {
+    "insertId": "deny-agent-0",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.admin.v1.CreateServiceAccountKey",
+      "resourceName": "projects/-/serviceAccounts/100000000000000000031",
+      "authenticationInfo": {
+        "principalEmail": "service-123456789012@gcp-sa-cloudbuild.iam.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "callerSuppliedUserAgent": "python-requests/2.32.3"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    }
+  },
+  {
+    "insertId": "deny-agent-1",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudresourcemanager.googleapis.com",
+      "methodName": "SetIamPolicy",
+      "resourceName": "projects/example-prod",
+      "authenticationInfo": {
+        "principalEmail": "service-123456789012@gcp-sa-cloudbuild.iam.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "callerSuppliedUserAgent": "python-requests/2.32.3"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    }
+  },
+  {
+    "insertId": "deny-agent-2",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/x1",
+      "authenticationInfo": {
+        "principalEmail": "service-123456789012@gcp-sa-cloudbuild.iam.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "callerSuppliedUserAgent": "python-requests/2.32.3"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    }
+  },
+  {
+    "insertId": "deny-agent-3",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "storage.googleapis.com",
+      "methodName": "storage.buckets.create",
+      "resourceName": "projects/_/buckets/example-prod-dump",
+      "authenticationInfo": {
+        "principalEmail": "service-123456789012@gcp-sa-cloudbuild.iam.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "callerSuppliedUserAgent": "python-requests/2.32.3"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    }
+  },
+  {
+    "insertId": "deny-agent-4",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "logging.googleapis.com",
+      "methodName": "google.logging.v2.ConfigServiceV2.DeleteSink",
+      "resourceName": "projects/example-prod/sinks/shoc",
+      "authenticationInfo": {
+        "principalEmail": "service-123456789012@gcp-sa-cloudbuild.iam.gserviceaccount.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "callerSuppliedUserAgent": "python-requests/2.32.3"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    }
+  },
+  {
+    "insertId": "deny-node-0",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.admin.v1.CreateServiceAccountKey",
+      "resourceName": "projects/-/serviceAccounts/100000000000000000031",
+      "authenticationInfo": {
+        "principalEmail": "system:node:gke-prod-default-pool-1a2b3c4d-x1y2"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "callerSuppliedUserAgent": "python-requests/2.32.3"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    }
+  },
+  {
+    "insertId": "deny-node-1",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "cloudresourcemanager.googleapis.com",
+      "methodName": "SetIamPolicy",
+      "resourceName": "projects/example-prod",
+      "authenticationInfo": {
+        "principalEmail": "system:node:gke-prod-default-pool-1a2b3c4d-x1y2"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "callerSuppliedUserAgent": "python-requests/2.32.3"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    }
+  },
+  {
+    "insertId": "deny-node-2",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.instances.insert",
+      "resourceName": "projects/example-prod/zones/us-central1-a/instances/x1",
+      "authenticationInfo": {
+        "principalEmail": "system:node:gke-prod-default-pool-1a2b3c4d-x1y2"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "callerSuppliedUserAgent": "python-requests/2.32.3"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    }
+  },
+  {
+    "insertId": "deny-node-3",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "storage.googleapis.com",
+      "methodName": "storage.buckets.create",
+      "resourceName": "projects/_/buckets/example-prod-dump",
+      "authenticationInfo": {
+        "principalEmail": "system:node:gke-prod-default-pool-1a2b3c4d-x1y2"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "callerSuppliedUserAgent": "python-requests/2.32.3"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    }
+  },
+  {
+    "insertId": "deny-node-4",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "project",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "logging.googleapis.com",
+      "methodName": "google.logging.v2.ConfigServiceV2.DeleteSink",
+      "resourceName": "projects/example-prod/sinks/shoc",
+      "authenticationInfo": {
+        "principalEmail": "system:node:gke-prod-default-pool-1a2b3c4d-x1y2"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "callerSuppliedUserAgent": "python-requests/2.32.3"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      }
+    }
+  }
+]

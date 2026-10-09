@@ -1,0 +1,62 @@
+id: github_actions_permissions_loosened
+title: GitHub Actions token, approval or allowed-actions policy loosened
+description: >
+  The default GITHUB_TOKEN was made writable, Actions were allowed to approve
+  pull requests (which defeats required reviews), the allowed-actions or fork
+  pull request policy changed, the self-hosted runner policy for repositories
+  changed, or an environment lost a protection rule. These settings decide
+  what a poisoned action or workflow can do with the repository's token; the
+  tj-actions/changed-files compromise in 2025 and the Shai-Hulud worm both ran
+  attacker code inside workflows to take their secrets. Setting the token
+  back to read-only, or forbidding Actions to approve, does not fire.
+  Audit-log API on Enterprise Cloud only.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.5
+attack: [T1195.002, T1562.001]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  selection:
+    api.operation:
+      - org.set_default_workflow_permissions
+      - repo.set_default_workflow_permissions
+      - org.set_workflow_permission_can_approve_pr
+      - repo.set_workflow_permission_can_approve_pr
+      - org.update_actions_settings
+      - org.set_fork_pr_workflows_policy
+      - repo.set_fork_pr_workflows_policy
+      - org.set_actions_fork_pr_approvals_policy
+      - org.update_repo_self_hosted_runners_policy
+      - environment.remove_protection_rule
+  # The tightening directions. GitHub documents these fields, not their values;
+  # the REST API that sets them uses read or write, and true or false.
+  tightened_token:
+    raw.default_workflow_permissions_value: read
+  tightened_approval:
+    raw.workflow_permission_can_approve_pr_value: false
+  condition: selection and not tightened_token and not tightened_approval
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, raw.default_workflow_permissions_value,
+         raw.workflow_permission_can_approve_pr_value, raw.old_policy, raw.new_policy, raw.environment_name]
+sources:
+  - name: Panther
+    title: GitHub Workflow Permissions Modified
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/github_rules/github_workflow_permission_modified.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: CISA
+    title: Supply Chain Compromise of Third-Party tj-actions/changed-files (CVE-2025-30066) and reviewdog/action-setup@v1 (CVE-2025-30154)
+    url: https://www.cisa.gov/news-events/alerts/2025/03/18/supply-chain-compromise-third-party-tj-actionschanged-files-cve-2025-30066-and-reviewdogaction
+    relation: inspired
+  - name: GitHub
+    title: Disabling or limiting GitHub Actions for your organization
+    url: https://docs.github.com/en/organizations/managing-organization-settings/disabling-or-limiting-github-actions-for-your-organization
+    relation: inspired
+  - name: Wiz
+    title: Shai-Hulud 2.0 Supply Chain Attack
+    url: https://www.wiz.io/blog/shai-hulud-2-0-ongoing-supply-chain-attack
+    relation: inspired

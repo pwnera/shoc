@@ -1,0 +1,82 @@
+id: endpoint_crypto_miner_started
+title: A crypto miner started, or a machine looked up a mining pool
+description: >
+  A process ran with XMRig-style arguments (a pool address, stratum://, a
+  donate level, the msr module XMRig loads on Linux), under a known miner
+  name, or a machine looked up a Monero mining pool. Opportunistic crews drop
+  a miner first on an exposed server; React2Shell exploits in December 2025
+  left XMRig renamed after system processes on Next.js servers.
+  On a small company's one web server the miner is often the only visible sign
+  of an exploited app, and whoever got in can sell that access for worse.
+  cloudflare_gateway_threat_domain_lookup covers mining lookups from devices
+  behind Gateway; this rule reads the EDR, so it covers servers too.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.8
+attack: [T1496]
+sources:
+  - name: Sigma
+    title: "Potential Crypto Mining Activity"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_crypto_mining_monero.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Linux Crypto Mining Indicators"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/linux/process_creation/proc_creation_lnx_crypto_mining.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Monero Crypto Coin Mining Pool Lookup"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/network/dns/net_dns_pua_cryptocoin_mining_xmr.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: "NRT DNS events related to mining pools"
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Windows%20Server%20DNS/Analytic%20Rules/NRT_DNS_Related_To_Mining_Pools.yaml
+    license: MIT
+    relation: adapted
+  - name: Elastic
+    title: "Suspicious Mining Process Creation Event"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/linux/execution_suspicious_mining_process_creation_events.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Wiz Research
+    title: "React2Shell: Technical Deep-Dive & In-the-Wild Exploitation of CVE-2025-55182"
+    url: https://www.wiz.io/blog/nextjs-cve-2025-55182-react2shell-deep-dive
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+  # The last nine are --donate-level=, stratum+tcp:// and stratum+udp:// in base64.
+  sel_miner_args:
+    process.cmd_line|contains: [' --cpu-priority=', '--donate-level', ' -o pool.', ' --nicehash', ' --algo=rx/0 ',
+                                'stratum+tcp://', 'stratum+ssl://', 'stratum+udp://', 'stratum2+tcp://',
+                                'modprobe msr allow_writes=on',
+                                LS1kb25hdGUtbGV2ZWw9, 0tZG9uYXRlLWxldmVsP, tLWRvbmF0ZS1sZXZlbD,
+                                c3RyYXR1bSt0Y3A6Ly, N0cmF0dW0rdGNwOi8v, zdHJhdHVtK3RjcDovL,
+                                c3RyYXR1bSt1ZHA6Ly, N0cmF0dW0rdWRwOi8v, zdHJhdHVtK3VkcDovL]
+  sel_miner_name:
+    process.name: [xmrig, xmrig.exe, xmrig-notls, xmr-stak, xmr-stak.exe, nbminer, nbminer.exe, t-rex, t-rex.exe,
+                   lolMiner, lolMiner.exe, cpuminer, minerd]
+  # Compiling a file called pool.c.
+  filter_build:
+    process.cmd_line|contains: [' pool.c ', ' pool.o ', 'gcc -', 'clang -']
+  sel_pool_lookup:
+    class_uid: 4003
+    query.hostname|endswith: [supportxmr.com, c3pool.com, c3pool.org, moneroocean.stream, nanopool.org,
+                              hashvault.pro, herominers.com, 2miners.com, xmrpool.eu, minexmr.com, f2pool.com,
+                              unmineable.com, kryptex.network, monerohash.com, minergate.com, miningocean.org,
+                              luckpool.net, hashcity.org, donate.v2.xmrig.com, donate.ssl.xmrig.com]
+  condition: (selection_process and (sel_miner_args or sel_miner_name) and not filter_build) or sel_pool_lookup
+  timeframe: 1h
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line, process.parent_process.name,
+         process.file.path, query.hostname]

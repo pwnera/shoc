@@ -47,5 +47,41 @@
     },
     "invited_email": "dev@example.com",
     "invited_role": "developer"
+  },
+  {
+    "id": "activity_01ProjectOwner",
+    "organization_id": "org_01",
+    "organization_uuid": "00000000-0000-4000-8000-000000000001",
+    "type": "role_assignment_granted",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "dev@example.com",
+      "user_id": "user_01D",
+      "ip_address": "198.51.100.31",
+      "user_agent": "Mozilla/5.0"
+    },
+    "role": "chat_project:owner",
+    "target_id": "user_01D",
+    "target_type": "organization_member",
+    "resource_type": "chat_project",
+    "resource_id": "claude_proj_01ABC"
+  },
+  {
+    "id": "activity_01SkillViewer",
+    "organization_id": "org_01",
+    "organization_uuid": "00000000-0000-4000-8000-000000000001",
+    "type": "role_assignment_granted",
+    "actor": {
+      "type": "user_actor",
+      "email_address": "dev@example.com",
+      "user_id": "user_01D",
+      "ip_address": "198.51.100.31",
+      "user_agent": "Mozilla/5.0"
+    },
+    "role": "skill:viewer",
+    "target_id": "grp_01Eng",
+    "target_type": "group",
+    "resource_type": "skill",
+    "resource_id": "skill_01Report"
   }
 ]

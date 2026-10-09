@@ -1,0 +1,68 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeef",
+      "DeviceName": "mbp-dev1.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "bash",
+      "FolderPath": "/bin/bash",
+      "ProcessCommandLine": "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"",
+      "InitiatingProcessFileName": "zsh",
+      "AccountName": "dev1"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "55cf574b-9fd7-5278-2ee0-badefd0d2217"
+    },
+    "endpoint": {
+      "name": "k8s-node-01",
+      "os": "linux"
+    },
+    "tgt": {
+      "process": {
+        "name": "sh",
+        "cmdline": "sh -c curl -fsS http://127.0.0.1:8080/healthz | grep ok",
+        "image": {
+          "path": "/bin/sh"
+        }
+      }
+    },
+    "src": {
+      "process": {
+        "name": "containerd-shim"
+      }
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd19",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Lin",
+    "ImageFileName": "/usr/bin/curl",
+    "CommandLine": "curl -s https://api.example.com/v1/status",
+    "ParentBaseFileName": "node",
+    "RawProcessId": "811"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd23",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Lin",
+    "ImageFileName": "/usr/bin/sh",
+    "CommandLine": "sh -c curl -fsSL http://198.51.100.5/release.tar.gz | sha256sum",
+    "ParentBaseFileName": "bash",
+    "RawProcessId": "812",
+    "UserName": "deploy"
+  }
+]

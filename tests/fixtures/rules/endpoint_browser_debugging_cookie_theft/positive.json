@@ -1,0 +1,59 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd20",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "LAPTOP-41",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "CommandLine": "\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --remote-debugging-port=9222 --user-data-dir=\"C:\\Users\\jdoe\\AppData\\Local\\Temp\\cd8f1\" --window-position=-2400,-2400 --no-first-run",
+    "ParentBaseFileName": "svchosts.exe",
+    "RawProcessId": "9944",
+    "UserName": "jdoe"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "ffffffffffffffffffffffffffffffffffffff01",
+      "DeviceName": "laptop-42.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "msedge.exe",
+      "FolderPath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+      "ProcessCommandLine": "\"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" --headless=new --remote-debugging-port=9223 --user-data-dir=C:\\ProgramData\\edge_tmp\\p",
+      "InitiatingProcessFileName": "rundll32.exe",
+      "AccountName": "asmith"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "55cf574b-9fd7-5278-2ee0-badefd0d2220"
+    },
+    "endpoint": {
+      "name": "MBP-CGREEN",
+      "os": "osx"
+    },
+    "tgt": {
+      "process": {
+        "name": "Google Chrome",
+        "cmdline": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --headless --remote-debugging-port=9222 --user-data-dir=/tmp/.c1 --no-first-run",
+        "image": {
+          "path": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        },
+        "user": "cgreen"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "osascript"
+      }
+    }
+  }
+]

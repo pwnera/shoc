@@ -1,0 +1,31 @@
+id: okta_super_admin_revoked
+title: Okta Super or Organization Administrator rights removed
+description: >
+  A user lost all of their admin rights, and those included Super or
+  Organization Administrator. An attacker who has become a super admin
+  removes the other admins so that nobody is left to lock them out.
+  Offboarding an admin fires too. Granting the role is
+  okta_admin_privilege_granted.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.5
+attack: [T1531]
+logsource:
+  product: okta
+  service: system_log
+detection:
+  # Okta logs a revoke only when the user has no admin role left.
+  selection:
+    api.operation: user.account.privilege.revoke
+    raw.debugContext.debugData.privilegeRevoked|contains: [Super administrator, Organization administrator]
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, resource.uid, raw.debugContext.debugData.privilegeRevoked, src_endpoint.ip]
+sources:
+  - name: Okta
+    title: New Okta Super or Organization Admin Created or Removed
+    url: https://github.com/okta/customer-detections/blob/master/detections/new_super_admin_added_or_removed.yml
+    license: Apache-2.0
+    relation: adapted

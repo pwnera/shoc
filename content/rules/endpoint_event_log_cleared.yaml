@@ -1,0 +1,66 @@
+id: endpoint_event_log_cleared
+title: A Windows event log was cleared
+description: >
+  wevtutil cl, Clear-EventLog, Remove-EventLog, the WMI ClearEventLog method or
+  a .NET ClearLog call ran, or the machine itself recorded that its Security
+  (1102) or System (104) log was cleared. Intruders clear logs when they are
+  done on a host and again right before ransomware runs. Outside preparing a
+  golden image, nobody clears a laptop's logs. wevtutil sl, which Office's
+  installer runs, changes a log's settings and is left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.8
+attack: [T1070.001]
+sources:
+  - name: Sigma
+    title: "Suspicious Eventlog Clearing or Configuration Change Activity"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_eventlog_clear.yml
+    author: "Ecco, Daniil Yugoslavskiy, oscd.community, D3F7A5105, Swachchhanda Shrawan Poudel (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Security Eventlog Cleared"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/security/win_security_audit_log_cleared.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Eventlog Cleared"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/system/microsoft_windows_eventlog/win_system_eventlog_cleared.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: The DFIR Report
+    title: "Hide Your RDP: Password Spray Leads to RansomHub Deployment"
+    url: https://thedfirreport.com/2025/06/30/hide-your-rdp-password-spray-leads-to-ransomhub-deployment/
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+  sel_wevtutil:
+    process.name: wevtutil.exe
+    process.cmd_line|contains: [' cl ', clear-log]
+  sel_cmdlet:
+    process.cmd_line|contains: [Clear-EventLog, Remove-EventLog, ClearEventLog]
+  sel_dotnet:
+    process.cmd_line|contains: [EventLogSession, Diagnostics.EventLog]
+  sel_dotnet_clear:
+    process.cmd_line|contains: Clear
+  # SentinelOne sends these only when its policy collects Windows event logs.
+  sel_s1:
+    raw.event.category: windows_event_logs
+    raw.winEventLog.data.event.system.provider.name: Microsoft-Windows-Eventlog
+    raw.winEventLog.data.event.system.eventID: ['1102', '104']
+  sel_defender:
+    raw.category: AdvancedHunting-DeviceEvents
+    api.operation: SecurityLogCleared
+  condition: (selection_process and (sel_wevtutil or sel_cmdlet or (sel_dotnet and sel_dotnet_clear))) or sel_s1 or sel_defender
+  timeframe: 15m
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         process.parent_process.name, api.operation]

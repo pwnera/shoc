@@ -1,0 +1,42 @@
+id: gws_oauth_client_new_network
+title: An OAuth app's tokens are used from a network the app has never called from
+hypothesis: >
+  When a vendor's OAuth tokens are stolen, the calls keep the vendor's client
+  id and come from the attacker's network; stolen Salesloft Drift tokens read
+  Workspace mail that way in August 2025. A connected app calls from the same
+  few networks, so a new one is the vendor moving or somebody else holding its
+  tokens.
+attack: [T1550.001, T1528]
+logsource:
+  product: google
+  service: reports
+window: 1d
+cadence_days: 1
+detection:
+  # A call made with a token a user or an admin granted.
+  selection:
+    api.service.name: token
+    api.operation: [activity, request]
+  condition: selection
+baseline:
+  first_seen: [resource.uid, src_endpoint.asn]
+  lookback: 30d
+pivot: [resource.uid, actor.user.name, src_endpoint.ip, src_endpoint.asn]
+triage: >
+  Which app is this client, and does its vendor run on this network? A vendor
+  that moved to a new cloud explains a new ASN for every user at once; a
+  hosting or residential network reading a few users' mail does not.
+follow_up:
+  - How many users' tokens did the client use from the new network, and which APIs did it call?
+  - Did the vendor announce a breach or a token revocation around this date?
+sensitive: true
+sources:
+  - name: Google Threat Intelligence Group
+    title: Widespread Data Theft Targets Salesforce Instances via Salesloft Drift
+    url: https://cloud.google.com/blog/topics/threat-intelligence/data-theft-salesforce-instances-via-salesloft-drift
+    relation: inspired
+  - name: Elastic
+    title: First Time Seen Google Workspace OAuth Login from Third-Party Application
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/google_workspace/defense_evasion_google_workspace_new_oauth_login_from_third_party_application
+    license: Elastic-2.0
+    relation: inspired

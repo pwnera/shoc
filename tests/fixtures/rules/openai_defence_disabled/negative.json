@@ -132,5 +132,22 @@
       "id": "org-abc"
     },
     "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-certs-on",
+    "type": "certificates.activated",
+    "actor": {"type": "session", "session": {"user": {"id": "user-1", "email": "admin@example.com"}, "ip_address": "198.51.100.20", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "certificates.activated": {"certificates": [{"id": "cert_fake02", "name": "office-ca-2027"}]},
+    "details": {"certificates": [{"id": "cert_fake02", "name": "office-ca-2027"}]},
+    "key_id": null
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-sso-created",
+    "type": "tenant.sso_connection.created",
+    "actor": {"type": "session", "session": {"user": {"id": "user-1", "email": "admin@example.com"}, "ip_address": "198.51.100.20", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "details": {},
+    "key_id": null
   }
 ]

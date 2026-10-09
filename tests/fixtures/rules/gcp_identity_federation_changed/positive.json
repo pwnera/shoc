@@ -1,0 +1,81 @@
+[
+  {
+    "insertId": "wif-create",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "audited_resource",
+      "labels": {
+        "project_id": "example-prod",
+        "service": "iam.googleapis.com",
+        "method": "google.iam.v1.WorkloadIdentityPools.CreateWorkloadIdentityPoolProvider"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.v1.WorkloadIdentityPools.CreateWorkloadIdentityPoolProvider",
+      "resourceName": "projects/example-prod/locations/global/workloadIdentityPools/ci/providers/gh",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/google.iam.v1.CreateWorkloadIdentityPoolProviderRequest",
+        "workloadIdentityPoolProvider": {
+          "attributeMapping": {
+            "google.subject": "assertion.sub"
+          },
+          "oidc": {
+            "issuerUri": "https://token.actions.githubusercontent.com"
+          }
+        }
+      }
+    },
+    "operation": {
+      "id": "projects/example-prod/locations/global/workloadIdentityPools/ci/providers/gh/operations/op-wif-create",
+      "producer": "iam.googleapis.com",
+      "first": true
+    }
+  },
+  {
+    "insertId": "wfp-update",
+    "logName": "organizations/123456789012/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "audited_resource",
+      "labels": {
+        "service": "iam.googleapis.com",
+        "method": "google.iam.admin.v1.WorkforcePools.UpdateWorkforcePool"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "iam.googleapis.com",
+      "methodName": "google.iam.admin.v1.WorkforcePools.UpdateWorkforcePool",
+      "resourceName": "locations/global/workforcePools/staff",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/google.iam.admin.v1.UpdateWorkforcePoolRequest",
+        "workforcePool": {
+          "name": "locations/global/workforcePools/staff",
+          "disabled": false
+        }
+      }
+    },
+    "operation": {
+      "id": "locations/global/workforcePools/staff/operations/op-wfp-update",
+      "producer": "iam.googleapis.com",
+      "first": true
+    }
+  }
+]

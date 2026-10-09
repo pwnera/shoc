@@ -1,0 +1,58 @@
+[
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000e004_ABCDE_1",
+    "activityDisplayName": "Add unverified domain",
+    "category": "DirectoryManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Add",
+    "result": "success",
+    "resultReason": "",
+    "correlationId": "00000000-0000-0000-0000-00000000e005",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a003",
+        "userPrincipalName": "it-admin@example.com",
+        "ipAddress": "198.51.100.61"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000e006",
+        "displayName": "example.com",
+        "type": "Other",
+        "modifiedProperties": [
+          { "displayName": "Name", "oldValue": "[\"\"]", "newValue": "[\"example.com\"]" }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000e007_ABCDE_1",
+    "activityDisplayName": "Add verified domain",
+    "category": "DirectoryManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Add",
+    "result": "failure",
+    "resultReason": "Domain already exists",
+    "correlationId": "00000000-0000-0000-0000-00000000e008",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a003",
+        "userPrincipalName": "it-admin@example.com",
+        "ipAddress": "198.51.100.61"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000e009",
+        "displayName": "examplesupport.onmicrosoft.com",
+        "type": "Other",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  }
+]

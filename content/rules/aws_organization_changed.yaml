@@ -1,13 +1,17 @@
 id: aws_organization_changed
-title: AWS Organizations membership changed or an account closed
+title: AWS Organizations membership changed, an account closed, or a service's trusted access removed
 description: >
-  An account was created, invited, removed, closed or given delegated
-  administration of an organisation-wide service, or tried to leave the
+  An account was created, invited, removed, closed, given or stripped of
+  delegated administration of an organisation-wide service, or tried to leave
+  the organisation, or an AWS service lost its trusted access to the
   organisation. These changes move whole accounts outside the controls you
-  think you have. A denied attempt to leave counts too: it shows intent.
+  think you have. Removing GuardDuty's, Security Hub's or CloudTrail's
+  trusted access ends their organisation-wide coverage; an attacker in 2025
+  removed it for several services, Systems Manager and IAM Access Analyzer
+  among them. A denied attempt to leave counts too: it shows intent.
 status: stable
 date: 2026-09-24
-modified: 2026-10-02
+modified: 2026-10-09
 severity: high
 confidence: 0.7
 attack: [T1666, T1098, T1531]
@@ -16,14 +20,14 @@ logsource:
   service: cloudtrail
 detection:
   selection_change:
-    api.operation: [CreateAccount, InviteAccountToOrganization, RemoveAccountFromOrganization, DeleteOrganization, RegisterDelegatedAdministrator, CloseAccount]
+    api.operation: [CreateAccount, InviteAccountToOrganization, RemoveAccountFromOrganization, DeleteOrganization, RegisterDelegatedAdministrator, CloseAccount, DisableAWSServiceAccess, DeregisterDelegatedAdministrator]
     status: Success
   selection_leave:
     api.operation: LeaveOrganization
   condition: selection_change or selection_leave
   timeframe: 15m
 entity: actor.user.name
-fields: [actor.user.name, api.operation, status, cloud.account.uid]
+fields: [actor.user.name, api.operation, status, cloud.account.uid, raw.requestParameters.servicePrincipal]
 sources:
   - name: Elastic
     title: AWS Attempt to Leave Organization
@@ -39,4 +43,8 @@ sources:
     title: AWS Organizations Delegated Administrator Registered
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/persistence_organizations_delegated_admin_registered
     license: Elastic-2.0
+    relation: inspired
+  - name: Datadog Security Labs
+    title: "Tales from the cloud trenches: The Attacker doth persist too much, methinks"
+    url: https://securitylabs.datadoghq.com/articles/tales-from-the-cloud-trenches-the-attacker-doth-persist-too-much/
     relation: inspired

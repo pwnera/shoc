@@ -1,0 +1,57 @@
+id: github_sso_settings_changed
+title: GitHub SAML single sign-on changed or bypassed with a recovery code
+description: >
+  An owner turned SAML single sign-on off or on, pointed it at another
+  identity provider, or viewed, downloaded, printed, regenerated or used the
+  recovery codes that let an owner in without the identity provider. Each is
+  how a stolen owner session keeps its access after the person is disabled at
+  the identity provider. Members authorising a token for single sign-on are
+  left out; every developer does that. Audit-log API on Enterprise Cloud
+  only, which is also where SAML exists.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.7
+attack: [T1484.002, T1556]
+logsource:
+  product: github
+  service: audit_log
+detection:
+  selection:
+    api.operation:
+      - org.disable_saml
+      - org.enable_saml
+      - org.update_saml_provider_settings
+      - org.recovery_codes_viewed
+      - org.recovery_codes_downloaded
+      - org.recovery_codes_printed
+      - org.recovery_codes_generated
+      - org.recovery_code_used
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, src_endpoint.ip, src_endpoint.location.country, raw.issuer, raw.sso_url]
+sources:
+  - name: Chronicle
+    title: GitHub SSO Configuration Modified
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/github/github_sso_configuration_modified.yaral
+    license: Apache-2.0
+    relation: adapted
+  - name: Chronicle
+    title: GitHub Enterprise Or Organization Recovery Codes Activity
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/github/github_enterprise_or_organization_recovery_codes_activity.yaral
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: GitHub Org Authentication Method Changed
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/github_rules/github_org_auth_modified.yml
+    license: Apache-2.0
+    relation: inspired
+  - name: GitHub
+    title: Audit log events for your organization
+    url: https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization
+    relation: inspired
+  - name: GitHub
+    title: Downloading your organization's SAML single sign-on recovery codes
+    url: https://docs.github.com/en/enterprise-cloud@latest/organizations/managing-saml-single-sign-on-for-your-organization/downloading-your-organizations-saml-single-sign-on-recovery-codes
+    relation: inspired

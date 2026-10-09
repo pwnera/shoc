@@ -1,0 +1,61 @@
+id: cloudflare_email_routing_forward_added
+title: Cloudflare Email Routing forwards company mail to a new destination
+description: >
+  A company that receives its domain's mail through Cloudflare Email Routing
+  can have a route or the catch-all forward it anywhere. A forward to an
+  outside inbox, or to an Email Worker that reads every message, sends
+  invoices and password resets for billing@ or ceo@ to whoever set it up, and
+  it survives every password reset, as a mailbox forwarding rule does in a
+  business email compromise. A new destination address and turning Email
+  Routing on, which points the zone's MX records at Cloudflare, fire too.
+  Deleting a route, or a route that drops mail, is left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.5
+attack: [T1114.003, T1098]
+logsource:
+  product: cloudflare
+  service: audit_log
+detection:
+  # A route or the catch-all (`rules/catch_all`) that forwards or hands mail to a Worker.
+  route:
+    raw.raw.method: [POST, PUT]
+    raw.raw.uri|contains: /email/routing/rules
+    raw.resource.request.actions|contains: ['"forward"', '"worker"']
+  destination:
+    raw.raw.method: POST
+    raw.raw.uri|endswith: /email/routing/addresses
+  enabled:
+    raw.raw.method: POST
+    raw.raw.uri|endswith: [/email/routing/enable, /email/routing/dns]
+  condition: route or destination or enabled
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, raw.raw.uri, raw.resource.request.actions, raw.resource.request.matchers, raw.resource.request.email]
+sources:
+  - name: Cloudflare
+    title: Email Routing API
+    url: https://developers.cloudflare.com/api/resources/email_routing/
+    relation: inspired
+  - name: Sigma
+    title: Google Workspace Out Of Domain Email Forwarding
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/gcp/gworkspace/login/gcp_gworkspace_out_of_domain_email_forwarding.yml
+    author: Tom kluter
+    license: DRL-1.1
+    relation: inspired
+  - name: Sigma
+    title: Suspicious Inbox Forwarding
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/m365/threat_management/microsoft365_susp_inbox_forwarding.yml
+    author: Austin Songer @austinsonger
+    license: DRL-1.1
+    relation: inspired
+  - name: Push Security
+    title: Malicious mail rules
+    url: https://github.com/pushsecurity/saas-attacks/blob/main/techniques/malicious_mail_rules/description.md
+    license: CC-BY-4.0
+    relation: inspired
+  - name: Microsoft Threat Intelligence
+    title: Detecting and mitigating a multi-stage AiTM phishing and BEC campaign
+    url: https://www.microsoft.com/en-us/security/blog/2023/06/08/detecting-and-mitigating-a-multi-stage-aitm-phishing-and-bec-campaign/
+    relation: inspired

@@ -1,0 +1,130 @@
+[
+  {
+    "uuid": "okta-threatinsight-update",
+    "eventType": "security.threat.configuration.update",
+    "displayMessage": "ThreatInsight configuration updated",
+    "actor": {
+      "id": "00u1admin0001",
+      "type": "User",
+      "alternateId": "it-admin@example.com",
+      "displayName": "IT Admin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102AdminSess7Qx"
+    },
+    "securityContext": {
+      "asNumber": 64511,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/api/v1/threats/configuration"
+      }
+    },
+    "target": [
+      {
+        "id": "00o1org0001",
+        "type": "Org",
+        "alternateId": "acme.okta.com",
+        "displayName": "Acme"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-attack-protection-update",
+    "eventType": "security.attack_protection.settings.update",
+    "displayMessage": "security attack_protection settings update",
+    "actor": {
+      "id": "00u1admin0001",
+      "type": "User",
+      "alternateId": "it-admin@example.com",
+      "displayName": "IT Admin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102AdminSess7Qx"
+    },
+    "securityContext": {
+      "asNumber": 64511,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00o1org0001",
+        "type": "Org",
+        "alternateId": "acme.okta.com",
+        "displayName": "Acme"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-captcha-off",
+    "eventType": "system.org.captcha.deactivate",
+    "displayMessage": "system org captcha deactivate",
+    "actor": {
+      "id": "00u1admin0001",
+      "type": "User",
+      "alternateId": "it-admin@example.com",
+      "displayName": "IT Admin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102AdminSess7Qx"
+    },
+    "securityContext": {
+      "asNumber": 64511,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "00o1org0001",
+        "type": "Org",
+        "alternateId": "acme.okta.com",
+        "displayName": "Acme"
+      }
+    ]
+  }
+]

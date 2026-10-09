@@ -1,0 +1,42 @@
+id: aws_instance_role_swapped
+title: IAM role attached to, or swapped on, a running EC2 instance
+description: >
+  An instance profile was associated with a running instance, or the one it
+  had was replaced. Anyone allowed to do this and to pass a role can put a
+  stronger role on an instance they control and read its credentials from the
+  metadata service; LUCR-3 (Scattered Spider) escalated this way. Instances
+  normally get their profile at launch, which does not match. Terraform
+  changing the profile of an existing instance, or an admin fixing one
+  launched without a profile, will match. AWS automation such as Systems
+  Manager Quick Setup is left out.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.55
+attack: [T1098.003, T1078.004]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    api.service.name: ec2.amazonaws.com
+    api.operation: [AssociateIamInstanceProfile, ReplaceIamInstanceProfileAssociation]
+    status: Success
+  filter_aws:
+    actor.invoked_by|exists: true
+  filter_service:
+    actor.user.type: AWSService
+  condition: selection and not filter_aws and not filter_service
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, api.operation, raw.requestParameters]
+sources:
+  - name: Permiso
+    title: "LUCR-3: Scattered Spider Getting SaaS-y in the Cloud"
+    url: https://permiso.io/blog/lucr-3-scattered-spider-getting-saas-y-in-the-cloud
+    relation: inspired
+  - name: Elastic
+    title: AWS EC2 Instance Profile Associated with Running Instance
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/privilege_escalation_ec2_instance_profile_associated_with_running_instance
+    license: Elastic-2.0
+    relation: inspired

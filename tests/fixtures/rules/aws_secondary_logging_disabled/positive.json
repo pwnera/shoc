@@ -96,5 +96,70 @@
       "userName": "deploy-ci",
       "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
     }
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "lc-trail-1d",
+    "eventName": "PutBucketLifecycle",
+    "eventSource": "s3.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "bucketName": "aws-cloudtrail-logs-123456789012-1a2b3c4d",
+      "Host": "aws-cloudtrail-logs-123456789012-1a2b3c4d.s3.eu-west-1.amazonaws.com",
+      "lifecycle": "",
+      "LifecycleConfiguration": {
+        "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+        "Rule": {
+          "Expiration": {
+            "Days": 1
+          },
+          "Filter": {
+            "Prefix": ""
+          },
+          "ID": "expire",
+          "Status": "Enabled"
+        }
+      }
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "bedrock-guardrail",
+    "eventName": "DeleteGuardrail",
+    "eventSource": "bedrock.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "guardrailIdentifier": "gr-0a1b2c3d4e5f"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
   }
 ]

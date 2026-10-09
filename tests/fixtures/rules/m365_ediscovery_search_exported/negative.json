@@ -1,0 +1,84 @@
+[
+  {
+    "Id": "m365-New-ComplianceSearchAction-purge",
+    "Operation": "New-ComplianceSearchAction",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 18,
+    "UserKey": "it-admin@example.com",
+    "UserType": 2,
+    "Version": 1,
+    "Workload": "SecurityComplianceCenter",
+    "ObjectId": "",
+    "UserId": "it-admin@example.com",
+    "ClientIP": "203.0.113.30",
+    "Parameters": "-SearchName (\"phish cleanup\") -Purge \"True\" -PurgeType \"SoftDelete\"",
+    "_content_type": "Audit.General",
+    "ResultStatus": "Success",
+    "ClientApplication": "EMC"
+  },
+  {
+    "Id": "m365-Get-ComplianceSearchAction",
+    "Operation": "Get-ComplianceSearchAction",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 18,
+    "UserKey": "it-admin@example.com",
+    "UserType": 2,
+    "Version": 1,
+    "Workload": "SecurityComplianceCenter",
+    "ObjectId": "",
+    "UserId": "it-admin@example.com",
+    "ClientIP": "203.0.113.30",
+    "Parameters": "-Export \"True\"",
+    "_content_type": "Audit.General",
+    "ResultStatus": "Success",
+    "ClientApplication": "EMC"
+  },
+  {
+    "Id": "m365-ViewedSearchExported",
+    "Operation": "ViewedSearchExported",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 24,
+    "UserKey": "it-admin@example.com",
+    "UserType": 2,
+    "Version": 1,
+    "Workload": "SecurityComplianceCenter",
+    "ObjectId": "q3 search\\q3 search_Export",
+    "UserId": "it-admin@example.com",
+    "ClientIP": "203.0.113.30",
+    "Parameters": [
+      {
+        "Name": "CmdletOptions",
+        "Value": "-Details \"True\" -Identity \"cTMgc2VhcmNoX0V4cG9ydA2\""
+      },
+      {
+        "Name": "Cmdlet",
+        "Value": "Get-ComplianceSearchAction"
+      }
+    ],
+    "_content_type": "Audit.General",
+    "ObjectType": "SearchAction",
+    "Query": "invoice"
+  },
+  {
+    "Id": "m365-SearchStarted",
+    "Operation": "SearchStarted",
+    "OrganizationId": "00000000-0000-0000-0000-0000000000aa",
+    "RecordType": 24,
+    "UserKey": "it-admin@example.com",
+    "UserType": 2,
+    "Version": 1,
+    "Workload": "SecurityComplianceCenter",
+    "ObjectId": "legal hold review",
+    "UserId": "it-admin@example.com",
+    "ClientIP": "203.0.113.30",
+    "Parameters": [
+      {
+        "Name": "Cmdlet",
+        "Value": "Start-ComplianceSearch"
+      }
+    ],
+    "_content_type": "Audit.General",
+    "ObjectType": "Search",
+    "Query": "contract"
+  }
+]

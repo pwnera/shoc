@@ -1,0 +1,46 @@
+id: contain_aws_open_security_group
+title: Close an AWS security group opened to the internet
+description: >
+  A security group now accepts SSH, RDP, a database port or all traffic from
+  anywhere. Revoking the ingress rule needs an action shoc does not have yet,
+  so a human is paged first and closes it. Disabling the actor's key is
+  reversible and runs on its own; revoking the sessions the key minted waits
+  for a human.
+rules:
+  - aws_security_group_admin_port_opened
+questions:
+  - id: change
+    ask: Which ports and protocols does the new rule open, in which security group, and which instances or databases sit behind that group?
+  - id: actor
+    ask: Who made the change, from which address, and with a person's session, a CI role or a long-term key?
+  - id: reached
+    ask: Did connections or sign-ins reach the opened port from outside after the change, and from which addresses?
+  - id: still_open
+    ask: Is the rule still in place, or was it revoked again, and when?
+benign_when:
+  - A named engineer opened the port to rescue an instance and revoked the rule within the hour.
+example: |
+  claim (change): "Rule sgr-0b1c2d3e4f5a6b7c8 opens tcp:3389 from 0.0.0.0/0 on group sg-0a1b2c3d4e5f60718, which holds the build server", citing the AuthorizeSecurityGroupIngress event.
+  checked and absent: "a RevokeSecurityGroupIngress on that group (24h)", which rules out a short rescue that was closed again.
+  disposition: malicious, because RDP to the build server was opened to the internet by a key that had never changed a security group, and it is still open.
+trigger:
+  verdict: [malicious]
+  severity_at_least: high
+  min_confidence: 0.8
+steps:
+  - name: page the on-call engineer
+    action: notify.page
+    params:
+      summary: "shoc: AWS security group open to the internet on an admin port, close it: {{ case.title }}"
+      severity: critical
+      dedup_key: "{{ case.case_uid }}"
+  - name: disable the actor's access key
+    action: aws.disable_access_key
+    optional: true
+    params:
+      access_key_id: "{{ entity.key }}"
+  - name: revoke the sessions minted from the actor's key
+    action: aws.revoke_sessions
+    optional: true
+    params:
+      access_key_id: "{{ entity.key }}"

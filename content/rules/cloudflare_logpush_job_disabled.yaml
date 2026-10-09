@@ -1,12 +1,15 @@
 id: cloudflare_logpush_job_disabled
-title: Cloudflare Logpush job deleted or switched off
+title: Cloudflare Logpush job or Gateway logging switched off or redirected
 description: >
-  A Logpush job was deleted or set to disabled. The cloudflare_logs connector
-  reads what Logpush writes, so the zone's traffic and firewall events stop
-  reaching shoc without an error anywhere.
+  A Logpush job was deleted, set to disabled or pointed at another
+  destination, or Gateway stopped writing activity logs or stopped logging
+  every DNS query. The cloudflare_logs connector reads what Logpush writes, so the
+  zone's traffic and the Gateway lookups its rules read stop reaching shoc
+  without an error anywhere. An edit that sends a job's destination unchanged
+  matches too.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-02
+modified: 2026-10-09
 severity: high
 confidence: 0.6
 attack: [T1562.008]
@@ -21,6 +24,23 @@ detection:
     raw.raw.method: PUT
     raw.raw.uri|contains: /logpush/jobs/
     raw.resource.request.enabled: "false"
+  selection_redirected:
+    raw.raw.method: PUT
+    raw.raw.uri|contains: /logpush/jobs/
+    raw.resource.request.destination_conf|exists: true
+  selection_gateway_off:
+    raw.raw.method: [PUT, PATCH]
+    raw.raw.uri|endswith: /gateway/configuration
+    raw.resource.request.settings.activity_log.enabled: false
+  # At most blocked queries are logged; the lookups the rules read are not.
+  selection_gateway_dns_cut:
+    raw.raw.method: PUT
+    raw.raw.uri|endswith: /gateway/logging
+    raw.resource.request.settings_by_rule_type.dns.log_all: false
+  # The same switch in a loaded Logpush audit_logs export.
+  selection_gateway_off_export:
+    raw.ResourceType: gateway.config
+    raw.NewValue.settings.activity_log.enabled: false
   condition: selection_*
   timeframe: 15m
 entity: actor.user.name
@@ -30,4 +50,16 @@ sources:
     title: GCP Logging Sink Deletion
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/gcp/defense_evasion_gcp_logging_sink_deletion
     license: Elastic-2.0
+    relation: inspired
+  - name: Cloudflare
+    title: Update Zero Trust account logging settings
+    url: https://developers.cloudflare.com/api/resources/zero_trust/subresources/gateway/subresources/logging/methods/update/
+    relation: inspired
+  - name: Cloudflare
+    title: Update Zero Trust account configuration
+    url: https://developers.cloudflare.com/api/resources/zero_trust/subresources/gateway/subresources/configurations/methods/update/
+    relation: inspired
+  - name: Cloudflare
+    title: Update Logpush job
+    url: https://developers.cloudflare.com/api/resources/logpush/subresources/jobs/methods/update/
     relation: inspired

@@ -1,0 +1,173 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "rds-storage",
+    "eventName": "ModifyDBInstance",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#rds",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00001",
+      "arn": "arn:aws:iam::123456789012:user/dev-ci",
+      "accountId": "123456789012",
+      "userName": "dev-ci",
+      "accessKeyId": "AKIAEXAMPLEDEV00001"
+    },
+    "requestParameters": {
+      "allocatedStorage": 22,
+      "applyImmediately": true,
+      "dBInstanceIdentifier": "prod-db",
+      "maxAllocatedStorage": 1000
+    },
+    "responseElements": {
+      "dBInstanceIdentifier": "prod-db",
+      "dBInstanceArn": "arn:aws:rds:eu-west-1:123456789012:db:prod-db",
+      "pendingModifiedValues": {
+        "allocatedStorage": 22
+      },
+      "publiclyAccessible": false
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "rds-private",
+    "eventName": "ModifyDBInstance",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#rds",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00001",
+      "arn": "arn:aws:iam::123456789012:user/dev-ci",
+      "accountId": "123456789012",
+      "userName": "dev-ci",
+      "accessKeyId": "AKIAEXAMPLEDEV00001"
+    },
+    "requestParameters": {
+      "applyImmediately": true,
+      "dBInstanceIdentifier": "prod-db",
+      "publiclyAccessible": false
+    },
+    "responseElements": {
+      "dBInstanceIdentifier": "prod-db",
+      "dBInstanceArn": "arn:aws:rds:eu-west-1:123456789012:db:prod-db",
+      "publiclyAccessible": false
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "rds-managed-password",
+    "eventName": "ModifyDBCluster",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#rds",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00001",
+      "arn": "arn:aws:iam::123456789012:user/dev-ci",
+      "accountId": "123456789012",
+      "userName": "dev-ci",
+      "accessKeyId": "AKIAEXAMPLEDEV00001"
+    },
+    "requestParameters": {
+      "dBClusterIdentifier": "prod-cluster",
+      "manageMasterUserPassword": true,
+      "applyImmediately": true
+    },
+    "responseElements": {
+      "dBClusterIdentifier": "prod-cluster",
+      "status": "available"
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "rds-private-restore",
+    "eventName": "RestoreDBInstanceFromDBSnapshot",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#rds",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00001",
+      "arn": "arn:aws:iam::123456789012:user/dev-ci",
+      "accountId": "123456789012",
+      "userName": "dev-ci",
+      "accessKeyId": "AKIAEXAMPLEDEV00001"
+    },
+    "requestParameters": {
+      "dBInstanceIdentifier": "prod-db-copy",
+      "dBSnapshotIdentifier": "rds:prod-db-2026-10-01-03-05"
+    },
+    "responseElements": {
+      "dBInstanceIdentifier": "prod-db-copy",
+      "dBInstanceStatus": "creating",
+      "publiclyAccessible": false
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "rds-cfn-password",
+    "eventName": "ModifyDBInstance",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#rds",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:AWSCloudFormation",
+      "arn": "arn:aws:sts::123456789012:assumed-role/cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1/AWSCloudFormation",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLECFN00001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1",
+          "accountId": "123456789012",
+          "userName": "cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      },
+      "invokedBy": "cloudformation.amazonaws.com"
+    },
+    "requestParameters": {
+      "applyImmediately": true,
+      "dBInstanceIdentifier": "stack-db",
+      "masterUserPassword": "****"
+    },
+    "responseElements": {
+      "dBInstanceIdentifier": "stack-db",
+      "pendingModifiedValues": {
+        "masterUserPassword": "****"
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  }
+]

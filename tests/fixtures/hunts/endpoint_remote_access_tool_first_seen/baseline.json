@@ -13,5 +13,34 @@
       "InitiatingProcessFileName": "msedge.exe",
       "AccountName": "jdoe"
     }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770071"
+    },
+    "endpoint": {
+      "name": "laptop-41.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "UltraViewer_Service.exe",
+        "cmdline": "\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"",
+        "image": {
+          "path": "C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe"
+        },
+        "user": "NT AUTHORITY\\SYSTEM"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "services.exe"
+      }
+    }
   }
 ]

@@ -1,19 +1,23 @@
 id: contain_account_recovery_abuse
 title: Contain a reset of someone else's sign-in
 description: >
-  An admin or the help desk reset another person's password or MFA, turned
-  MFA off, or issued a temporary access pass. Whoever asked for the reset now
-  controls that account, so the reset account is the one to sign out: its
-  sessions are revoked, which is reversible, and suspending it, or removing
-  the newest factor enrolled in the last week, waits for a human. The admin who made the reset is a question for the crew, and for
+  An admin or the help desk reset another person's password or MFA, enrolled a
+  factor on their account, turned MFA off, or issued a temporary access pass
+  or backup codes.
+  Whoever asked for the reset now controls that account, so the reset account
+  is the one to sign out: its sessions are revoked, which is reversible, and
+  suspending it, or removing the newest factor enrolled in the last week, waits
+  for a human. The admin who made the reset is a question for the crew, and for
   contain_admin_account_misuse if their own account is misused.
 rules:
   - okta_mfa_factors_reset
   - okta_password_reset_by_admin
+  - okta_factor_enrolled_for_another_user
   - entra_password_reset_by_admin
   - entra_mfa_disabled
   - m365_mfa_disabled
   - entra_temporary_access_pass_created
+  - google_backup_codes_issued_by_admin
 questions:
   - id: verified
     ask: Was the person's identity checked before the reset (a ticket, a call-back), and who asked for it?
@@ -44,6 +48,11 @@ steps:
     optional: true
     params:
       user: "{{ entity.resource }}"
+  - name: sign the reset account out of every Google session
+    action: google.revoke_sessions
+    optional: true
+    params:
+      user: "{{ entity.resource }}"
   - name: page the on-call engineer
     action: notify.page
     params:
@@ -68,6 +77,11 @@ steps:
       user: "{{ entity.resource }}"
   - name: suspend the reset account in Entra ID
     action: entra.suspend_user
+    optional: true
+    params:
+      user: "{{ entity.resource }}"
+  - name: suspend the reset account in Google
+    action: google.suspend_user
     optional: true
     params:
       user: "{{ entity.resource }}"

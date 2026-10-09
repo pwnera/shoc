@@ -1,0 +1,131 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "iip-ssm",
+    "eventName": "AssociateIamInstanceProfile",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "ssm.amazonaws.com",
+    "userAgent": "ssm.amazonaws.com",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:automation",
+      "arn": "arn:aws:sts::123456789012:assumed-role/AWS-QuickSetup-SSM-RoleForAutomation/automation",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLESSMQS001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/AWS-QuickSetup-SSM-RoleForAutomation",
+          "accountId": "123456789012",
+          "userName": "AWS-QuickSetup-SSM-RoleForAutomation"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      },
+      "invokedBy": "ssm.amazonaws.com"
+    },
+    "requestParameters": {
+      "AssociateIamInstanceProfileRequest": {
+        "InstanceId": "i-0c1d2e3f4a5b60718",
+        "IamInstanceProfile": {
+          "Name": "AmazonSSMRoleForInstancesQuickSetup"
+        }
+      }
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "iip-service",
+    "eventName": "AssociateIamInstanceProfile",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "ec2.amazonaws.com",
+    "userAgent": "ec2.amazonaws.com",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AWSService",
+      "invokedBy": "ec2.amazonaws.com"
+    },
+    "requestParameters": {
+      "AssociateIamInstanceProfileRequest": {
+        "InstanceId": "i-0d1e2f3a4b5c60718",
+        "IamInstanceProfile": {
+          "Name": "web-profile"
+        }
+      }
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "iip-launch",
+    "eventName": "RunInstances",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.77",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00003",
+      "arn": "arn:aws:iam::123456789012:user/build",
+      "accountId": "123456789012",
+      "userName": "build",
+      "accessKeyId": "AKIAEXAMPLEDEV00003"
+    },
+    "requestParameters": {
+      "instanceType": "t3.micro",
+      "iamInstanceProfile": {
+        "name": "web-profile"
+      }
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "iip-denied",
+    "eventName": "ReplaceIamInstanceProfileAssociation",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.77",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00003",
+      "arn": "arn:aws:iam::123456789012:user/build",
+      "accountId": "123456789012",
+      "userName": "build",
+      "accessKeyId": "AKIAEXAMPLEDEV00003"
+    },
+    "requestParameters": {
+      "ReplaceIamInstanceProfileAssociationRequest": {
+        "AssociationId": "iip-assoc-0a1b2c3d4e5f60718",
+        "IamInstanceProfile": {
+          "Name": "ops-admin-profile"
+        }
+      }
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "errorCode": "Client.UnauthorizedOperation",
+    "errorMessage": "You are not authorized to perform this operation."
+  }
+]

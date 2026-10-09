@@ -1,0 +1,94 @@
+[
+  {
+    "uuid": "okta-helpdesk-admin-revoked",
+    "eventType": "user.account.privilege.revoke",
+    "displayMessage": "user account privilege revoke",
+    "actor": {
+      "id": "00u1mal0001",
+      "type": "User",
+      "alternateId": "mallory@example.com",
+      "displayName": "Mallory"
+    },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102AdminSess7Qx"
+    },
+    "securityContext": {
+      "asNumber": 64511,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "privilegeRevoked": "Help Desk administrator"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1desk0001",
+        "type": "User",
+        "alternateId": "helpdesk@example.com",
+        "displayName": "Help Desk"
+      }
+    ]
+  },
+  {
+    "uuid": "okta-super-admin-granted",
+    "eventType": "user.account.privilege.grant",
+    "displayMessage": "user account privilege grant",
+    "actor": {
+      "id": "00u1mal0001",
+      "type": "User",
+      "alternateId": "mallory@example.com",
+      "displayName": "Mallory"
+    },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102AdminSess7Qx"
+    },
+    "securityContext": {
+      "asNumber": 64511,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "privilegeGranted": "Super administrator"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1mal0002",
+        "type": "User",
+        "alternateId": "backup-admin@example.com",
+        "displayName": "Backup Admin"
+      }
+    ]
+  }
+]

@@ -1,0 +1,562 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999999",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "net.exe",
+      "ProcessCommandLine": "net stop \"Veeam Backup Service\" /y",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999999",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "net.exe",
+      "ProcessCommandLine": "net stop VeeamTransportSvc /y",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999999",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "net.exe",
+      "ProcessCommandLine": "net stop MSSQLSERVER /y",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999999",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "net.exe",
+      "ProcessCommandLine": "net stop SQLSERVERAGENT /y",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999999",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "sc.exe",
+      "ProcessCommandLine": "sc config VSS start= disabled",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999999",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "sc.exe",
+      "ProcessCommandLine": "sc stop wbengine",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999999",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "taskkill.exe",
+      "ProcessCommandLine": "taskkill /f /im sqlservr.exe",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999999",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "taskkill.exe",
+      "ProcessCommandLine": "taskkill /f /im outlook.exe",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999999",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "taskkill.exe",
+      "ProcessCommandLine": "taskkill /f /im excel.exe",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "9999999999999999999999999999999999999999",
+      "DeviceName": "fs01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "powershell.exe",
+      "ProcessCommandLine": "powershell -c Stop-Service -Name MSExchangeIS -Force",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd90",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL01",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\net.exe",
+    "CommandLine": "net stop SQLWriter /y",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8100",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd90",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL01",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\net.exe",
+    "CommandLine": "net stop MSSQL$SQLEXPRESS /y",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8101",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd90",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL01",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\net.exe",
+    "CommandLine": "net stop BackupExecJobEngine /y",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8102",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd90",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL01",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\sc.exe",
+    "CommandLine": "sc config SQLTELEMETRY start= disabled",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8103",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd90",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL01",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\sc.exe",
+    "CommandLine": "sc stop SQLBrowser",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8104",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd90",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL01",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\taskkill.exe",
+    "CommandLine": "taskkill /f /im mysqld.exe",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8105",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd90",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL01",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\taskkill.exe",
+    "CommandLine": "taskkill /f /im winword.exe",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8106",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd90",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL01",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\taskkill.exe",
+    "CommandLine": "taskkill /f /im thunderbird.exe",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8107",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd90",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL01",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\taskkill.exe",
+    "CommandLine": "taskkill /f /im onenote.exe",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8108",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd90",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ComputerName": "SRV-SQL01",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\wmic.exe",
+    "CommandLine": "wmic service where name='wuauserv' call stopservice",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "8109",
+    "UserName": "administrator"
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770090"
+    },
+    "endpoint": {
+      "name": "srv-hv01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "net.exe",
+        "cmdline": "net stop vmms /y",
+        "image": {
+          "path": "C:\\Windows\\System32\\net.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770090"
+    },
+    "endpoint": {
+      "name": "srv-hv01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "net.exe",
+        "cmdline": "net stop vmcompute /y",
+        "image": {
+          "path": "C:\\Windows\\System32\\net.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770090"
+    },
+    "endpoint": {
+      "name": "srv-hv01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "net.exe",
+        "cmdline": "net stop MSExchangeTransport /y",
+        "image": {
+          "path": "C:\\Windows\\System32\\net.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770090"
+    },
+    "endpoint": {
+      "name": "srv-hv01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "sc.exe",
+        "cmdline": "sc stop VeeamDeploymentService",
+        "image": {
+          "path": "C:\\Windows\\System32\\sc.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770090"
+    },
+    "endpoint": {
+      "name": "srv-hv01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "sc.exe",
+        "cmdline": "sc config wbengine start= disabled",
+        "image": {
+          "path": "C:\\Windows\\System32\\sc.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770090"
+    },
+    "endpoint": {
+      "name": "srv-hv01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "taskkill.exe",
+        "cmdline": "taskkill /f /im sqlbrowser.exe",
+        "image": {
+          "path": "C:\\Windows\\System32\\taskkill.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770090"
+    },
+    "endpoint": {
+      "name": "srv-hv01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "taskkill.exe",
+        "cmdline": "taskkill /f /im msaccess.exe",
+        "image": {
+          "path": "C:\\Windows\\System32\\taskkill.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770090"
+    },
+    "endpoint": {
+      "name": "srv-hv01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "taskkill.exe",
+        "cmdline": "taskkill /f /im visio.exe",
+        "image": {
+          "path": "C:\\Windows\\System32\\taskkill.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770090"
+    },
+    "endpoint": {
+      "name": "srv-hv01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "powershell.exe",
+        "cmdline": "powershell -c Stop-Process -Name firefox -Force",
+        "image": {
+          "path": "C:\\Windows\\System32\\powershell.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770090"
+    },
+    "endpoint": {
+      "name": "srv-hv01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "powershell.exe",
+        "cmdline": "powershell -c Stop-Service -Name Spooler -Force",
+        "image": {
+          "path": "C:\\Windows\\System32\\powershell.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  }
+]

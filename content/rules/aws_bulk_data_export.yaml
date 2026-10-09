@@ -1,12 +1,16 @@
 id: aws_bulk_data_export
-title: Database snapshot, machine image or bucket exported or mirrored out
+title: Database snapshot, machine image or bucket exported or mirrored out, or a bulk transfer set up
 description: >
   An instance or image was exported, an RDS snapshot exported to S3, network
-  traffic mirrored, or a bucket set to replicate into another account. Each
-  copies a whole system or data set in one call. Failed exports count: they
-  show intent.
+  traffic mirrored, a bucket set to replicate into another account, a
+  DataSync task created, or a Transfer Family server or user created. Each
+  copies a whole system or data set in one call or sets up a channel that
+  does; Muddled Libra used DataSync and Transfer Family to move data out
+  quickly. A migration project matches too. Failed exports count: they show
+  intent.
 status: experimental
 date: 2026-10-02
+modified: 2026-10-09
 severity: high
 confidence: 0.7
 attack: [T1537, T1567.002, T1040]
@@ -23,6 +27,13 @@ detection:
     api.operation: PutBucketReplication
     raw.requestParameters.ReplicationConfiguration|contains: '"account"'
     status: Success
+  selection_datasync:
+    api.service.name: datasync.amazonaws.com
+    api.operation: CreateTask
+  # An SFTP endpoint and a login for it, which read straight from a bucket.
+  selection_transfer:
+    api.service.name: transfer.amazonaws.com
+    api.operation: [CreateServer, CreateUser]
   condition: selection_*
   timeframe: 15m
 entity: actor.user.name
@@ -53,4 +64,13 @@ sources:
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/aws/cloudtrail/aws_ec2_vm_export_failure.yml
     author: Diogo Braz
     license: DRL-1.1
+    relation: inspired
+  - name: Splunk
+    title: AWS Exfiltration via DataSync Task
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/aws_exfiltration_via_datasync_task.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Unit 42
+    title: Muddled Libra's Evolution to the Cloud
+    url: https://unit42.paloaltonetworks.com/muddled-libra-evolution-to-cloud/
     relation: inspired

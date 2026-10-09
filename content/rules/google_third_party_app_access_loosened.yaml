@@ -1,0 +1,67 @@
+id: google_third_party_app_access_loosened
+title: Admin loosened which third-party apps can reach company data
+description: >
+  An admin unblocked third-party API access, marked an OAuth app as trusted,
+  took an app off the blocked list, set a Google service such as Gmail or
+  Drive back to unrestricted, or let users install any Marketplace app. An
+  attacker with an admin session changes these before a consent phish, so
+  that users can grant their app the mail or Drive access the company had
+  restricted. Trusting a tool the company just bought looks the same, and the
+  finding names the app.
+status: experimental
+date: 2026-10-09
+severity: medium
+confidence: 0.5
+attack: [T1484, T1528]
+logsource:
+  product: google
+  service: reports
+detection:
+  selection_api_controls:
+    api.service.name: admin
+    api.operation:
+      - UNBLOCK_ALL_THIRD_PARTY_API_ACCESS
+      - ADD_TO_TRUSTED_OAUTH2_APPS
+      - MULTIPLE_ADD_TO_TRUSTED_OAUTH2_APPS
+      - REMOVE_FROM_BLOCKED_OAUTH2_APPS
+      - ALLOW_SERVICE_FOR_OAUTH2_ACCESS
+  marketplace:
+    api.service.name: admin
+    api.operation: [CHANGE_APPLICATION_SETTING, CREATE_APPLICATION_SETTING]
+    unmapped.params.APPLICATION_NAME: Google Workspace Marketplace
+  allow_all:
+    unmapped.params.SETTING_NAME: Apps Access Setting Allowlist access
+    unmapped.params.NEW_VALUE: ALLOW_ALL
+  # The older form of the same setting; 2 is "allow any app".
+  allow_all_legacy:
+    unmapped.params.SETTING_NAME: ENABLE_G_SUITE_MARKETPLACE
+    unmapped.params.NEW_VALUE: "2"
+  condition: selection_api_controls or (marketplace and (allow_all or allow_all_legacy))
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, unmapped.params.OAUTH2_APP_NAME, unmapped.params.OAUTH2_APP_ID, unmapped.params.OAUTH2_SERVICE_NAME, unmapped.params.ORG_UNIT_NAME, src_endpoint.ip]
+sources:
+  - name: Chronicle
+    title: Google Workspace Marketplace Allowlist Configuration
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/workspace/google_workspace_marketplace_allowlist_configuration.yaral
+    author: Google Cloud Security
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: Google Workspace Apps Marketplace Allowlist
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/gsuite_activityevent_rules/google_workspace_apps_marketplace_allowlist.py
+    license: Apache-2.0
+    relation: adapted
+  - name: Elastic
+    title: Google Workspace integration rules, Marketplace allow any app and app removed from blocklist
+    url: https://github.com/elastic/detection-rules/tree/main/rules/integrations/google_workspace
+    license: Elastic-2.0
+    relation: inspired
+  - name: Google
+    title: Admin audit activity events, security settings
+    url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/admin-security-settings
+    relation: inspired
+  - name: Google Threat Intelligence Group
+    title: Widespread Data Theft Targets Salesforce Instances via Salesloft Drift
+    url: https://cloud.google.com/blog/topics/threat-intelligence/data-theft-salesforce-instances-via-salesloft-drift
+    relation: inspired

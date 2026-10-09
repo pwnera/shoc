@@ -1,0 +1,98 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "rds-password",
+    "eventName": "ModifyDBInstance",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#rds",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00001",
+      "arn": "arn:aws:iam::123456789012:user/dev-ci",
+      "accountId": "123456789012",
+      "userName": "dev-ci",
+      "accessKeyId": "AKIAEXAMPLEDEV00001"
+    },
+    "requestParameters": {
+      "allowMajorVersionUpgrade": false,
+      "applyImmediately": true,
+      "dBInstanceIdentifier": "prod-db",
+      "masterUserPassword": "****"
+    },
+    "responseElements": {
+      "dBInstanceIdentifier": "prod-db",
+      "dBInstanceArn": "arn:aws:rds:eu-west-1:123456789012:db:prod-db",
+      "pendingModifiedValues": {
+        "masterUserPassword": "****"
+      },
+      "publiclyAccessible": false
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "rds-public",
+    "eventName": "ModifyDBInstance",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#rds",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00001",
+      "arn": "arn:aws:iam::123456789012:user/dev-ci",
+      "accountId": "123456789012",
+      "userName": "dev-ci",
+      "accessKeyId": "AKIAEXAMPLEDEV00001"
+    },
+    "requestParameters": {
+      "applyImmediately": true,
+      "dBInstanceIdentifier": "prod-db",
+      "publiclyAccessible": true
+    },
+    "responseElements": {
+      "dBInstanceIdentifier": "prod-db",
+      "dBInstanceArn": "arn:aws:rds:eu-west-1:123456789012:db:prod-db",
+      "publiclyAccessible": true
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "rds-public-restore",
+    "eventName": "RestoreDBInstanceFromDBSnapshot",
+    "eventSource": "rds.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0 md/command#rds",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00001",
+      "arn": "arn:aws:iam::123456789012:user/dev-ci",
+      "accountId": "123456789012",
+      "userName": "dev-ci",
+      "accessKeyId": "AKIAEXAMPLEDEV00001"
+    },
+    "requestParameters": {
+      "dBInstanceIdentifier": "prod-db-copy",
+      "dBSnapshotIdentifier": "rds:prod-db-2026-10-01-03-05"
+    },
+    "responseElements": {
+      "dBInstanceIdentifier": "prod-db-copy",
+      "dBInstanceStatus": "creating",
+      "publiclyAccessible": true
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  }
+]

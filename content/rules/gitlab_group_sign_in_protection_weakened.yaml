@@ -1,0 +1,57 @@
+id: gitlab_group_sign_in_protection_weakened
+title: GitLab group 2FA, SAML or IP allow list weakened
+description: >
+  A group Owner dropped the group's 2FA requirement, switched SAML single
+  sign-on or its enforcement off, pointed SAML at another sign-in URL or
+  certificate, turned off 2FA on an account, or changed the group's IP allow
+  list. Each opens the group to the next stolen password. Rotating the
+  identity provider's certificate and adding an office address to the allow
+  list fire too, a few times a year.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1556, T1556.006, T1484.002]
+logsource:
+  product: gitlab
+  service: audit_events
+detection:
+  two_factor_off:
+    api.operation: group_require_two_factor_authentication_updated
+    raw.details.to: false
+  # One event per changed setting, written "<setting> changed from <a> to <b>."
+  saml_weakened:
+    api.operation: group_saml_provider_update
+    message|contains:
+      - enabled changed from true to false
+      - enforced_sso changed from true to false
+      - disable_password_authentication_for_enterprise_users changed from true to false
+      - sso_url changed
+      - certificate_fingerprint changed
+  account_two_factor_off:
+    api.operation: user_disable_two_factor
+  ip_allow_list:
+    api.operation: ip_restrictions_changed
+  condition: two_factor_off or saml_weakened or account_two_factor_off or ip_allow_list
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, message, resource.uid, actor.invoked_by, src_endpoint.ip]
+sources:
+  - name: Splunk
+    title: GitHub Organizations Disable 2FA Requirement
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/github_organizations_disable_2fa_requirement.yml
+    license: Apache-2.0
+    relation: inspired
+  - name: Chronicle
+    title: GitHub SSO Configuration Modified
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/github/github_sso_configuration_modified.yaral
+    license: Apache-2.0
+    relation: inspired
+  - name: GitLab
+    title: Group SAML audit events, ee/app/services/group_saml/saml_provider/base_service.rb
+    url: https://gitlab.com/gitlab-org/gitlab/-/blob/master/ee/app/services/group_saml/saml_provider/base_service.rb
+    relation: inspired
+  - name: GitLab
+    title: Group setting audit events, ee/lib/namespaces/group_changes_auditor.rb
+    url: https://gitlab.com/gitlab-org/gitlab/-/blob/master/ee/lib/namespaces/group_changes_auditor.rb
+    relation: inspired

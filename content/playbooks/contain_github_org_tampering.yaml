@@ -2,13 +2,14 @@ id: contain_github_org_tampering
 title: Contain tampering with the GitHub organisation
 description: >
   Branch protection was removed, an Actions secret changed, a webhook was
-  deleted, a runner, deploy key or token was added, or repositories were
-  deleted, moved out or cloned in bulk. Each one opens a path into production
-  through the code, and a deleted webhook can be shoc's own. When an owner made
-  the change, demoting them to member waits for a human, who is paged. The
-  Commander can propose `github.remove_deploy_key` for a new key. A new owner
-  is answered in contain_github_owner_added, a security feature turned off in
-  restore_github_security.
+  deleted, a runner, deploy key or token was added, repositories were deleted,
+  moved out or cloned in bulk, single sign-on or the Actions permissions were
+  changed, or someone was given admin on a repository. Each one opens a path
+  into production through the code, and a deleted webhook can be shoc's own.
+  When an owner made the change, demoting them to member waits for a human, who
+  is paged. The Commander can propose `github.remove_deploy_key` for a new key.
+  A new owner is answered in contain_github_owner_added, a security feature
+  turned off in restore_github_security.
 rules:
   - github_protected_branch_removed
   - github_secret_changed
@@ -20,6 +21,9 @@ rules:
   - github_force_push_to_default_branch
   - github_workflow_change_blocked
   - github_fine_grained_pat_granted
+  - github_sso_settings_changed
+  - github_actions_permissions_loosened
+  - github_collaborator_given_admin
   - hunt:github_self_hosted_runner_first_seen
   - hunt:github_private_repo_access_new_country
   - hunt:github_identity_first_push_to_repo

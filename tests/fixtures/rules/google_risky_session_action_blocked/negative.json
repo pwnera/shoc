@@ -1,0 +1,45 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-risky-allowed",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "100000000000000000002",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.12",
+    "_application": "login",
+    "events": [
+      {
+        "type": "login",
+        "name": "risky_sensitive_action_allowed",
+        "parameters": [
+          {
+            "name": "login_challenge_method",
+            "value": "password"
+          },
+          {
+            "name": "is_suspicious",
+            "boolValue": true
+          },
+          {
+            "name": "login_type",
+            "value": "google_password"
+          },
+          {
+            "name": "login_challenge_status",
+            "value": "Challenge Passed."
+          },
+          {
+            "name": "sensitive_action_name",
+            "value": "Allowing access to data"
+          }
+        ]
+      }
+    ]
+  }
+]

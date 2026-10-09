@@ -1,0 +1,44 @@
+id: google_risky_session_action_blocked
+title: Google blocked a sensitive action from a risky session
+description: >
+  Google judged a session risky when it tried a sensitive action, such as
+  turning off two-step verification, changing recovery details, granting an
+  app access or adding a Gmail forwarding address, asked it to prove it was
+  the user, and the session failed. Someone was inside the account. A stolen
+  session cookie looks like this, and adding a forward is a mailbox thief's
+  first move. The rules on two-step verification and forwarding fire only
+  when the change goes through; this is the attempt Google stopped. An
+  attempt the session proved itself for is left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.7
+attack: [T1539, T1550.004, T1114.003]
+logsource:
+  product: google
+  service: reports
+detection:
+  selection:
+    api.service.name: login
+    api.operation: risky_sensitive_action_blocked
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, unmapped.params.sensitive_action_name, src_endpoint.ip, src_endpoint.asn, src_endpoint.location.country]
+sources:
+  - name: Google
+    title: Login audit activity events
+    url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/login
+    relation: inspired
+  - name: Google Workspace Updates
+    title: Stronger protection for sensitive account actions
+    url: https://workspaceupdates.googleblog.com/2022/08/stronger-protection-for-sensitive-account-actions.html
+    relation: inspired
+  - name: Google Workspace Updates
+    title: Stronger protections for sensitive Gmail actions
+    url: https://workspaceupdates.googleblog.com/2023/08/stronger-protections-for-sensitive-gmail-actions.html
+    relation: inspired
+  - name: Google Threat Analysis Group
+    title: Phishing campaign targets YouTube creators with cookie theft malware
+    url: https://blog.google/threat-analysis-group/phishing-campaign-targets-youtube-creators-cookie-theft-malware/
+    relation: inspired

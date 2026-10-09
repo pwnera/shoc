@@ -1,0 +1,52 @@
+id: entra_cross_tenant_access_partner_added
+title: Another tenant given a trust or sync relationship with this one
+description: >
+  Someone added another Entra tenant to the cross-tenant access settings or
+  changed what a partner gets, changed the default every other tenant gets, set
+  up cross-tenant synchronisation with a partner, or added a delegated admin
+  partner. These let the other tenant's users in, can make this tenant accept
+  their MFA, or let the other tenant create users here. An attacker with Global
+  Administrator adds a tenant they own and keeps a way back in that survives
+  every password reset. A small company has no partner here, or one (its IT
+  provider); Teams shared channels with a customer, a merger or a new IT
+  provider are the usual benign reasons.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1484.002, T1199]
+logsource:
+  product: entra
+  service: audit_logs
+detection:
+  selection:
+    api.operation|contains:
+      - add a partner to cross-tenant access setting
+      - add a domain-based partner to cross-tenant access setting
+      - update a partner cross-tenant access setting
+      - update the company default cross-tenant access setting
+      - create a partner cross-tenant identity sync setting
+      - update a partner cross-tenant identity sync setting
+      - add partner to company
+  filter_failed:
+    status: Failure
+  condition: selection and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, unmapped.modified.tenantId.newValue, src_endpoint.ip]
+sources:
+  - name: Splunk
+    title: O365 Cross-Tenant Access Change
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/o365_cross_tenant_access_change.yml
+    author: Steven Dick
+    license: Apache-2.0
+    relation: adapted
+  - name: Microsoft Sentinel
+    title: Cross-tenant Access Settings Organization Added
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/Microsoft%20Entra%20ID/Analytic%20Rules/Cross-tenantAccessSettingsOrganizationAdded.yaml
+    license: MIT
+    relation: adapted
+  - name: Microsoft
+    title: Microsoft Entra audit log activity reference
+    url: https://learn.microsoft.com/en-us/entra/identity/monitoring-health/reference-audit-activities
+    relation: inspired

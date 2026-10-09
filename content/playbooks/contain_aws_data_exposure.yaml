@@ -3,8 +3,9 @@ title: Contain data exposed or destroyed in AWS
 description: >
   A bucket was opened to the world, a snapshot shared or exported, a bucket
   read in bulk or re-encrypted with an outside key, backups or versioning
-  switched off, a Lambda function opened to outsiders, or a KMS key disabled
-  or scheduled for deletion.
+  switched off, buckets deleted in bulk, a database's master password reset
+  or the database made public, a Lambda function opened to outsiders, or a
+  KMS key disabled or scheduled for deletion.
   Disabling the actor's key stops further reads, and a human is paged. After
   the page the bucket's public access is blocked, the key's deletion
   cancelled or the snapshot unshared, whichever the case's resource is, each
@@ -20,6 +21,8 @@ rules:
   - aws_recovery_disabled
   - aws_lambda_opened_to_outside
   - aws_bulk_data_export
+  - aws_s3_buckets_deleted_in_bulk
+  - aws_rds_password_reset_or_made_public
 questions:
   - id: granted_to
     ask: Which account or principal was given access, and is it one of ours?

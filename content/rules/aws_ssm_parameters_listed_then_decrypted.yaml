@@ -1,0 +1,62 @@
+id: aws_ssm_parameters_listed_then_decrypted
+title: SSM parameters listed and then read in batches with decryption by the same credential
+description: >
+  A credential listed Parameter Store parameters and, within 15 minutes, read
+  several of them decrypted in one call (GetParameters, up to ten names) or a
+  whole path (GetParametersByPath). SecureString parameters hold database
+  passwords and API keys. The bulk secrets rule counts one call as one secret,
+  so 30 parameters read ten at a time stay under its threshold of 20.
+  Applications read the names they were built with and do not list first.
+  Single GetParameter reads, which a person looking up one value makes, are
+  left out, as are console browsing (CloudShell still counts) and Terraform
+  or Pulumi refreshes. Config tools that list and then export, such as
+  chamber, will match.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1555.006, T1552.001]
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  recon:
+    api.service.name: ssm.amazonaws.com
+    api.operation: DescribeParameters
+    status: Success
+  decrypt:
+    api.service.name: ssm.amazonaws.com
+    api.operation: [GetParameters, GetParametersByPath]
+    raw.requestParameters.withDecryption: true
+    status: Success
+  console:
+    raw.sessionCredentialFromConsole: true
+  # CloudShell runs on console credentials too, and scripts run there.
+  cloudshell:
+    http_request.user_agent|contains: exec-env/CloudShell
+  iac:
+    http_request.user_agent|contains: [terraform, pulumi]
+  sequence:
+    by: [actor.session.uid]
+    first: recon and not (console and not cloudshell) and not iac
+    then: decrypt and not (console and not cloudshell) and not iac
+    within: 15m
+  timeframe: 15m
+entity: actor.session.uid
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, http_request.user_agent, raw.requestParameters.names, raw.requestParameters.path]
+sources:
+  - name: Stratus Red Team
+    title: Retrieve And Decrypt SSM Parameters
+    url: https://stratus-red-team.cloud/attack-techniques/AWS/aws.credential-access.ssm-retrieve-securestring-parameters/
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: AWS Decrypt SSM Parameters
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/aws_cloudtrail_rules/aws_ssm_decrypt_ssm_params.yml
+    license: Apache-2.0
+    relation: inspired
+  - name: Elastic
+    title: AWS Systems Manager SecureString Parameter Request with Decryption Flag
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/credential_access_retrieve_secure_string_parameters_via_ssm
+    license: Elastic-2.0
+    relation: inspired

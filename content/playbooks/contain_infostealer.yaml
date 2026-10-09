@@ -11,9 +11,11 @@ rules:
   - macos_password_prompt_or_browser_key_read
   - endpoint_clickfix_paste_and_run
   - defender_browser_credential_file_read
+  - macos_stealer_staging_or_unquarantine
+  - endpoint_browser_debugging_cookie_theft
 questions:
   - id: ran
-    ask: Did the prompt, the pasted command or the file read run to completion, or did the EDR stop it?
+    ask: Did the prompt, the pasted command, the file read or the upload run to completion, or did the EDR stop it?
   - id: person
     ask: Which identity provider login belongs to the local account on this host (jdoe on the laptop, jane.doe@example.com in Okta or Entra)?
   - id: sessions

@@ -1,15 +1,18 @@
 id: contain_tailscale_tampering
 title: Contain tampering with the tailnet
 description: >
-  A protection was switched off, the access policy changed, or someone was
-  made an admin. Suspending the person who did it stops their devices, keys
-  and tokens at once and is reversible, but locks a colleague out of the
-  network, so it waits for a human, who is paged either way. A new auth key is
-  answered in contain_tailscale_key.
+  A protection was switched off, the access policy or DNS settings changed, a
+  device was shared with another tailnet, or someone was made an admin.
+  Suspending the person who did it stops their devices, keys and tokens at
+  once and is reversible, but locks a colleague out of the network, so it
+  waits for a human, who is paged either way. A new auth key is answered in
+  contain_tailscale_key.
 rules:
   - tailscale_defence_disabled
   - tailscale_admin_role_granted
   - tailscale_acl_changed
+  - tailscale_dns_config_changed
+  - tailscale_node_shared_out
   - hunt:tailscale_principal_first_operation
 questions:
   - id: actor

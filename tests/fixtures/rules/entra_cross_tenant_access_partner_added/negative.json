@@ -1,0 +1,66 @@
+[
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000m003_XT_1",
+    "activityDisplayName": "Delete partner specific cross-tenant access setting",
+    "category": "CrossTenantAccessSettings",
+    "loggedByService": "Core Directory",
+    "operationType": "Delete",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a003",
+        "userPrincipalName": "it-admin@example.com",
+        "ipAddress": "198.51.100.31"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "Policy_00000000-0000-0000-0000-00000000m103",
+        "displayName": "CrossTenantAccessPolicy",
+        "type": "Policy",
+        "modifiedProperties": [
+          {
+            "displayName": "tenantId",
+            "oldValue": "\"\"",
+            "newValue": "\"00000000-0000-0000-0000-00000000m201\""
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000m004_XT_1",
+    "activityDisplayName": "Add a partner to cross-tenant access setting",
+    "category": "CrossTenantAccessSettings",
+    "loggedByService": "Core Directory",
+    "operationType": "Add",
+    "result": "failure",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a003",
+        "userPrincipalName": "it-admin@example.com",
+        "ipAddress": "198.51.100.31"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "Policy_00000000-0000-0000-0000-00000000m104",
+        "displayName": "CrossTenantAccessPolicy",
+        "type": "Policy",
+        "modifiedProperties": [
+          {
+            "displayName": "tenantId",
+            "oldValue": "\"\"",
+            "newValue": "\"00000000-0000-0000-0000-00000000m201\""
+          }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  }
+]

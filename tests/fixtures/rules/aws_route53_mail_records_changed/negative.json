@@ -1,0 +1,170 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "r53-a",
+    "eventName": "ChangeResourceRecordSets",
+    "eventSource": "route53.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "changeBatch": {
+        "changes": [
+          {
+            "action": "CREATE",
+            "resourceRecordSet": {
+              "name": "prod.example.com.",
+              "resourceRecords": [
+                {
+                  "value": "192.0.2.1"
+                }
+              ],
+              "tTL": 300,
+              "type": "A"
+            }
+          },
+          {
+            "action": "CREATE",
+            "resourceRecordSet": {
+              "name": "test.example.com.",
+              "resourceRecords": [
+                {
+                  "value": "192.0.2.2"
+                }
+              ],
+              "tTL": 300,
+              "type": "A"
+            }
+          }
+        ]
+      },
+      "hostedZoneId": "Z1PA6795UKMFR9"
+    },
+    "responseElements": {
+      "changeInfo": {
+        "id": "/change/C156SRE0X2ZB10",
+        "status": "PENDING",
+        "submittedAt": "Oct 1, 2026, 12:41:43 AM"
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "additionalEventData": {
+      "Note": "Do not use to reconstruct hosted zone"
+    }
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "r53-spf",
+    "eventName": "ChangeResourceRecordSets",
+    "eventSource": "route53.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "changeBatch": {
+        "changes": [
+          {
+            "action": "UPSERT",
+            "resourceRecordSet": {
+              "name": "example.com.",
+              "resourceRecords": [
+                {
+                  "value": "\"v=spf1 include:_spf.example.net ~all\""
+                }
+              ],
+              "tTL": 300,
+              "type": "TXT"
+            }
+          }
+        ]
+      },
+      "hostedZoneId": "Z1PA6795UKMFR9"
+    },
+    "responseElements": {
+      "changeInfo": {
+        "id": "/change/C156SRE0X2ZB10",
+        "status": "PENDING",
+        "submittedAt": "Oct 1, 2026, 12:41:43 AM"
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "additionalEventData": {
+      "Note": "Do not use to reconstruct hosted zone"
+    }
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "r53-mx-denied",
+    "eventName": "ChangeResourceRecordSets",
+    "eventSource": "route53.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "changeBatch": {
+        "changes": [
+          {
+            "action": "UPSERT",
+            "resourceRecordSet": {
+              "name": "example.com.",
+              "resourceRecords": [
+                {
+                  "value": "10 mx.example.net."
+                }
+              ],
+              "tTL": 300,
+              "type": "MX"
+            }
+          }
+        ]
+      },
+      "hostedZoneId": "Z1PA6795UKMFR9"
+    },
+    "responseElements": {
+      "changeInfo": {
+        "id": "/change/C156SRE0X2ZB10",
+        "status": "PENDING",
+        "submittedAt": "Oct 1, 2026, 12:41:43 AM"
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management",
+    "additionalEventData": {
+      "Note": "Do not use to reconstruct hosted zone"
+    },
+    "errorCode": "AccessDenied",
+    "errorMessage": "User is not authorized to perform: route53:ChangeResourceRecordSets"
+  }
+]

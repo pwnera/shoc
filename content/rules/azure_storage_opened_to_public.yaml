@@ -1,0 +1,59 @@
+id: azure_storage_opened_to_public
+title: Azure storage account or container opened to anonymous or internet access
+description: >
+  A storage account was set to allow anonymous blob access, a container was
+  made public (Blob or Container level), or an existing account was opened to
+  every network. Anonymous access lets anyone with the URL read the data with
+  no key or sign-in; opening the network lets a stolen key or SAS work from
+  anywhere. Storm-0501 opened its victims' storage accounts to the internet,
+  took the keys and copied the data out with AzCopy before deleting the
+  backups. Only the request is read, since every later response for an account
+  that already allows it repeats the setting, and a new account is left out of
+  the network check because every new account starts open. A container that
+  serves a website's public files is the usual benign case.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1530]
+logsource:
+  product: azure
+  service: activity
+detection:
+  selection_account:
+    api.operation: Microsoft.Storage/storageAccounts/write
+    raw.properties.requestbody|re: '"allowBlobPublicAccess"\s*:\s*true'
+  selection_container:
+    api.operation: Microsoft.Storage/storageAccounts/blobServices/containers/write
+    raw.properties.requestbody|re: '"publicAccess"\s*:\s*"(Blob|Container)"'
+  selection_network:
+    api.operation: Microsoft.Storage/storageAccounts/write
+    raw.properties.requestbody|re: '"defaultAction"\s*:\s*"Allow"'
+  # A create names the account's location; an update to an existing one does not.
+  created:
+    raw.properties.requestbody|contains: '"location"'
+  filter_failed:
+    status: Failure
+  condition: (selection_account or selection_container or (selection_network and not created)) and not filter_failed
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, cloud.account.uid]
+sources:
+  - name: Panther
+    title: Azure Storage Blob Anonymous Access Enabled
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/azure_activity_rules/azure_storage_blob_anonymous_access_enabled.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: Azure Storage Account Public Network Access Enabled
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/azure_activity_rules/azure_storage_account_public_network_access_enabled.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Microsoft
+    title: Storm-0501's evolving techniques lead to cloud-based ransomware
+    url: https://www.microsoft.com/en-us/security/blog/2025/08/27/storm-0501s-evolving-techniques-lead-to-cloud-based-ransomware/
+    relation: inspired
+  - name: Hacking the Cloud
+    title: Anonymous blob access
+    url: https://hackingthe.cloud/azure/anonymous-blob-access/
+    relation: inspired

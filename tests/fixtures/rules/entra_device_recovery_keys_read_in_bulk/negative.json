@@ -1,0 +1,99 @@
+[
+  {
+    "id": "Device Registration Service_00000000l004_D_1",
+    "activityDisplayName": "Recover device local administrator password",
+    "category": "Device",
+    "loggedByService": "Device Registration Service",
+    "operationType": "Get",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a501",
+        "userPrincipalName": "helpdesk@example.com",
+        "ipAddress": "198.51.100.70"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000l204",
+        "displayName": "PC-04",
+        "type": "Device",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "AdditionalInfo",
+        "value": "Successfully recovered local credential by device id"
+      },
+      {
+        "key": "Device Id",
+        "value": "00000000-0000-0000-0000-00000000l204"
+      }
+    ],
+    "_stream": "directoryAudits",
+    "_repeat": 3
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000l005_K_1",
+    "activityDisplayName": "Read BitLocker key",
+    "category": "KeyManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Get",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a501",
+        "userPrincipalName": "helpdesk@example.com",
+        "ipAddress": "198.51.100.70"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000l305",
+        "displayName": "00000000-0000-0000-0000-00000000l405",
+        "type": "Other",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "Device Registration Service_00000000l006_D_1",
+    "activityDisplayName": "Recover device local administrator password",
+    "category": "Device",
+    "loggedByService": "Device Registration Service",
+    "operationType": "Get",
+    "result": "failure",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a501",
+        "userPrincipalName": "helpdesk@example.com",
+        "ipAddress": "198.51.100.70"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000l206",
+        "displayName": "PC-06",
+        "type": "Device",
+        "modifiedProperties": []
+      }
+    ],
+    "additionalDetails": [
+      {
+        "key": "AdditionalInfo",
+        "value": "Successfully recovered local credential by device id"
+      },
+      {
+        "key": "Device Id",
+        "value": "00000000-0000-0000-0000-00000000l206"
+      }
+    ],
+    "_stream": "directoryAudits"
+  }
+]

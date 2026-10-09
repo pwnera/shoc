@@ -48,5 +48,23 @@
       "T1490",
       "T1486"
     ]
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "ldt:5d40e8a1c7b6:9002",
+    "type": "ldt",
+    "product": "epp",
+    "severity": 70,
+    "tactic": "Impact",
+    "technique": "Inhibit System Recovery",
+    "technique_id": "T1490",
+    "description": "A process deleted volume shadow copies.",
+    "device": {
+      "device_id": "5d40e8a1c7b7",
+      "hostname": "srv-file01"
+    },
+    "user_name": "administrator",
+    "filename": "vssadmin.exe",
+    "cmdline": "vssadmin.exe delete shadows /all /quiet"
   }
 ]

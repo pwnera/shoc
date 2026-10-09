@@ -1,0 +1,38 @@
+[
+  {
+    "id": "b1c2d3e4f5a64718293a4b5c6d7e8f01",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Update registrar domain", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2301", "method": "PUT", "status_code": 200, "uri": "/accounts/4bb334f7c94c4a29a045f03944f072e5/registrar/domains/example.com", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "example.com", "product": "registrar", "request": {"auto_renew": true, "locked": false, "privacy": true}, "response": {}, "scope": "accounts", "type": "domains"},
+    "zone": {}
+  },
+  {
+    "id": "b1c2d3e4f5a64718293a4b5c6d7e8f02",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Delete zone", "result": "success", "type": "delete"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2302", "method": "DELETE", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "product": "zones", "request": {}, "response": {}, "scope": "zones", "type": "zones"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "b1c2d3e4f5a64718293a4b5c6d7e8f03",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Edit zone", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "api", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2303", "method": "PATCH", "status_code": 200, "uri": "/zones/9a7806061c88ada191ed06f989cc3dac", "user_agent": "curl/8.7.1"},
+    "resource": {"id": "9a7806061c88ada191ed06f989cc3dac", "product": "zones", "request": {"paused": true}, "response": {"id": "9a7806061c88ada191ed06f989cc3dac", "paused": true}, "scope": "zones", "type": "zones"},
+    "zone": {"id": "9a7806061c88ada191ed06f989cc3dac", "name": "example.net"}
+  },
+  {
+    "id": "b1c2d3e4f5a64718293a4b5c6d7e8f04",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Remove zone hold", "result": "success", "type": "delete"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2304", "method": "DELETE", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/hold", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "product": "zones", "request": {}, "response": {"hold": false}, "scope": "zones", "type": "hold"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  }
+]

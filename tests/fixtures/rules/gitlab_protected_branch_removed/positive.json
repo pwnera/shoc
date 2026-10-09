@@ -1,0 +1,42 @@
+[
+  {
+    "id": 91300,
+    "author_id": 42,
+    "entity_id": 18,
+    "entity_type": "Project",
+    "event_name": "protected_branch_allow_force_push_updated",
+    "details": {
+      "event_name": "protected_branch_allow_force_push_updated",
+      "change": "allow force push",
+      "from": false,
+      "to": true,
+      "target_id": 21,
+      "target_type": "ProtectedBranch",
+      "target_details": "main",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform/api"
+    }
+  },
+  {
+    "id": 91302,
+    "author_id": 42,
+    "entity_id": 18,
+    "entity_type": "Project",
+    "event_name": "protected_branch_removed",
+    "details": {
+      "event_name": "protected_branch_removed",
+      "custom_message": "Unprotected branch",
+      "target_id": 22,
+      "target_type": "ProtectedBranch",
+      "target_details": "production",
+      "author_name": "Dana Ops",
+      "author_class": "User",
+      "author_email": "dana@example.com",
+      "ip_address": "203.0.113.55",
+      "entity_path": "acme/platform/api"
+    }
+  }
+]

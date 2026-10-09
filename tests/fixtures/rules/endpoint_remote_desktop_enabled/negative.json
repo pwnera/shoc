@@ -1,0 +1,91 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "dddddddddddddddddddddddddddddddddddddddf",
+      "DeviceName": "laptop-24.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "reg.exe",
+      "ProcessCommandLine": "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\" /v fDenyTSConnections /t REG_DWORD /d 1 /f",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "it-admin"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceRegistryEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "ddddddddddddddddddddddddddddddddddddddd0",
+      "DeviceName": "srv-rds01.example.com",
+      "ActionType": "RegistryValueSet",
+      "RegistryKey": "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Terminal Server",
+      "RegistryValueName": "fDenyTSConnections",
+      "RegistryValueType": "Dword",
+      "RegistryValueData": "0",
+      "PreviousRegistryValueData": "1",
+      "InitiatingProcessFileName": "SystemPropertiesRemote.exe",
+      "InitiatingProcessAccountName": "it-admin"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceRegistryEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "ddddddddddddddddddddddddddddddddddddddd1",
+      "DeviceName": "laptop-25.example.com",
+      "ActionType": "RegistryValueSet",
+      "RegistryKey": "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Terminal Server",
+      "RegistryValueName": "fDenyTSConnections",
+      "RegistryValueType": "Dword",
+      "RegistryValueData": "1",
+      "PreviousRegistryValueData": "0",
+      "InitiatingProcessFileName": "svchost.exe",
+      "InitiatingProcessAccountName": "system"
+    }
+  },
+  {
+    "_source": "sentinelone_cloudfunnel",
+    "event": {
+      "category": "process",
+      "type": "Process Creation"
+    },
+    "agent": {
+      "uuid": "11112222333344445555666677770015"
+    },
+    "endpoint": {
+      "name": "srv-web01.example.com",
+      "os": "windows"
+    },
+    "tgt": {
+      "process": {
+        "name": "netsh.exe",
+        "cmdline": "netsh advfirewall firewall add rule name=\"web\" dir=in action=allow protocol=TCP localport=443",
+        "image": {
+          "path": "C:\\Windows\\System32\\netsh.exe"
+        },
+        "user": "EXAMPLE\\admin"
+      }
+    },
+    "src": {
+      "process": {
+        "name": "cmd.exe"
+      }
+    }
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd14",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\reg.exe",
+    "CommandLine": "reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\" /v fDenyTSConnections",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "9142",
+    "UserName": "it-admin"
+  }
+]

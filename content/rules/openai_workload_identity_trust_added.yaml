@@ -1,0 +1,49 @@
+id: openai_workload_identity_trust_added
+title: OpenAI organisation trusts a new workload identity provider
+description: >
+  A workload identity provider and a mapping let tokens from an outside issuer
+  act as a service account in a project, with no API key. Someone who
+  registers their own issuer keeps API access that deleting every key does not
+  remove. Setting up a CI system or a cloud workload to call OpenAI without a
+  key does the same once per integration. Deleting or archiving a provider or
+  a mapping is left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1484.002, T1098.001]
+logsource:
+  product: openai
+  service: audit_log
+detection:
+  selection:
+    api.operation:
+      - workload_identity_provider.created
+      - workload_identity_provider.updated
+      - workload_identity_provider_mapping.created
+      - workload_identity_provider_mapping.updated
+      - tenant.workload_identity.provider.created
+      - tenant.workload_identity.provider.updated
+      - tenant.workload_identity.mapping.created
+      - tenant.workload_identity.mapping.updated
+      - tenant.workload_identity.binding.created
+  condition: selection
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, api.operation, raw.details.id, raw.details.identity_provider_id, raw.details.data]
+sources:
+  - name: OpenAI
+    title: OpenAI API OpenAPI specification (AuditLogEventType)
+    url: https://github.com/openai/openai-openapi/blob/main/openapi.yaml
+    relation: inspired
+  - name: Sigma
+    title: Okta Identity Provider Created
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/identity/okta/okta_identity_provider_created.yml
+    author: kelnage
+    license: DRL-1.1
+    relation: inspired
+  - name: Push Security
+    title: Inbound federation
+    url: https://github.com/pushsecurity/saas-attacks/blob/main/techniques/inbound_federation/description.md
+    license: CC-BY-4.0
+    relation: inspired

@@ -2,11 +2,15 @@ id: m365_mailbox_permission_granted
 title: Mailbox permission granted to another account
 description: >
   Someone was given access to another person's mailbox, or the right to send
-  on their behalf. It is a normal delegation and a normal exfiltration path.
-  Grants Exchange makes itself when it provisions a shared mailbox are left out.
+  on their behalf, or a mail folder was opened to everyone in the company. It
+  is a normal delegation and a normal exfiltration path. Mandiant lists read
+  access for the Default or Anonymous user on mail folders among APT29's
+  techniques, since any account in the tenant can then read them. Grants
+  Exchange makes itself when it provisions a shared mailbox, and a calendar
+  shared with the whole company, are left out.
 status: stable
 date: 2026-09-24
-modified: 2026-10-02
+modified: 2026-10-09
 severity: high
 confidence: 0.6
 attack: [T1098.002]
@@ -19,11 +23,27 @@ detection:
   selection_send_on_behalf:
     api.operation: Set-Mailbox
     unmapped.params.GrantSendOnBehalfTo|exists: true
+  # Default and Anonymous are on every folder already, so the cmdlet changes
+  # them rather than adding them; the mailbox audit names both Everyone.
+  selection_folder_cmdlet:
+    api.operation: Set-MailboxFolderPermission
+    unmapped.params.User: [Default, Anonymous]
+    unmapped.params.AccessRights|contains: [Read, Reviewer, Author, Editor, Owner]
+  selection_folder_audit:
+    api.operation: [AddFolderPermissions, ModifyFolderPermissions]
+    raw.Item.ParentFolder.MemberUpn: [Everyone, Default, Anonymous]
+    raw.Item.ParentFolder.MemberRights|contains: ReadAny
+  filter_calendar:
+    - unmapped.params.Identity|contains: [Calend, Kalender, Agenda]
+    - raw.Item.ParentFolder.Path|contains: [Calend, Kalender, Agenda]
   filter_system:
     actor.user.name|startswith: NT AUTHORITY
   filter_failed:
     status: Failure
-  condition: (selection or selection_send_on_behalf) and not filter_system and not filter_failed
+  condition: >-
+    (selection or selection_send_on_behalf
+    or ((selection_folder_cmdlet or selection_folder_audit) and not filter_calendar))
+    and not filter_system and not filter_failed
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, api.operation, resource.uid]
@@ -32,4 +52,20 @@ sources:
     title: M365 Exchange Mailbox High-Risk Permission Delegated
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/persistence_exchange_suspicious_mailbox_permission_delegation
     license: Elastic-2.0
+    relation: inspired
+  - name: Splunk
+    title: O365 Mailbox Inbox Folder Shared with All Users
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/o365_mailbox_inbox_folder_shared_with_all_users.yml
+    author: Mauricio Velazco, Splunk
+    license: Apache-2.0
+    relation: adapted
+  - name: Splunk
+    title: O365 Mailbox Folder Read Permission Granted
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/o365_mailbox_folder_read_permission_granted.yml
+    author: Mauricio Velazco, Splunk
+    license: Apache-2.0
+    relation: adapted
+  - name: Mandiant
+    title: Remediation and hardening strategies for Microsoft 365 to defend against APT29
+    url: https://services.google.com/fh/files/misc/remediation-and-hardening-strategies-for-microsoft-wp-en.pdf
     relation: inspired

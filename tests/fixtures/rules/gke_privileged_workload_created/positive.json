@@ -1,0 +1,106 @@
+[
+  {
+    "insertId": "gke-priv-ds",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "k8s_cluster",
+      "labels": {
+        "project_id": "example-prod",
+        "cluster_name": "prod",
+        "location": "europe-west1"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "k8s.io",
+      "methodName": "io.k8s.apps.v1.daemonsets.create",
+      "resourceName": "apps/v1/namespaces/default/daemonsets/node-agent",
+      "authenticationInfo": {
+        "principalEmail": "system:serviceaccount:ci:deployer"
+      },
+      "requestMetadata": {
+        "callerIp": "10.10.0.15",
+        "callerSuppliedUserAgent": "kubectl/v1.31.0 (linux/amd64) kubernetes/abc1234"
+      },
+      "status": {},
+      "request": {
+        "@type": "apps.k8s.io/v1.DaemonSet",
+        "kind": "DaemonSet",
+        "metadata": {
+          "name": "node-agent",
+          "namespace": "default"
+        },
+        "spec": {
+          "template": {
+            "spec": {
+              "hostPID": true,
+              "containers": [
+                {
+                  "name": "agent",
+                  "image": "registry.example.com/agent:1",
+                  "securityContext": {
+                    "privileged": true
+                  }
+                }
+              ],
+              "volumes": [
+                {
+                  "name": "host",
+                  "hostPath": {
+                    "path": "/",
+                    "type": ""
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "insertId": "gke-hostnet-pod",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "k8s_cluster",
+      "labels": {
+        "project_id": "example-prod",
+        "cluster_name": "prod",
+        "location": "europe-west1"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "k8s.io",
+      "methodName": "io.k8s.core.v1.pods.create",
+      "resourceName": "core/v1/namespaces/web/pods/probe",
+      "authenticationInfo": {
+        "principalEmail": "dev@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.84",
+        "callerSuppliedUserAgent": "kubectl/v1.31.0 (linux/amd64) kubernetes/abc1234"
+      },
+      "status": {},
+      "request": {
+        "@type": "core.k8s.io/v1.Pod",
+        "kind": "Pod",
+        "metadata": {
+          "name": "probe",
+          "namespace": "web"
+        },
+        "spec": {
+          "hostNetwork": true,
+          "containers": [
+            {
+              "name": "probe",
+              "image": "registry.example.com/probe:3"
+            }
+          ]
+        }
+      }
+    }
+  }
+]

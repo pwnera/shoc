@@ -1,0 +1,345 @@
+[
+  {
+    "eventVersion": "1.10",
+    "eventID": "sg-https",
+    "eventName": "AuthorizeSecurityGroupIngress",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.90",
+    "userAgent": "aws-cli/2.17.0 md/command#ec2.authorize-security-group-ingress",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00002",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEDEV00002"
+    },
+    "requestParameters": {
+      "groupId": "sg-0a1b2c3d4e5f60718",
+      "ipPermissions": {
+        "items": [
+          {
+            "ipProtocol": "tcp",
+            "fromPort": 443,
+            "toPort": 443,
+            "groups": {},
+            "ipRanges": {
+              "items": [
+                {
+                  "cidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            "ipv6Ranges": {},
+            "prefixListIds": {}
+          }
+        ]
+      }
+    },
+    "responseElements": {
+      "_return": true,
+      "requestId": "dc1dabbf-d7cb-4966-a3de-ac69d5cfc633",
+      "securityGroupRuleSet": {
+        "items": [
+          {
+            "cidrIpv4": "0.0.0.0/0",
+            "fromPort": 443,
+            "groupId": "sg-0a1b2c3d4e5f60718",
+            "groupOwnerId": "123456789012",
+            "ipProtocol": "tcp",
+            "isEgress": false,
+            "securityGroupRuleId": "sgr-0b1c2d3e4f5a6b7c8",
+            "toPort": 443
+          }
+        ]
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "sg-office-ssh",
+    "eventName": "AuthorizeSecurityGroupIngress",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.90",
+    "userAgent": "aws-cli/2.17.0 md/command#ec2.authorize-security-group-ingress",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00002",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEDEV00002"
+    },
+    "requestParameters": {
+      "groupId": "sg-0a1b2c3d4e5f60718",
+      "ipPermissions": {
+        "items": [
+          {
+            "ipProtocol": "tcp",
+            "fromPort": 22,
+            "toPort": 22,
+            "groups": {},
+            "ipRanges": {
+              "items": [
+                {
+                  "cidrIp": "198.51.100.0/24"
+                }
+              ]
+            },
+            "ipv6Ranges": {},
+            "prefixListIds": {}
+          },
+          {
+            "ipProtocol": "tcp",
+            "fromPort": 443,
+            "toPort": 443,
+            "groups": {},
+            "ipRanges": {
+              "items": [
+                {
+                  "cidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            "ipv6Ranges": {},
+            "prefixListIds": {}
+          }
+        ]
+      }
+    },
+    "responseElements": {
+      "_return": true,
+      "requestId": "dc1dabbf-d7cb-4966-a3de-ac69d5cfc633",
+      "securityGroupRuleSet": {
+        "items": [
+          {
+            "cidrIpv4": "198.51.100.0/24",
+            "fromPort": 22,
+            "groupId": "sg-0a1b2c3d4e5f60718",
+            "groupOwnerId": "123456789012",
+            "ipProtocol": "tcp",
+            "isEgress": false,
+            "securityGroupRuleId": "sgr-0e1f2a3b4c5d6e7f8",
+            "toPort": 22
+          },
+          {
+            "cidrIpv4": "0.0.0.0/0",
+            "fromPort": 443,
+            "groupId": "sg-0a1b2c3d4e5f60718",
+            "groupOwnerId": "123456789012",
+            "ipProtocol": "tcp",
+            "isEgress": false,
+            "securityGroupRuleId": "sgr-0f1a2b3c4d5e6f7a8",
+            "toPort": 443
+          }
+        ]
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "sg-icmp",
+    "eventName": "AuthorizeSecurityGroupIngress",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.90",
+    "userAgent": "aws-cli/2.17.0 md/command#ec2.authorize-security-group-ingress",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEDEV00002",
+      "arn": "arn:aws:iam::123456789012:user/alice",
+      "accountId": "123456789012",
+      "userName": "alice",
+      "accessKeyId": "AKIAEXAMPLEDEV00002"
+    },
+    "requestParameters": {
+      "groupId": "sg-0a1b2c3d4e5f60718",
+      "ipPermissions": {
+        "items": [
+          {
+            "ipProtocol": "icmp",
+            "fromPort": -1,
+            "toPort": -1,
+            "groups": {},
+            "ipRanges": {
+              "items": [
+                {
+                  "cidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            "ipv6Ranges": {},
+            "prefixListIds": {}
+          }
+        ]
+      }
+    },
+    "responseElements": {
+      "_return": true,
+      "requestId": "dc1dabbf-d7cb-4966-a3de-ac69d5cfc633",
+      "securityGroupRuleSet": {
+        "items": [
+          {
+            "cidrIpv4": "0.0.0.0/0",
+            "fromPort": -1,
+            "groupId": "sg-0a1b2c3d4e5f60718",
+            "groupOwnerId": "123456789012",
+            "ipProtocol": "icmp",
+            "isEgress": false,
+            "securityGroupRuleId": "sgr-0a2b3c4d5e6f7a8b9",
+            "toPort": -1
+          }
+        ]
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "sg-packer",
+    "eventName": "AuthorizeSecurityGroupIngress",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "203.0.113.90",
+    "userAgent": "APN/1.0 HashiCorp/1.0 packer-plugin-amazon/1.3.3 (+https://www.packer.io/docs/builders/amazon) Packer/1.11.2 (+https://www.packer.io)",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPACKER001",
+      "arn": "arn:aws:iam::123456789012:user/packer",
+      "accountId": "123456789012",
+      "userName": "packer",
+      "accessKeyId": "AKIAEXAMPLEPACKER001"
+    },
+    "requestParameters": {
+      "groupId": "sg-0f0e0d0c0b0a09080",
+      "ipPermissions": {
+        "items": [
+          {
+            "ipProtocol": "tcp",
+            "fromPort": 22,
+            "toPort": 22,
+            "groups": {},
+            "ipRanges": {
+              "items": [
+                {
+                  "cidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            "ipv6Ranges": {},
+            "prefixListIds": {}
+          }
+        ]
+      }
+    },
+    "responseElements": {
+      "_return": true,
+      "requestId": "dc1dabbf-d7cb-4966-a3de-ac69d5cfc633",
+      "securityGroupRuleSet": {
+        "items": [
+          {
+            "cidrIpv4": "0.0.0.0/0",
+            "fromPort": 22,
+            "groupId": "sg-0f0e0d0c0b0a09080",
+            "groupOwnerId": "123456789012",
+            "ipProtocol": "tcp",
+            "isEgress": false,
+            "securityGroupRuleId": "sgr-0b2c3d4e5f6a7b8c9",
+            "toPort": 22
+          }
+        ]
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "sg-cfn",
+    "eventName": "AuthorizeSecurityGroupIngress",
+    "eventSource": "ec2.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "cloudformation.amazonaws.com",
+    "userAgent": "cloudformation.amazonaws.com",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "AssumedRole",
+      "principalId": "AROAEXAMPLEROLE00001:AWSCloudFormation",
+      "arn": "arn:aws:sts::123456789012:assumed-role/cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1/AWSCloudFormation",
+      "accountId": "123456789012",
+      "accessKeyId": "ASIAEXAMPLECFN00001",
+      "sessionContext": {
+        "sessionIssuer": {
+          "type": "Role",
+          "principalId": "AROAEXAMPLEROLE00001",
+          "arn": "arn:aws:iam::123456789012:role/cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1",
+          "accountId": "123456789012",
+          "userName": "cdk-hnb659fds-cfn-exec-role-123456789012-eu-west-1"
+        },
+        "attributes": {
+          "creationDate": "2026-10-01T08:58:00Z",
+          "mfaAuthenticated": "false"
+        }
+      },
+      "invokedBy": "cloudformation.amazonaws.com"
+    },
+    "requestParameters": {
+      "groupId": "sg-0e0d0c0b0a0908070",
+      "ipPermissions": {
+        "items": [
+          {
+            "ipProtocol": "tcp",
+            "fromPort": 22,
+            "toPort": 22,
+            "groups": {},
+            "ipRanges": {
+              "items": [
+                {
+                  "cidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            "ipv6Ranges": {},
+            "prefixListIds": {}
+          }
+        ]
+      }
+    },
+    "responseElements": {
+      "_return": true,
+      "requestId": "dc1dabbf-d7cb-4966-a3de-ac69d5cfc633",
+      "securityGroupRuleSet": {
+        "items": [
+          {
+            "cidrIpv4": "0.0.0.0/0",
+            "fromPort": 22,
+            "groupId": "sg-0e0d0c0b0a0908070",
+            "groupOwnerId": "123456789012",
+            "ipProtocol": "tcp",
+            "isEgress": false,
+            "securityGroupRuleId": "sgr-0c2d3e4f5a6b7c8d9",
+            "toPort": 22
+          }
+        ]
+      }
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  }
+]

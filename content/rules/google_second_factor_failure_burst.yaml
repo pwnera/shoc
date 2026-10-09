@@ -1,0 +1,65 @@
+id: google_second_factor_failure_burst
+title: Right Google password, second factor failed five times
+description: >
+  One account failed to sign in five times in 15 minutes after its password
+  was accepted. Someone has the password and is pushing Google prompts until
+  the user taps yes, or guessing codes. Sign-ins that never reached the
+  password, such as passkey and SAML ones, are left out, as is a wrong
+  password alone.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1621, T1110.001]
+logsource:
+  product: google
+  service: reports
+detection:
+  # The challenges the attempt went through, as a list:
+  # ["password", "idv_preregistered_phone"] got past the password.
+  selection:
+    api.service.name: login
+    api.operation: login_failure
+    unmapped.params.login_challenge_method|contains: password
+  second_factor:
+    unmapped.params.login_challenge_method|contains:
+      - backup_code
+      - google_authenticator
+      - google_prompt
+      - idv_any_phone
+      - idv_preregistered_phone
+      - internal_two_factor
+      - knowledge_employee_id
+      - knowledge_preregistered_email
+      - knowledge_preregistered_phone
+      - login_location
+      - offline_otp
+      - security_key
+  condition: selection and second_factor
+  timeframe: 15m
+  group_by: [actor.user.name]
+  count: ">= 5"
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.asn, unmapped.params.login_challenge_method]
+sources:
+  - name: Splunk
+    title: GCP Multiple Failed MFA Requests For User
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/gcp_multiple_failed_mfa_requests_for_user.yml
+    author: Mauricio Velazco, Splunk
+    license: Apache-2.0
+    relation: adapted
+  - name: Splunk
+    title: GCP Authentication Failed During MFA Challenge
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/gcp_authentication_failed_during_mfa_challenge.yml
+    author: Bhavin Patel, Mauricio Velazco, Splunk
+    license: Apache-2.0
+    relation: adapted
+  - name: Splunk attack_data
+    title: T1621 multiple_failed_mfa_gws Workspace login events
+    url: https://github.com/splunk/attack_data/tree/master/datasets/attack_techniques/T1621/multiple_failed_mfa_gws
+    license: Apache-2.0
+    relation: inspired
+  - name: Google
+    title: Login audit activity events
+    url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/login
+    relation: inspired

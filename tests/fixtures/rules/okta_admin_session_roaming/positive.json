@@ -1,0 +1,131 @@
+[
+  {
+    "uuid": "okta-roaming-new-network",
+    "eventType": "security.session.detect_client_roaming",
+    "displayMessage": "Roaming session detected for user",
+    "actor": {
+      "id": "00u1admin0001",
+      "type": "User",
+      "alternateId": "it-admin@example.com",
+      "displayName": "IT Admin"
+    },
+    "client": {
+      "ipAddress": "203.0.113.77",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "DENY",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102AdminSess7Qx"
+    },
+    "securityContext": {
+      "asNumber": 64511,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/api/v1/users"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1admin0001",
+        "type": "User",
+        "alternateId": "it-admin@example.com",
+        "displayName": "IT Admin"
+      }
+    ],
+    "severity": "WARN"
+  },
+  {
+    "uuid": "okta-roaming-office",
+    "eventType": "security.session.detect_client_roaming",
+    "displayMessage": "Roaming session detected for user",
+    "actor": {
+      "id": "00u1admin0001",
+      "type": "User",
+      "alternateId": "it-admin@example.com",
+      "displayName": "IT Admin"
+    },
+    "client": {
+      "ipAddress": "198.51.100.5",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France"
+      }
+    },
+    "outcome": {
+      "result": "DENY",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102AdminSess7Qx"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "debugContext": {
+      "debugData": {
+        "requestUri": "/api/v1/users"
+      }
+    },
+    "target": [
+      {
+        "id": "00u1admin0001",
+        "type": "User",
+        "alternateId": "it-admin@example.com",
+        "displayName": "IT Admin"
+      }
+    ],
+    "_day_offset": 10,
+    "severity": "WARN"
+  },
+  {
+    "uuid": "okta-history-signin",
+    "eventType": "user.session.start",
+    "displayMessage": "user session start",
+    "actor": {
+      "id": "00u1jane0001",
+      "type": "User",
+      "alternateId": "jane@example.com",
+      "displayName": "Jane Doe"
+    },
+    "client": {
+      "ipAddress": "198.51.100.23",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "France"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102JaneOld01"
+    },
+    "securityContext": {
+      "asNumber": 64500,
+      "isProxy": false
+    },
+    "_day_offset": 40
+  }
+]

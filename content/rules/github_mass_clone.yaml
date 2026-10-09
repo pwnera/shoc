@@ -1,13 +1,14 @@
 id: github_mass_clone
-title: One account cloned ten or more private repositories in ten minutes
+title: One account cloned or downloaded ten or more private repositories in ten minutes
 description: >
   Cloning every private repository is how a stolen token or a departing
   engineer takes the code. Distinct repositories are counted, so a CI user
-  that clones the same repository on every job stays quiet. Bots are left out.
-  Audit-log API on Enterprise Cloud only.
+  that clones the same repository on every job stays quiet. A source archive
+  downloaded through the web or the API never shows as a clone, so it counts
+  the same. Bots are left out. Audit-log API on Enterprise Cloud only.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-02
+modified: 2026-10-09
 severity: high
 confidence: 0.45
 attack: [T1213.003, T1567.001]
@@ -18,9 +19,12 @@ detection:
   selection:
     api.operation: git.clone
     raw.repository_public: "false"
+  selection_archive:
+    api.operation: repo.download_zip
+    raw.public_repo: false
   filter_bots:
     actor.user.name|endswith: "[bot]"
-  condition: selection and not filter_bots
+  condition: (selection or selection_archive) and not filter_bots
   timeframe: 10m
   group_by: [actor.user.name]
   count_distinct: resource.uid
@@ -38,3 +42,8 @@ sources:
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/execution_github_high_number_of_cloned_repos_from_pat
     license: Elastic-2.0
     relation: inspired
+  - name: Chronicle
+    title: GitHub High Number Of Non Public GitHub Repositories Downloaded
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/github/github_high_number_of_non_public_github_repositories_downloaded.yaral
+    license: Apache-2.0
+    relation: adapted

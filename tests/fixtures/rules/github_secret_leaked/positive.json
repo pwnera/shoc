@@ -45,5 +45,21 @@
       "event": "secret_scanning_alert",
       "action": "created"
     }
+  },
+  {
+    "_document_id": "gh-secret_scanning_push_protection_request.complete",
+    "action": "secret_scanning_push_protection_request.complete",
+    "actor": "mallory",
+    "actor_id": 4242,
+    "actor_ip": "203.0.113.90",
+    "actor_location": {
+      "country_code": "NL"
+    },
+    "org": "acme",
+    "org_id": 1234567,
+    "repo": "acme/payments",
+    "number": 6,
+    "public_repo": false,
+    "operation_type": "create"
   }
 ]

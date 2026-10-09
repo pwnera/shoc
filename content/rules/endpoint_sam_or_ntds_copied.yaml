@@ -1,0 +1,77 @@
+id: endpoint_sam_or_ntds_copied
+title: The SAM, SECURITY or SYSTEM hive or the AD database was copied
+description: >
+  reg.exe saved or exported the whole SAM, SECURITY or SYSTEM hive, ntdsutil
+  built an install-from-media copy of the domain database, or a command copied
+  ntds.dit or a hive file out of the config folder or a shadow copy. With the
+  hives an intruder cracks the local admin password, which a small company
+  often shares across every laptop; with ntds.dit they hold every domain
+  account. Exporting one key under SYSTEM is left out; promoting a domain
+  controller from install media looks the same.
+status: experimental
+date: 2026-10-09
+severity: critical
+confidence: 0.8
+attack: [T1003.002, T1003.003, T1003.004]
+sources:
+  - name: Sigma
+    title: "Dumping of Sensitive Hives Via Reg.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_reg_dumping_sensitive_hives.yml
+    author: "Teymur Kheirkhabarov, Endgame, JHasenbusch, Daniil Yugoslavskiy, oscd.community, frack113"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Suspicious Process Patterns NTDS.DIT Exfil"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_ntds.yml
+    author: "Florian Roth (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Copying Sensitive Files with Credential Data"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_esentutl_sensitive_file_copy.yml
+    author: "Teymur Kheirkhabarov, Daniil Yugoslavskiy, oscd.community"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Sensitive File Access Via Volume Shadow Copy Backup"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_sensitive_file_access_shadowcopy.yml
+    author: "Max Altgelt (Nextron Systems), Tobias Michalski (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: CISA
+    title: "#StopRansomware: Akira Ransomware"
+    url: https://www.cisa.gov/news-events/cybersecurity-advisories/aa24-109a
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+  sel_reg:
+    process.name: reg.exe
+    process.cmd_line|contains: [' save ', ' export ']
+  # The hive root followed by a space or a quote: hklm\system\currentcontrolset\...
+  # is an ordinary key export.
+  sel_reg_hive:
+    process.cmd_line|contains: ['hklm\sam ', 'hklm\sam"', 'hklm\security ', 'hklm\security"', 'hklm\system ',
+                                'hklm\system"', 'hkey_local_machine\sam ', 'hkey_local_machine\sam"',
+                                'hkey_local_machine\security ', 'hkey_local_machine\security"',
+                                'hkey_local_machine\system ', 'hkey_local_machine\system"']
+  sel_ntdsutil:
+    process.cmd_line|contains: ntdsutil
+  sel_ntdsutil_ifm:
+    process.cmd_line|contains: ['create full', 'create sysvol full', ifm]
+  # '\config\system' alone would also match \config\systemprofile\.
+  sel_hive_file:
+    process.cmd_line|contains: ['\config\sam', '\config\security', '\config\system ', '\config\system"',
+                                ntds.dit]
+  sel_copy:
+    process.cmd_line|contains: ['copy ', Copy-Item, esentutl, robocopy, xcopy, GLOBALROOT,
+                                HarddiskVolumeShadowCopy]
+  condition: selection_process and ((sel_reg and sel_reg_hive) or (sel_ntdsutil and sel_ntdsutil_ifm) or (sel_hive_file and sel_copy))
+  timeframe: 15m
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         process.parent_process.name, process.file.path]

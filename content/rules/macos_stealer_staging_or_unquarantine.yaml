@@ -1,0 +1,89 @@
+id: macos_stealer_staging_or_unquarantine
+title: A Mac zipped or uploaded a temp folder, or cleared quarantine on a file in /tmp
+description: >
+  macOS infostealers (Atomic, MacSync, Shub) gather browser data, keychain
+  files and documents in a folder under /tmp, zip it with ditto and post the
+  zip to their server with curl. The loader before them downloads a program to
+  /tmp, clears its quarantine flag with xattr so Gatekeeper never checks it,
+  and runs it; Atomic also asks system_profiler whether it runs in VMware or
+  QEMU. These steps run even when the password prompt was a fake app's own
+  window, which macos_password_prompt_or_browser_key_read does not see.
+  Clearing quarantine on an app in /Applications, as install guides for
+  unsigned tools tell people to, is left out.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.7
+attack: [T1074.001, T1560.001, T1041, T1553.001, T1497.001]
+sources:
+  - name: Splunk
+    title: "MacOS Gatekeeper Bypass"
+    url: https://github.com/splunk/security_content/blob/develop/detections/endpoint/macos_gatekeeper_bypass.yml
+    author: "Raven Tait, Splunk"
+    license: Apache-2.0
+    relation: adapted
+  - name: Splunk
+    title: "MacOS AMOS Stealer - Virtual Machine Check Activity"
+    url: https://github.com/splunk/security_content/blob/develop/detections/endpoint/macos_amos_stealer___virtual_machine_check_activity.yml
+    author: "Nasreddine Bencherchali, Splunk, Alex Karkins"
+    license: Apache-2.0
+    relation: adapted
+  - name: Sigma
+    title: "Gatekeeper Bypass via Xattr"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/macos/process_creation/proc_creation_macos_xattr_gatekeeper_bypass.yml
+    author: "Daniil Yugoslavskiy, oscd.community"
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: "Quarantine Attrib Removed by Unsigned or Untrusted Process"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/macos/defense_evasion_attempt_del_quarantine_attrib.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft
+    title: "ClickFix campaign uses fake macOS utilities lures to deliver infostealers"
+    url: https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/
+    author: "Microsoft Threat Intelligence"
+    relation: inspired
+  - name: Microsoft
+    title: "macOS ClickFix campaign learned to hide"
+    url: https://www.microsoft.com/en-us/security/blog/2026/08/05/macos-clickfix-campaign-learned-hide/
+    author: "Microsoft Threat Intelligence"
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+  sel_ditto:
+    process.name: ditto
+    process.cmd_line|contains: ' -c'
+  sel_ditto_zip:
+    process.cmd_line|contains: ' -k'
+  sel_tmp_arg:
+    process.cmd_line|contains: [' /tmp/', ' /private/tmp/', '"/tmp/', ' /Users/Shared/']
+  sel_curl_upload:
+    process.name: curl
+    process.cmd_line|contains: ['@/tmp/', '@/private/tmp/', '@/Users/Shared/']
+  sel_archive:
+    process.cmd_line|contains: [.zip, .tar, .gz]
+  sel_xattr:
+    process.name: xattr
+    process.cmd_line|contains: [' -c', ' -d com.apple.quarantine', ' -rd com.apple.quarantine',
+                                ' -dr com.apple.quarantine']
+  sel_vm_check:
+    process.name: osascript
+    process.cmd_line|contains: system_profiler
+  sel_vm_words:
+    process.cmd_line|contains: [VMware, QEMU]
+  # Backup scripts on Linux servers post archives from /tmp too. Defender's
+  # process rows name no operating system, so its Linux servers stay in.
+  filter_linux:
+    - raw.event_platform: Lin
+    - raw.endpoint.os: linux
+  condition: selection_process and ((sel_ditto and sel_ditto_zip and sel_tmp_arg) or (sel_curl_upload and sel_archive and not filter_linux) or (sel_xattr and sel_tmp_arg) or (sel_vm_check and sel_vm_words))
+  timeframe: 15m
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         process.parent_process.name, process.file.path]

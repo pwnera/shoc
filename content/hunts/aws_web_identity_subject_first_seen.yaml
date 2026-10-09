@@ -1,0 +1,66 @@
+id: aws_web_identity_subject_first_seen
+title: A CI identity assumes an AWS role for the first time
+hypothesis: >
+  GitHub Actions, GitLab and Terraform Cloud reach AWS through
+  AssumeRoleWithWebIdentity, and the token's subject names the repository and
+  branch, for example repo:acme/api:ref:refs/heads/main. A trust policy that
+  checks only the audience lets any GitHub repository assume the role;
+  Datadog found more than 500 such roles. In UNC6426 (Google Cloud Threat
+  Horizons, H1 2026) a GitHub token stolen through the compromised nx package
+  let the attacker run the victim's pipeline, assume its
+  Github-Actions-CloudFormation role and create admin credentials. A subject
+  not seen in 30 days (another organisation, a new branch, a pull request)
+  assuming a deploy role is the first sign. Branch subjects make new values
+  legitimately, and only a person can tell whether the organisation in the
+  subject is the company's, so this is a hunt.
+attack: [T1078.004, T1199]
+logsource:
+  product: aws
+  service: cloudtrail
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: AssumeRoleWithWebIdentity
+    raw.userIdentity.identityProvider|contains: ":oidc-provider/"
+  # EKS pods (IRSA) assume roles with service-account subjects all day.
+  # Cognito, Google and Amazon logins are not IAM OIDC providers and never
+  # match above.
+  filter_eks:
+    raw.userIdentity.identityProvider|contains: "oidc.eks."
+  # Denied attempts are kept: CloudTrail logs them in the role's account, and
+  # they are someone trying.
+  condition: selection and not filter_eks
+baseline:
+  # actor.user.name keeps only the last part of the subject (main), so the
+  # whole subject is read from the record.
+  first_seen: [api.operation, raw.userIdentity.userName]
+  lookback: 30d
+pivot: [raw.userIdentity.userName, resource.uid, src_endpoint.ip, status]
+triage: >
+  Is the organisation in the subject the company's own, and did someone push
+  to that branch or open that pull request? A subject from another GitHub
+  organisation, or a branch nobody pushed, assuming a deploy role means the
+  trust policy has no sub condition or a token was stolen.
+sources:
+  - name: Datadog Security Labs
+    title: "No keys attached: Exploring GitHub-to-AWS keyless authentication flaws"
+    url: https://securitylabs.datadoghq.com/articles/exploring-github-to-aws-keyless-authentication-flaws/
+    relation: inspired
+  - name: Datadog Security Labs
+    title: IAM role can be assumed by any GitHub Action
+    url: https://securitylabs.datadoghq.com/cloud-security-atlas/vulnerabilities/iam-role-can-be-assumed-by-any-github-action/
+    relation: inspired
+  - name: Google Cloud
+    title: Cloud Threat Horizons Report H1 2026
+    url: https://services.google.com/fh/files/misc/cloud_threat_horizons_report_h12026.pdf
+    relation: inspired
+  - name: Elastic
+    title: AWS Credentials Used from GitHub Actions and Non-CI/CD Infrastructure
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/aws/initial_access_github_actions_oidc_credentials_used_from_suspicious_network
+    license: Elastic-2.0
+    relation: inspired
+  - name: AWS
+    title: Logging IAM and AWS STS API calls with AWS CloudTrail
+    url: https://docs.aws.amazon.com/IAM/latest/UserGuide/cloudtrail-integration.html
+    relation: inspired

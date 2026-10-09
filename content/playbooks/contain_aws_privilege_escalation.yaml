@@ -3,8 +3,11 @@ title: Contain a privilege escalation in AWS
 description: >
   Someone gained or used more power in the AWS account than they had: an admin
   policy, a wider role trust, a new organisation member, the root user, a
-  console login without MFA, an MFA device or identity provider of their own,
-  a replaced instance start-up script, or control of the company's domain.
+  console login without MFA or one stopped only at MFA, an MFA device or
+  identity provider of their own, an Identity Center permission set or MFA
+  setting, a stronger role on an instance, the serial console, a replaced
+  instance start-up script, a CI identity new to a role, or control of the
+  company's domain or its mail and name server records.
   Disabling the actor's key is reversible and cuts the
   API access it came through. The Commander can detach the attached policy
   (`aws.detach_user_policy` runs alone, `aws.detach_role_policy` waits for a
@@ -21,7 +24,13 @@ rules:
   - aws_identity_provider_changed
   - aws_domain_transfer_unlocked
   - aws_ec2_user_data_modified
+  - aws_identity_center_tampered
+  - aws_ec2_serial_console_used
+  - aws_instance_role_swapped
+  - aws_console_mfa_failed_after_password
+  - aws_route53_mail_records_changed
   - hunt:aws_role_first_assumed
+  - hunt:aws_web_identity_subject_first_seen
 questions:
   - id: grantee
     ask: Which principal received the privilege or the trust, and has it used it since?
@@ -32,7 +41,7 @@ questions:
   - id: root_operations
     ask: If root was used, for which operations, and can only root perform them?
   - id: domain_state
-    ask: If a Route 53 domain changed, is its transfer lock on now, which name servers does it point to, and was a transfer started?
+    ask: If a Route 53 domain or hosted zone changed, is its transfer lock on now, which name servers and MX records does it point to, and was a transfer started?
 benign_when:
   - The change was made by the infrastructure pipeline role from its usual address.
   - Root was used only for billing, support-plan or account-closure operations that require it.

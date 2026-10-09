@@ -1,0 +1,56 @@
+[
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd21",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\reg.exe",
+    "CommandLine": "reg.exe export HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters C:\\temp\\tcpip.reg",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "5121",
+    "UserName": "jdoe"
+  },
+  {
+    "_source": "crowdstrike_fdr",
+    "event_simpleName": "ProcessRollup2",
+    "aid": "0123456789abcdef0123456789abcd21",
+    "cid": "fedcba9876543210fedcba9876543210",
+    "event_platform": "Win",
+    "ImageFileName": "\\Device\\HarddiskVolume3\\Windows\\System32\\reg.exe",
+    "CommandLine": "reg.exe query HKLM\\SAM\\SAM\\Domains",
+    "ParentBaseFileName": "cmd.exe",
+    "RawProcessId": "5122",
+    "UserName": "jdoe"
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "4444444444444444444444444444444444444441",
+      "DeviceName": "dc01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "ntdsutil.exe",
+      "FolderPath": "C:\\Windows\\System32\\ntdsutil.exe",
+      "ProcessCommandLine": "ntdsutil.exe \"ac i ntds\" \"files\" \"info\" q q",
+      "InitiatingProcessFileName": "cmd.exe",
+      "AccountName": "administrator"
+    }
+  },
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceProcessEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "4444444444444444444444444444444444444441",
+      "DeviceName": "dc01.example.com",
+      "ActionType": "ProcessCreated",
+      "FileName": "xcopy.exe",
+      "FolderPath": "C:\\Windows\\System32\\xcopy.exe",
+      "ProcessCommandLine": "xcopy C:\\Windows\\System32\\config\\systemprofile\\AppData\\Local\\Agent C:\\Backup\\Agent /e /i",
+      "InitiatingProcessFileName": "AgentUpdater.exe",
+      "AccountName": "system"
+    }
+  }
+]

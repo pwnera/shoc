@@ -2,12 +2,14 @@ id: restore_aws_defences
 title: Put AWS logging and detection back on
 description: >
   CloudTrail, AWS Config, GuardDuty, Security Hub, flow logs or another log
-  was turned off, or the password policy was weakened. Attackers do this before the part they do not want recorded.
+  was turned off or set to expire within a week, a Bedrock guardrail was
+  deleted, or the password policy was weakened. Attackers do this before the part they do not want recorded.
   Disabling the actor's key stops them doing more, and a human is paged. Then
   whatever aws.get_defences finds off in the credential's regions is turned
   back on: a stopped trail, a stopped Config recorder, a suspended GuardDuty
   detector. A step whose service is on proposes nothing. A deleted trail,
-  recorder or detector, flow logs and the password policy are the human's.
+  recorder or detector, flow logs, a log bucket's expiry, a guardrail and the
+  password policy are the human's.
   Revoking the sessions the actor's key minted waits for a human.
 rules:
   - aws_cloudtrail_logging_disabled

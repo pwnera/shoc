@@ -38,6 +38,9 @@ rules:
   - hunt:entra_security_info_registered_from_new_address
   - hunt:cloudflare_access_first_login_country
   - hunt:entra_sign_in_from_hosting_network
+  - entra_device_registered_after_device_code
+  - entra_first_party_client_oauth_phishing
+  - hunt:entra_session_from_several_addresses
 questions:
   - id: push_approved
     ask: Was a push approved after the denials, and from which address and device?

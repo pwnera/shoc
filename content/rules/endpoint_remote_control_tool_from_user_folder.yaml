@@ -1,0 +1,86 @@
+id: endpoint_remote_control_tool_from_user_folder
+title: NetSupport, Remote Utilities or MeshAgent ran from outside Program Files
+description: >
+  The NetSupport client (client32.exe), the Remote Utilities host (rutserv.exe,
+  rfusclient.exe) or MeshAgent ran from a folder an installer does not use,
+  such as AppData, ProgramData, Temp, Downloads or PerfLogs. Fake update and
+  fake CAPTCHA chains drop a preconfigured NetSupport client into a user folder
+  and use it as a remote-access trojan, and ransomware crews in 2026 install
+  MeshAgent renamed after the victim company. On Defender a renamed copy is
+  recognised by the file's version information. AnyDesk, TeamViewer and
+  SimpleHelp are left out because their portable copies are how normal support
+  sessions run; an MSP running NetSupport School from a share looks the same.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.75
+attack: [T1219, T1036.003, T1036.005]
+sources:
+  - name: Sigma
+    title: "Remote Access Tool - NetSupport Execution From Unusual Location"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_remote_access_tools_netsupport_susp_exec.yml
+    author: "Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Renamed NetSupport RAT Execution"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_renamed_netsupport_rat.yml
+    author: "Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Remote Access Tool - RURAT Execution From Unusual Location"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_remote_access_tools_rurat_non_default_location.yml
+    author: "Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Remote Access Tool - Renamed MeshAgent Execution - Windows"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_remote_access_tools_renamed_meshagent_execution.yml
+    author: "Norbert Jaśniewicz (AlphaSOC)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: "NetSupport Manager Execution from an Unusual Path"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/windows/command_and_control_rmm_netsupport_susp_path.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Red Canary
+    title: "Threat Detection Report: NetSupport Manager"
+    url: https://redcanary.com/threat-detection-report/threats/netsupport-manager/
+    relation: inspired
+  - name: Microsoft
+    title: "Beyond ransomware: Tracking Storm-2570's consistent tradecraft across deployments"
+    url: https://www.microsoft.com/en-us/security/blog/2026/09/24/beyond-ransomware-tracking-storm-2570-consistent-tradecraft-across-deployments/
+    author: "Microsoft Threat Intelligence"
+    relation: inspired
+  - name: Huntress
+    title: "Ready, Settra, Go: New Settra Ransomware Variant Deploys MeshAgent RMM"
+    url: https://www.huntress.com/blog/new-settra-ransomware-variant
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  # A row without a path cannot be told from an installed copy.
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+    process.file.path|exists: true
+  sel_tool:
+    - process.name: [client32.exe, rutserv.exe, rfusclient.exe]
+    # meshagent.exe, meshagent64-<company>.exe
+    - process.name|startswith: meshagent
+    - process.cmd_line|contains: --meshServiceName
+    # Renamed copies, Defender only: Falcon and SentinelOne carry no version fields.
+    - raw.properties.ProcessVersionInfoOriginalFileName|contains: [client32, meshagent]
+    - raw.properties.ProcessVersionInfoProductName|contains: [NetSupport Remote Control, Remote Utilities]
+  # contains, not startswith: Falcon writes \Device\HarddiskVolume3\Program Files\...
+  filter_installed:
+    process.file.path|contains: ['\Program Files\', '\Program Files (x86)\', /usr/local/mesh_services/,
+                                 /Applications/]
+  condition: selection_process and sel_tool and not filter_installed
+  timeframe: 1h
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         process.parent_process.name, process.file.path]

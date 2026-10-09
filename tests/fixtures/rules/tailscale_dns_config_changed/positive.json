@@ -1,0 +1,14 @@
+[
+  {
+    "action": "UPDATE",
+    "actor": {"displayName": "Mallory", "id": "u999CNTRL", "loginName": "mallory@example.com", "type": "USER"},
+    "eventGroupID": "23457a1b2c3d4e5f60718293a4b5c601",
+    "origin": "ADMIN_CONSOLE",
+    "target": {"id": "T1234CNTRL", "name": "example.com", "type": "TAILNET", "property": "DNS_CONFIG"},
+    "type": "CONFIG",
+    "old": {"nameservers": [], "overrideLocalDNS": false},
+    "new": {"nameservers": ["198.51.100.53"], "overrideLocalDNS": true},
+    "event": "TAILNET.UPDATE.DNS_CONFIG",
+    "tailnet": "T1234CNTRL"
+  }
+]

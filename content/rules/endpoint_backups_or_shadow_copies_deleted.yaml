@@ -1,0 +1,111 @@
+id: endpoint_backups_or_shadow_copies_deleted
+title: Shadow copies, Windows backups or boot recovery were deleted or turned off
+description: >
+  A command deleted the Volume Shadow Copies (vssadmin, wmic, PowerShell WMI) or
+  shrank their storage so Windows drops them, deleted the Windows Server Backup
+  catalog or every backup version, turned off boot recovery (bcdedit) or the
+  Windows Recovery Environment (reagentc), or overwrote the disk's free space
+  (cipher /w). Ransomware crews do this minutes before they encrypt, so the
+  company's fastest way back is gone. Deleting only the oldest copy is left out;
+  repairing the recovery partition also runs reagentc /disable.
+status: experimental
+date: 2026-10-09
+severity: critical
+confidence: 0.85
+attack: [T1490, T1485]
+sources:
+  - name: Sigma
+    title: "Shadow Copies Deletion Using Operating Systems Utilities"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_shadow_copies_deletion.yml
+    author: "Florian Roth (Nextron Systems), Michael Haag, Teymur Kheirkhabarov, Daniil Yugoslavskiy, oscd.community, Andreas Hunkeler (@Karneades)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Deletion of Volume Shadow Copies via WMI with PowerShell"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_shadowcopy_deletion.yml
+    author: "Tim Rauch, Elastic (idea)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "All Backups Deleted Via Wbadmin.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_wbadmin_delete_all_backups.yml
+    author: "frack113, Nasreddine Bencherchali (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Boot Configuration Tampering Via Bcdedit.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_bcdedit_boot_conf_tamper.yml
+    author: "E.M. Anhaus (originally from Atomic Blue Detections, Endgame), oscd.community"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Windows Recovery Environment Disabled Via Reagentc"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_reagentc_disable_windows_recovery_environment.yml
+    author: "Daniel Koifman (KoifSec), Michael Vilshin"
+    license: DRL-1.1
+    relation: adapted
+  - name: Sigma
+    title: "Deleted Data Overwritten Via Cipher.EXE"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_cipher_overwrite_deleted_data.yml
+    author: "frack113"
+    license: DRL-1.1
+    relation: adapted
+  - name: CISA
+    title: "#StopRansomware: Akira Ransomware"
+    url: https://www.cisa.gov/news-events/cybersecurity-advisories/aa24-109a
+    relation: inspired
+  - name: Huntress
+    title: "Ready, Settra, Go: New Settra Ransomware Variant Deploys MeshAgent RMM"
+    url: https://www.huntress.com/blog/new-settra-ransomware-variant
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection_process:
+    class_uid: 1007
+    activity_id: 1
+  sel_shadow_tool:
+    process.name: [vssadmin.exe, wmic.exe, powershell.exe, pwsh.exe, diskshadow.exe]
+  sel_shadow_word:
+    process.cmd_line|contains: shadow
+  sel_delete_word:
+    process.cmd_line|contains: delete
+  # A scheduled cleanup removes the oldest copy; crews delete them all.
+  filter_oldest:
+    process.cmd_line|contains: /oldest
+  sel_wmi_class:
+    process.cmd_line|contains: Win32_ShadowCopy
+  sel_wmi_remove:
+    process.cmd_line|contains: [Remove-WmiObject, Remove-CimInstance, rwmi, rcim, .Delete()]
+  # Deleting older backup versions with -keepVersions:N is routine upkeep.
+  sel_wbadmin:
+    process.name: wbadmin.exe
+    process.cmd_line|contains: delete
+  sel_wbadmin_all:
+    process.cmd_line|contains: [catalog, 'keepversions:0']
+  sel_bcdedit:
+    process.name: bcdedit.exe
+    process.cmd_line|contains: set
+  sel_bcd_recovery_off:
+    process.cmd_line|contains: recoveryenabled
+  sel_bcd_no:
+    process.cmd_line|contains: ' no'
+  sel_bcd_ignore:
+    process.cmd_line|contains: ignoreallfailures
+  # Ryuk and Conti shrink the storage so Windows purges every copy.
+  sel_resize:
+    process.cmd_line|contains: resize shadowstorage
+  sel_resize_small:
+    process.cmd_line|contains: ['maxsize=401mb', 'maxsize=1mb']
+  sel_reagentc:
+    process.name: reagentc.exe
+    process.cmd_line|contains: [/disable, -disable]
+  sel_cipher:
+    process.name: cipher.exe
+    process.cmd_line|contains: ' /w:'
+  condition: selection_process and ((sel_shadow_tool and sel_shadow_word and sel_delete_word and not filter_oldest) or (sel_wmi_class and sel_wmi_remove) or (sel_wbadmin and sel_wbadmin_all) or (sel_bcdedit and ((sel_bcd_recovery_off and sel_bcd_no) or sel_bcd_ignore)) or (sel_resize and sel_resize_small) or sel_reagentc or sel_cipher)
+  timeframe: 15m
+entity: resource.uid
+fields: [device.hostname, actor.user.name, process.name, process.cmd_line,
+         process.parent_process.name, process.file.path]

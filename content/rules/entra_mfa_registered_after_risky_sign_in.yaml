@@ -7,6 +7,7 @@ description: >
   authenticator first, so the account stays theirs after the password reset.
 status: experimental
 date: 2026-10-02
+modified: 2026-10-09
 severity: high
 confidence: 0.7
 attack: [T1098.005, T1556.006]
@@ -26,9 +27,11 @@ detection:
     api.operation|contains: [user registered, user changed default security info]
     status: Success
   # The sign-in and the detection name the user who signed in; a user's own
-  # registration names the same user as its initiator.
+  # registration names the same user as its initiator. Joined on the object
+  # id: the sign-in log writes the UPN in lower case, the audit log keeps the
+  # directory's casing, and the join is exact.
   sequence:
-    by: [actor.user.name]
+    by: [actor.user.uid]
     first: risky and not closed
     then: registered
     within: 1h

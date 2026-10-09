@@ -1,0 +1,57 @@
+id: gcp_identity_federation_changed
+title: Workload or workforce identity provider created or changed in GCP
+description: >
+  A workload identity pool provider (GitHub Actions, AWS or any OIDC issuer),
+  or a workforce pool or its provider, was created, changed or restored. A
+  provider hands out Google credentials without a key. Point one at an issuer
+  you control, or loosen its attribute condition so that any GitHub
+  repository qualifies, and you hold keyless access that survives every key
+  rotation. Setting up CI federation happens once per integration. Workforce
+  pools live on the organisation and reach shoc only through a sink created
+  there.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.6
+attack: [T1484.002, T1550.001]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection:
+    api.operation|endswith:
+      - CreateWorkloadIdentityPoolProvider
+      - UpdateWorkloadIdentityPoolProvider
+      - UndeleteWorkloadIdentityPoolProvider
+      - WorkforcePools.CreateWorkforcePool
+      - WorkforcePools.UpdateWorkforcePool
+      - CreateWorkforcePoolProvider
+      - UpdateWorkforcePoolProvider
+    status: Success
+  # A long-running operation is logged when it starts and when it ends; count
+  # the start.
+  first:
+    raw.operation.first: "true"
+  condition: selection and first
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip, raw.protoPayload.request.workloadIdentityPoolProvider.attributeCondition, raw.protoPayload.request.workloadIdentityPoolProvider.oidc.issuerUri]
+sources:
+  - name: Panther
+    title: GCP Workload Identity Pool Created or Updated
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/gcp_audit_rules/gcp_workload_identity_pool_created_or_updated.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: GCP Workforce Pool Created or Updated
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/gcp_audit_rules/gcp_workforce_pool_created_or_updated.yml
+    license: Apache-2.0
+    relation: adapted
+  - name: Unit 42
+    title: "OH-MY-DC: OIDC Misconfigurations in CI/CD"
+    url: https://unit42.paloaltonetworks.com/oidc-misconfigurations-in-ci-cd/
+    relation: inspired
+  - name: Google
+    title: Configure Workload Identity Federation with deployment pipelines
+    url: https://cloud.google.com/iam/docs/workload-identity-federation-with-deployment-pipelines
+    relation: inspired

@@ -1,18 +1,20 @@
 id: contain_privilege_grant
 title: Contain an identity admin role given to someone
 description: >
-  Someone was made an Okta, Entra ID or Microsoft 365 administrator, or a guest
-  became a member. The account that received the role is what an attacker
-  gains, so its sessions are revoked, and the admin who granted it is signed
-  out too: both are reversible. Suspending the grantee waits for a human. The
-  Commander can take the role back with `okta.remove_admin_role` or
-  `entra.remove_admin_role`, using the assignment id `okta.get_user` or
-  `entra.get_user` returns.
+  Someone, or an Okta OAuth service app, was made an Okta, Entra ID or
+  Microsoft 365 administrator, was given an Exchange or Purview role, or a
+  guest became a member. The account that
+  received the role is what an attacker gains, so its sessions are revoked, and
+  the admin who granted it is signed out too: both are reversible. Suspending
+  the grantee waits for a human. The Commander can take the role back with
+  `okta.remove_admin_role` or `entra.remove_admin_role`, using the assignment
+  id `okta.get_user` or `entra.get_user` returns.
 rules:
   - okta_admin_privilege_granted
   - entra_admin_role_assigned
   - entra_global_admin_assigned
   - m365_global_admin_assigned
+  - m365_exchange_role_assigned
   - entra_guest_promoted_to_member
 questions:
   - id: requested

@@ -1,0 +1,78 @@
+[
+  {
+    "insertId": "disk-share",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_disk",
+      "labels": {
+        "project_id": "example-prod",
+        "zone": "us-central1-a"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "v1.compute.disks.setIamPolicy",
+      "resourceName": "projects/example-prod/zones/us-central1-a/disks/db-data",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.disks.setIamPolicy",
+        "policy": {
+          "version": "3",
+          "bindings": [
+            {
+              "role": "roles/owner",
+              "members": [
+                "user:backup.ops.0451@gmail.com"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "insertId": "image-public",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gce_image",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "compute.googleapis.com",
+      "methodName": "beta.compute.images.setIamPolicy",
+      "resourceName": "projects/example-prod/global/images/golden-2026-10",
+      "authenticationInfo": {
+        "principalEmail": "mallory@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "request": {
+        "@type": "type.googleapis.com/compute.images.setIamPolicy",
+        "policy": {
+          "bindings": [
+            {
+              "role": "roles/compute.imageUser",
+              "members": [
+                "allAuthenticatedUsers"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+]

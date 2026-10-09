@@ -50,5 +50,73 @@
         "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
       }
     }
+  },
+  {
+    "insertId": "hmac-deactivate",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "gcs_bucket",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "storage.googleapis.com",
+      "methodName": "storage.hmacKeys.update",
+      "resourceName": "projects/_/hmacKeys/GOOG1EXAMPLEACCESSID000000000000000000000000000000000",
+      "authenticationInfo": {
+        "principalEmail": "it-admin@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "authorizationInfo": [
+        {
+          "resource": "projects/_/hmacKeys/",
+          "permission": "storage.hmacKeys.update",
+          "granted": true,
+          "resourceAttributes": {}
+        }
+      ]
+    }
+  },
+  {
+    "insertId": "hmac-denied",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "ERROR",
+    "resource": {
+      "type": "gcs_bucket",
+      "labels": {
+        "project_id": "example-prod"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "storage.googleapis.com",
+      "methodName": "storage.hmacKeys.create",
+      "resourceName": "projects/_/hmacKeys/GOOG1EXAMPLEACCESSID000000000000000000000000000000000",
+      "authenticationInfo": {
+        "principalEmail": "dev@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "198.51.100.23",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/478.0.0"
+      },
+      "status": {
+        "code": 7,
+        "message": "Permission denied"
+      },
+      "authorizationInfo": [
+        {
+          "resource": "projects/_/hmacKeys/",
+          "permission": "storage.hmacKeys.create",
+          "granted": false,
+          "resourceAttributes": {}
+        }
+      ]
+    }
   }
 ]

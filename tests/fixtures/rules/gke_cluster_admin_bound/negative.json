@@ -149,5 +149,120 @@
       "first": true,
       "last": true
     }
+  },
+  {
+    "insertId": "gke-cr-split",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "k8s_cluster",
+      "labels": {
+        "project_id": "example-prod",
+        "cluster_name": "prod",
+        "location": "europe-west1"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "k8s.io",
+      "methodName": "io.k8s.authorization.rbac.v1.clusterroles.create",
+      "resourceName": "rbac.authorization.k8s.io/v1/clusterroles/pod-admin",
+      "authenticationInfo": {
+        "principalEmail": "dev@example.com"
+      },
+      "requestMetadata": {
+        "callerIp": "203.0.113.84",
+        "callerSuppliedUserAgent": "kubectl/v1.31.0 (linux/amd64) kubernetes/abc1234"
+      },
+      "status": {},
+      "request": {
+        "@type": "rbac.authorization.k8s.io/v1.ClusterRole",
+        "kind": "ClusterRole",
+        "metadata": {
+          "name": "pod-admin"
+        },
+        "rules": [
+          {
+            "apiGroups": [
+              ""
+            ],
+            "resources": [
+              "pods"
+            ],
+            "verbs": [
+              "*"
+            ]
+          },
+          {
+            "apiGroups": [
+              "*"
+            ],
+            "resources": [
+              "*"
+            ],
+            "verbs": [
+              "get",
+              "list",
+              "watch"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "insertId": "gke-cr-system",
+    "logName": "projects/example-prod/logs/cloudaudit.googleapis.com%2Factivity",
+    "severity": "NOTICE",
+    "resource": {
+      "type": "k8s_cluster",
+      "labels": {
+        "project_id": "example-prod",
+        "cluster_name": "prod",
+        "location": "europe-west1"
+      }
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "serviceName": "k8s.io",
+      "methodName": "io.k8s.authorization.rbac.v1.clusterroles.create",
+      "resourceName": "rbac.authorization.k8s.io/v1/clusterroles/cluster-admin",
+      "authenticationInfo": {
+        "principalEmail": "system:apiserver"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "callerSuppliedUserAgent": "kube-apiserver/v1.31.0"
+      },
+      "status": {},
+      "request": {
+        "@type": "rbac.authorization.k8s.io/v1.ClusterRole",
+        "kind": "ClusterRole",
+        "metadata": {
+          "name": "cluster-admin"
+        },
+        "rules": [
+          {
+            "apiGroups": [
+              "*"
+            ],
+            "resources": [
+              "*"
+            ],
+            "verbs": [
+              "*"
+            ]
+          },
+          {
+            "nonResourceURLs": [
+              "*"
+            ],
+            "verbs": [
+              "*"
+            ]
+          }
+        ]
+      }
+    }
   }
 ]

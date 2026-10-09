@@ -87,5 +87,36 @@
         ]
       }
     ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-user-route-removed",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "it-admin@example.com",
+      "profileId": "100000000000000000001",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.40",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "USER_SETTINGS",
+        "name": "MAIL_ROUTING_DESTINATION_REMOVED",
+        "parameters": [
+          {
+            "name": "OLD_VALUE",
+            "value": "archive@example.net"
+          },
+          {
+            "name": "USER_EMAIL",
+            "value": "ceo@example.com"
+          }
+        ]
+      }
+    ]
   }
 ]

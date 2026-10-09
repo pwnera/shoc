@@ -1,0 +1,49 @@
+id: gitlab_project_made_public
+title: GitLab project or group made public
+description: >
+  A project or group was switched to Public. Its code, its history and any
+  secret ever committed to it can then be read and cloned by anyone. Stolen
+  tokens were used to flip private repositories public in the s1ngularity
+  (Nx) attack on GitHub; on GitLab a Maintainer token can do it in one API
+  call.
+status: experimental
+date: 2026-10-09
+severity: critical
+confidence: 0.8
+attack: [T1567]
+logsource:
+  product: gitlab
+  service: audit_events
+detection:
+  # Records older than the event types carry only `change`, which the mapping
+  # reads as the operation.
+  selection:
+    api.operation: [project_visibility_level_updated, group_visibility_level_updated, visibility_level, visibility]
+    raw.details.to: Public
+  condition: selection
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, resource.uid, raw.details.from, raw.details.to, src_endpoint.ip]
+sources:
+  - name: Microsoft Sentinel
+    title: GitLab - Repository visibility to Public
+    url: https://github.com/Azure/Azure-Sentinel/blob/master/Solutions/GitLab/Analytic%20Rules/GitLab_RepoVisibilityChange.yaml
+    license: MIT
+    relation: adapted
+  - name: Chronicle
+    title: GitHub Repository Visibility Changed To Public
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/github/github_repository_visibility_changed_to_public.yaral
+    license: Apache-2.0
+    relation: inspired
+  - name: GitLab
+    title: Project visibility audit event, ee/lib/projects/project_changes_auditor.rb
+    url: https://gitlab.com/gitlab-org/gitlab/-/blob/master/ee/lib/projects/project_changes_auditor.rb
+    relation: inspired
+  - name: GitLab
+    title: Group visibility audit event, ee/lib/namespaces/group_changes_auditor.rb
+    url: https://gitlab.com/gitlab-org/gitlab/-/blob/master/ee/lib/namespaces/group_changes_auditor.rb
+    relation: inspired
+  - name: Wiz
+    title: "s1ngularity's Aftermath: AI, TTPs, and Impact in the Nx Supply Chain Attack"
+    url: https://www.wiz.io/blog/s1ngularitys-aftermath
+    relation: inspired

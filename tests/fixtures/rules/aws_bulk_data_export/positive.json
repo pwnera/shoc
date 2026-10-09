@@ -111,5 +111,65 @@
         "TrafficMirrorTargetId": "tmt-0123456789abcdef0"
       }
     }
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "datasync-task",
+    "eventName": "CreateTask",
+    "eventSource": "datasync.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "sourceLocationArn": "arn:aws:datasync:eu-west-1:123456789012:location/loc-0a1b2c3d4e5f60718",
+      "destinationLocationArn": "arn:aws:datasync:eu-west-1:999988887777:location/loc-0f1e2d3c4b5a60718"
+    },
+    "responseElements": {
+      "taskArn": "arn:aws:datasync:eu-west-1:123456789012:task/task-0a1b2c3d4e5f60718"
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "transfer-server",
+    "eventName": "CreateServer",
+    "eventSource": "transfer.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.23",
+    "userAgent": "aws-cli/2.17.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLEPRINCIPAL",
+      "arn": "arn:aws:iam::123456789012:user/deploy-ci",
+      "accountId": "123456789012",
+      "userName": "deploy-ci",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "domain": "S3",
+      "endpointType": "PUBLIC",
+      "identityProviderType": "SERVICE_MANAGED",
+      "protocols": [
+        "SFTP"
+      ]
+    },
+    "responseElements": {
+      "serverId": "s-0a1b2c3d4e5f60718"
+    },
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
   }
 ]

@@ -1,0 +1,43 @@
+[
+  {
+    "uuid": "okta-ad-agent-create",
+    "eventType": "system.agent.ad.create",
+    "displayMessage": "Create AD agent",
+    "actor": {
+      "id": "00u1admin0001",
+      "type": "User",
+      "alternateId": "it-admin@example.com",
+      "displayName": "IT Admin"
+    },
+    "client": {
+      "ipAddress": "192.0.2.150",
+      "userAgent": {
+        "rawUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "os": "Windows 10",
+        "browser": "CHROME"
+      },
+      "geographicalContext": {
+        "country": "Netherlands"
+      }
+    },
+    "outcome": {
+      "result": "SUCCESS",
+      "reason": null
+    },
+    "authenticationContext": {
+      "externalSessionId": "102AdminSess7Qx"
+    },
+    "securityContext": {
+      "asNumber": 64511,
+      "isProxy": false
+    },
+    "target": [
+      {
+        "id": "0oa1adagent01",
+        "type": "AppInstance",
+        "alternateId": "example.local",
+        "displayName": "Active Directory"
+      }
+    ]
+  }
+]

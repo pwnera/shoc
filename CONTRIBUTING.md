@@ -66,9 +66,12 @@ python -m scripts.check_dependency_budget && python -m scripts.check_licenses
    and is allowed only under Apache-2.0, MIT, BSD-2-Clause, BSD-3-Clause or
    DRL-1.1. Any other source, Elastic's rules (Elastic-2.0) and GPL code
    included, is `relation: inspired`: take the idea, write the logic and the
-   prose yourself, and still cite it. `tests/unit/test_content_licences.py`
-   fails on an `adapted` source under any other licence and on a DRL-1.1
-   source without an author.
+   prose yourself, and still cite it. The project an `adapted` source comes
+   from is listed in `NOTICE` under the same `name`, with its licence and
+   copyright line; add it there the first time you adapt from it.
+   `tests/unit/test_content_licences.py` fails on an `adapted` source under
+   any other licence, on a DRL-1.1 source without an author and on an
+   `adapted` source NOTICE does not list.
 2. Add `tests/fixtures/rules/<rule_id>/positive.json` and `negative.json` with
    raw source records. `_repeat: 40` expands a record, and timestamps are
    stamped by the test harness, so do not hard-code them.

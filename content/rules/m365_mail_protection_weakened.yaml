@@ -5,10 +5,13 @@ description: >
   rule was removed or disabled, DKIM signing was turned off for a domain, an
   account was exempted from mailbox audit logging, mailbox auditing was turned
   off for the organization, or the unified audit log was turned off. The last
-  also blinds shoc's Microsoft 365 connector.
+  also blinds shoc's Microsoft 365 connector. Allowing automatic forwarding to
+  outside addresses again, in an outbound spam policy or for a remote domain,
+  counts too. Microsoft blocks it by default in most tenants, so a forwarding
+  rule sends nothing out until someone lifts the block.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.7
 attack: [T1562.001, T1562.008]
@@ -41,11 +44,19 @@ detection:
   selection_dkim_off:
     api.operation: Set-DkimSigningConfig
     unmapped.params.Enabled: false
+  # Automatic, the default, now means off for most tenants; On always allows it.
+  selection_forwarding_on:
+    api.operation: [New-HostedOutboundSpamFilterPolicy, Set-HostedOutboundSpamFilterPolicy]
+    unmapped.params.AutoForwardingMode: 'On'
+  selection_remote_domain_forwarding:
+    api.operation: Set-RemoteDomain
+    unmapped.params.AutoForwardEnabled: true
   filter_failed:
     status: Failure
   condition: >-
     (selection or selection_bypass or selection_mailbox_audit_off or selection_audit_off
-    or selection_dkim_off) and not filter_failed
+    or selection_dkim_off or selection_forwarding_on or selection_remote_domain_forwarding)
+    and not filter_failed
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
@@ -89,6 +100,14 @@ sources:
     title: M365 Exchange DKIM Signing Configuration Disabled
     url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/o365/defense_evasion_exchange_dkim_signing_config_disabled
     license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft
+    title: Control external email forwarding and fix 5.7.520 errors
+    url: https://learn.microsoft.com/en-us/defender-office-365/outbound-spam-policies-external-email-forwarding
+    relation: inspired
+  - name: Microsoft
+    title: Set-HostedOutboundSpamFilterPolicy
+    url: https://learn.microsoft.com/en-us/powershell/module/exchangepowershell/set-hostedoutboundspamfilterpolicy
     relation: inspired
   - name: Microsoft
     title: Manage mailbox auditing

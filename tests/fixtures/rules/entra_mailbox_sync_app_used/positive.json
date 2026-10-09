@@ -1,0 +1,67 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-00000000c001",
+    "userPrincipalName": "anna@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a002",
+    "appDisplayName": "PerfectData Software",
+    "appId": "ff8d92dc-3d82-41d6-bcbd-b9174d163620",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "resourceId": "00000002-0000-0ff1-ce00-000000000000",
+    "ipAddress": "203.0.113.45",
+    "autonomousSystemNumber": 64500,
+    "clientAppUsed": "Mobile Apps and Desktop clients",
+    "authenticationProtocol": "none",
+    "authenticationRequirement": "singleFactorAuthentication",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "isInteractive": true,
+    "sessionId": "00000000-0000-0000-0000-00000000d001",
+    "signInEventTypes": ["interactiveUser"],
+    "location": { "countryOrRegion": "NL" },
+    "status": { "errorCode": 0 },
+    "_stream": "signIns"
+  },
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000c004_CONS_1",
+    "activityDisplayName": "Consent to application",
+    "category": "ApplicationManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Assign",
+    "result": "success",
+    "resultReason": "",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a004",
+        "userPrincipalName": "ben@example.com",
+        "ipAddress": "203.0.113.46"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000c005",
+        "displayName": "eM Client",
+        "type": "ServicePrincipal",
+        "modifiedProperties": [
+          { "displayName": "ConsentContext.IsAdminConsent", "oldValue": "", "newValue": "\"False\"" },
+          { "displayName": "ConsentContext.IsAppOnly", "oldValue": "", "newValue": "\"False\"" }
+        ]
+      }
+    ],
+    "additionalDetails": [
+      { "key": "AppId", "value": "e9a7fea1-1cc0-4cd9-a31b-9137ca5deedd" }
+    ],
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "00000000-0000-0000-0000-00000000c006",
+    "userPrincipalName": "carla@example.com",
+    "userId": "00000000-0000-0000-0000-00000000a005",
+    "appDisplayName": "SigParser",
+    "appId": "00000000-0000-0000-0000-00000000c007",
+    "resourceDisplayName": "Office 365 Exchange Online",
+    "ipAddress": "198.51.100.77",
+    "authenticationProtocol": "none",
+    "signInEventTypes": ["interactiveUser"],
+    "status": { "errorCode": 50074, "failureReason": "Strong Authentication is required." },
+    "_stream": "signIns"
+  }
+]

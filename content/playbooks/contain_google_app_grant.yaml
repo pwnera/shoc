@@ -1,13 +1,15 @@
 id: contain_google_app_grant
 title: Contain a third-party app granted access to a Google account
 description: >
-  A user authorised an OAuth app on their Google account. The app's token
+  A user authorised an OAuth app on their Google account, or an app's token
+  was used from a network the app had not called from. The app's token
   outlives a password change and a sign-out. Signing the user out is
   reversible and runs first; revoking the app's token cannot be undone by
   shoc, so it waits for a human, who is paged first.
 rules:
   - google_oauth_token_authorized
   - hunt:gws_oauth_client_first_seen
+  - hunt:gws_oauth_client_new_network
 questions:
   - id: app_scopes
     ask: Which scopes did the authorised app receive, and has it used them?

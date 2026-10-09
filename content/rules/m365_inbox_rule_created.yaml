@@ -5,11 +5,13 @@ description: >
   nobody reads (RSS Feeds, Conversation History), whether it was made in Outlook
   on the web, PowerShell, EWS or the Outlook desktop app. In business email
   compromise this is how the attacker reads the replies and hides them from the
-  real owner. Rules that only file mail into an ordinary folder, Archive
+  real owner. A rule whose name is nothing but punctuation, such as "." or
+  "..", counts whatever it does, since people name their rules and attackers
+  hide theirs. Other rules that only file mail into an ordinary folder, Archive
   included, are left to the hunt.
 status: stable
 date: 2026-09-24
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.7
 attack: [T1114.003, T1564.008]
@@ -38,12 +40,19 @@ detection:
   outlook_action:
     - unmapped.opprops.RuleActions|contains: [Forward, Redirect, Delete]
     - unmapped.opprops.Actions|contains: [Forward, Redirect, Delete]
+  # Outlook logs the name as RuleName, Exchange Web Services as Name. The class
+  # is ASCII punctuation and space, so a name in another script does not match.
+  hidden_name:
+    - unmapped.params.Name|re: '^[ !"#$%&''()*+,./:;<=>?@_`{|}~-]{1,5}$'
+    - unmapped.opprops.RuleName|re: '^[ !"#$%&''()*+,./:;<=>?@_`{|}~-]{1,5}$'
+    - unmapped.opprops.Name|re: '^[ !"#$%&''()*+,./:;<=>?@_`{|}~-]{1,5}$'
   filter_rule_removed:
     unmapped.opprops.RuleOperation: [RemoveMailboxRule, Delete]
   filter_failed:
     status: Failure
   condition: >-
-    ((selection_owa and owa_action) or (selection_outlook and outlook_action and not filter_rule_removed))
+    ((selection_owa and (owa_action or hidden_name))
+    or (selection_outlook and (outlook_action or hidden_name) and not filter_rule_removed))
     and not filter_failed
   timeframe: 15m
 entity: actor.user.name
@@ -77,6 +86,21 @@ sources:
     author: Mauricio Velazco, Splunk
     license: Apache-2.0
     relation: adapted
+  - name: Elastic
+    title: M365 Exchange Inbox Rule with Obfuscated Name
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/o365/defense_evasion_exchange_inbox_rule_obfuscated_name.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Splunk
+    title: O365 BEC Email Hiding Rule Created
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/o365_bec_email_hiding_rule_created.yml
+    author: 0xC0FFEEEE, Github Community
+    license: Apache-2.0
+    relation: inspired
+  - name: Microsoft
+    title: AI-enabled device code phishing campaign (April 2026)
+    url: https://www.microsoft.com/en-us/security/blog/2026/04/06/ai-enabled-device-code-phishing-campaign-april-2026/
+    relation: inspired
   - name: Red Canary
     title: Email Hiding Rules (Threat Detection Report)
     url: https://redcanary.com/threat-detection-report/techniques/email-hiding-rules/

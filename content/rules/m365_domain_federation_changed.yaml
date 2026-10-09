@@ -2,13 +2,15 @@ id: m365_domain_federation_changed
 title: Domain federation changed (Microsoft 365 audit)
 description: >
   A domain was switched to federated sign-in, its federation settings were
-  changed, or a federated domain was added in Exchange. Whoever controls the
-  federation's signing key can sign in as any user of that domain without a
-  password or MFA. This copy of the Entra rule covers tenants that connect only
-  Microsoft 365.
+  changed, a federated domain was added in Exchange, or someone other than
+  Entra Connect set a user's ImmutableId. Whoever controls the federation's
+  signing key can sign in as any user of that domain without a password or MFA.
+  A cloud-only user has no ImmutableId, so the backdoor gives them one before
+  signing in as them. This copy of the Entra rule covers tenants that connect
+  only Microsoft 365.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-02
+modified: 2026-10-09
 severity: critical
 confidence: 0.8
 attack: [T1484.002, T1556.007]
@@ -20,9 +22,18 @@ detection:
     api.operation|contains: [set domain authentication, set federation settings on domain]
   selection_exchange:
     api.operation: Add-FederatedDomain
+  # The ImmutableId is logged as SourceAnchor.
+  selection_immutable_id:
+    api.operation|contains: update user
+    unmapped.modified.Included_Updated_Properties.NewValue|contains: SourceAnchor
+  # Entra Connect sets it for every user it syncs.
+  filter_sync:
+    actor.user.name|startswith: sync_
   filter_failed:
     status: Failure
-  condition: (selection_directory or selection_exchange) and not filter_failed
+  condition: >-
+    (selection_directory or selection_exchange or (selection_immutable_id and not filter_sync))
+    and not filter_failed
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, api.operation, resource.uid, src_endpoint.ip]
@@ -37,4 +48,10 @@ sources:
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/m365/exchange/microsoft365_new_federated_domain_added_exchange.yml
     author: Splunk Threat Research Team (original rule), '@ionsor (rule)'
     license: DRL-1.1
+    relation: adapted
+  - name: Splunk
+    title: Azure AD User ImmutableId Attribute Updated
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/azure_ad_user_immutableid_attribute_updated.yml
+    author: Mauricio Velazco, Gowthamaraj Rajendran, Splunk
+    license: Apache-2.0
     relation: adapted

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "activity_01ArtifactOrg",
+    "organization_id": "org_01",
+    "type": "claude_artifact_sharing_updated",
+    "actor": {"type": "user_actor", "email_address": "dev@example.com", "user_id": "user_01D", "ip_address": "198.51.100.31", "user_agent": "Mozilla/5.0"},
+    "claude_artifact_id": "claude_artifact_01GHI",
+    "claude_artifact_version_id": "claude_artifact_version_01GHI",
+    "audience": [{"type": "organization"}],
+    "new_mode": "org",
+    "previous_mode": "owner"
+  },
+  {
+    "id": "activity_01ArtifactUsers",
+    "organization_id": "org_01",
+    "type": "claude_artifact_sharing_updated",
+    "actor": {"type": "user_actor", "email_address": "dev@example.com", "user_id": "user_01D", "ip_address": "198.51.100.31", "user_agent": "Mozilla/5.0"},
+    "claude_artifact_id": "claude_artifact_01JKL",
+    "claude_artifact_version_id": "claude_artifact_version_01JKL",
+    "audience": [{"type": "users"}],
+    "new_mode": "users",
+    "new_user_count": 2,
+    "previous_mode": "owner"
+  },
+  {
+    "id": "activity_01ArtifactWrite",
+    "organization_id": "org_01",
+    "type": "claude_artifact_sharing_updated",
+    "actor": {"type": "user_actor", "email_address": "dev@example.com", "user_id": "user_01D", "ip_address": "198.51.100.31", "user_agent": "Mozilla/5.0"},
+    "claude_artifact_id": "claude_artifact_01ABC",
+    "claude_artifact_version_id": "claude_artifact_version_01ABC",
+    "audience": [{"type": "anyone_with_link"}],
+    "new_mode": "public",
+    "previous_mode": "public",
+    "new_write_mode": "org",
+    "previous_write_mode": "owner"
+  }
+]

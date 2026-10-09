@@ -1,15 +1,21 @@
 id: aws_guardduty_finding
-title: GuardDuty reported a high-severity or credential finding
+title: GuardDuty reported a high-severity, credential, database or workload finding
 description: >
   GuardDuty raised a high or critical finding, or a medium one about an IAM
   credential, S3 data or crypto mining: a key used from an unusual place,
   instance credentials used outside AWS, a Kali or Tor caller, anomalous S3
-  reads or deletes. The company pays for GuardDuty and nobody reads its
-  console; this puts its findings in a case. Archived and sample findings are
-  left out.
+  reads or deletes. Medium findings that mean a database or a workload is
+  compromised count too: tables dropped or data read anomalously in RDS, an
+  anomalous or hostile database login, a process escalating or hiding on a
+  monitored host, an instance sending spam, scanning or talking to a drop
+  point, and any match on the company's own threat lists. The company pays
+  for GuardDuty and nobody reads its console; this puts its findings in a
+  case. Archived and sample findings are left out, and so are new binaries
+  and libraries seen at runtime, which every deploy produces, and failed
+  database logins, which a public database collects all day.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-09
 severity: high
 confidence: 0.75
 attack: [T1078.004, T1552.005, T1496.001]
@@ -39,11 +45,32 @@ detection:
       - "PenTest:"
       - "Discovery:S3/TorIPCaller"
       - "CryptoCurrency:"
+  selection_workload:
+    class_uid: 2004
+    severity_id: 3
+    api.operation|startswith:
+      - "Impact:RDS/"
+      - "Exfiltration:RDS/"
+      - "CredentialAccess:RDS/AnomalousBehavior.SuccessfulLogin"
+      - "CredentialAccess:RDS/MaliciousIPCaller.SuccessfulLogin"
+      - "CredentialAccess:RDS/TorIPCaller.SuccessfulLogin"
+      - "Persistence:Runtime/"
+      - "PrivilegeEscalation:Runtime/"
+      - "DefenseEvasion:Runtime/"
+      - "Backdoor:"
+      - "Trojan:"
+      # The instance is the one scanning.
+      - "Recon:EC2/Portscan"
+  # A match on a threat list the company uploaded.
+  selection_custom:
+    class_uid: 2004
+    severity_id: 3
+    api.operation|endswith: ".Custom"
   filter_closed:
     activity_id: 3
   filter_sample:
     raw.service.additionalInfo.sample: true
-  condition: (selection_high or selection_credential) and not filter_closed and not filter_sample
+  condition: selection_* and not filter_closed and not filter_sample
   timeframe: 15m
 entity: resource.uid
 fields: [api.operation, message, actor.user.name, actor.session.uid, src_endpoint.ip, resource.uid, cloud.region]
@@ -51,4 +78,22 @@ sources:
   - name: AWS
     title: GuardDuty finding types
     url: https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_finding-types-active.html
+    relation: inspired
+  - name: AWS
+    title: GuardDuty RDS Protection finding types
+    url: https://docs.aws.amazon.com/guardduty/latest/ug/findings-rds-protection.html
+    relation: inspired
+  - name: AWS
+    title: GuardDuty Runtime Monitoring finding types
+    url: https://docs.aws.amazon.com/guardduty/latest/ug/findings-runtime-monitoring.html
+    relation: inspired
+  - name: Chronicle
+    title: AWS GuardDuty Black Hole Traffic Detected
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/aws/guardduty/aws_guardduty_black_hole_traffic_detected.yaral
+    license: Apache-2.0
+    relation: adapted
+  - name: Panther
+    title: AWS GuardDuty Medium Severity Finding
+    url: https://github.com/panther-labs/panther-analysis/blob/develop/rules/aws_guardduty_rules/aws_guardduty_med_sev_findings.yml
+    license: Apache-2.0
     relation: inspired

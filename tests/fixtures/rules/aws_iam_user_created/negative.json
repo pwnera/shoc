@@ -16,5 +16,31 @@
       "userName": "deploy-ci",
       "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
     }
+  },
+  {
+    "eventVersion": "1.10",
+    "eventID": "scim-create-user",
+    "eventName": "CreateUser",
+    "eventSource": "identitystore-scim.amazonaws.com",
+    "awsRegion": "eu-west-1",
+    "sourceIPAddress": "198.51.100.80",
+    "userAgent": "Go-http-client/2.0",
+    "recipientAccountId": "123456789012",
+    "userIdentity": {
+      "type": "WebIdentityUser",
+      "accountId": "123456789012",
+      "accessKeyId": "EXAMPLESCIMKEY"
+    },
+    "requestParameters": {
+      "httpBody": {
+        "userName": "HIDDEN_DUE_TO_SECURITY_REASONS",
+        "active": true
+      },
+      "tenantId": "EXAMPLETENANT"
+    },
+    "responseElements": null,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "eventCategory": "Management"
   }
 ]

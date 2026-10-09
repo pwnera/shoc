@@ -14,5 +14,38 @@
     "SrcIP": "203.0.113.81",
     "QueryTypeName": "A",
     "RCode": 0
+  },
+  {
+    "_source": "cloudflare_logs",
+    "_dataset": "gateway_dns",
+    "QueryName": "faceb00k-security.example.net",
+    "QueryCategoryNames": [
+      "Security threats",
+      "Brand Embedding"
+    ],
+    "ResolverDecision": "allowedOnNoPolicyMatch",
+    "DeviceName": "LAPTOP-0043",
+    "DeviceID": "7f3e2a10-0c4d-4b8e-9a61-5d2c8e0f0043",
+    "Email": "jane.roe@example.com",
+    "SrcIP": "203.0.113.81",
+    "QueryTypeName": "A",
+    "RCode": 0
+  },
+  {
+    "_source": "cloudflare_logs",
+    "_dataset": "gateway_dns",
+    "QueryName": "bakery.example.org",
+    "QueryCategoryNames": [
+      "Food & Drink",
+      "Security threats",
+      "Compromised Domain"
+    ],
+    "ResolverDecision": "allowedOnNoPolicyMatch",
+    "DeviceName": "LAPTOP-0044",
+    "DeviceID": "7f3e2a10-0c4d-4b8e-9a61-5d2c8e0f0044",
+    "Email": "sam.poe@example.com",
+    "SrcIP": "203.0.113.81",
+    "QueryTypeName": "A",
+    "RCode": 0
   }
 ]

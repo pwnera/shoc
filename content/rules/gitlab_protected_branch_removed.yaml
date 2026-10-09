@@ -1,0 +1,41 @@
+id: gitlab_protected_branch_removed
+title: GitLab branch protection removed or force pushes allowed
+description: >
+  Protection was removed from a branch, or force pushes were allowed on a
+  protected one. Code can then reach the branch that deploys without review,
+  and its history can be rewritten. Any protected branch fires, since
+  repositories name their deploying branch differently. Widening who may push
+  or merge to a protected branch does not fire.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.65
+attack: [T1562.001, T1195]
+logsource:
+  product: gitlab
+  service: audit_events
+detection:
+  selection_removed:
+    api.operation: protected_branch_removed
+  selection_force_push:
+    api.operation: protected_branch_allow_force_push_updated
+    raw.details.to: true
+  condition: selection_removed or selection_force_push
+  timeframe: 15m
+entity: resource.uid
+fields: [actor.user.name, resource.uid, raw.details.target_details, api.operation, src_endpoint.ip]
+sources:
+  - name: Elastic
+    title: GitHub Protected Branch Settings Changed
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/github/defense_evasion_github_protected_branch_settings_changed
+    license: Elastic-2.0
+    relation: inspired
+  - name: Splunk
+    title: GitHub Organizations Disable Classic Branch Protection Rule
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/github_organizations_disable_classic_branch_protection_rule.yml
+    license: Apache-2.0
+    relation: inspired
+  - name: GitLab
+    title: Protected branch audit events, ee/lib/repositories/protected_branches_changes_auditor.rb
+    url: https://gitlab.com/gitlab-org/gitlab/-/blob/master/ee/lib/repositories/protected_branches_changes_auditor.rb
+    relation: inspired

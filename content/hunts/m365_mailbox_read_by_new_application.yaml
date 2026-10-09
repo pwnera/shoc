@@ -1,0 +1,53 @@
+id: m365_mailbox_read_by_new_application
+title: An application that never read mail in the tenant starts reading it
+hypothesis: >
+  A consent-phishing app, a mailbox copying tool or an app given access to
+  every mailbox shows up as a client application id that has never read mail
+  in the tenant before. In the Storm-0558 intrusion a US agency caught the
+  attacker this way: MailItemsAccessed from an app id that did not normally
+  read its mail. As a rule it would fire on every new mail client; as a daily
+  hunt it catches the apps the named lists do not know.
+attack: [T1114.002]
+logsource:
+  product: m365
+  service: management
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    api.operation: MailItemsAccessed
+  condition: selection
+baseline:
+  # The operation keeps the history to mail reads and lets it use an index.
+  first_seen: [api.operation, raw.ClientAppId]
+  lookback: 30d
+pivot: [raw.ClientAppId, actor.user.name, raw.MailboxOwnerUPN, src_endpoint.ip, raw.ClientInfoString]
+triage: >
+  Which application is this, and who consented to it? A mail client the
+  company rolled out this week explains it; an app id nobody can name, reading
+  several mailboxes from a hosting network, does not.
+follow_up:
+  - Which consent or app role assignment gave the app its access, and when?
+  - How many mailboxes did it read, and does MailAccessType say Sync?
+sensitive: true
+sources:
+  - name: Chronicle
+    title: Office 365 mail accessed via unexpected application
+    url: https://github.com/chronicle/detection-rules/blob/main/rules/community/microsoft/o365/o365_mail_access_api.yaral
+    license: Apache-2.0
+    relation: adapted
+  - name: Splunk
+    title: O365 OAuth App Mailbox Access via EWS
+    url: https://github.com/splunk/security_content/blob/develop/detections/cloud/o365_oauth_app_mailbox_access_via_ews.yml
+    author: Mauricio Velazco, Splunk
+    license: Apache-2.0
+    relation: inspired
+  - name: Elastic
+    title: M365 Exchange Mailbox Accessed by Unusual Client
+    url: https://github.com/elastic/detection-rules/blob/main/rules/integrations/o365/collection_exchange_mailbox_access_by_unusual_client_app_id.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: CISA
+    title: "AA23-193A: Enhanced monitoring to detect APT activity targeting Outlook Online"
+    url: https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-193a
+    relation: inspired

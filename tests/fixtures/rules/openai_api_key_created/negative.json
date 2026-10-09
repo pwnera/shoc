@@ -18,5 +18,15 @@
     "api_key.updated": {"id": "key_old2", "changes_requested": {"scopes": ["api.model.request"]}},
     "details": {"id": "key_old2", "changes_requested": {"scopes": ["api.model.request"]}},
     "key_id": "key_old2"
+  },
+  {
+    "object": "organization.audit_log",
+    "id": "audit_log-01ServiceAccountDeleted",
+    "type": "service_account.deleted",
+    "project": {"id": "proj_abc", "name": "Default project"},
+    "actor": {"type": "session", "session": {"user": {"id": "user-1", "email": "admin@example.com"}, "ip_address": "198.51.100.20", "user_agent": "Mozilla/5.0", "ip_address_details": {"country": "US", "asn": "64500"}}},
+    "service_account.deleted": {"id": "svc_acct_old01"},
+    "details": {"id": "svc_acct_old01"},
+    "key_id": null
   }
 ]

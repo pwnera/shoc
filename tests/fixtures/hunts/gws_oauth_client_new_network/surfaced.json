@@ -1,0 +1,59 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "hunt-token-jane",
+      "applicationName": "token",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "100000000000000000002",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.90",
+    "networkInfo": {
+      "ipAsn": [
+        64500
+      ],
+      "regionCode": "US"
+    },
+    "_application": "token",
+    "events": [
+      {
+        "type": "auth",
+        "name": "activity",
+        "parameters": [
+          {
+            "name": "api_name",
+            "value": "gmail"
+          },
+          {
+            "name": "method_name",
+            "value": "gmail.users.messages.list"
+          },
+          {
+            "name": "client_id",
+            "value": "123456789012-abcdefghijklmnop.apps.googleusercontent.com"
+          },
+          {
+            "name": "num_response_bytes",
+            "value": "4096"
+          },
+          {
+            "name": "product_bucket",
+            "value": "GMAIL"
+          },
+          {
+            "name": "app_name",
+            "value": "Mail Sync Helper"
+          },
+          {
+            "name": "client_type",
+            "value": "WEB"
+          }
+        ]
+      }
+    ]
+  }
+]

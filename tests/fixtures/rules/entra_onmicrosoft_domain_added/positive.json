@@ -1,0 +1,32 @@
+[
+  {
+    "id": "Directory_00000000-0000-0000-0000-00000000e001_ABCDE_1",
+    "activityDisplayName": "Add verified domain",
+    "category": "DirectoryManagement",
+    "loggedByService": "Core Directory",
+    "operationType": "Add",
+    "result": "success",
+    "resultReason": "",
+    "correlationId": "00000000-0000-0000-0000-00000000e002",
+    "initiatedBy": {
+      "user": {
+        "id": "00000000-0000-0000-0000-00000000a003",
+        "userPrincipalName": "it-admin@example.com",
+        "ipAddress": "203.0.113.61"
+      }
+    },
+    "targetResources": [
+      {
+        "id": "00000000-0000-0000-0000-00000000e003",
+        "displayName": "msftsecuritysupport.onmicrosoft.com",
+        "type": "Other",
+        "modifiedProperties": [
+          { "displayName": "Name", "oldValue": "[\"\"]", "newValue": "[\"msftsecuritysupport.onmicrosoft.com\"]" },
+          { "displayName": "Included Updated Properties", "oldValue": null, "newValue": "\"Name\"" }
+        ]
+      }
+    ],
+    "additionalDetails": [],
+    "_stream": "directoryAudits"
+  }
+]

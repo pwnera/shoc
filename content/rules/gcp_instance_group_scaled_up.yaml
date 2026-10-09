@@ -1,0 +1,32 @@
+id: gcp_instance_group_scaled_up
+title: Managed instance group of ten or more VMs created by a person or a key
+description: >
+  A managed instance group was created with ten or more VMs. The group's VMs
+  are then started by Google's own agent, which gcp_instance_creation_burst
+  leaves out, so "make a template, then a group of fifty" is a mining fleet
+  that rule never counts. GKE node pools create their groups as Google's
+  agent and are left out. Resizing an existing group is not read: whether the
+  audit record carries the new size is not confirmed.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.5
+attack: [T1496.001]
+logsource:
+  product: gcp
+  service: audit
+detection:
+  selection:
+    api.operation|endswith: [compute.instanceGroupManagers.insert, compute.regionInstanceGroupManagers.insert]
+    raw.protoPayload.request.targetSize|gte: 10
+  filter_google_agent:
+    actor.user.name|endswith: [cloudservices.gserviceaccount.com, compute-system.iam.gserviceaccount.com, container-engine-robot.iam.gserviceaccount.com]
+  condition: selection and not filter_google_agent
+  timeframe: 15m
+entity: actor.user.name
+fields: [actor.user.name, actor.session.uid, src_endpoint.ip, cloud.region, resource.uid, raw.protoPayload.request.targetSize]
+sources:
+  - name: Google
+    title: Event Threat Detection overview
+    url: https://cloud.google.com/security-command-center/docs/concepts-event-threat-detection-overview
+    relation: inspired

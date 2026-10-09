@@ -1,0 +1,57 @@
+id: dns_oob_interaction_domain_lookup
+title: A device looked up an out-of-band testing domain (interactsh, Burp Collaborator, dnslog)
+description: >
+  A machine resolved a name under an out-of-band interaction service such as
+  interactsh (oast.fun, interact.sh), Burp Collaborator (oastify.com), dnslog.cn,
+  ceye.io or Canarytokens. Exploits for blind command injection, SSRF and
+  deserialisation make the vulnerable server look up such a name to prove the
+  payload ran, and React2Shell exploitation in December 2025 used these
+  callbacks to pick Next.js servers before dropping miners and backdoors.
+  Malicious npm and PyPI packages call them from developers' laptops at
+  install. The machine that resolved the name is the one that ran the payload.
+  Burp's own polling of its server is left out; a Canarytoken the company
+  planted is a real finding, because someone opened it.
+status: experimental
+date: 2026-10-09
+severity: high
+confidence: 0.7
+attack: [T1190, T1071.004, T1195.002]
+sources:
+  - name: Sigma
+    title: "DNS Query to External Service Interaction Domains"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/network/dns/net_dns_external_service_interaction_domains.yml
+    author: "Florian Roth (Nextron Systems), Matt Kelly (list of domains)"
+    license: DRL-1.1
+    relation: adapted
+  - name: Elastic
+    title: "Network Connection to OAST Domain via Script Interpreter"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/cross-platform/command_and_control_network_connection_to_oast_domain.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Wiz Research
+    title: "React2Shell: Technical Deep-Dive & In-the-Wild Exploitation of CVE-2025-55182"
+    url: https://www.wiz.io/blog/nextjs-cve-2025-55182-react2shell-deep-dive
+    relation: inspired
+  - name: Microsoft
+    title: "Enrich your advanced hunting experience using network layer signals from Zeek"
+    url: https://techcommunity.microsoft.com/t5/microsoft-defender-for-endpoint/enrich-your-advanced-hunting-experience-using-network-layer/ba-p/3794693
+    relation: inspired
+logsource:
+  product: edr
+  service: telemetry
+detection:
+  selection:
+    class_uid: 4003
+    query.hostname|endswith: [.oast.fun, .oast.live, .oast.me, .oast.online, .oast.pro, .oast.site, .interact.sh,
+                              .oastify.com, .burpcollaborator.net, .canarytokens.com, .dnslog.cn, .dnslog.ink,
+                              .ceye.io, .requestbin.net, .dnshook.site, .p8.lol, .gobygo.net, .digimg.store,
+                              .log.dnslog.pp.ua, .log.dnslog.qzz.io, .log.dnslogs.dpdns.org, .log.javaweb.org,
+                              .log.nat.cloudns.ph, .dns.su18.org, .ddns.1433.eu.org, .ddns.bypass.eu.org,
+                              .ddns.xn--gg8h.eu.org, .instances.httpworkbench.com]
+  # Burp's client polling its server is the tester's machine, not the target.
+  filter_burp_polling:
+    query.hostname|contains: polling.oastify.com
+  condition: selection and not filter_burp_polling
+  timeframe: 1h
+entity: resource.uid
+fields: [query.hostname, device.hostname, actor.user.name, src_endpoint.ip, process.name, process.cmd_line]

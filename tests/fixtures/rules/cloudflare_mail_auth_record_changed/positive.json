@@ -1,0 +1,38 @@
+[
+  {
+    "id": "9c8d7e6f5a4b40c1b2d3e4f5a6b7c801",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Update DNS record", "result": "success", "type": "update"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2101", "method": "PATCH", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records/372e67954025e0ba6aaa6d586b9e0b01", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "372e67954025e0ba6aaa6d586b9e0b01", "product": "dns_records", "request": {"content": "v=spf1 include:_spf.example.net ip4:203.0.113.25 ~all"}, "response": {"id": "372e67954025e0ba6aaa6d586b9e0b01", "type": "TXT", "name": "example.com", "content": "v=spf1 include:_spf.example.net ip4:203.0.113.25 ~all"}, "scope": "zones", "type": "dns_records"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "9c8d7e6f5a4b40c1b2d3e4f5a6b7c802",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Create DNS record", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2102", "method": "POST", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "", "product": "dns_records", "request": {"type": "TXT", "name": "s2._domainkey", "content": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAfakekeyfakekey"}, "response": {"id": "372e67954025e0ba6aaa6d586b9e0b02", "type": "TXT", "name": "s2._domainkey.example.com", "content": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAfakekeyfakekey"}, "scope": "zones", "type": "dns_records"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "9c8d7e6f5a4b40c1b2d3e4f5a6b7c803",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Delete DNS record", "result": "success", "type": "delete"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "dash", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2103", "method": "DELETE", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records/372e67954025e0ba6aaa6d586b9e0b03", "user_agent": "Mozilla/5.0"},
+    "resource": {"id": "372e67954025e0ba6aaa6d586b9e0b03", "product": "dns_records", "request": {}, "response": {"id": "372e67954025e0ba6aaa6d586b9e0b03", "type": "TXT", "name": "_dmarc.example.com", "content": "v=DMARC1; p=reject; rua=mailto:dmarc@example.com"}, "scope": "zones", "type": "dns_records"},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  },
+  {
+    "id": "9c8d7e6f5a4b40c1b2d3e4f5a6b7c804",
+    "account": {"id": "4bb334f7c94c4a29a045f03944f072e5", "name": "Acme"},
+    "action": {"description": "Batch DNS Records", "result": "success", "type": "create"},
+    "actor": {"id": "f6b5de0326bb5182b8a4840ee01ec774", "context": "api", "email": "mallory@example.com", "ip_address": "203.0.113.7", "type": "user"},
+    "raw": {"cf_ray_id": "8e9b1c60ef9e2104", "method": "POST", "status_code": 200, "uri": "/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records/batch", "user_agent": "curl/8.7.1"},
+    "resource": {"type": "batch", "scope": "zones", "product": "dns_records", "request": {"patches": [{"id": "372e67954025e0ba6aaa6d586b9e0b04", "content": "v=DMARC1; p=none"}]}, "response": {"patches": [{"id": "372e67954025e0ba6aaa6d586b9e0b04", "name": "_dmarc.example.com", "tags": [], "type": "TXT", "content": "v=DMARC1; p=none", "proxied": false}]}},
+    "zone": {"id": "023e105f4ecef8ad9ca31a8372d0c353", "name": "example.com"}
+  }
+]

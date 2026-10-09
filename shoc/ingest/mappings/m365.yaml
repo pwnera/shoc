@@ -83,7 +83,8 @@ fields:
   api_response_error: { path: LogonError }
 
 derive:
-  - when: { ResultStatus: { in: [Failed, Failure, "False", "FALSE"] } }
+  # Security & Compliance cmdlets (RecordType 18) write a failure as Error.
+  - when: { ResultStatus: { in: [Failed, Failure, Error, "False", "FALSE"] } }
     set: { status: Failure, severity_id: 2 }
 
   # Class by record type.

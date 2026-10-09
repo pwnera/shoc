@@ -1,0 +1,29 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-2sv-codes",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "it-admin@example.com",
+      "profileId": "100000000000000000001",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.40",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "USER_SETTINGS",
+        "name": "GENERATE_2SV_SCRATCH_CODES",
+        "parameters": [
+          {
+            "name": "USER_EMAIL",
+            "value": "cfo@example.com"
+          }
+        ]
+      }
+    ]
+  }
+]
