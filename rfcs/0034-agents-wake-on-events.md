@@ -57,6 +57,9 @@ type up in `WAKES`:
 | `openspace.message` from a person, or an `inject` | `case.sweep` | 10 s |
 | `action.executed`, `action.rolled_back`, `action.rejected` by a person | `case.sweep` | 10 s |
 | `intel.report` | `hunt.daily`, `detection.backlog` | 600 s |
+
+D159 later moved the Hunter's wake to `hunt.item`, published for each item put on
+its backlog, at 60 s; `intel.report` wakes only the Detection Engineer.
 | `events.loaded` | `detect.run` | 60 s |
 
 The job's `run_at` is the end of the window and its idempotency key names the

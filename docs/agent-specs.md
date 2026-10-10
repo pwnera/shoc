@@ -565,8 +565,10 @@ stops looking things up once it has spent the rest. A ready pack that falls
 back because its source stopped sending pages the operator with that source's
 coverage page.
 
-**The backlog (RFC 0032).** Before the packs run, one turn per item on the top
-three open backlog items, under 300,000 tokens a day. Each ends `packed` (only
+**The backlog (RFC 0032).** Before the packs run, nightly and within a minute of
+an item being added, one turn per item on the top three open items not worked
+that day, under 1,000,000 tokens a day. An item whose logs (`seen_in`) no
+connected source carries ends `source_gap` in code, with no turn. Each ends `packed` (only
 once `hunt.merge` accepted a pack), `covered`, `not_worth`, `source_gap`
 (reopened when a source sends the product) or `later` (`stuck` the third time).
 The gate keeps a pack when it parses, a connected source sends its product, its

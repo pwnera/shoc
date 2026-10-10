@@ -423,7 +423,7 @@ def revert(ctx: Context, inp: HuntRevertInput) -> Result:
 
 @dataclass
 class HuntWorkInput:
-    limit: int = f(hunter.ITEMS_PER_DAY, doc="How many open items to work, priority first, 1 to 20")
+    limit: int = f(hunter.ITEMS_PER_RUN, doc="How many open items to work, priority first, 1 to 20")
 
 
 @dataclass

@@ -1284,9 +1284,11 @@ def add_to_backlog(
     priority: int = 3,
     evidence: dict[str, Any] | None = None,
 ) -> str:
-    """Write a trigger up as an abstract and put it on the backlog."""
+    """Write a trigger up as an abstract and put it on the backlog; the Hunter wakes for it."""
+    from shoc.cases import engine
+
     uid = "HBL-" + hashlib.sha256(f"{tenant_id}|{trigger}|{title}".encode()).hexdigest()[:20]
-    execute(
+    filed = execute(
         conn,
         """INSERT INTO shoc.hunt_backlog
                (item_uid, tenant_id, trigger, title, hypothesis, would_confirm,
@@ -1312,6 +1314,10 @@ def add_to_backlog(
             json.dumps(evidence or {}, default=str),
         ),
     )
+    if filed:
+        engine.publish(
+            conn, tenant_id, "hunt.item", uid, {"title": title[:200], "trigger": trigger}
+        )
     return uid
 
 
@@ -1332,15 +1338,16 @@ def backlog(
 
 
 # -- packs for the backlog (RFC 0032) ---------------------------------------------------
-# Once a day the Hunter takes the top of its backlog, one model turn per item:
-# a pack behind the gate, or the reason there is none. A merged pack runs with
+# The Hunter takes the top of its backlog nightly and within a minute of an item
+# being added, one model turn per item: a pack behind the gate, or the reason
+# there is none. A merged pack runs with
 # the shipped ones from the next cycle, and its first concluded run closes the item.
 PACK_ID = re.compile(r"^[a-z0-9][a-z0-9_]{2,79}$")
 PACK_WHO = "agent:Hunter"
-ITEMS_PER_DAY = 3
+ITEMS_PER_RUN = 3
 PACK_STEPS = 8
 PACK_CALLS = 24
-PACK_TOKENS_PER_DAY = 300_000
+PACK_TOKENS_PER_DAY = 1_000_000
 STUCK_AFTER = 3
 # How long before the window a `first_seen` baseline fixture is placed.
 BASELINE_DAYS_BEFORE = 10
@@ -1653,9 +1660,10 @@ def work_backlog(
     tenant_id: str,
     config: Any = None,
     client: Any = None,
-    limit: int = ITEMS_PER_DAY,
+    limit: int = ITEMS_PER_RUN,
 ) -> dict[str, Any]:
-    """Reopen gaps a new source closed, then one model turn per item, priority first."""
+    """Reopen gaps a new source closed, close those no source here can answer, then
+    one model turn per item not worked today, priority first."""
     from shoc.agents.llm import NoLLM, from_config
     from shoc.config import Config
 
@@ -1663,6 +1671,8 @@ def work_backlog(
     counted: dict[str, int] = {}
     if reopened := _reopen_gaps(conn, tenant_id):
         counted["reopened"] = reopened
+    if unseen := _no_source(conn, tenant_id):
+        counted["source_gap"] = unseen
     client = client if client is not None else from_config(cfg, conn, tenant_id)
     if isinstance(client, NoLLM) or not getattr(client, "available", True):
         return {"worked": 0, "outcomes": counted, "why": "no model is configured"}
@@ -1674,12 +1684,18 @@ def work_backlog(
             """SELECT item_uid, trigger, title, hypothesis, would_confirm, data_needed, why_now,
                       attack, priority, evidence
                FROM shoc.hunt_backlog WHERE tenant_id = %s AND state = 'open'
+                 -- `later` means missing today: a second run the same day leaves it
+                 AND coalesce((evidence->>'worked_at')::date < current_date, true)
                ORDER BY priority, evidence->>'worked_at' NULLS FIRST, created_at""",
             (tenant_id,),
         ),
     )[: max(1, limit)]
     if not items:
-        return {"worked": 0, "outcomes": counted, "why": "the backlog is empty"}
+        return {
+            "worked": 0,
+            "outcomes": counted,
+            "why": "no open item waits that was not worked today",
+        }
     spent = _pack_tokens_today(conn, tenant_id)
     typical = _typical_item(conn, tenant_id)
     tokens, worked, reasoning = 0, 0, []
@@ -1791,6 +1807,47 @@ def _reopen_gaps(conn: Conn, tenant_id: str) -> int:
         )
         reopened += 1
     return reopened
+
+
+def _no_source(conn: Conn, tenant_id: str) -> int:
+    """An item whose logs (`seen_in`) no delivering source carries ends `source_gap`
+    without a model turn, waiting for every product that could carry them. Half
+    the hunts CTI filed asked for endpoint or network logs, at about 130,000
+    tokens each to be told so."""
+    from shoc.agents.detection_engineer import _delivering
+    from shoc.detect.context import LOG_KINDS, kinds
+    from shoc.ingest import ocsf
+
+    delivering = _delivering(conn, tenant_id)
+    taken = ocsf.classes().values()
+    closed = 0
+    for row in fetch_all(
+        conn,
+        """SELECT item_uid, evidence->'seen_in' AS seen_in FROM shoc.hunt_backlog
+           WHERE tenant_id = %s AND state = 'open' AND evidence ? 'seen_in'""",
+        (tenant_id,),
+    ):
+        named = kinds(row["seen_in"])
+        could = {
+            product
+            for product, classes in taken
+            if any(classes & set(LOG_KINDS[k][1]) for k in named)
+        }
+        if not named or could & delivering:
+            continue
+        closed += _decide(
+            conn,
+            tenant_id,
+            str(row["item_uid"]),
+            "rejected",
+            PACK_WHO,
+            {
+                "decision": "source_gap",
+                "because": "no source here sends " + ", ".join(LOG_KINDS[k][0] for k in named),
+                "waiting_for": sorted(could),
+            },
+        )
+    return closed
 
 
 def _pack_context(conn: Conn, tenant_id: str, config: Any) -> str:

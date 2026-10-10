@@ -183,7 +183,12 @@ def test_an_event_wakes_the_agents_it_concerns_once_per_window(conn, config):
 
     execute(conn, "DELETE FROM shoc.jobs")
     engine.publish(conn, config.tenant_id, "intel.report", "RPT-x", {"techniques": ["T1078"]})
-    assert [k for k, _ in woken()] == ["detection.backlog", "hunt.daily"]
+    assert [k for k, _ in woken()] == ["detection.backlog"], "its hunts wake the Hunter"
+
+    execute(conn, "DELETE FROM shoc.jobs")
+    engine.publish(conn, config.tenant_id, "hunt.item", "HBL-x", {})
+    [(kind, run_at)] = woken()
+    assert kind == "hunt.daily" and run_at <= datetime.now(UTC) + timedelta(seconds=60)
 
 
 def test_a_job_queued_for_later_wakes_an_idle_worker_when_it_falls_due(

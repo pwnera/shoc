@@ -688,9 +688,12 @@ WAKES: dict[str, tuple[tuple[str, int], ...]] = {
     "action.executed": (("case.sweep", 10),),
     "action.rolled_back": (("case.sweep", 10),),
     "action.rejected": (("case.sweep", 10),),
-    # A report CTI kept: the Hunter works the hunts it filed and runs what is
-    # due, and the Detection Engineer takes the techniques no rule maps to.
-    "intel.report": (("hunt.daily", 600), ("detection.backlog", 600)),
+    # A report CTI kept: the Detection Engineer takes the techniques no rule
+    # maps to. The hunts it filed wake the Hunter as `hunt.item`.
+    "intel.report": (("detection.backlog", 600),),
+    # An item on the Hunter's backlog, from CTI, a person or an agent: the Hunter
+    # works it, and a pack merged for it runs, within a minute.
+    "hunt.item": (("hunt.daily", 60),),
     # What a source loaded, pulled or pushed, is read for detections now and
     # once for the whole cycle's polls, not by each sync or at the next cycle.
     "events.loaded": (("detect.run", 60),),

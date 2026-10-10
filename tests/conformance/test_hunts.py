@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -827,11 +827,24 @@ def test_the_hunter_ends_an_item_that_is_not_worth_a_pack(ctx, store, config, cl
     assert row["state"] == "rejected" and row["evidence"]["decision"] == "not_worth"
 
 
+def _a_day_later(ctx, config, uid: str) -> None:
+    execute(
+        ctx.db,
+        """UPDATE shoc.hunt_backlog SET evidence = evidence || jsonb_build_object(
+               'worked_at', (now() - interval '1 day')::text)
+           WHERE tenant_id = %s AND item_uid = %s""",
+        (config.tenant_id, uid),
+    )
+
+
 def test_a_pack_the_gate_never_accepted_is_not_packed(ctx, store, config, clean):
     uid = _item(ctx, config)
     for _ in range(hunter.STUCK_AFTER - 1):
         out = hunter.work_backlog(ctx.db, store, config.tenant_id, config, PackWriter("packed"))
         assert out["outcomes"] == {"later": 1}
+        again = hunter.work_backlog(ctx.db, store, config.tenant_id, config, PackWriter("packed"))
+        assert again["worked"] == 0, "what is missing today is not asked for again today"
+        _a_day_later(ctx, config, uid)
     row = _state(ctx, config, uid)
     assert row["state"] == "open" and row["evidence"]["gate"] == "hunt.merge was never called"
     out = hunter.work_backlog(ctx.db, store, config.tenant_id, config, PackWriter("packed"))
@@ -846,3 +859,33 @@ def test_a_source_gap_comes_back_when_the_source_does(ctx, store, config, clean)
     _connect(ctx, config, BEDROCK)
     out = hunter.work_backlog(ctx.db, store, config.tenant_id, config, NoLLM())
     assert out["outcomes"] == {"reopened": 1} and _state(ctx, config, uid)["state"] == "open"
+
+
+def test_an_item_no_source_here_can_show_ends_without_a_turn(ctx, store, config, clean):
+    _connect(ctx, config, FIRST)
+    endpoint, cloud = (
+        hunter.add_to_backlog(
+            ctx.db, config.tenant_id, trigger="cti", title=title, evidence={"seen_in": kinds}
+        )
+        for title, kinds in (
+            ("A shell from a browser", ["process", "dns"]),
+            ("A new API", ["admin_api"]),
+        )
+    )
+    out = hunter.work_backlog(ctx.db, store, config.tenant_id, config, NoLLM())
+    assert out["outcomes"] == {"source_gap": 1}
+    row = _state(ctx, config, endpoint)
+    assert row["state"] == "rejected" and row["evidence"]["decision"] == "source_gap"
+    assert row["evidence"]["because"] == "no source here sends process starts, DNS lookups"
+    assert row["evidence"]["waiting_for"], "it comes back when a source sends them"
+    assert _state(ctx, config, cloud)["state"] == "open"
+
+
+def test_an_item_on_the_backlog_wakes_the_hunter(ctx, config, clean):
+    _item(ctx, config)
+    woken = fetch_all(
+        ctx.db,
+        "SELECT run_at FROM shoc.jobs WHERE tenant_id = %s AND kind = 'hunt.daily'",
+        (config.tenant_id,),
+    )
+    assert len(woken) == 1 and woken[0]["run_at"] <= datetime.now(UTC) + timedelta(seconds=60)
