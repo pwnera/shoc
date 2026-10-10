@@ -216,7 +216,7 @@ allows:
 | Cloudflare | Account API token with `Account Settings: Read` |
 | Cloudflare Logpush | R2 API token with Object Read on the Logpush bucket; for S3, `s3:ListBucket` and `s3:GetObject` on it |
 | Tailscale | OAuth client (Trust credentials) with the Audit Logs read scope; an API access token works too, and expires within 90 days |
-| Stripe | Restricted key with `Activity logs: read`, `Events: read` and `Payouts: read`; Stripe lists an event to a restricted key only when the key can read the object it is about |
+| Stripe | Restricted key with read on `Activity logs` and `Events`, and on what each event is about: `Charges and Refunds` for failed charges, Radar's early fraud warnings, and `Payouts`. Stripe's event docs say a restricted key lists an event only when it can read the event's object; no live key has confirmed it, and no Stripe page names the early fraud warning permission |
 | OpenAI | Admin key with audit logs read, which only an organization owner can create. An owner first turns audit logging on in the organization's data controls; nothing before that day is recorded |
 | Anthropic | Admin API key, which only an organization admin can create; an individual account has no Admin API |
 
