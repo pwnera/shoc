@@ -9,7 +9,7 @@ import pytest
 
 from shoc.db import jobs
 from shoc.db.pool import execute, fetch_all, fetch_one
-from shoc.detect.engine import run_all
+from shoc.detect.engine import match_indicators, run_all
 from shoc.errors import StoreError
 from shoc.ingest import batch
 from shoc.store.base import StoreHealth
@@ -81,6 +81,42 @@ def test_a_load_wakes_only_the_rules_over_its_products(conn, store, config, clea
         conn, tenant, [{"metadata_product": "AWS CloudTrail", "ingested_at": later.isoformat()}]
     )
     stats = run_all(conn, UNREACHABLE, tenant, [MATCH], now=later + timedelta(minutes=5))
+    assert "the store was read" in stats.errors[MATCH.id]
+
+
+def test_a_load_is_read_by_the_cycle_after_it_and_not_again(conn, store, config, clean):
+    """The cycle a load woke read it; the scheduled one 15 minutes later must
+    not read it again, though it is within `SETTLE` of the watermark (D160)."""
+    tenant = config.tenant_id
+    run_all(conn, store, tenant, [MATCH])
+    match_indicators(conn, store, tenant)
+    batch.loaded(
+        conn,
+        tenant,
+        [{"metadata_product": "AWS CloudTrail", "ingested_at": datetime.now(UTC).isoformat()}],
+    )
+    run_all(conn, store, tenant, [MATCH])
+    match_indicators(conn, store, tenant)
+    stats = run_all(conn, UNREACHABLE, tenant, [MATCH])
+    assert not stats.errors
+    assert match_indicators(conn, UNREACHABLE, tenant) == []
+
+
+def test_a_cycle_that_stopped_short_of_now_reads_again(conn, store, config, clean, now):
+    """A catch-up cycle reads six hours of a backlog, so it has not seen a load
+    committed after them, and the next cycle reads it (D160)."""
+    tenant = config.tenant_id
+    run_all(conn, store, tenant, [MATCH], now=now)
+    execute(
+        conn,
+        """UPDATE shoc.rule_state SET watermark = %s, loads_seen_at = %s
+           WHERE tenant_id = %s AND rule_id = %s""",
+        (now - timedelta(hours=8), now - timedelta(hours=8), tenant, MATCH.id),
+    )
+    _stamp(conn, tenant, now - timedelta(hours=1))
+    run_all(conn, store, tenant, [MATCH])
+    assert _watermark(conn, tenant) < now - timedelta(hours=2)
+    stats = run_all(conn, UNREACHABLE, tenant, [MATCH])
     assert "the store was read" in stats.errors[MATCH.id]
 
 

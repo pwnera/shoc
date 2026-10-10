@@ -64,12 +64,13 @@ FIXUPS: dict[str, tuple[tuple[re.Pattern[str], str], ...]] = {
 }
 
 
-def translate(canonical_sql: str, dialect: str) -> str:
+def translate(canonical_sql: str, dialect: str, limit: int | None = None) -> str:
     """Parse canonical SQL and write it in `dialect`, keeping placeholders.
 
     Only one query passes: `query()` is the read path on every backend, and on
     a warehouse without a reader credential it is all that stands between an
-    agent and a DELETE (SEC-1).
+    agent and a DELETE (SEC-1). With `limit`, a SELECT returns at most that
+    many rows (`capped`).
     """
     try:
         statements = [s for s in sqlglot.parse(canonical_sql) if s is not None]
@@ -78,6 +79,8 @@ def translate(canonical_sql: str, dialect: str) -> str:
     if len(statements) != 1 or not isinstance(statements[0], exp.Query):
         raise StoreError("the event store reads one SELECT at a time; this is not one")
     tree = statements[0]
+    if limit is not None:
+        tree = capped(tree, limit)
     if dialect == "bigquery":
         tree = tree.transform(_bigquery)
     if dialect == "snowflake":
@@ -101,6 +104,26 @@ def translate(canonical_sql: str, dialect: str) -> str:
     for pattern, replacement in FIXUPS.get(dialect, ()):
         out = pattern.sub(replacement, out)
     return out
+
+
+def capped(tree: exp.Query, most: int) -> exp.Query:
+    """`tree` with a LIMIT of at most `most`, so the store stops there.
+
+    `query(limit=n)` keeps n rows, and Databricks and Snowflake fetched every
+    row before cutting: the daily graph and posture reads moved 74,679 rows to
+    keep 20,000, and the Integrator a product's whole raw history to keep 100
+    (D162). A LIMIT the caller wrote that is already lower, or bound as a
+    parameter, stays. A UNION is left as it is.
+    """
+    if not isinstance(tree, exp.Select):
+        return tree
+    current = tree.args.get("limit")
+    value = current.expression if isinstance(current, exp.Limit) else None
+    if current is not None and not (isinstance(value, exp.Literal) and value.is_int):
+        return tree
+    if value is not None and int(value.name) <= most:
+        return tree
+    return tree.limit(most)
 
 
 # Stands in for an escaped `!` while the escapes around it are rewritten.
@@ -162,5 +185,7 @@ def bind(sql: str, params: dict[str, Any] | None, dialect: str) -> tuple[str, An
     return bound, {n: params[n] for n in names}
 
 
-def prepare(canonical_sql: str, params: dict[str, Any] | None, dialect: str) -> tuple[str, Any]:
-    return bind(translate(canonical_sql, dialect), params, dialect)
+def prepare(
+    canonical_sql: str, params: dict[str, Any] | None, dialect: str, limit: int | None = None
+) -> tuple[str, Any]:
+    return bind(translate(canonical_sql, dialect, limit), params, dialect)

@@ -218,6 +218,7 @@ def clean(conn, store, config: Config):
                 "hunt_backlog",
                 "notices",
                 "store_loads",
+                "store_reads",
                 "own_identities",
                 "own_token_requests",
                 "source_history",

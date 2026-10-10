@@ -22,7 +22,7 @@ import psycopg
 from shoc.capabilities.registry import Caller, Context
 from shoc.config import Config
 from shoc.db import jobs
-from shoc.db.pool import ALL_TENANTS, connect, execute, set_tenant
+from shoc.db.pool import ALL_TENANTS, connect, execute, fetch_one, set_tenant
 
 log = logging.getLogger("shoc.worker")
 
@@ -205,6 +205,7 @@ def _handle(job: dict[str, Any], config: Config) -> str:
             "detect.run", ctx, {k: v for k, v in payload.items() if k in ("rule_id", "lookback")}
         )
         _queue_investigations(ctx, result.data.cases_opened)
+        _reread(ctx)
         return result.summary
     if kind == "case.investigate":
         result = call("case.investigate", ctx, {"case_uid": payload["case_uid"]})
@@ -240,6 +241,11 @@ def _handle(job: dict[str, Any], config: Config) -> str:
     if kind == "action.expire":
         return call("action.expire", ctx, {"action_uid": payload["action_uid"]}).summary
     if kind == "stream.deliver":
+        # Every minute: with no webhook to send to, no audited call (D163).
+        if not fetch_one(
+            ctx.db, "SELECT 1 FROM shoc.webhooks WHERE tenant_id = %s AND enabled", (tenant,)
+        ):
+            return "stream: no webhook to deliver to"
         return call("stream.deliver", ctx, {}).summary
     if kind == "graph.refresh":
         return call("graph.refresh", ctx, {"days": int(payload.get("days", 30))}).summary
@@ -567,6 +573,31 @@ def run_approved_actions(conn: Any) -> int:
     for row in pending:
         action_store.queue_run(conn, str(row["tenant_id"]), str(row["action_uid"]))
     return len(pending)
+
+
+# A load this recent still has a warehouse's compute up: the run it wakes
+# starts within a minute (`events.loaded`).
+JUST_LOADED = timedelta(minutes=5)
+
+
+def _reread(ctx: Context) -> None:
+    """Read again what the console and the hourly Ops check ask the store,
+    after a load and only then (`shoc.store.kept`): the load woke this run, so
+    on a warehouse the compute it reads with is already up (D161)."""
+    from shoc.agents import ops
+    from shoc.store import kept
+
+    if not fetch_one(
+        ctx.db,
+        "SELECT 1 FROM shoc.store_loads WHERE tenant_id = %s AND loaded_at > now() - %s",
+        (ctx.tenant_id, JUST_LOADED),
+    ):
+        return
+    try:
+        ops.source_quality(ctx.db, ctx.store, ctx.tenant_id)
+        kept.health(ctx.db, ctx.store, ctx.tenant_id)
+    except Exception as exc:  # a reader reads it itself
+        log.warning("could not reread the kept store reads: %s", exc)
 
 
 def check_agent_can_read(config: Config) -> bool:

@@ -252,7 +252,7 @@ VALUES ({", ".join(f"s.`{c}`" for c in ocsf.COLUMN_NAMES)})""",
     def query(
         self, canonical_sql: str, params: dict[str, Any] | None = None, limit: int = 1000
     ) -> QueryResult:
-        sql, args = prepare(self._qualify(canonical_sql), params, self.dialect)
+        sql, args = prepare(self._qualify(canonical_sql), params, self.dialect, limit + 1)
         started = time.monotonic()
         try:
             rows, _ = self._run(sql, args, limit)

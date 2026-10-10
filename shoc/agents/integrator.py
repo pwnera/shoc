@@ -29,6 +29,7 @@ from typing import Any
 from shoc.agents import ops
 from shoc.db.pool import Conn, execute, fetch_all
 from shoc.jsonschema import field as f
+from shoc.store.sql import max_params
 
 SAMPLE_LIMIT = 20
 # Recent events a mapping patch is measured against, and how many of them the
@@ -209,7 +210,9 @@ def proof(conn: Conn, store: Any, tenant_id: str, product: str) -> str:
         (tenant_id,),
     )
     owner = {str(u): str(f["finding_uid"]) for f in findings for u in (f["event_uids"] or [])[:5]}
-    uids = list(owner)[:500]
+    # The newest findings' events, as many as one statement binds: Databricks
+    # refuses a 257th value.
+    uids = list(owner)[: min(500, max_params(store.dialect) - 2)]
     if not uids:
         return ""
     params: dict[str, Any] = {f"u{i}": u for i, u in enumerate(uids)}

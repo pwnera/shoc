@@ -238,7 +238,7 @@ class SnowflakeStore:
     def query(
         self, canonical_sql: str, params: dict[str, Any] | None = None, limit: int = 1000
     ) -> QueryResult:
-        sql, args = prepare(self._qualify(canonical_sql), params, self.dialect)
+        sql, args = prepare(self._qualify(canonical_sql), params, self.dialect, limit + 1)
         started = time.monotonic()
         try:
             rows = self._execute(sql, args)

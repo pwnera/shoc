@@ -28,6 +28,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from shoc.db.pool import Conn, execute, fetch_all, fetch_one
+from shoc.store import kept
 
 # Rough per-million-token prices, only for a running estimate. Override with
 # SHOC_LLM_PRICE_IN / SHOC_LLM_PRICE_OUT when yours differ.
@@ -286,7 +287,7 @@ def silent_reasons(conn: Conn, store: Any, tenant_id: str, rules: list[Any]) -> 
     if not rules:
         return []
     quality = {q.product: q for q in source_quality(conn, store, tenant_id)}
-    seen_ops: dict[str, set[str]] = {}
+    seen_ops: dict[str, set[str]] | None = None
     out: list[str] = []
     for rule in rules:
         products = [
@@ -313,29 +314,34 @@ def silent_reasons(conn: Conn, store: Any, tenant_id: str, rules: list[Any]) -> 
             continue
         wanted = _selected_operations(rule)
         if wanted:
-            have: set[str] = set()
-            for product in products:
-                if product not in seen_ops:
-                    seen_ops[product] = {
-                        str(r["op"]).lower()
-                        for r in store.query(
-                            f"SELECT DISTINCT api_operation AS op FROM {layout.EVENTS_TABLE} "
-                            "WHERE tenant_id = :tenant_id AND metadata_product = :product "
-                            "AND time > :since AND api_operation IS NOT NULL",
-                            {
-                                "tenant_id": tenant_id,
-                                "product": product,
-                                "since": datetime.now(UTC) - timedelta(days=30),
-                            },
-                            2000,
-                        ).rows
-                    }
-                have |= seen_ops[product]
+            if seen_ops is None:
+                seen_ops = _operations(conn, store, tenant_id)
+            have = {op for p in products for op in seen_ops.get(p, ())}
             if not any(w.lower() in have for w in wanted):
                 out.append(f"value_absent:{sorted(wanted)[0]}")
                 continue
         out.append("quiet")
     return out
+
+
+def _operations(conn: Conn, store: Any, tenant_id: str) -> dict[str, set[str]]:
+    """Every `api_operation` each product sent in 30 days, in one kept read."""
+    from shoc.store import ocsf as layout
+
+    seen: dict[str, set[str]] = {}
+    for r in kept.rows(
+        conn,
+        store,
+        tenant_id,
+        "operations:30",
+        f"SELECT metadata_product AS product, api_operation AS op FROM {layout.EVENTS_TABLE} "
+        "WHERE tenant_id = :tenant_id AND time > :since AND api_operation IS NOT NULL "
+        "GROUP BY metadata_product, api_operation",
+        {"tenant_id": tenant_id, "since": datetime.now(UTC) - timedelta(days=30)},
+        20_000,
+    ):
+        seen.setdefault(str(r["product"]), set()).add(str(r["op"]).lower())
+    return seen
 
 
 def _selected_operations(rule: Any) -> set[str]:
@@ -376,7 +382,11 @@ def volume(conn: Conn, store: Any, tenant_id: str, days: int = 7) -> dict[str, A
     """Event volume per day and per product — the other half of what this costs."""
     from shoc.store import ocsf as layout
 
-    rows = store.query(
+    rows = kept.rows(
+        conn,
+        store,
+        tenant_id,
+        f"volume:{days}",
         f"""SELECT metadata_product AS product, count(*) AS events
             FROM {layout.EVENTS_TABLE}
             WHERE tenant_id = :tenant_id AND time > :since
@@ -386,7 +396,7 @@ def volume(conn: Conn, store: Any, tenant_id: str, days: int = 7) -> dict[str, A
             "since": datetime.now(UTC) - timedelta(days=days),
         },
         100,
-    ).rows
+    )
     return {
         "by_product": rows,
         "events": sum(int(r["events"]) for r in rows),
@@ -818,7 +828,11 @@ def source_quality(conn: Conn, store: Any, tenant_id: str, days: int = 30) -> li
     lag = LAG_SECONDS
     if backfill:
         lag = f"AVG(CASE WHEN {' OR '.join(backfill)} THEN NULL ELSE {LAG} END)"
-    rows = store.query(
+    rows = kept.rows(
+        conn,
+        store,
+        tenant_id,
+        f"source_quality:{days}",
         f"""SELECT metadata_product AS product, COUNT(*) AS events,
                    MIN(time) AS oldest, MAX(time) AS newest,
                    COUNT(DISTINCT FLOOR(TIME_TO_UNIX(time) / 86400)) AS days_seen,
@@ -829,7 +843,7 @@ def source_quality(conn: Conn, store: Any, tenant_id: str, days: int = 30) -> li
             GROUP BY metadata_product""",
         params,
         200,
-    ).rows
+    )
 
     # Events carry the product name, connector state the connector's. A file
     # source names its mapping in its settings. A source counts as configured
@@ -847,12 +861,12 @@ def source_quality(conn: Conn, store: Any, tenant_id: str, days: int = 30) -> li
     known = {product_of(mappings.get(s.source) or s.source): s for s in health}
     configured = set(known) | {product_of(m or s) for s, m in mappings.items()}
     # How long the store keeps it.
-    kept = fetch_one(
+    retention = fetch_one(
         conn,
         "SELECT payload->>'days' AS days FROM shoc.schedules WHERE schedule_id = %s",
         (f"{tenant_id}:retention",),
     )
-    kept_days = float((kept or {}).get("days") or RETENTION_TARGET_DAYS)
+    kept_days = float((retention or {}).get("days") or RETENTION_TARGET_DAYS)
     now = datetime.now(UTC)
     out: list[SourceQuality] = []
     for row in rows:

@@ -12,6 +12,7 @@ Install with the extra: `pip install "shoc[databricks]"`.
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 import os
@@ -41,6 +42,13 @@ def _utc(value: Any) -> Any:
     if isinstance(value, datetime) and value.tzinfo is None:
         return value.replace(tzinfo=UTC)
     return value
+
+
+@functools.cache
+def _staging_dir() -> str:
+    """One per process: a store is opened per request and per job, and a
+    directory made per store was never removed (D162)."""
+    return tempfile.mkdtemp(prefix="shoc-dbx-")
 
 
 def _ddl_columns() -> str:
@@ -78,7 +86,7 @@ class DatabricksStore:
         self.reader = reader
         self.statement_timeout_seconds = statement_timeout_seconds
         self._conn: Any = None
-        self._staging_dir = tempfile.mkdtemp(prefix="shoc-dbx-")
+        self._staging_dir = _staging_dir()
 
     # -- connection -----------------------------------------------------
     @property
@@ -190,7 +198,7 @@ class DatabricksStore:
 
         # JSON columns are stored as strings so the layout matches every other
         # backend; every field is read as a string and cast in the MERGE.
-        name = f"batch-{int(time.time() * 1000)}-{os.getpid()}.ndjson"
+        name = f"batch-{int(time.time() * 1000)}-{os.getpid()}-{threading.get_ident()}.ndjson"
         local = os.path.join(self._staging_dir, name)
         nbytes = 0
         with open(local, "w") as out:
@@ -237,7 +245,7 @@ class DatabricksStore:
     def query(
         self, canonical_sql: str, params: dict[str, Any] | None = None, limit: int = 1000
     ) -> QueryResult:
-        sql, args = prepare(self._qualify(canonical_sql), params, self.dialect)
+        sql, args = prepare(self._qualify(canonical_sql), params, self.dialect, limit + 1)
         started = time.monotonic()
         try:
             rows = self._execute(sql, args)

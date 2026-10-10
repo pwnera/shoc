@@ -11,6 +11,7 @@ from shoc.db.pool import fetch_all, fetch_one
 from shoc.detect import rules as ruleset
 from shoc.jsonschema import field as f
 from shoc.jsonschema import to_json
+from shoc.store import kept
 
 
 @dataclass
@@ -39,7 +40,8 @@ class SystemHealth:
 def status(ctx: Context, inp: Empty) -> Result:
     from shoc.agents import ops
 
-    store = ctx.store.health()
+    # Kept in Postgres between loads, so polling it does not wake a warehouse (D161).
+    store = kept.health(ctx.db, ctx.store, ctx.tenant_id)
     # The same reading `health.sources` gives. This used to be a second query
     # here, which compared `now() - last_ok_at` against a fixed hour: NULL for a
     # source that had never succeeded, so the worst state a connector can be in

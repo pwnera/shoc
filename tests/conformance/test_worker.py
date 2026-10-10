@@ -821,7 +821,6 @@ def test_the_workers_own_jobs_are_audited_calls(conn, store, config, clean):
 
     before = audit_seq(conn, config.tenant_id)
     for kind in (
-        "stream.deliver",
         "manager.deliver",
         "unattended",
         "retention",
@@ -836,7 +835,6 @@ def test_the_workers_own_jobs_are_audited_calls(conn, store, config, clean):
         (config.tenant_id, before),
     )
     assert [(r["capability"], r["who"]) for r in rows] == [
-        ("stream.deliver", "service:worker"),
         ("manager.deliver", "service:worker"),
         ("case.chase", "service:worker"),
         ("events.retain", "service:worker"),
@@ -850,6 +848,15 @@ def test_the_workers_own_jobs_are_audited_calls(conn, store, config, clean):
         (config.tenant_id,),
     )
     assert [r["kind"] for r in sent] == ["weekly", "exec"]
+
+
+def test_the_minute_delivery_writes_no_audit_row_without_a_webhook(conn, store, config, clean):
+    """It runs every minute, and 1,440 rows a day said 0 events were sent (D163)."""
+    from tests.support import audit_seq
+
+    before = audit_seq(conn, config.tenant_id)
+    worker.handle({"tenant_id": config.tenant_id, "kind": "stream.deliver", "payload": {}}, config)
+    assert audit_seq(conn, config.tenant_id) == before
 
 
 def test_every_tenant_is_scheduled_even_one_migrated_while_the_worker_runs(

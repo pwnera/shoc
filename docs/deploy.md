@@ -245,8 +245,11 @@ installs it when built with `SHOC_EXTRAS=databricks` (or `snowflake`) in
 A warehouse bills for the minutes it is awake. Every schedule starts on a clock
 multiple of its interval, so the source polls and the detection cycle wake it
 together, once every `SHOC_CYCLE_SECONDS`. A cycle with nothing loaded since the
-last one skips the warehouse. Set the warehouse to stop after a minute or two
-of idle time; left at its default, it can stay up between cycles.
+last one skips the warehouse, and the console and the hourly Ops check read the
+store's count and the source scores from Postgres (D160, D161). Set the
+warehouse to stop after a minute or two of idle time. Left at Databricks'
+default of ten minutes, a load every 15 minutes keeps it up about two thirds of
+the day.
 
 BigQuery bills by bytes read instead, with a 10 MB minimum per query, so the
 cost follows the number of rules and cycles: each rule reads only the partitions

@@ -228,6 +228,16 @@ class EventStore(Protocol):
 
 Redshift and BigQuery need no extra: Redshift speaks the Postgres protocol, so `psycopg` connects to it and S3 is one SigV4-signed request; BigQuery is its REST API over `httpx`, signed in as a service account with `pyjwt` (D131).
 
+### What reaches the store
+
+Databricks, Snowflake and Redshift Serverless bill compute from the statement that wakes it until it has sat idle for its auto-stop delay, ten minutes by default on a Databricks serverless warehouse. One wake costs more than the statements in it, so these rules count wakes first, then statements, then bytes:
+
+1. Loads wake the store. The detection run a load wakes reads it, and no run reads it again (D146, D149, D160). A run with no load since a rule last read leaves the store alone for that rule.
+2. Status comes from Postgres. Store health, source quality, volume and the operations each product sends are kept in `shoc.store_reads` until a load commits after them (`shoc/store/kept.py`). The run a load wakes rereads them while the warehouse is still up (D161). The console, the hourly Ops check and the reports read the kept copies.
+3. A read takes no more than it uses. `query(limit=n)` sends `LIMIT n+1` (D162), a rule or capability selects its own columns, and `raw` is read only where a field outside the flattened columns is needed.
+4. A question goes out as one statement, not one per item. One probe covers every rule (D149), indicators go in chunks of what the dialect binds (`store.sql.MAX_PARAMS`), and source quality scores every product in one `GROUP BY`.
+5. Postgres follows the same rule: idle rules move their watermarks in one `UPDATE` (D160), and a job with nothing to send writes no audit row (D163).
+
 ---
 
 ## 8. Deployment

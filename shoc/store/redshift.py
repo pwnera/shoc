@@ -227,7 +227,7 @@ class RedshiftStore:
     def query(
         self, canonical_sql: str, params: dict[str, Any] | None = None, limit: int = 1000
     ) -> QueryResult:
-        sql, args = prepare(canonical_sql, params, self.dialect)
+        sql, args = prepare(canonical_sql, params, self.dialect, limit + 1)
         started = time.monotonic()
         try:
             with self.conn.cursor() as cur:

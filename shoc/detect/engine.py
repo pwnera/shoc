@@ -497,20 +497,29 @@ def _runs(buckets: set[datetime], span: timedelta) -> list[list[datetime]]:
 
 
 def _ran(
-    conn: Any, tenant_id: str, rule_id: str, mark: datetime | None, fires: int, notes: list[str]
+    conn: Any,
+    tenant_id: str,
+    rule_id: str,
+    mark: datetime | None,
+    fires: int,
+    notes: list[str],
+    seen: datetime | None = None,
 ) -> None:
     """Record a finished cycle. What it left out stays in `last_error` until the
-    next clean cycle and reaches the Manager's weekly digest."""
+    next clean cycle and reaches the Manager's weekly digest. `seen` is passed
+    only by a cycle whose range reached its `now` (`_began`)."""
     note = "; ".join(notes)[:2000] or None
     execute(
         conn,
-        """INSERT INTO shoc.rule_state (tenant_id, rule_id, last_run_at, watermark, fires, last_error)
-           VALUES (%s,%s,now(),%s,%s,%s)
+        """INSERT INTO shoc.rule_state
+             (tenant_id, rule_id, last_run_at, watermark, fires, last_error, loads_seen_at)
+           VALUES (%s,%s,now(),%s,%s,%s,%s)
            ON CONFLICT (tenant_id, rule_id) DO UPDATE SET
              last_run_at = now(),
              watermark = COALESCE(EXCLUDED.watermark, shoc.rule_state.watermark),
-             fires = shoc.rule_state.fires + EXCLUDED.fires, last_error = EXCLUDED.last_error""",
-        (tenant_id, rule_id, mark, fires, note),
+             fires = shoc.rule_state.fires + EXCLUDED.fires, last_error = EXCLUDED.last_error,
+             loads_seen_at = COALESCE(EXCLUDED.loads_seen_at, shoc.rule_state.loads_seen_at)""",
+        (tenant_id, rule_id, mark, fires, note, seen),
     )
     if note:
         from shoc.agents import manager
@@ -568,16 +577,35 @@ def _late_loads(conn: Any, tenant_id: str) -> list[tuple[datetime, datetime]]:
     ]
 
 
-def _idle(conn: Any, tenant_id: str, rule_id: str, now: datetime) -> None:
-    """Nothing was loaded since the range began, so the rule has read it all:
-    the watermark moves to now without a query. A store that has never
-    stamped a load is read as usual (D71)."""
-    execute(
-        conn,
-        """UPDATE shoc.rule_state SET watermark = %s, last_run_at = now()
-           WHERE tenant_id = %s AND rule_id = %s""",
-        (now, tenant_id, rule_id),
-    )
+def _idle(conn: Any, tenant_id: str, rule_ids: list[str], now: datetime, seen: datetime) -> None:
+    """Nothing was loaded since their ranges began, so the rules have read it
+    all: their watermarks move to now without a query, in one statement. A
+    store that has never stamped a load is read as usual (D71)."""
+    if rule_ids:
+        execute(
+            conn,
+            """UPDATE shoc.rule_state SET watermark = %s, loads_seen_at = %s, last_run_at = now()
+               WHERE tenant_id = %s AND rule_id = ANY(%s)""",
+            (now, seen, tenant_id, rule_ids),
+        )
+
+
+def _began(conn: Any) -> datetime:
+    """Now on Postgres's clock, which stamps `shoc.store_loads`.
+
+    A load stamped before it committed to the store before it, so a cycle that
+    takes it before its own `now` and reads up to that `now` has seen the load,
+    whatever the worker's clock says. The cycle after it skips a rule whose
+    products had no load since (D160). Taken before `now`, and never after it.
+    """
+    row = fetch_one(conn, "SELECT now() AS t")
+    return row["t"] if row else datetime.min.replace(tzinfo=UTC)
+
+
+def _since(start: datetime, state: dict[str, Any]) -> datetime:
+    """The time a load must be newer than for the rule to read the store again."""
+    seen = state.get("loads_seen_at")
+    return max(start, seen) if seen else start
 
 
 def _unmatched(
@@ -674,23 +702,26 @@ def match_indicators(
     """
     from shoc.detect import intel
 
-    now = now or datetime.now(UTC)
     if lookback_seconds:
+        now = now or datetime.now(UTC)
         since = now - timedelta(seconds=lookback_seconds)
         return intel.findings_from_hits(
             conn, tenant_id, intel.match_window(conn, store, tenant_id, since, now)
         )
+    began = _began(conn)
+    now = now or datetime.now(UTC)
+    seen = min(now, began)
     row = fetch_one(
         conn,
-        "SELECT watermark FROM shoc.rule_state WHERE tenant_id = %s AND rule_id = %s",
+        "SELECT watermark, loads_seen_at FROM shoc.rule_state WHERE tenant_id = %s AND rule_id = %s",
         (tenant_id, INDICATORS),
     )
     start, end = _window(
         row["watermark"] if row else None, now, timedelta(minutes=30), _late_loads(conn, tenant_id)
     )
     last = _last_loads(conn, tenant_id).get("")
-    if row and row["watermark"] and last and last < start:
-        _idle(conn, tenant_id, INDICATORS, now)
+    if row and row["watermark"] and last and last < _since(start, row):
+        _idle(conn, tenant_id, [INDICATORS], now, seen)
         return []
     try:
         hits = intel.match_window(conn, store, tenant_id, start, end, column="ingested_at")
@@ -698,7 +729,7 @@ def match_indicators(
     except Exception as exc:
         _failed(conn, tenant_id, INDICATORS, f"{type(exc).__name__}: {exc}", start)
         raise
-    _ran(conn, tenant_id, INDICATORS, end, len(found), [])
+    _ran(conn, tenant_id, INDICATORS, end, len(found), [], seen if end == now else None)
     return found
 
 
@@ -749,13 +780,16 @@ def run_all(
     ingested since the last one.
     """
     rules = rules if rules is not None else ruleset.load(config, conn, tenant_id)
+    began = _began(conn)
     now = now or datetime.now(UTC)
+    seen = min(now, began)
     stats = DetectStats()
     states = {
         r["rule_id"]: r
         for r in fetch_all(
             conn,
-            "SELECT rule_id, watermark, last_error FROM shoc.rule_state WHERE tenant_id = %s",
+            """SELECT rule_id, watermark, last_error, loads_seen_at
+               FROM shoc.rule_state WHERE tenant_id = %s""",
             (tenant_id,),
         )
     }
@@ -768,19 +802,21 @@ def run_all(
         (tenant_id,),
     )
     ranges: list[tuple[ruleset.Rule, datetime, datetime]] = []
+    idle: list[str] = []
     for rule in rules:
         state = states.get(rule.id) or {}
         span = timedelta(seconds=rule.timeframe_seconds)
         start, end = _window(state.get("watermark"), now, span, late)
-        if state.get("watermark") and _nothing_loaded(loads, rule, start, now):
-            _idle(conn, tenant_id, rule.id, now)
-            stats.rules_run += 1
+        if state.get("watermark") and _nothing_loaded(loads, rule, _since(start, state), now):
+            idle.append(rule.id)
         else:
             ranges.append((rule, start, end))
+    _idle(conn, tenant_id, idle, now, seen)
+    stats.rules_run += len(idle)
     unmatched = set() if lookback_seconds else _unmatched(store, tenant_id, ranges)
     for rule, start, end in ranges:
         if rule.id in unmatched:
-            _ran(conn, tenant_id, rule.id, end, 0, [])
+            _ran(conn, tenant_id, rule.id, end, 0, [], seen if end == now else None)
             stats.rules_run += 1
             continue
         learning = accounts_learning(rule, history) if rule.first_seen else None
@@ -814,7 +850,10 @@ def run_all(
             stats.findings_new += new
             if notes:
                 stats.errors[rule.id] = "; ".join(notes)
-            _ran(conn, tenant_id, rule.id, None if lookback_seconds else end, new, notes)
+            if lookback_seconds:
+                _ran(conn, tenant_id, rule.id, None, new, notes)
+            else:
+                _ran(conn, tenant_id, rule.id, end, new, notes, seen if end == now else None)
         except Exception as exc:
             _stop_if_down(store, exc)
             stats.errors[rule.id] = f"{type(exc).__name__}: {exc}"
