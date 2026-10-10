@@ -10288,6 +10288,7 @@
     "health.source.failing",
     "health.source.quality",
     "health.source.stale",
+    "hunt.item",
     "intel.report",
     "openspace.message",
     "playbook.finished",
