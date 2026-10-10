@@ -64,6 +64,44 @@ def test_a_fresh_source_whose_fields_are_empty_is_the_worse_outage(ctx, store, c
     assert any("are blind" in note for note in scored[0].notes)
 
 
+def test_the_vendors_own_changes_are_not_a_missing_user(ctx, store, config, clean, now):
+    """Cloudflare renewing a certificate has no user, and that is most of a quiet
+    account's audit log; nine of ten rows read as 90% blind."""
+    from shoc.ingest.connectors.base import write_state
+
+    def change(actor: dict) -> dict:
+        action = {"type": "update", "result": "success", "description": "Certificate pack deployed"}
+        resource = {"id": "cp-1", "type": "certificate_pack"}
+        return {"id": "q-cf", "action": action, "actor": actor, "resource": resource}
+
+    records = [{**change({"type": "system"}), "_repeat": 9}]
+    records.append(change({"type": "user", "email": "ops@example.com", "id": "u-1"}))
+    mapping = ocsf.load_mapping("cloudflare")
+    rows = [mapping.map_record(r, config.tenant_id) for r in expand(records, "cloudflare", now)]
+    batch.load(store, rows)
+    write_state(ctx.db, config.tenant_id, "cloudflare", {}, len(rows), None)
+    scored = ops.source_quality(ctx.db, ctx.store, config.tenant_id)
+    assert scored[0].fields["actor_user_name"] == 1.0
+    assert not any("are blind" in note for note in scored[0].notes)
+
+
+def test_a_new_sources_backfill_is_not_lateness(ctx, store, config, clean, now):
+    """A first run loads the last day; that is the past arriving, and averaged in
+    it read as hours late for the month the rows stay in the window."""
+    from shoc.db.pool import execute
+
+    _load(store, config.tenant_id, now - timedelta(hours=20), [_event()], conn=ctx.db)
+    assert ops.source_quality(ctx.db, ctx.store, config.tenant_id)[0].timeliness == 0.0
+    execute(
+        ctx.db,
+        """INSERT INTO shoc.source_history (tenant_id, source, products, first_loaded_at)
+           VALUES (%s, 'aws_cloudtrail', '{AWS CloudTrail}', now() - interval '10 minutes')""",
+        (config.tenant_id,),
+    )
+    _load(store, config.tenant_id, now, [_event(name="GetObject")], conn=ctx.db)
+    assert ops.source_quality(ctx.db, ctx.store, config.tenant_id)[0].timeliness > 0.9
+
+
 def test_short_retention_is_reported_rather_than_assumed(ctx, store, config, clean, now):
     _load(store, config.tenant_id, now, [_event()], conn=ctx.db)
     scored = ops.source_quality(ctx.db, ctx.store, config.tenant_id)

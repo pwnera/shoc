@@ -765,7 +765,8 @@ def product_of(source: str) -> str:
 
 # Seconds from an event to its ingestion, averaged. `TIME_TO_UNIX` is what
 # SQLGlot writes per dialect; subtracting timestamps is Postgres-only (STO-1).
-LAG_SECONDS = "AVG(TIME_TO_UNIX(ingested_at) - TIME_TO_UNIX(time))"
+LAG = "TIME_TO_UNIX(ingested_at) - TIME_TO_UNIX(time)"
+LAG_SECONDS = f"AVG({LAG})"
 
 
 def source_quality(conn: Conn, store: Any, tenant_id: str, days: int = 30) -> list[SourceQuality]:
@@ -784,21 +785,49 @@ def source_quality(conn: Conn, store: Any, tenant_id: str, days: int = 30) -> li
     columns = sorted({col for by_col in readers.values() for col in by_col})
     index = {col: i for i, col in enumerate(columns)}
     types = dict(layout.COLUMNS)
-    fidelity = ""
+    # A change the vendor's own automation made (Cloudflare renewing a
+    # certificate) has no user to be missing, so it is not charged to an actor
+    # field. It is most of a quiet account's audit log.
+    system = "LOWER(actor_user_type) = 'system'"
+    fidelity = f", SUM(CASE WHEN {system} THEN 1 ELSE 0 END) AS system_actors"
     for i, col in enumerate(columns):
         expr = layout.column_for(col)
         blank = f"{expr} IS NULL" + (f" OR {expr} = ''" if types.get(col, "TEXT") == "TEXT" else "")
+        if col.startswith("actor_"):
+            blank += f" OR {system}"
         fidelity += f", SUM(CASE WHEN {blank} THEN 0 ELSE 1 END) AS have_{i}"
+
+    # Where each product's data starts, which the window cannot see past, and
+    # when shoc first read it: the backfill a new source loads on its first run
+    # is the past arriving, not lateness, and would read as hours late for a
+    # month.
+    history = fetch_all(
+        conn,
+        """SELECT unnest(products) AS product,
+                  min(coalesce(first_event_at, first_loaded_at)) AS start,
+                  min(first_loaded_at) AS loaded
+           FROM shoc.source_history WHERE tenant_id = %s GROUP BY 1""",
+        (tenant_id,),
+    )
+    started = {str(r["product"]): r["start"] for r in history}
+    params: dict[str, Any] = {"tenant_id": tenant_id, "since": since}
+    backfill = []
+    for i, r in enumerate(history):
+        params[f"p{i}"], params[f"l{i}"] = str(r["product"]), r["loaded"]
+        backfill.append(f"(metadata_product = :p{i} AND time < :l{i})")
+    lag = LAG_SECONDS
+    if backfill:
+        lag = f"AVG(CASE WHEN {' OR '.join(backfill)} THEN NULL ELSE {LAG} END)"
     rows = store.query(
         f"""SELECT metadata_product AS product, COUNT(*) AS events,
                    MIN(time) AS oldest, MAX(time) AS newest,
                    COUNT(DISTINCT FLOOR(TIME_TO_UNIX(time) / 86400)) AS days_seen,
-                   {LAG_SECONDS} AS lag_seconds
+                   {lag} AS lag_seconds
                    {fidelity}
             FROM {layout.EVENTS_TABLE}
             WHERE tenant_id = :tenant_id AND time > :since
             GROUP BY metadata_product""",
-        {"tenant_id": tenant_id, "since": since},
+        params,
         200,
     ).rows
 
@@ -817,18 +846,7 @@ def source_quality(conn: Conn, store: Any, tenant_id: str, days: int = 30) -> li
     health = source_health(conn, tenant_id)
     known = {product_of(mappings.get(s.source) or s.source): s for s in health}
     configured = set(known) | {product_of(m or s) for s, m in mappings.items()}
-    # Where each product's data starts, which the window cannot see past, and
-    # how long the store keeps it.
-    started = {
-        str(r["product"]): r["start"]
-        for r in fetch_all(
-            conn,
-            """SELECT unnest(products) AS product,
-                      min(coalesce(first_event_at, first_loaded_at)) AS start
-               FROM shoc.source_history WHERE tenant_id = %s GROUP BY 1""",
-            (tenant_id,),
-        )
-    }
+    # How long the store keeps it.
     kept = fetch_one(
         conn,
         "SELECT payload->>'days' AS days FROM shoc.schedules WHERE schedule_id = %s",
@@ -882,9 +900,11 @@ def source_quality(conn: Conn, store: Any, tenant_id: str, days: int = 30) -> li
         # audit log to the user. A source no rule reads scores 1.0 here; the
         # Surveyor reports it as unwatched.
         quality.readers = readers.get(quality.product, {})
+        people = events - int(row.get("system_actors") or 0)
         quality.fields = {
-            col: round(int(row.get(f"have_{index[col]}") or 0) / events, 3) if events else 0.0
+            col: round(int(row.get(f"have_{index[col]}") or 0) / of, 3) if of else 1.0
             for col in quality.readers
+            for of in [people if col.startswith("actor_") else events]
         }
         rates = quality.fields.values()
         quality.field_fidelity = round(sum(rates) / len(rates), 3) if rates else 1.0
