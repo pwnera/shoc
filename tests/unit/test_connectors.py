@@ -369,7 +369,13 @@ def test_gitlab_reads_the_group_the_groups_below_it_and_their_projects(monkeypat
         "page": "1",
     }
     assert query(seen[2])["page"] == "2"
-    assert query(seen[3])["created_after"] == SINCE
+    assert query(seen[3]) == {
+        "created_after": SINCE,
+        "pagination": "keyset",
+        "order_by": "id",
+        "sort": "desc",
+        "per_page": "100",
+    }
     backfill = datetime.now(UTC) - timedelta(hours=24) - base.utc(query(seen[4])["created_after"])
     assert abs(backfill) < timedelta(minutes=1), "a scope never read starts at the backfill"
     assert all(r.headers["private-token"] == "tok" for r in seen)
@@ -380,21 +386,33 @@ def test_gitlab_reads_the_group_the_groups_below_it_and_their_projects(monkeypat
     assert result.more is False
 
 
-def test_gitlab_holds_the_window_still_while_paging(monkeypatch):
-    transport(
+def test_gitlab_follows_the_keyset_link_and_keeps_the_first_pages_newest_event(monkeypatch):
+    """Newest first, so the walk's newest event is on its first page (D158)."""
+    link = "https://gitlab.com/api/v4/audit_events?pagination=keyset&per_page=50&cursor=abc"
+    seen = transport(
         monkeypatch,
         [
             {
-                "json": [{"id": 1, "created_at": "2026-09-20T10:00:00Z"}],
-                "headers": {"x-next-page": "2"},
-            }
+                "json": [{"id": 9, "created_at": "2026-09-20T10:30:00Z"}],
+                "headers": {"link": f'<{link}>; rel="next"'},
+            },
+            {"json": [{"id": 8, "created_at": "2026-09-20T10:00:00Z"}]},
         ],
     )
-    result = connectors.get("gitlab").fetch(
-        {}, {"token": "tok"}, {"since": "2026-09-20T09:00:00+00:00"}, 50
-    )
-    assert result.cursor == {"since": "2026-09-20T09:00:00+00:00", "page": 2}
-    assert result.more is True
+    conn = connectors.get("gitlab")
+    first = conn.fetch({}, {"token": "tok"}, {"since": SINCE}, 50)
+    assert first.cursor == {"since": SINCE, "newest": "2026-09-20T10:30:00Z", "next": link}
+    assert first.more is True
+    last = conn.fetch({}, {"token": "tok"}, first.cursor, 50)
+    assert str(seen[1].url) == link, "the link as given"
+    assert last.cursor == {"since": "2026-09-20T10:30:00Z"} and last.more is False
+
+
+def test_gitlab_sends_its_token_only_to_base_url(monkeypatch):
+    other = "https://gitlab.internal/api/v4/audit_events?cursor=abc"
+    transport(monkeypatch, [{"json": [{"id": 1}], "headers": {"link": f'<{other}>; rel="next"'}}])
+    with pytest.raises(ConfigError, match=r"https://gitlab\.internal;"):
+        connectors.get("gitlab").fetch({}, {"token": "tok"}, {"since": SINCE}, 50)
 
 
 def test_gitlab_falls_back_to_the_instance_endpoint_and_needs_a_token(monkeypatch):

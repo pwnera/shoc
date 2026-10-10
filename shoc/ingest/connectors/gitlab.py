@@ -70,24 +70,34 @@ class GitLabConnector:
             )
         path = f"/api/v4/{scope}/audit_events" if scope else "/api/v4/audit_events"
         since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
-        page = int(cursor.get("page", 1))
+        # Keyset pagination, the only kind GitLab keeps after 19.0, and only in
+        # this order: newest first, then the `next` link exactly as given (D158).
         params: dict[str, Any] = {
             "created_after": since,
+            "pagination": "keyset",
+            "order_by": "id",
+            "sort": "desc",
             "per_page": min(int(limit), 100),
-            "page": page,
         }
         with client(headers) as http:
-            resp = http.get(f"{base}{path}", params=params)
+            if cursor.get("next"):
+                resp = http.get(cursor["next"])
+            else:
+                resp = http.get(f"{base}{path}", params=params)
             resp.raise_for_status()
             records = resp.json() or []
-            next_page = resp.headers.get("x-next-page") or ""
-        # While paging, `since` stays where the window started: page numbers only
-        # line up against an unchanged `created_after`.
-        if next_page.strip() and records:
-            return FetchResult(
-                records=records, cursor={"since": since, "page": int(next_page)}, more=True
-            )
-        newest = max([str(r.get("created_at", "")) for r in records] + [since])
+            link = resp.links.get("next", {}).get("url")
+        if link and not link.startswith(f"{base}/"):
+            # The token goes only to base_url, and GitLab names its own address.
+            origin = "{0.scheme}://{0.netloc}".format(urlsplit(link))
+            raise ConfigError(f"gitlab: GitLab pages from {origin}; set base_url to it")
+        # The first page holds the newest events, so the walk carries them.
+        newest = max(
+            [str(r.get("created_at", "")) for r in records] + [str(cursor.get("newest") or since)]
+        )
+        if link and records:
+            held = {"since": since, "newest": newest, "next": link}
+            return FetchResult(records=records, cursor=held, more=True)
         return FetchResult(records=records, cursor={"since": newest}, more=False)
 
 
