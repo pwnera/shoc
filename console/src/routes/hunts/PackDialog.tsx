@@ -31,6 +31,7 @@ import { age } from "@/lib/format";
 import { OUTCOMES } from "@/lib/labels";
 import { useNow } from "@/lib/now";
 import { useRevertPack, useRunPack } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import { sourceName } from "@/lib/sources";
 import { toast } from "@/lib/toast";
 import type { HuntLogic, HuntReadiness, HuntRun } from "@/types";
@@ -40,26 +41,41 @@ import { Readiness } from "./Packs";
 
 type Step = { index: number; total: number; onPrev?: () => void; onNext?: () => void };
 
-function PackRuns({ runs, title }: { runs: HuntRun[]; title: string }) {
+function PackRuns({ runs: given, title }: { runs: HuntRun[]; title: string }) {
   const now = useNow();
   const [open, setOpen] = useState<number | null>(null);
-  const nav = useListNav(runs, (r) => r.run_uid, { onOpen: (r) => setOpen(runs.indexOf(r)) });
   const columns: Column<HuntRun>[] = [
     {
-      label: "",
+      label: "Outcome",
       fit: true,
+      sort: (r) => Object.keys(OUTCOMES).indexOf(r.outcome),
       cell: (r) => {
         const o = OUTCOMES[r.outcome] ?? { word: r.outcome, tone: "idle" as const };
         return <Status tone={o.tone}>{o.word}</Status>;
       },
     },
-    { label: "", cell: (r) => (r.finding_uid ? "raised a finding" : `${r.rows_returned.toLocaleString()} rows`) },
-    { label: "", fit: true, mono: true, cell: (r) => age(r.ran_at, now) },
+    {
+      label: "Rows",
+      sort: (r) => r.rows_returned,
+      cell: (r) => (r.finding_uid ? "raised a finding" : `${r.rows_returned.toLocaleString()} rows`),
+    },
+    { label: "Ran", fit: true, mono: true, sort: (r) => r.ran_at, cell: (r) => age(r.ran_at, now) },
   ];
+  const sorted = useSort(given, columns);
+  const runs = sorted.rows;
+  const nav = useListNav(runs, (r) => r.run_uid, { onOpen: (r) => setOpen(runs.indexOf(r)) });
   const run = open !== null ? runs[open] : undefined;
   return (
     <>
-      <Table columns={columns} rows={runs} rowKey={(r) => r.run_uid} rowProps={nav.rowProps} bounded={200} label="Runs" />
+      <Table
+        columns={columns}
+        rows={runs}
+        sort={sorted.sort}
+        rowKey={(r) => r.run_uid}
+        rowProps={nav.rowProps}
+        bounded={200}
+        label="Runs"
+      />
       {run && open !== null ? (
         <HuntRunDialog
           run={run}

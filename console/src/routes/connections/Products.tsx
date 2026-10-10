@@ -25,6 +25,7 @@ import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { useFollow } from "@/lib/popup";
 import { useRemoveCredential, useRemoveSource, useSyncSource, useToggleSource } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import { sourceName } from "@/lib/sources";
 import { toastError } from "@/lib/toast";
 import type { ConfiguredSource } from "@/types";
@@ -61,14 +62,6 @@ export function Products({
   const remove = useRemoveSource();
   const disconnect = useRemoveCredential();
   const [pulling, setPulling] = useState<ReadonlySet<string>>(new Set());
-  const { page, pager, start, prev, next } = usePaged(rows);
-  const nav = useListNav(page, (row) => row.key, {
-    onOpen: (row) => onOpen(row.key),
-    onPrevPage: prev,
-    onNextPage: next,
-  });
-  useFollow(nav, current);
-
   const pull = (source: string) => {
     if (pulling.has(source)) return;
     setPulling((s) => new Set(s).add(source));
@@ -83,11 +76,6 @@ export function Products({
         }),
       );
   };
-  const polled = (row: Product) => row.sources.find((s) => model.mode(s) === "poll");
-  const active = page.find((row) => row.key === nav.activeKey);
-  const activePolled = active && polled(active);
-  useCommand("source.pull", () => activePolled && pull(activePolled.source), Boolean(activePolled));
-
   const logs = (row: Product) => worstDelivery(row.sources.map(model.state));
 
   /** One source's own acts; with several sources each item names its source. */
@@ -154,8 +142,9 @@ export function Products({
   const last = (row: Product) =>
     row.sources.reduce<string | null>((newest, s) => (s.last_ok_at && (!newest || s.last_ok_at > newest) ? s.last_ok_at : newest), null);
   const time: Column<Product> = {
-    label: "",
+    label: "Last",
     width: 104,
+    sort: last,
     hide: "md",
     align: "right",
     truncate: false,
@@ -206,9 +195,10 @@ export function Products({
     },
     // Under 1024px the age moves into the name cell, without the meter: one more column would push a phone's row sideways.
     {
-      label: "",
+      label: "Product",
       strong: true,
       truncate: false,
+      sort: productName,
       cell: (row) => (
         <span className="flex items-center gap-2">
           <span className="min-w-0 flex-1 truncate">{productName(row)}</span>
@@ -237,6 +227,18 @@ export function Products({
       ),
     },
   ];
+  const sorted = useSort(rows, columns);
+  const { page, pager, start, prev, next, first } = usePaged(sorted.rows);
+  const nav = useListNav(page, (row) => row.key, {
+    onOpen: (row) => onOpen(row.key),
+    onPrevPage: prev,
+    onNextPage: next,
+  });
+  useFollow(nav, current);
+  const polled = (row: Product) => row.sources.find((s) => model.mode(s) === "poll");
+  const active = page.find((row) => row.key === nav.activeKey);
+  const activePolled = active && polled(active);
+  useCommand("source.pull", () => activePolled && pull(activePolled.source), Boolean(activePolled));
 
   return (
     <>
@@ -252,6 +254,8 @@ export function Products({
         columns={columns}
         rows={page}
         start={start}
+        sort={sorted.sort}
+        onSort={first}
         rowKey={(row) => row.key}
         rowProps={nav.rowProps}
         loading={loading}

@@ -138,7 +138,7 @@ describe("the Findings screen", () => {
     // The strip's word is the tab's: "Open", in warn while a high or critical is.
     expect(document.querySelector(".sh-strip__state")).toHaveTextContent("Open");
     expect(document.querySelector(".sh-strip__state")).toHaveAttribute("data-tone", "warn");
-    expect(screen.queryByRole("columnheader")).not.toBeInTheDocument();
+    expect(within(table).getAllByRole("columnheader").map((th) => th.textContent)).toEqual(["Severity", "Finding"]);
     // The state word speaks for open findings only.
     fireEvent.click(screen.getByRole("tab", { name: /Set aside/ }));
     expect(document.querySelector(".sh-strip__state")).toBeNull();

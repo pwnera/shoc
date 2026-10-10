@@ -28,14 +28,27 @@ import { actionLabel, AUTONOMY } from "@/lib/labels";
 import { usePopValue } from "@/lib/popup";
 import { actionTypes, ruleOf, type ActionRule } from "@/lib/policy";
 import { usePolicy } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import type { PolicyView } from "@/types";
 import { PlatformMark, Reach } from "./marks";
 
 const COLUMNS: Column<ActionRule>[] = [
-  { label: "", width: 36, truncate: false, cell: (rule) => <Reach reversible={rule.reversible} /> },
+  {
+    label: "Undo",
+    width: 36,
+    truncate: false,
+    sort: (rule) => Number(!rule.reversible),
+    cell: (rule) => <Reach reversible={rule.reversible} />,
+  },
   // A width, not fit: every group is its own table, and the labels line up across them.
-  { label: "", width: 72, truncate: false, cell: (rule) => <AutonomyBadge level={rule.autonomy} /> },
-  { label: "", strong: true, cell: (rule) => actionLabel(rule.type) },
+  {
+    label: "Autonomy",
+    width: 72,
+    truncate: false,
+    sort: (rule) => rule.autonomy,
+    cell: (rule) => <AutonomyBadge level={rule.autonomy} />,
+  },
+  { label: "Action", strong: true, cell: (rule) => actionLabel(rule.type) },
 ];
 
 export function Autonomy() {
@@ -77,17 +90,18 @@ export function Autonomy() {
     match: (r, text) => `${actionLabel(r.type)} ${r.type} ${platformOf(r.type).name}`.toLowerCase().includes(text),
   });
 
+  // One sort for every group: a head in any of them orders the rules within each.
+  const sorted = useSort(
+    all.filter(filters.keep).sort((a, b) => actionLabel(a.type).localeCompare(actionLabel(b.type))),
+    COLUMNS,
+  );
   const byPlatform = new Map<string, ActionRule[]>();
-  for (const rule of all.filter(filters.keep)) {
+  for (const rule of sorted.rows) {
     const id = platformOf(rule.type).id;
     byPlatform.set(id, [...(byPlatform.get(id) ?? []), rule]);
   }
   const groups = [...byPlatform]
-    .map(([id, rules]) => ({
-      id,
-      name: platformOf(id).name,
-      rules: rules.sort((a, b) => actionLabel(a.type).localeCompare(actionLabel(b.type))),
-    }))
+    .map(([id, rules]) => ({ id, name: platformOf(id).name, rules }))
     .sort((a, b) => a.name.localeCompare(b.name));
   const flat = groups.flatMap((g) => g.rules);
   const nav = useListNav(flat, (rule) => rule.type, { onOpen: (rule) => pop(rule.type) });
@@ -132,7 +146,14 @@ export function Autonomy() {
                   return n ? [`${n} ${AUTONOMY[level]}`] : [];
                 })].join(" · ")}
               </h2>
-              <Table columns={COLUMNS} rows={group.rules} rowKey={(rule) => rule.type} rowProps={nav.rowProps} label={group.name} />
+              <Table
+                columns={COLUMNS}
+                rows={group.rules}
+                sort={sorted.sort}
+                rowKey={(rule) => rule.type}
+                rowProps={nav.rowProps}
+                label={group.name}
+              />
             </section>
           ))}
         </div>

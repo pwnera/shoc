@@ -38,6 +38,7 @@ import { usePaged } from "@/lib/paged";
 import { useTab } from "@/lib/param";
 import { focusRow, useClaim, useFollow, usePopParam } from "@/lib/popup";
 import { usePosture, useRefreshGraph, useResurvey, useSnapshots, useSurface } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import { toastError } from "@/lib/toast";
 import type { Exposure, SnapshotRow } from "@/types";
 import { byRisk, CELLS, cellOf, FLAGS, flagOf, listedOnly, snapshotKey } from "./posture/cells";
@@ -137,18 +138,14 @@ function Seen({ rows, loading, error, onRetry }: { rows: Exposure[]; loading: bo
     },
   ];
   const filters = useFilters(dims, { match: (e, text) => e.entity.toLowerCase().includes(text) });
-  const shown = rows.filter(filters.keep);
-  const paged = usePaged(shown, 25, { newest: rows.length >= SEEN_CAP });
-  const nav = useListNav(paged.page, (e) => e.entity, {
-    onOpen: (e) => openEntity(e.entity),
-    copy: (e) => e.entity,
-    onPrevPage: paged.prev,
-    onNextPage: paged.next,
-  });
   const columns: Column<Exposure>[] = [
     {
-      label: "",
+      label: "Flag",
       fit: true,
+      sort: (e) => {
+        const flag = flagOf(e, filters.values);
+        return flag ? Object.keys(FLAGS).indexOf(flag) : null;
+      },
       cell: (e) => {
         const flag = flagOf(e, filters.values);
         if (!flag) return null;
@@ -164,9 +161,18 @@ function Seen({ rows, loading, error, onRetry }: { rows: Exposure[]; loading: bo
         );
       },
     },
-    { label: "", truncate: false, cell: (e) => <Whole value={e.entity} /> },
-    { label: "", fit: true, mono: true, hide: "md", cell: (e) => age(e.last_seen, now) },
+    { label: "Entity", truncate: false, sort: (e) => e.entity, cell: (e) => <Whole value={e.entity} /> },
+    { label: "Seen", fit: true, mono: true, hide: "md", sort: (e) => e.last_seen, cell: (e) => age(e.last_seen, now) },
   ];
+  const sorted = useSort(rows.filter(filters.keep), columns);
+  const shown = sorted.rows;
+  const paged = usePaged(shown, 25, { newest: rows.length >= SEEN_CAP });
+  const nav = useListNav(paged.page, (e) => e.entity, {
+    onOpen: (e) => openEntity(e.entity),
+    copy: (e) => e.entity,
+    onPrevPage: paged.prev,
+    onNextPage: paged.next,
+  });
   return (
     <>
       <FilterBar
@@ -181,6 +187,8 @@ function Seen({ rows, loading, error, onRetry }: { rows: Exposure[]; loading: bo
       <Table
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={(e) => e.entity}
         rowProps={nav.rowProps}
         loading={loading}
@@ -219,24 +227,19 @@ function Listed({
 }) {
   const now = useNow();
   const openEntity = useOpenEntity();
-  const paged = usePaged(rows);
-  const nav = useListNav(paged.page, snapshotKey, {
-    onOpen: (row) => openEntity(snapshotKey(row)),
-    copy: snapshotKey,
-    onPrevPage: paged.prev,
-    onNextPage: paged.next,
-  });
   const columns: Column<SnapshotRow>[] = [
     {
-      label: "",
+      label: "Source",
       fit: true,
+      sort: (row) => row.source,
       cell: (row) => <ProductLogo product={row.source} named />,
     },
-    { label: "", truncate: false, cell: (row) => <Whole value={snapshotKey(row)} /> },
+    { label: "Entity", truncate: false, sort: snapshotKey, cell: (row) => <Whole value={snapshotKey(row)} /> },
     {
-      label: "",
+      label: "Listed",
       fit: true,
       hide: "md",
+      sort: (row) => row.taken_at,
       cell: (row) => (
         <Tip label={row.last_active ? `last active ${stamp(row.last_active)}` : "never active"} mono>
           <span className="sh-mono">{age(row.taken_at, now)}</span>
@@ -244,12 +247,22 @@ function Listed({
       ),
     },
   ];
+  const sorted = useSort(rows, columns);
+  const paged = usePaged(sorted.rows);
+  const nav = useListNav(paged.page, snapshotKey, {
+    onOpen: (row) => openEntity(snapshotKey(row)),
+    copy: snapshotKey,
+    onPrevPage: paged.prev,
+    onNextPage: paged.next,
+  });
   if (seenCapped) return <Empty kind="row" title={`Seen list capped at ${num(SEEN_CAP)}`} />;
   return (
     <>
       <Table
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={snapshotKey}
         rowProps={nav.rowProps}
         loading={loading}
@@ -259,7 +272,7 @@ function Listed({
         empty={listedAny ? "Every listed entity acted in the window" : "No source lists its accounts"}
       />
       {paged.pager}
-      <EntityStep keys={rows.map(snapshotKey)} nav={nav} go={paged.go} />
+      <EntityStep keys={sorted.rows.map(snapshotKey)} nav={nav} go={paged.go} />
     </>
   );
 }

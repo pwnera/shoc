@@ -26,6 +26,7 @@ import { useNarrow } from "@/lib/media";
 import { usePaged } from "@/lib/paged";
 import { useFollow, useOpen } from "@/lib/popup";
 import { useCreateToken, useRevokeToken, useTokens } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import type { ApiToken } from "@/types";
 
 const DAY = 86_400_000;
@@ -55,20 +56,13 @@ export function Tokens() {
   const revoke = useRevokeToken();
   const narrow = useNarrow();
   const [adding, setAdding] = useState(false);
-  const rows = tokens.data?.tokens ?? [];
-  const dialog = useOpen("token", rows.map((t) => t.token_id));
-  const { page, pager, start, prev, next } = usePaged(rows);
-  const nav = useListNav(page, (t) => t.token_id, { onOpen: (t) => dialog.open(t.token_id), onPrevPage: prev, onNextPage: next });
-  useFollow(nav, dialog.value);
-  useCommand("access.new-token", () => setAdding(true));
-  const picked = rows[dialog.at];
-
   const columns: Column<ApiToken>[] = [
-    { label: "", fit: true, cell: (t) => <Badge tone="muted">{t.role ?? t.kind}</Badge> },
-    { label: "", strong: true, cell: (t) => t.who },
+    { label: "Role", fit: true, cell: (t) => <Badge tone="muted">{t.role ?? t.kind}</Badge> },
+    { label: "Holder", strong: true, cell: (t) => t.who },
     {
-      label: "",
+      label: "Expires",
       width: narrow ? 64 : 96,
+      sort: (t) => t.expires_at,
       align: "right",
       truncate: false,
       // A phone drops the bar.
@@ -105,6 +99,14 @@ export function Tokens() {
       ),
     },
   ];
+  const sorted = useSort(tokens.data?.tokens ?? [], columns);
+  const rows = sorted.rows;
+  const dialog = useOpen("token", rows.map((t) => t.token_id));
+  const { page, pager, start, prev, next, first } = usePaged(rows);
+  const nav = useListNav(page, (t) => t.token_id, { onOpen: (t) => dialog.open(t.token_id), onPrevPage: prev, onNextPage: next });
+  useFollow(nav, dialog.value);
+  useCommand("access.new-token", () => setAdding(true));
+  const picked = rows[dialog.at];
 
   return (
     <>
@@ -119,6 +121,8 @@ export function Tokens() {
         columns={columns}
         rows={page}
         start={start}
+        sort={sorted.sort}
+        onSort={first}
         rowKey={(t) => t.token_id}
         rowProps={nav.rowProps}
         loading={tokens.isPending}

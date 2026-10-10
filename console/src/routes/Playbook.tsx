@@ -29,7 +29,7 @@ import { attackUrl } from "@/lib/attack";
 import { cn } from "@/lib/cn";
 import { useCommand, useEscBack, useListNav } from "@/lib/commands";
 import { age, percent, shortId, span } from "@/lib/format";
-import { actionLabel, READINESS, RULE_STATES, ruleState, runState, type Word } from "@/lib/labels";
+import { actionLabel, READINESS, RULE_STATES, ruleState, runState, SEVERITIES, type Word } from "@/lib/labels";
 import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { usePopValue } from "@/lib/popup";
@@ -44,6 +44,7 @@ import {
   useRules,
   useRuns,
 } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import { toast } from "@/lib/toast";
 import { useDocumentTitle } from "@/lib/title";
 import type { Case, Playbook as Book, PlaybookRun, Severity, Verdict } from "@/types";
@@ -53,6 +54,7 @@ import { PolicyDialog } from "./response/Autonomy";
 import { PlatformMark, Reach } from "./response/marks";
 
 const DAY = 86_400_000;
+const rank = (severity?: Severity | null) => (severity ? SEVERITIES.indexOf(severity) : null);
 
 export function Playbook() {
   const { playbookId = "" } = useParams();
@@ -368,12 +370,6 @@ function Runs({ runs, query }: { runs: PlaybookRun[]; query: ReturnType<typeof u
   const cases = useCaseLog();
   const now = useNow();
   const [open, pop] = usePopValue("run");
-  const { page, pager, prev, next } = usePaged(runs, 10);
-  const nav = useListNav(page, (r) => r.run_uid, {
-    onOpen: (r) => pop(r.run_uid),
-    onPrevPage: prev,
-    onNextPage: next,
-  });
   const byCase = new Map<string, Case>((cases.data?.rows ?? []).map((c) => [c.case_uid, c]));
   const caseOf = (r: PlaybookRun) => ({
     title: r.context?.case?.title ?? byCase.get(r.case_uid)?.title ?? shortId(r.case_uid),
@@ -381,15 +377,16 @@ function Runs({ runs, query }: { runs: PlaybookRun[]; query: ReturnType<typeof u
   });
   const columns: Column<PlaybookRun>[] = [
     {
-      label: "",
+      label: "Severity",
       width: 28,
+      sort: (r) => rank(caseOf(r).severity),
       cell: (r) => {
         const severity = caseOf(r).severity;
         return <Mark tone={severity ?? "idle"} label={severity ?? "severity unknown"} />;
       },
     },
     {
-      label: "",
+      label: "State",
       fit: true,
       cell: (r) => {
         const state = runState(r.state, r.dry_run);
@@ -400,15 +397,24 @@ function Runs({ runs, query }: { runs: PlaybookRun[]; query: ReturnType<typeof u
         );
       },
     },
-    { label: "", strong: true, cell: (r) => caseOf(r).title },
-    { label: "", width: 56, align: "right", mono: true, cell: (r) => age(r.started_at, now) },
+    { label: "Case", strong: true, cell: (r) => caseOf(r).title },
+    { label: "When", width: 56, align: "right", mono: true, sort: (r) => r.started_at, cell: (r) => age(r.started_at, now) },
   ];
+  const sorted = useSort(runs, columns);
+  const { page, pager, prev, next, first } = usePaged(sorted.rows, 10);
+  const nav = useListNav(page, (r) => r.run_uid, {
+    onOpen: (r) => pop(r.run_uid),
+    onPrevPage: prev,
+    onNextPage: next,
+  });
   return (
     <Card>
       <CardHeader title="Runs" />
       <Table
         columns={columns}
         rows={page}
+        sort={sorted.sort}
+        onSort={first}
         rowKey={(r) => r.run_uid}
         rowProps={nav.rowProps}
         loading={query.isPending}
@@ -462,15 +468,14 @@ function Detections({ ids }: { ids: string[] }) {
     d.hunt
       ? navigate(`/hunts?pack=${encodeURIComponent(d.id.slice(5))}`)
       : navigate(`/detection/rules/${encodeURIComponent(d.id)}`, { state: { back: location.pathname + location.search } });
-  const { page, pager, prev, next } = usePaged(listed, 10);
-  const nav = useListNav(page, (d) => d.id, { onOpen: open, onPrevPage: prev, onNextPage: next });
   const stateQuery = (d: Detection) => (d.hunt ? hunts : health);
 
   const columns: Column<Detection>[] = [
     {
-      label: "",
+      label: "Severity",
       width: 48,
       truncate: false,
+      sort: (d) => rank(d.severity),
       cell: (d) => (
         // A block, so the cell centres it on the row instead of sitting it on the text's baseline.
         <span className="flex items-center gap-1 text-fg-4">
@@ -484,9 +489,10 @@ function Detections({ ids }: { ids: string[] }) {
       ),
     },
     {
-      label: "",
+      label: "Title",
       strong: true,
       truncate: false,
+      sort: (d) => d.title,
       // Two lines at most: in a 320px rail, titles that differ only at the end ("… (Microsoft 365 audit)") stay apart.
       cell: (d) => (
         <span className="line-clamp-2 whitespace-normal py-0.5" title={d.title}>
@@ -496,9 +502,10 @@ function Detections({ ids }: { ids: string[] }) {
     },
     {
       // The state as a bare mark, its word in the label and the tip: the title keeps the rail's width.
-      label: "",
+      label: "State",
       width: 32,
       truncate: false,
+      sort: (d) => (d.state ? d.rank : null),
       cell: (d) =>
         d.state ? (
           <Tip label={d.state.word}>
@@ -515,6 +522,9 @@ function Detections({ ids }: { ids: string[] }) {
         ),
     },
   ];
+  const sorted = useSort(listed, columns);
+  const { page, pager, prev, next, first } = usePaged(sorted.rows, 10);
+  const nav = useListNav(page, (d) => d.id, { onOpen: open, onPrevPage: prev, onNextPage: next });
 
   return (
     <Card>
@@ -527,6 +537,8 @@ function Detections({ ids }: { ids: string[] }) {
       <Table
         columns={columns}
         rows={page}
+        sort={sorted.sort}
+        onSort={first}
         rowKey={(d) => d.id}
         rowProps={nav.rowProps}
         loading={rules.isPending}

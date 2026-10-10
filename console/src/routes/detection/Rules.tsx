@@ -33,6 +33,7 @@ import { RULE_STATES, SEVERITIES, severityLabel } from "@/lib/labels";
 import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { usePopValue } from "@/lib/popup";
+import { useSort } from "@/lib/sort";
 import { RuleStatus } from "./parts";
 import { byAttention, type RuleRow } from "./state";
 
@@ -153,7 +154,7 @@ export function Rules({
 }
 
 function RuleList({
-  rows,
+  rows: given,
   rules,
   health,
   empty,
@@ -166,6 +167,45 @@ function RuleList({
   const navigate = useNavigate();
   const location = useLocation();
   const now = useNow();
+  // A failed refresh keeps the states it had.
+  const unknown = health.isPending || (health.isError && !health.data);
+  const columns: Column<RuleRow>[] = [
+    {
+      label: "Severity",
+      width: 44,
+      truncate: false,
+      sort: (r) => SEVERITIES.indexOf(r.severity),
+      cell: (r) => <Glyphs row={r} />,
+    },
+    {
+      label: "State",
+      fit: true,
+      sort: (r) => (r.state ? RULE_STATES.findIndex((s) => s.id === r.state) : null),
+      cell: (r) => <RuleStatus health={r.health} />,
+    },
+    {
+      label: "Title",
+      strong: true,
+      truncate: false,
+      sort: (r) => r.title,
+      // A phone gives the title two lines before it clips.
+      cell: (r) => (
+        <Tip label={r.id} mono>
+          <span className="block truncate max-md:line-clamp-2 max-md:whitespace-normal">{r.title}</span>
+        </Tip>
+      ),
+    },
+    {
+      label: "Fired",
+      width: 72,
+      align: "right",
+      mono: true,
+      sort: (r) => (unknown ? null : r.health?.last_fired),
+      cell: (r) => (unknown || !r.health ? "—" : age(r.health.last_fired, now)),
+    },
+  ];
+  const sorted = useSort(given, columns);
+  const rows = sorted.rows;
   const paged = usePaged(rows, SIZE);
   // Back and the rule page's Escape both return here, filters and all, to the page that holds the rule.
   const open = (row: RuleRow) => {
@@ -198,35 +238,6 @@ function RuleList({
     document.querySelector<HTMLElement>(`main [data-row-key="${CSS.escape(id)}"]`)?.focus();
   });
 
-  // A failed refresh keeps the states it had.
-  const unknown = health.isPending || (health.isError && !health.data);
-  const columns: Column<RuleRow>[] = [
-    { label: "", width: 44, truncate: false, cell: (r) => <Glyphs row={r} /> },
-    {
-      label: "",
-      fit: true,
-      cell: (r) => <RuleStatus health={r.health} />,
-    },
-    {
-      label: "",
-      strong: true,
-      truncate: false,
-      // A phone gives the title two lines before it clips.
-      cell: (r) => (
-        <Tip label={r.id} mono>
-          <span className="block truncate max-md:line-clamp-2 max-md:whitespace-normal">{r.title}</span>
-        </Tip>
-      ),
-    },
-    {
-      label: "",
-      width: 72,
-      align: "right",
-      mono: true,
-      cell: (r) => (unknown || !r.health ? "—" : age(r.health.last_fired, now)),
-    },
-  ];
-
   // Rows wait for health too: they sort by its state, so drawing them before it lands would move them.
   return (
     <>
@@ -234,6 +245,8 @@ function RuleList({
         label="Rules"
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={(r) => r.id}
         rowProps={nav.rowProps}
         loading={rules.isPending || health.isPending}

@@ -36,11 +36,12 @@ import { copyAndSay } from "@/lib/copy";
 import { age, num, shortId } from "@/lib/format";
 import type { Dim, Option } from "@/lib/filters";
 import { useFilters } from "@/lib/filters";
-import { findingTab, FINDING_TABS } from "@/lib/labels";
+import { findingTab, FINDING_TABS, SEVERITIES as RANK } from "@/lib/labels";
 import { useNewFindings } from "@/lib/live";
 import { useNow } from "@/lib/now";
 import { useTab } from "@/lib/param";
 import { useFindings } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import type { Finding, Severity } from "@/types";
 import { kernelSince, rangeLabel, tidy, windowOf, windowValue } from "./explore/query";
 import { groupFindings, stepOrder, type Signal } from "./findings/group";
@@ -152,7 +153,52 @@ export function Findings() {
   const bySeverity = groupFindings(kept.filter(inTab));
   const signals = keepSeverity(bySeverity);
   const rows = signals.flatMap((s) => s.findings);
-  const order = stepOrder(signals);
+
+  // No time column: the name's cell ends with the time, as on Cases.
+  const columns: Column<Signal>[] = [
+    {
+      label: "Severity",
+      fit: true,
+      sort: (s) => RANK.indexOf(s.severity as Severity),
+      cell: (s) => <SeverityBadge severity={s.severity as Severity} />,
+    },
+    {
+      label: "Finding",
+      truncate: false,
+      sort: (s) => huntTitle(s.title) ?? s.title,
+      cell: (s) => {
+        const hunt = huntTitle(s.title);
+        return (
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex min-w-0 flex-1 items-center gap-2 max-sm:flex-col max-sm:items-start max-sm:gap-0.5 max-sm:py-1">
+              <span className="flex min-w-0 max-w-full items-center gap-2">
+                <Tip label={s.rule_id} mono>
+                  <span className="min-w-0 truncate font-medium text-fg-1 max-sm:line-clamp-2 max-sm:whitespace-normal">{hunt ?? s.title}</span>
+                </Tip>
+                {hunt !== null ? (
+                  <Tip label="From a hunt">
+                    <Telescope className="h-3.5 w-3.5 shrink-0 text-fg-3" role="img" aria-label="hunt" />
+                  </Tip>
+                ) : null}
+              </span>
+              {/* An aggregate's key names each entity ("AKIA…|203.0.113.55"); on a phone they sit under a two-line title. */}
+              {s.entity_key || s.findings.length > 1 ? (
+                <span className="inline-flex min-w-0 max-w-[40%] shrink-0 items-center gap-1 max-sm:max-w-full">
+                  {s.entity_key ? s.entity_key.split("|").map((part) => <Entity key={part} value={part} />) : null}
+                  {s.findings.length > 1 ? <span className="sh-mono shrink-0">×{num(s.findings.length)}</span> : null}
+                </span>
+              ) : null}
+            </span>
+            <span className="shrink-0 text-right font-mono text-xs text-fg-3 tabular md:min-w-12">
+              {age(s.last_seen, Math.max(now, Date.now()))}
+            </span>
+          </span>
+        );
+      },
+    },
+  ];
+  const sorted = useSort(signals, columns);
+  const order = stepOrder(sorted.rows);
 
   // Paging clamps on refresh and starts over when the slice changes.
   const slice = `${tab}|${since}|${until}|${JSON.stringify(filters.values)}|${filters.text}`;
@@ -160,7 +206,7 @@ export function Findings() {
   const pages = Math.max(1, Math.ceil(signals.length / PAGE));
   const at = paging.slice === slice ? Math.min(paging.at, pages - 1) : 0;
   const go = (n: number) => setPaging({ slice, at: Math.max(0, Math.min(pages - 1, n)) });
-  const page = signals.slice(at * PAGE, at * PAGE + PAGE);
+  const page = sorted.rows.slice(at * PAGE, at * PAGE + PAGE);
 
   const open = (s: Signal) => {
     const uid = s.findings[0]!.finding_uid;
@@ -168,7 +214,7 @@ export function Findings() {
       // `keys` is each uid's row, so a step on the finding page moves the row Back lands on.
       state: {
         uids: order,
-        keys: signals.flatMap((g) => g.findings.map(() => g.key)),
+        keys: sorted.rows.flatMap((g) => g.findings.map(() => g.key)),
         index: order.indexOf(uid),
         back: `${location.pathname}${location.search}`,
       },
@@ -226,43 +272,6 @@ export function Findings() {
   // No rows draw no bars: an axis over zero would still print its "1".
   const drawn = unknown || !rows.length ? [] : bars(rows, win.from, win.to);
 
-  // No head row and no time column: the name's cell ends with the time, as on Cases.
-  const columns: Column<Signal>[] = [
-    { label: "", fit: true, cell: (s) => <SeverityBadge severity={s.severity as Severity} /> },
-    {
-      label: "",
-      truncate: false,
-      cell: (s) => {
-        const hunt = huntTitle(s.title);
-        return (
-          <span className="flex min-w-0 items-center gap-3">
-            <span className="flex min-w-0 flex-1 items-center gap-2 max-sm:flex-col max-sm:items-start max-sm:gap-0.5 max-sm:py-1">
-              <span className="flex min-w-0 max-w-full items-center gap-2">
-                <Tip label={s.rule_id} mono>
-                  <span className="min-w-0 truncate font-medium text-fg-1 max-sm:line-clamp-2 max-sm:whitespace-normal">{hunt ?? s.title}</span>
-                </Tip>
-                {hunt !== null ? (
-                  <Tip label="From a hunt">
-                    <Telescope className="h-3.5 w-3.5 shrink-0 text-fg-3" role="img" aria-label="hunt" />
-                  </Tip>
-                ) : null}
-              </span>
-              {/* An aggregate's key names each entity ("AKIA…|203.0.113.55"); on a phone they sit under a two-line title. */}
-              {s.entity_key || s.findings.length > 1 ? (
-                <span className="inline-flex min-w-0 max-w-[40%] shrink-0 items-center gap-1 max-sm:max-w-full">
-                  {s.entity_key ? s.entity_key.split("|").map((part) => <Entity key={part} value={part} />) : null}
-                  {s.findings.length > 1 ? <span className="sh-mono shrink-0">×{num(s.findings.length)}</span> : null}
-                </span>
-              ) : null}
-            </span>
-            <span className="shrink-0 text-right font-mono text-xs text-fg-3 tabular md:min-w-12">
-              {age(s.last_seen, Math.max(now, Date.now()))}
-            </span>
-          </span>
-        );
-      },
-    },
-  ];
 
   const aside = (
     <span className="flex items-center gap-2">
@@ -365,6 +374,8 @@ export function Findings() {
           <Table
             columns={columns}
             rows={page}
+            sort={sorted.sort}
+            onSort={() => go(0)}
             rowKey={(s) => s.key}
             rowProps={nav.rowProps}
             loading={pending}

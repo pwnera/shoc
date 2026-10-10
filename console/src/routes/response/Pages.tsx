@@ -24,11 +24,12 @@ import { useListNav } from "@/lib/commands";
 import { useFilters, type Dim } from "@/lib/filters";
 import { huntTitle } from "@/lib/cases";
 import { age, count, shortId } from "@/lib/format";
-import { isPage, pageState, type Word } from "@/lib/labels";
+import { isPage, pageState, SEVERITIES, type Word } from "@/lib/labels";
 import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { useActionLog, useCaseLog } from "@/lib/queries";
 import { sinceDim } from "@/lib/since";
+import { useSort } from "@/lib/sort";
 import type { Action, Case } from "@/types";
 
 type Group = {
@@ -92,35 +93,22 @@ export function Pages() {
     text: "pq",
     match: (a, text) => `${(a.case_uid && byCase.get(a.case_uid)?.title) ?? ""} ${a.target}`.toLowerCase().includes(text),
   });
-  const rows = grouped(all.filter(filters.keep));
-
-  const open = (g: Group) => {
-    if (g.caseUid) navigate(`/cases/${g.caseUid}?tab=pages`, { state: { back: location.pathname + location.search } });
-    else
-      setParams((current) => {
-        const out = new URLSearchParams(current);
-        out.set("action", g.pages[0]!.action_uid);
-        return out;
-      });
-  };
-  const sent = rows.reduce((n, g) => n + g.pages.length, 0);
-  const { page, pager, prev, next } = usePaged(rows, 25, {
-    of: rows.length === sent ? undefined : `${count(rows.length, "group")} · ${count(sent, "page")}`,
-  });
-  const nav = useListNav(page, (g) => g.key, { onOpen: open, onPrevPage: prev, onNextPage: next });
-
   const columns: Column<Group>[] = [
     {
-      label: "",
+      label: "Severity",
       width: 28,
+      sort: (g) => {
+        const severity = g.caseUid ? byCase.get(g.caseUid)?.severity : undefined;
+        return severity ? SEVERITIES.indexOf(severity) : null;
+      },
       cell: (g) => {
         const severity = g.caseUid ? byCase.get(g.caseUid)?.severity : undefined;
         return <Mark tone={severity ?? "idle"} label={severity ?? "severity unknown"} />;
       },
     },
-    { label: "", fit: true, cell: (g) => <GroupState group={g} /> },
+    { label: "State", fit: true, sort: (g) => g.state.word, cell: (g) => <GroupState group={g} /> },
     {
-      label: "",
+      label: "Case",
       strong: true,
       truncate: false,
       // The count stays outside the part that truncates, so a narrow screen keeps it.
@@ -140,8 +128,25 @@ export function Pages() {
         );
       },
     },
-    { label: "", width: 56, align: "right", mono: true, cell: (g) => age(g.last, now) },
+    { label: "When", width: 56, align: "right", mono: true, sort: (g) => g.last, cell: (g) => age(g.last, now) },
   ];
+  const sorted = useSort(grouped(all.filter(filters.keep)), columns);
+  const rows = sorted.rows;
+
+  const open = (g: Group) => {
+    if (g.caseUid) navigate(`/cases/${g.caseUid}?tab=pages`, { state: { back: location.pathname + location.search } });
+    else
+      setParams((current) => {
+        const out = new URLSearchParams(current);
+        out.set("action", g.pages[0]!.action_uid);
+        return out;
+      });
+  };
+  const sent = rows.reduce((n, g) => n + g.pages.length, 0);
+  const { page, pager, prev, next, first } = usePaged(rows, 25, {
+    of: rows.length === sent ? undefined : `${count(rows.length, "group")} · ${count(sent, "page")}`,
+  });
+  const nav = useListNav(page, (g) => g.key, { onOpen: open, onPrevPage: prev, onNextPage: next });
 
   return (
     <Card>
@@ -157,6 +162,8 @@ export function Pages() {
       <Table
         columns={columns}
         rows={page}
+        sort={sorted.sort}
+        onSort={first}
         rowKey={(g) => g.key}
         rowProps={nav.rowProps}
         loading={log.isPending}

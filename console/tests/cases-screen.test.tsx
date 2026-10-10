@@ -211,11 +211,11 @@ describe("the Cases screen", () => {
     expect(empty.closest(".sh-empty")).toHaveTextContent("“nomatchxyz”");
   });
 
-  it("names its columns for screen readers", async () => {
+  it("names its columns", async () => {
     serve(CASES);
     show();
     await screen.findByText("Leaked key in use");
-    expect(screen.getAllByRole("columnheader").map((th) => th.textContent)).toEqual(["crew", "", "case"]);
+    expect(screen.getAllByRole("columnheader").map((th) => th.textContent)).toEqual(["Crew", "Severity", "Case"]);
   });
 
   it("reads Can't tell with tab counts unknown and Retry when case.list fails, never an empty queue", async () => {

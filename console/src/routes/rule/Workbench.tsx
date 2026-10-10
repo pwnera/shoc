@@ -28,9 +28,11 @@ import { Skel } from "@/components/ui/state";
 import { Table, type Column } from "@/components/ui/table";
 import { keyLabel, useCommand, useListNav, useSingleKeys } from "@/lib/commands";
 import { age, num, stamp } from "@/lib/format";
+import { SEVERITIES } from "@/lib/labels";
 import { useNow } from "@/lib/now";
 import { useParam } from "@/lib/param";
 import { useBacktest, useTestRule } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import type { Finding, Rule } from "@/types";
 import { useKeepFocus, useLocalPick, useStepper } from "../detection/stepper";
 import { INK, scalar, yaml } from "./yaml";
@@ -137,27 +139,44 @@ function WouldBe({
 const NO_PAGES = { start: 0, size: Infinity, prev: () => {}, next: () => {} };
 
 /** Would-be findings as rows: severity, entity, events, first seen; one popup steps through them. */
-function Findings({ rows, label }: { rows: Finding[]; label: string }) {
+function Findings({ rows: given, label }: { rows: Finding[]; label: string }) {
   const now = useNow();
   const pick = useLocalPick();
-  const nav = useListNav(rows, (f) => f.finding_uid, { onOpen: (f) => pick[1](f.finding_uid, true) });
-  const open = useStepper(rows, (f) => f.finding_uid, pick, { ...NO_PAGES, setActive: nav.setActive });
   const columns: Column<Finding>[] = [
-    { label: "", fit: true, cell: (f) => <SeverityBadge severity={f.severity} /> },
     {
-      label: "",
+      label: "Severity",
+      fit: true,
+      sort: (f) => SEVERITIES.indexOf(f.severity),
+      cell: (f) => <SeverityBadge severity={f.severity} />,
+    },
+    {
+      label: "Entity",
       truncate: false,
+      sort: (f) => f.entity_key,
       cell: (f) => (f.entity_key ? <Entity value={f.entity_key} /> : <span className="sh-mono">—</span>),
     },
-    { label: "", width: 56, align: "right", mono: true, cell: (f) => num(f.event_count) },
-    { label: "", width: 56, align: "right", mono: true, hide: "md", cell: (f) => age(f.first_seen, now) },
+    { label: "Events", width: 56, align: "right", mono: true, sort: (f) => f.event_count, cell: (f) => num(f.event_count) },
+    {
+      label: "Seen",
+      width: 56,
+      align: "right",
+      mono: true,
+      hide: "md",
+      sort: (f) => f.first_seen,
+      cell: (f) => age(f.first_seen, now),
+    },
   ];
+  const sorted = useSort(given, columns);
+  const rows = sorted.rows;
+  const nav = useListNav(rows, (f) => f.finding_uid, { onOpen: (f) => pick[1](f.finding_uid, true) });
+  const open = useStepper(rows, (f) => f.finding_uid, pick, { ...NO_PAGES, setActive: nav.setActive });
   return (
     <>
       <Table
         label={label}
         columns={columns}
         rows={rows}
+        sort={sorted.sort}
         rowKey={(f) => f.finding_uid}
         rowProps={nav.rowProps}
         bounded={240}

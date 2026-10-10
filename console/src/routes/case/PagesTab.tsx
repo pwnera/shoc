@@ -17,6 +17,7 @@ import { pageState } from "@/lib/labels";
 import { conditionWords } from "@/lib/policy";
 import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
+import { useSort } from "@/lib/sort";
 import type { Action } from "@/types";
 import type { Open } from "./moments";
 
@@ -49,20 +50,19 @@ export function PagesTab({
 }) {
   const now = useNow();
   const why = (page: Action) => conditionWords(page.rationale ?? "")?.join(" · ") || page.target || who(page.requested_by).name;
-  const list = bursts(rows);
-  const paged = usePaged(list, 25, {
-    of: list.length === rows.length ? undefined : `${count(list.length, "group")} · ${count(rows.length, "page")}`,
-  });
-  const nav = useListNav(paged.page, (b) => b.key, {
-    onOpen: (b) => open.action(b.pages[0]!, list.map((x) => x.pages[0]!)),
-    onPrevPage: paged.prev,
-    onNextPage: paged.next,
-  });
+  const grouped = bursts(rows);
   const columns: Column<Burst>[] = [
-    { label: "", width: 28, truncate: false, cell: (b) => <Avatar who={b.pages[0]!.requested_by} size={16} tip={false} /> },
     {
-      label: "",
+      label: "By",
+      width: 28,
+      truncate: false,
+      sort: (b) => who(b.pages[0]!.requested_by).name,
+      cell: (b) => <Avatar who={b.pages[0]!.requested_by} size={16} tip={false} />,
+    },
+    {
+      label: "State",
       fit: true,
+      sort: (b) => b.word,
       cell: (b) => {
         const { word, tone } = pageState(b.pages[0]!);
         return (
@@ -74,8 +74,9 @@ export function PagesTab({
     },
     // Why it went out names the row (the avatar is who paged); the time ends its one free cell, as on every object list.
     {
-      label: "",
+      label: "Why",
       truncate: false,
+      sort: (b) => why(b.pages[0]!),
       cell: (b) => (
         <span className="flex min-w-0 items-center gap-3">
           <span className="flex min-w-0 flex-1 items-baseline gap-2">
@@ -87,11 +88,23 @@ export function PagesTab({
       ),
     },
   ];
+  const sorted = useSort(grouped, columns);
+  const list = sorted.rows;
+  const paged = usePaged(list, 25, {
+    of: list.length === rows.length ? undefined : `${count(list.length, "group")} · ${count(rows.length, "page")}`,
+  });
+  const nav = useListNav(paged.page, (b) => b.key, {
+    onOpen: (b) => open.action(b.pages[0]!, list.map((x) => x.pages[0]!)),
+    onPrevPage: paged.prev,
+    onNextPage: paged.next,
+  });
   return (
     <>
       <Table
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={(b) => b.key}
         rowProps={nav.rowProps}
         loading={loading}

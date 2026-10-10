@@ -22,13 +22,14 @@ import { useCommand, useListNav } from "@/lib/commands";
 import { copyAndSay } from "@/lib/copy";
 import type { Filters } from "@/lib/filters";
 import { useFollow } from "@/lib/popup";
+import { useSort } from "@/lib/sort";
 import type { CapabilityDoc } from "@/types";
 import { areaOf, CAPABILITY_DIMS } from "./parts";
 
 export function Registry({
   query,
   filters,
-  rows,
+  rows: given,
   current,
   onOpen,
 }: {
@@ -45,7 +46,44 @@ export function Registry({
   current: string;
   onOpen: (name: string) => void;
 }) {
-  const areas = [...new Set(rows.map((c) => areaOf(c.name)))];
+  const columns: Column<CapabilityDoc>[] = [
+    {
+      label: "Audit",
+      // The glyph's 14px plus the cell's padding, so it is drawn whole and centred on the row.
+      width: 40,
+      truncate: false,
+      sort: (c) => Number(!c.audit),
+      cell: (c) =>
+        c.audit ? (
+          <Tip label="Audited">
+            <span role="img" aria-label="audited" className="flex items-center text-fg-4">
+              <Link2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            </span>
+          </Tip>
+        ) : null,
+    },
+    {
+      label: "Autonomy",
+      width: 64,
+      truncate: false,
+      sort: (c) => c.autonomy,
+      cell: (c) => (c.autonomy === "L2" ? <AutonomyBadge level="L2" /> : null),
+    },
+    {
+      label: "Name",
+      truncate: false,
+      sort: (c) => c.name,
+      cell: (c) => (
+        <Tip label={c.summary}>
+          <span className="sh-mono sh-mono--strong block truncate">{c.name}</span>
+        </Tip>
+      ),
+    },
+  ];
+  const areas = [...new Set(given.map((c) => areaOf(c.name)))];
+  // One sort for every area: a head in any of them orders the capabilities within each.
+  const sorted = useSort(given, columns);
+  const rows = areas.flatMap((area) => sorted.rows.filter((c) => areaOf(c.name) === area));
   const nav = useListNav(rows, (c) => c.name, { onOpen: (c) => onOpen(c.name) });
   useFollow(nav, current);
   useCommand("access.copy-name", () => void (nav.activeKey && copyAndSay(nav.activeKey)), Boolean(nav.activeKey));
@@ -72,32 +110,6 @@ export function Registry({
     el?.querySelector<HTMLElement>(`[data-row-key="${CSS.escape(first)}"]`)?.focus({ preventScroll: true });
   };
 
-  const columns: Column<CapabilityDoc>[] = [
-    {
-      label: "",
-      // The glyph's 14px plus the cell's padding, so it is drawn whole and centred on the row.
-      width: 40,
-      truncate: false,
-      cell: (c) =>
-        c.audit ? (
-          <Tip label="Audited">
-            <span role="img" aria-label="audited" className="flex items-center text-fg-4">
-              <Link2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            </span>
-          </Tip>
-        ) : null,
-    },
-    { label: "", width: 64, truncate: false, cell: (c) => (c.autonomy === "L2" ? <AutonomyBadge level="L2" /> : null) },
-    {
-      label: "",
-      truncate: false,
-      cell: (c) => (
-        <Tip label={c.summary}>
-          <span className="sh-mono sh-mono--strong block truncate">{c.name}</span>
-        </Tip>
-      ),
-    },
-  ];
 
   const shown = spied || areas[0] || "";
   return (
@@ -176,6 +188,7 @@ export function Registry({
                   label={`${area} capabilities`}
                   columns={columns}
                   rows={rows.filter((c) => areaOf(c.name) === area)}
+                  sort={sorted.sort}
                   rowKey={(c) => c.name}
                   rowProps={nav.rowProps}
                 />

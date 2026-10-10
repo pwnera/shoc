@@ -20,6 +20,7 @@ import { useNow } from "@/lib/now";
 import { useFollow, useOpen } from "@/lib/popup";
 import { usePresence } from "@/lib/presence";
 import { useAlerts, useAudit, useCrewWindow, useLlm } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import { roleRows, type RoleRow, type RoleState } from "./model";
 import { RoleDialog } from "./RoleDialog";
 
@@ -33,17 +34,12 @@ export function Crew() {
   const presence = usePresence();
   const now = useNow();
   const modelDown = presence.down || (alerts.data?.alerts ?? []).some((a) => a.kind === "llm.failing");
-  const rows = roleRows(
+  const roles = roleRows(
     tail.data?.events ?? [],
     audit.data?.recent ?? [],
     new Set(presence.roles.map((r) => r.who.key)),
     modelDown,
   );
-  const dialog = useOpen("role", rows.map((r) => r.role.name));
-  const nav = useListNav(rows, (r) => r.role.name, { onOpen: (r) => dialog.open(r.role.name) });
-  useFollow(nav, dialog.value);
-  const picked = rows[dialog.at];
-
   const columns: Column<RoleRow>[] = [
     {
       label: "",
@@ -58,7 +54,7 @@ export function Crew() {
       ),
     },
     {
-      label: "",
+      label: "State",
       fit: true,
       cell: (r) => (
         <Status tone={TONE[r.state]} badge>
@@ -66,10 +62,11 @@ export function Crew() {
         </Status>
       ),
     },
-    { label: "", strong: true, cell: (r) => r.role.name },
+    { label: "Role", strong: true, cell: (r) => r.role.name },
     {
-      label: "",
+      label: "Last",
       width: 72,
+      sort: (r) => r.last,
       align: "right",
       truncate: false,
       cell: (r) =>
@@ -84,6 +81,12 @@ export function Crew() {
         ),
     },
   ];
+  const sorted = useSort(roles, columns);
+  const rows = sorted.rows;
+  const dialog = useOpen("role", rows.map((r) => r.role.name));
+  const nav = useListNav(rows, (r) => r.role.name, { onOpen: (r) => dialog.open(r.role.name) });
+  useFollow(nav, dialog.value);
+  const picked = rows[dialog.at];
 
   return (
     <>
@@ -91,6 +94,7 @@ export function Crew() {
         label="Crew roles"
         columns={columns}
         rows={rows}
+        sort={sorted.sort}
         rowKey={(r) => r.role.name}
         rowProps={nav.rowProps}
         loading={tail.isPending || audit.isPending}

@@ -28,6 +28,7 @@ import { modelProvider } from "@/lib/labels";
 import { loadError } from "@/lib/loaded";
 import { closeParams, useFollow, type Step } from "@/lib/popup";
 import { useConfigureLlm, useConfigureSlack, useCredentials, useLlm, useSlack } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import type { CredentialList, LlmConfig, SlackView } from "@/types";
 import { hostOf } from "../intel/feeds";
 import { product, RESPONSE_TONE, responseState, type Product } from "./products";
@@ -68,11 +69,30 @@ export function Services() {
   const slack = useSlack();
   const credentials = useCredentials();
   const pager = paging(credentials.data);
-  const rows: Row[] = [
-    modelRow(llm.data),
-    slackRow(slack.data),
-    { id: "paging", name: "PagerDuty", logo: "pagerduty", word: credentials.data ? (responseState(pager) ?? "") : "", detail: "" },
+  const columns: Column<Row>[] = [
+    { label: "", fit: true, truncate: false, cell: (r) => <ProductLogo product={r.logo} size={16} /> },
+    {
+      label: "State",
+      fit: true,
+      cell: (r) =>
+        r.word ? (
+          <Status tone={RESPONSE_TONE[r.word] ?? "idle"} badge>
+            {r.word}
+          </Status>
+        ) : null,
+    },
+    { label: "Name", strong: true, cell: (r) => r.name },
+    { label: "Detail", width: 280, hide: "md", mono: true, cell: (r) => r.detail },
   ];
+  const sorted = useSort<Row>(
+    [
+      modelRow(llm.data),
+      slackRow(slack.data),
+      { id: "paging", name: "PagerDuty", logo: "pagerduty", word: credentials.data ? (responseState(pager) ?? "") : "", detail: "" },
+    ],
+    columns,
+  );
+  const rows = sorted.rows;
   /** Open a row's dialog, or step to it in place; the last one's credential and view go. */
   const go = (row: Row, push = false) =>
     setParams(
@@ -100,28 +120,13 @@ export function Services() {
   const read = at >= 0 ? { model: llm, slack, paging: credentials }[rows[at]!.id] : undefined;
   const failed = read ? loadError(read) : undefined;
 
-  const columns: Column<Row>[] = [
-    { label: "", fit: true, truncate: false, cell: (r) => <ProductLogo product={r.logo} size={16} /> },
-    {
-      label: "",
-      fit: true,
-      cell: (r) =>
-        r.word ? (
-          <Status tone={RESPONSE_TONE[r.word] ?? "idle"} badge>
-            {r.word}
-          </Status>
-        ) : null,
-    },
-    { label: "", strong: true, cell: (r) => r.name },
-    { label: "", width: 280, hide: "md", mono: true, cell: (r) => r.detail },
-  ];
-
   return (
     <>
       <Table
         label="Services"
         columns={columns}
         rows={rows}
+        sort={sorted.sort}
         rowKey={(r) => r.id}
         rowProps={nav.rowProps}
         loading={llm.isPending || slack.isPending || credentials.isPending}

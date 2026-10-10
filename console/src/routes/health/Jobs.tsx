@@ -24,6 +24,7 @@ import { jobWord } from "@/lib/labels";
 import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { useFollow, useOpen, type Step } from "@/lib/popup";
+import { useSort } from "@/lib/sort";
 import { WINDOWS, type Days, type JobGroup } from "./model";
 
 const FAMILY: Record<string, LucideIcon> = {
@@ -61,13 +62,6 @@ export function Jobs({
   onRetry: () => void;
 }) {
   const now = useNow();
-  const dialog = useOpen("job", groups.map((g) => g.key));
-  const { page, pager, start, prev, next } = usePaged(groups);
-  const nav = useListNav(page, (g) => g.key, { onOpen: (g) => dialog.open(g.key), onPrevPage: prev, onNextPage: next });
-  useFollow(nav, dialog.value);
-  const shown = WINDOWS.find((w) => w.value === days)?.label ?? "24h";
-  const picked = groups[dialog.at];
-
   const columns: Column<JobGroup>[] = [
     {
       label: "",
@@ -79,12 +73,12 @@ export function Jobs({
       },
     },
     {
-      label: "",
+      label: "Error",
       fit: true,
       cell: (g) => <Badge tone={g.overdue ? "bad" : "muted"}>{g.cls}</Badge>,
     },
     {
-      label: "",
+      label: "Job",
       cell: (g) => (
         <>
           <Tip label={g.kind}>
@@ -96,8 +90,23 @@ export function Jobs({
         </>
       ),
     },
-    { label: "", width: 64, align: "right", mono: true, cell: (g) => (g.last_at ? age(g.last_at, now) : "") },
+    {
+      label: "Last",
+      width: 64,
+      align: "right",
+      mono: true,
+      sort: (g) => g.last_at,
+      cell: (g) => (g.last_at ? age(g.last_at, now) : ""),
+    },
   ];
+  const sorted = useSort(groups, columns);
+  const rows = sorted.rows;
+  const dialog = useOpen("job", rows.map((g) => g.key));
+  const { page, pager, start, prev, next, first } = usePaged(rows);
+  const nav = useListNav(page, (g) => g.key, { onOpen: (g) => dialog.open(g.key), onPrevPage: prev, onNextPage: next });
+  useFollow(nav, dialog.value);
+  const shown = WINDOWS.find((w) => w.value === days)?.label ?? "24h";
+  const picked = rows[dialog.at];
 
   return (
     <>
@@ -109,6 +118,8 @@ export function Jobs({
         columns={columns}
         rows={page}
         start={start}
+        sort={sorted.sort}
+        onSort={first}
         rowKey={(g) => g.key}
         rowProps={nav.rowProps}
         loading={loading}

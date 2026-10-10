@@ -18,12 +18,13 @@ import { Status } from "@/components/ui/status";
 import { Table, type Column } from "@/components/ui/table";
 import { useListNav } from "@/lib/commands";
 import { age, num, shortId, stamp } from "@/lib/format";
-import { queueState } from "@/lib/labels";
+import { QUEUE_STATES, queueState } from "@/lib/labels";
 import { loadError } from "@/lib/loaded";
 import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { focusRow, useFollow, usePopParam, type Step } from "@/lib/popup";
 import { useIntelQueue, useIntelReports } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import type { QueuedReport } from "@/types";
 import { LinkChip } from "@/routes/detection/parts";
 import { DigestDialog } from "./DigestDialog";
@@ -49,7 +50,18 @@ export function Queue({ contains, filtered, onClear }: { contains: string; filte
   const now = useNow();
   const [reading, setReading] = useState("");
   const queue = useIntelQueue(contains);
-  const rows = queue.data?.rows ?? [];
+  const columns: Column<QueuedReport>[] = [
+    {
+      label: "State",
+      fit: true,
+      sort: (r) => QUEUE_STATES.findIndex((s) => s.id === r.state),
+      cell: (r) => <State state={r.state} />,
+    },
+    { label: "Title", strong: true, cell: (r) => r.title || r.url },
+    { label: "Changed", fit: true, mono: true, hide: "md", sort: (r) => r.changed_at, cell: (r) => age(r.changed_at, now) },
+  ];
+  const sorted = useSort(queue.data?.rows ?? [], columns);
+  const rows = sorted.rows;
   const paged = usePaged(rows, 25, { cap: CAP });
   const pop = usePopParam("queued");
   const open = (row: QueuedReport | undefined, replace = false) => pop(row && row.url, replace);
@@ -63,17 +75,13 @@ export function Queue({ contains, filtered, onClear }: { contains: string; filte
   useFollow(nav, params.get("queued") ?? "");
   const at = rows.findIndex((r) => r.url === params.get("queued"));
 
-  const columns: Column<QueuedReport>[] = [
-    { label: "", fit: true, cell: (r) => <State state={r.state} /> },
-    { label: "", strong: true, cell: (r) => r.title || r.url },
-    { label: "", fit: true, mono: true, hide: "md", cell: (r) => age(r.changed_at, now) },
-  ];
-
   return (
     <>
       <Table
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={(r) => r.url}
         rowProps={nav.rowProps}
         loading={queue.isPending}

@@ -30,6 +30,7 @@ import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { useFollow, usePopValue } from "@/lib/popup";
 import { useParam } from "@/lib/param";
+import { useSort } from "@/lib/sort";
 import type { HuntReadiness } from "@/types";
 import { applicable, readyIn } from "./runs";
 
@@ -100,7 +101,31 @@ export function Packs({
     text: "kq",
     match: (r, text) => `${r.title ?? ""} ${r.pack_id} ${r.hypothesis ?? ""}`.toLowerCase().includes(text),
   });
-  const rows = shown.filter(filters.keep);
+  const columns: Column<HuntReadiness>[] = [
+    {
+      label: "Readiness",
+      fit: true,
+      sort: (r) => Object.keys(READINESS).indexOf(r.state),
+      cell: (r) => (
+        <span className="flex items-center gap-1.5">
+          <ProductLogo product={r.product} named />
+          {gaps.has(r.pack_id) ? <Mark tone="warn" label="couldn't look" /> : null}
+          <Readiness row={r} now={now} compact />
+        </span>
+      ),
+    },
+    { label: "Title", strong: true, cell: (r) => r.title ?? r.pack_id },
+    {
+      label: "Last run",
+      fit: true,
+      mono: true,
+      hide: "md",
+      sort: (r) => lastRun.get(r.pack_id),
+      cell: (r) => (lastRun.has(r.pack_id) ? age(lastRun.get(r.pack_id), now) : "—"),
+    },
+  ];
+  const sorted = useSort(shown.filter(filters.keep), columns);
+  const rows = sorted.rows;
   const paged = usePaged(rows, 25);
   const nav = useListNav(paged.page, (r) => r.pack_id, {
     onOpen: (r) => onOpen(r, rows),
@@ -110,22 +135,6 @@ export function Packs({
   // The pack dialog's J and K turn the page and move the active row with them.
   const [params] = useSearchParams();
   useFollow(nav, params.get("pack") ?? "", { keys: rows.map((r) => r.pack_id), size: 25, go: paged.go });
-
-  const columns: Column<HuntReadiness>[] = [
-    {
-      label: "",
-      fit: true,
-      cell: (r) => (
-        <span className="flex items-center gap-1.5">
-          <ProductLogo product={r.product} named />
-          {gaps.has(r.pack_id) ? <Mark tone="warn" label="couldn't look" /> : null}
-          <Readiness row={r} now={now} compact />
-        </span>
-      ),
-    },
-    { label: "", strong: true, cell: (r) => r.title ?? r.pack_id },
-    { label: "", fit: true, mono: true, hide: "md", cell: (r) => (lastRun.has(r.pack_id) ? age(lastRun.get(r.pack_id), now) : "—") },
-  ];
 
   return (
     <>
@@ -157,6 +166,8 @@ export function Packs({
       <Table
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={(r) => r.pack_id}
         rowProps={nav.rowProps}
         loading={loading}

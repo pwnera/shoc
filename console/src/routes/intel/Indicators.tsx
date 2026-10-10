@@ -21,6 +21,7 @@ import { SEVERITIES, severityLabel } from "@/lib/labels";
 import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { useFollow, usePopParam } from "@/lib/popup";
+import { useSort } from "@/lib/sort";
 import type { Indicator } from "@/types";
 import { defang, feedName } from "./feeds";
 import { IndicatorDialog } from "./IndicatorDialog";
@@ -66,7 +67,19 @@ export function Indicators({
     },
   ];
   const filters = useFilters(dims);
-  const rows = loaded.filter(filters.keep);
+  const columns: Column<Indicator>[] = [
+    {
+      label: "Severity",
+      fit: true,
+      sort: (r) => SEVERITIES.indexOf(r.severity),
+      cell: (r) => <Mark tone={r.severity} label={severityLabel(r.severity)} />,
+    },
+    { label: "Type", fit: true, cell: (r) => <Badge>{r.type}</Badge> },
+    { label: "Value", mono: true, strong: true, sort: (r) => r.value, cell: (r) => defang(r.type, r.value) },
+    { label: "Seen", fit: true, mono: true, hide: "md", sort: (r) => r.last_seen, cell: (r) => age(r.last_seen, now) },
+  ];
+  const sorted = useSort(loaded.filter(filters.keep), columns);
+  const rows = sorted.rows;
   const paged = usePaged(rows, 25, { newest: capped });
   const pop = usePopParam("ioc");
   const open = (row: Indicator | undefined, replace = false) => pop(row && row.value, replace);
@@ -84,21 +97,6 @@ export function Indicators({
     size: 25,
     go: paged.go,
   });
-
-  const columns: Column<Indicator>[] = [
-    {
-      label: "",
-      fit: true,
-      cell: (r) => (
-        <span className="inline-flex items-center gap-2">
-          <Mark tone={r.severity} label={severityLabel(r.severity)} />
-          <Badge>{r.type}</Badge>
-        </span>
-      ),
-    },
-    { label: "", mono: true, strong: true, cell: (r) => defang(r.type, r.value) },
-    { label: "", fit: true, mono: true, hide: "md", cell: (r) => age(r.last_seen, now) },
-  ];
 
   return (
     <>
@@ -121,6 +119,8 @@ export function Indicators({
       <Table
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={(r) => `${r.type}:${r.value}`}
         rowProps={nav.rowProps}
         loading={loading}

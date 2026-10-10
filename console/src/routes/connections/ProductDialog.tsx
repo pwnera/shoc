@@ -29,6 +29,7 @@ import { credentialName, vendorName } from "@/lib/credentials";
 import { age, num, span, stamp } from "@/lib/format";
 import { useNow } from "@/lib/now";
 import { useMappingTest, useSampleSource, useSyncSource } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import { connectorOf, sourceError, sourceName } from "@/lib/sources";
 import { toastError } from "@/lib/toast";
 import type { ConfiguredSource, CredentialList, Onboarding, SourceSample } from "@/types";
@@ -289,13 +290,20 @@ export function Sample({ data }: { data: SourceSample }) {
   const keys = Object.keys(data.rows[0] ?? {})
     .filter((k) => data.rows.some((r) => ["string", "number", "boolean"].includes(typeof r[k])))
     .slice(0, 3);
-  const rows = data.rows.map((r, i) => ({ ...r, __i: i }));
-  const nav = useListNav(rows, (r) => String(r.__i), { onOpen: (r) => setOpen(r.__i) });
-  const columns: Column<SampleRow & { __i: number }>[] = keys.map((k) => ({
+  const fields: Column<SampleRow & { __i: number }>[] = keys.map((k) => ({
     label: k,
     mono: true,
     cell: (r) => (r[k] === undefined || r[k] === null ? "" : String(r[k])),
   }));
+  const columns: Column<SampleRow & { __i: number }>[] = fields.length
+    ? fields
+    : [{ label: "row", mono: true, cell: (r) => JSON.stringify(r) }];
+  const sorted = useSort(
+    data.rows.map((r, i) => ({ ...r, __i: i })),
+    columns,
+  );
+  const rows = sorted.rows;
+  const nav = useListNav(rows, (r) => String(r.__i), { onOpen: (r) => setOpen(r.__i) });
   const picked = open === null ? undefined : data.rows[open];
   return (
     <div className="flex flex-col gap-2">
@@ -307,8 +315,9 @@ export function Sample({ data }: { data: SourceSample }) {
       {data.rows.length ? (
         <Table
           label="Sample rows"
-          columns={columns.length ? columns : [{ label: "row", mono: true, cell: (r) => JSON.stringify(r) }]}
+          columns={columns}
           rows={rows}
+          sort={sorted.sort}
           rowKey={(r) => String(r.__i)}
           rowProps={nav.rowProps}
           bounded={240}

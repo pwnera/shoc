@@ -890,6 +890,12 @@
 
   /* ── Table (changed) ────────────────────────────────────── */
   .sh-table thead th { position: sticky; top: 0; z-index: 1; }
+  .sh-table__sort { display: inline-flex; align-items: center; gap: 2px; max-width: 100%; height: 100%; padding: 0; border: 0; background: none; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; }
+  .sh-table__sort:hover, .sh-table__sort[data-on] { color: var(--fg-1); }
+  .sh-table__sort:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+  .sh-table__sort svg { width: 10px; height: 10px; flex: none; opacity: 0; }
+  .sh-table__sort:hover svg { opacity: 0.5; }
+  .sh-table__sort[data-on] svg, .sh-table__sort[data-glyph] svg { opacity: 1; }
   .sh-table-wrap--bounded { max-height: var(--table-max, 480px); overflow-y: auto; }
   .sh-table tbody tr[data-active], .sh-table tbody tr.is-link:focus-visible { background: var(--bg-2); box-shadow: none; }
   .sh-table tbody tr[data-active] > td:first-child { box-shadow: inset 2px 0 0 var(--fg-1); }

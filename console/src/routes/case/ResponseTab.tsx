@@ -25,6 +25,7 @@ import { actionLabel, actionState } from "@/lib/labels";
 import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { useFollow } from "@/lib/popup";
+import { useSort } from "@/lib/sort";
 import type { Action } from "@/types";
 import type { Open } from "./moments";
 
@@ -39,7 +40,7 @@ export function ActionStatus({ action, word }: { action: Action; word?: string }
 }
 
 export function ResponseTab({
-  rows,
+  rows: given,
   loading,
   error,
   onRetry,
@@ -57,20 +58,12 @@ export function ResponseTab({
   open: Open;
 }) {
   const now = useNow();
-  const paged = usePaged(rows, 25);
-  const nav = useListNav(paged.page, (a) => a.action_uid, {
-    onOpen: (a) => open.action(a, rows),
-    onPrevPage: paged.prev,
-    onNextPage: paged.next,
-  });
-  // The action dialog's J and K turn the page and move the active row with them.
-  const [params] = useSearchParams();
-  useFollow(nav, params.get("action") ?? "", { keys: rows.map((a) => a.action_uid), size: 25, go: paged.go });
   const columns: Column<Action>[] = [
     {
-      label: "",
+      label: "Platform",
       width: 48,
       truncate: false,
+      sort: (a) => a.type.split(".")[0],
       cell: (a) => {
         return (
           <span className="flex items-center gap-1.5">
@@ -80,11 +73,12 @@ export function ResponseTab({
         );
       },
     },
-    { label: "", fit: true, cell: (a) => <ActionStatus action={a} /> },
+    { label: "State", fit: true, sort: (a) => actionState(a).word, cell: (a) => <ActionStatus action={a} /> },
     {
-      label: "",
+      label: "Action",
       strong: true,
       truncate: false,
+      sort: (a) => actionLabel(a.type),
       cell: (a) => (
         <span className="flex min-w-0 items-center gap-2">
           <span className="max-w-full shrink-0 truncate">{actionLabel(a.type)}</span>
@@ -96,8 +90,26 @@ export function ResponseTab({
         </span>
       ),
     },
-    { label: "", width: 72, align: "right", mono: true, cell: (a) => age(a.updated_at ?? a.created_at, now) },
+    {
+      label: "When",
+      width: 72,
+      align: "right",
+      mono: true,
+      sort: (a) => a.updated_at ?? a.created_at,
+      cell: (a) => age(a.updated_at ?? a.created_at, now),
+    },
   ];
+  const sorted = useSort(given, columns);
+  const rows = sorted.rows;
+  const paged = usePaged(rows, 25);
+  const nav = useListNav(paged.page, (a) => a.action_uid, {
+    onOpen: (a) => open.action(a, rows),
+    onPrevPage: paged.prev,
+    onNextPage: paged.next,
+  });
+  // The action dialog's J and K turn the page and move the active row with them.
+  const [params] = useSearchParams();
+  useFollow(nav, params.get("action") ?? "", { keys: rows.map((a) => a.action_uid), size: 25, go: paged.go });
 
   return (
     <>
@@ -114,6 +126,8 @@ export function ResponseTab({
       <Table
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={(a) => a.action_uid}
         rowProps={nav.rowProps}
         isNew={(a) => a.action_uid === fresh}

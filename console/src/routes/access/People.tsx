@@ -30,6 +30,7 @@ import { ago, stamp } from "@/lib/format";
 import { usePaged } from "@/lib/paged";
 import { useFollow, useOpen, usePopValue } from "@/lib/popup";
 import { useConfigureSso, useInviteUser, useResetUser, useSso, useUpdateUser, useUsers } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import { toast } from "@/lib/toast";
 import type { Issued, SsoSettings, User } from "@/types";
 
@@ -83,13 +84,6 @@ export function People() {
   ];
   // Its own text parameter: Registry, a tab away, keeps `q`.
   const filters = useFilters(dims, { text: "pq", match: (u, text) => u.email.toLowerCase().includes(text) });
-  const rows = all.filter(filters.keep);
-  const dialog = useOpen("person", rows.map((u) => u.user_id));
-  const { page, pager, start, prev, next } = usePaged(rows);
-  const nav = useListNav(page, (u) => u.user_id, { onOpen: (u) => dialog.open(u.user_id), onPrevPage: prev, onNextPage: next });
-  useFollow(nav, dialog.value);
-  useCommand("access.invite", () => invite("1"));
-  const picked = rows[dialog.at];
 
   /** A link not emailed is shown once; an emailed one, or none (an SSO domain), is a toast. */
   const deliver = (title: string) => (result: Issued) => {
@@ -129,10 +123,17 @@ export function People() {
         ];
 
   const columns: Column<User>[] = [
-    { label: "", fit: true, cell: (u) => <Badge tone="muted">{u.role}</Badge> },
-    { label: "", strong: true, cell: (u) => u.email },
-    { label: "", fit: true, hide: "md", cell: (u) => <span className="sh-mono text-fg-3">{u.method === "sso" ? "SSO" : "password"}</span> },
-    { label: "", fit: true, align: "right", truncate: false, cell: (u) => <State user={u} /> },
+    { label: "Role", fit: true, sort: (u) => ROLES.indexOf(u.role as Role), cell: (u) => <Badge tone="muted">{u.role}</Badge> },
+    { label: "Email", strong: true, cell: (u) => u.email },
+    { label: "Method", fit: true, hide: "md", cell: (u) => <span className="sh-mono text-fg-3">{u.method === "sso" ? "SSO" : "password"}</span> },
+    {
+      label: "Last in",
+      fit: true,
+      align: "right",
+      truncate: false,
+      sort: (u) => (u.disabled_at ? null : u.last_login_at),
+      cell: (u) => <State user={u} />,
+    },
     {
       label: "",
       width: 40,
@@ -153,6 +154,14 @@ export function People() {
       ),
     },
   ];
+  const sorted = useSort(all.filter(filters.keep), columns);
+  const rows = sorted.rows;
+  const dialog = useOpen("person", rows.map((u) => u.user_id));
+  const { page, pager, start, prev, next, first } = usePaged(rows);
+  const nav = useListNav(page, (u) => u.user_id, { onOpen: (u) => dialog.open(u.user_id), onPrevPage: prev, onNextPage: next });
+  useFollow(nav, dialog.value);
+  useCommand("access.invite", () => invite("1"));
+  const picked = rows[dialog.at];
 
   return (
     <>
@@ -179,6 +188,8 @@ export function People() {
         columns={columns}
         rows={page}
         start={start}
+        sort={sorted.sort}
+        onSort={first}
         rowKey={(u) => u.user_id}
         rowProps={nav.rowProps}
         loading={users.isPending}

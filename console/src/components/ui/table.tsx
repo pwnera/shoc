@@ -8,9 +8,13 @@
  * target. While loading it draws skeleton rows; on error it never shows the
  * empty state. A list whose rows open something is a grid to assistive tech:
  * its active row is the selected one, and the table says what Enter does.
+ * A head sorts its column (`useSort` in lib/sort): ascending, descending, then back to the
+ * list's own order.
  */
 import { useId, type KeyboardEvent, type ReactNode } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { sortable, type Sorting } from "@/lib/sort";
 import { Empty, ErrorNote } from "./misc";
 import { Skel } from "./state";
 
@@ -30,12 +34,16 @@ export type Column<R> = {
   hide?: "md";
   /** A trailing ⋯ menu: clicks and keys inside it never open the row. */
   menu?: boolean;
+  /** What the head sorts by: the cell's text by default, false for a column that does not sort. */
+  sort?: ((row: R) => string | number | null | undefined) | false;
 };
 
 /** Room for a free column before a narrow panel scrolls sideways instead of crushing it. */
 const FREE = 160;
 const FIT = 80;
 const INDEX = 32;
+/** A head narrower than this sorts from its arrow alone; the word stays for screen readers and the tip. */
+const GLYPH = 56;
 const SKELETON_ROWS = 6;
 
 const stop = (event: { stopPropagation: () => void }) => event.stopPropagation();
@@ -59,6 +67,8 @@ export function Table<R>({
   isNew,
   bounded,
   label,
+  sort,
+  onSort,
 }: {
   columns: Column<R>[];
   rows: R[];
@@ -85,6 +95,10 @@ export function Table<R>({
   /** A bounded scroll box (px, default 480) with the head sticky inside it. */
   bounded?: boolean | number;
   label?: string;
+  /** `useSort().sort`: the heads sort the rows. */
+  sort?: Sorting;
+  /** Called after a head is clicked (the pager's `first`). */
+  onSort?: () => void;
 }) {
   const hint = useId();
   const headless = columns.every((column) => !column.label);
@@ -243,11 +257,40 @@ export function Table<R>({
           <thead className={srHead ? "sh-table__srhead" : undefined}>
             <tr>
               {indexed ? <th scope="col">#</th> : null}
-              {columns.map((column, index) => (
-                <th key={index} scope="col" className={cellClass(column)}>
-                  {column.menu ? <span className="sr-only">{column.label || "Actions"}</span> : column.label}
-                </th>
-              ))}
+              {columns.map((column, index) => {
+                const on = sort?.by?.by === index ? sort.by : null;
+                const glyph = column.width !== undefined && column.width < GLYPH;
+                const Arrow = on ? (on.desc ? ArrowDown : ArrowUp) : glyph ? ArrowUpDown : ArrowUp;
+                return (
+                  <th
+                    key={index}
+                    scope="col"
+                    className={cellClass(column)}
+                    aria-sort={on ? (on.desc ? "descending" : "ascending") : undefined}
+                  >
+                    {column.menu ? (
+                      <span className="sr-only">{column.label || "Actions"}</span>
+                    ) : sort && sortable(column) ? (
+                      <button
+                        type="button"
+                        className="sh-table__sort"
+                        data-on={on ? "" : undefined}
+                        data-glyph={glyph ? "" : undefined}
+                        title={glyph ? column.label : undefined}
+                        onClick={() => {
+                          sort.toggle(index);
+                          onSort?.();
+                        }}
+                      >
+                        {glyph ? <span className="sr-only">{column.label}</span> : column.label}
+                        <Arrow aria-hidden />
+                      </button>
+                    ) : (
+                      column.label
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
         )}

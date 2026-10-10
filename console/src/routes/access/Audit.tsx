@@ -26,6 +26,7 @@ import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { useFollow, useOpen } from "@/lib/popup";
 import { useAudit } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import type { AuditRow } from "@/types";
 import { areaOf, PRINCIPALS } from "./parts";
 
@@ -37,7 +38,7 @@ const principal = (row: AuditRow) => `${row.principal_kind}:${row.principal_id}`
  * inside the capability dialog it is local.
  */
 export function AuditTable({
-  rows,
+  rows: given,
   loading,
   error,
   onRetry,
@@ -58,24 +59,25 @@ export function AuditTable({
 }) {
   const now = useNow();
   const [, setParams] = useSearchParams();
-  const dialog = useOpen(param ?? null, rows.map((r) => String(r.seq)));
-  // The loaded rows are the chain's newest: the footer says so in the pager's own words.
-  const pages = usePaged(rows, 25, {
-    newest: true,
-    of: paged && rows.length !== paged.loaded ? `${num(rows.length)} · newest ${num(paged.loaded)}` : undefined,
-  });
-  const { page, start, prev, next } = pages;
-  const list = paged ? page : rows;
-  const nav = useListNav(list, (r) => String(r.seq), { onOpen: (r) => dialog.open(String(r.seq)), onPrevPage: prev, onNextPage: next });
-  // J and K in the dialog turn the pager when they step past its page, and the active row follows.
-  useFollow(nav, dialog.value, paged ? { keys: rows.map((r) => String(r.seq)), size: 25, go: pages.go } : undefined);
-  const picked = rows[dialog.at];
   const columns: Column<AuditRow>[] = [
-    { label: "", width: 32, truncate: false, cell: (r) => <Avatar who={principal(r)} size={16} /> },
-    // Only a failure is marked: a column of green squares says nothing.
-    { label: "", width: 20, truncate: false, cell: (r) => (r.error ? <Mark tone="bad" label="failed" /> : null) },
     {
-      label: "",
+      label: "Caller",
+      width: 32,
+      truncate: false,
+      sort: (r) => who(principal(r)).name,
+      cell: (r) => <Avatar who={principal(r)} size={16} />,
+    },
+    // Only a failure is marked: a column of green squares says nothing.
+    {
+      label: "Failed",
+      width: 20,
+      truncate: false,
+      sort: (r) => Number(!r.error),
+      cell: (r) => (r.error ? <Mark tone="bad" label="failed" /> : null),
+    },
+    {
+      label: "Call",
+      sort: (r) => r.capability,
       cell: (r) => (
         <>
           <span className="sh-mono sh-mono--strong">{r.capability}</span>
@@ -83,14 +85,30 @@ export function AuditTable({
         </>
       ),
     },
-    { label: "", width: 64, align: "right", mono: true, cell: (r) => age(r.ts, now) },
+    { label: "When", width: 64, align: "right", mono: true, sort: (r) => r.ts, cell: (r) => age(r.ts, now) },
   ];
+  const sorted = useSort(given, columns);
+  const rows = sorted.rows;
+  const dialog = useOpen(param ?? null, rows.map((r) => String(r.seq)));
+  // The loaded rows are the chain's newest: the footer says so in the pager's own words.
+  const pages = usePaged(rows, 25, {
+    newest: true,
+    of: paged && rows.length !== paged.loaded ? `${num(rows.length)} · newest ${num(paged.loaded)}` : undefined,
+  });
+  const { page, start, prev, next, first } = pages;
+  const list = paged ? page : rows;
+  const nav = useListNav(list, (r) => String(r.seq), { onOpen: (r) => dialog.open(String(r.seq)), onPrevPage: prev, onNextPage: next });
+  // J and K in the dialog turn the pager when they step past its page, and the active row follows.
+  useFollow(nav, dialog.value, paged ? { keys: rows.map((r) => String(r.seq)), size: 25, go: pages.go } : undefined);
+  const picked = rows[dialog.at];
   return (
     <>
       <Table
         label="Audited calls"
         columns={columns}
         rows={list}
+        sort={sorted.sort}
+        onSort={first}
         start={paged ? start : 0}
         rowKey={(r) => String(r.seq)}
         rowProps={nav.rowProps}

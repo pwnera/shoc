@@ -27,10 +27,11 @@ import { Table, type Column } from "@/components/ui/table";
 import { Tip } from "@/components/ui/tip";
 import { useListNav } from "@/lib/commands";
 import { useFilters, type Dim } from "@/lib/filters";
-import { severityLabel } from "@/lib/labels";
+import { SEVERITIES, severityLabel } from "@/lib/labels";
 import { usePaged } from "@/lib/paged";
 import { useFollow, usePopParam } from "@/lib/popup";
 import { useRules, useRunHunt } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import type { HuntSuggestion, Severity } from "@/types";
 import { entityKey } from "./feeds";
 import { Swept } from "./IndicatorDialog";
@@ -43,11 +44,10 @@ const fieldWord = (field: string) => (field === "auto" ? null : (FIELD[field] ??
 
 /** The Hunter's reason, "behind a high finding from <rule_id> this week", as the finding's severity and rule. */
 const BEHIND = /behind an? (\w+) finding from (\S+)/;
-const SEVERITIES = new Set(["critical", "high", "medium", "low", "informational"]);
 
 function behind(lead: HuntSuggestion): { severity: Severity; rule: string } | null {
   const m = BEHIND.exec(lead.reason);
-  return m && SEVERITIES.has(m[1]!) ? { severity: m[1] as Severity, rule: m[2]! } : null;
+  return m && (SEVERITIES as string[]).includes(m[1]!) ? { severity: m[1] as Severity, rule: m[2]! } : null;
 }
 
 function LeadDialog({
@@ -155,37 +155,24 @@ export function Leads({
     match: (l, text) =>
       `${l.value} ${l.reason} ${titles.get(behind(l)?.rule ?? "") ?? ""}`.toLowerCase().includes(text),
   });
-  const rows = leads.filter(filters.keep).sort((a, b) => a.priority - b.priority);
-  const paged = usePaged(rows, 25);
-  const pop = usePopParam("lead");
-  const open = (lead: HuntSuggestion | undefined, replace = false) => pop(lead && keyOf(lead), replace);
-  const nav = useListNav(paged.page, keyOf, {
-    onOpen: (lead) => open(lead),
-    copy: (lead) => lead.value,
-    onPrevPage: paged.prev,
-    onNextPage: paged.next,
-  });
-  // J and K in the dialog move the list's row too, so Escape lands on the lead stepped to.
-  useFollow(nav, params.get("lead") ?? "");
-  const at = rows.findIndex((lead) => keyOf(lead) === params.get("lead"));
-
   const columns: Column<HuntSuggestion>[] = [
     {
-      label: "",
+      label: "Severity",
       fit: true,
+      sort: (lead) => {
+        const severity = behind(lead)?.severity;
+        return severity ? SEVERITIES.indexOf(severity) : null;
+      },
       cell: (lead) => {
         const severity = behind(lead)?.severity;
-        return (
-          <span className="inline-flex items-center gap-2">
-            {severity ? <Mark tone={severity} label={severityLabel(severity)} /> : <span className="inline-block w-1.5" aria-hidden />}
-            <Badge>P{lead.priority}</Badge>
-          </span>
-        );
+        return severity ? <Mark tone={severity} label={severityLabel(severity)} /> : <span className="inline-block w-1.5" aria-hidden />;
       },
     },
+    { label: "Priority", fit: true, sort: (lead) => lead.priority, cell: (lead) => <Badge>P{lead.priority}</Badge> },
     {
-      label: "",
+      label: "Lead",
       truncate: false,
+      sort: (lead) => lead.value,
       cell: (lead) => {
         const rule = behind(lead)?.rule;
         return (
@@ -198,6 +185,20 @@ export function Leads({
       },
     },
   ];
+  const sorted = useSort(leads.filter(filters.keep).sort((a, b) => a.priority - b.priority), columns);
+  const rows = sorted.rows;
+  const paged = usePaged(rows, 25);
+  const pop = usePopParam("lead");
+  const open = (lead: HuntSuggestion | undefined, replace = false) => pop(lead && keyOf(lead), replace);
+  const nav = useListNav(paged.page, keyOf, {
+    onOpen: (lead) => open(lead),
+    copy: (lead) => lead.value,
+    onPrevPage: paged.prev,
+    onNextPage: paged.next,
+  });
+  // J and K in the dialog move the list's row too, so Escape lands on the lead stepped to.
+  useFollow(nav, params.get("lead") ?? "");
+  const at = rows.findIndex((lead) => keyOf(lead) === params.get("lead"));
 
   return (
     <>
@@ -213,6 +214,8 @@ export function Leads({
       <Table
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={keyOf}
         rowProps={nav.rowProps}
         loading={loading}

@@ -31,6 +31,7 @@ import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { useParam } from "@/lib/param";
 import { useDetectionBacklog, useWorkBacklog } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import type { BacklogItem } from "@/types";
 import { BacklogDialog } from "./BacklogDialog";
 import { ItemTitle, Priority } from "./parts";
@@ -113,7 +114,35 @@ export function Changes() {
     text: "cq",
     match: (i, text) => `${i.title} ${i.rule_id} ${i.reason}`.toLowerCase().includes(text),
   });
-  const items = slice.items.filter(filters.keep);
+  const columns: Column<BacklogItem>[] = [
+    {
+      label: "Kind",
+      width: 44,
+      truncate: false,
+      sort: (i) => KIND[i.kind]?.word ?? i.kind,
+      cell: (i) => <Glyphs item={i} />,
+    },
+    { label: "Priority", fit: true, sort: (i) => i.priority, cell: (i) => <Priority value={i.priority} /> },
+    {
+      label: "Title",
+      strong: true,
+      sort: (i) => i.title,
+      cell: (i) => <ItemTitle item={i} rule={i.rule_id ? titles(i.rule_id).title : undefined} />,
+    },
+    // Closed, how each ended; the dialog says why.
+    ...(segment === "closed"
+      ? [
+          {
+            label: "Outcome",
+            fit: true,
+            cell: (i: BacklogItem) => <Badge tone="faint">{revertOf(i) ? "reverted" : (decisionOf(i)?.word ?? i.state)}</Badge>,
+          },
+        ]
+      : []),
+    { label: "When", width: 72, align: "right", mono: true, sort: (i) => i.created_at, cell: (i) => age(i.created_at, now) },
+  ];
+  const sorted = useSort(slice.items.filter(filters.keep), columns);
+  const items = sorted.rows;
   // A failed refresh keeps the rows it had: only a load with nothing cached is an error.
   const failed = slice.queries.find((q) => q.isError && !q.data);
   const pending = slice.queries.some((q) => q.isPending);
@@ -145,23 +174,6 @@ export function Changes() {
   // W and the palette (`?do=detection.work`) open the confirm; only its Enter spends crew tokens.
   const [asking, setAsking] = useState(false);
   useCommand("detection.work", () => setAsking(true));
-
-  const columns: Column<BacklogItem>[] = [
-    { label: "", width: 44, truncate: false, cell: (i) => <Glyphs item={i} /> },
-    { label: "", fit: true, cell: (i) => <Priority value={i.priority} /> },
-    { label: "", strong: true, cell: (i) => <ItemTitle item={i} rule={i.rule_id ? titles(i.rule_id).title : undefined} /> },
-    // Closed, how each ended; the dialog says why.
-    ...(segment === "closed"
-      ? [
-          {
-            label: "",
-            fit: true,
-            cell: (i: BacklogItem) => <Badge tone="faint">{revertOf(i) ? "reverted" : (decisionOf(i)?.word ?? i.state)}</Badge>,
-          },
-        ]
-      : []),
-    { label: "", width: 72, align: "right", mono: true, cell: (i) => age(i.created_at, now) },
-  ];
   const count = (s: Segment) =>
     slices[s].queries.some((q) => !q.data) ? undefined : slices[s].items.filter(filters.keep).length;
 
@@ -176,6 +188,8 @@ export function Changes() {
       label="Changes"
       columns={columns}
       rows={rows}
+      sort={sorted.sort}
+      onSort={paged.first}
       rowKey={(i) => i.item_uid}
       rowProps={nav.rowProps}
       loading={pending}

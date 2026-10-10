@@ -170,14 +170,14 @@ describe("the Detection screen", () => {
   it("lists the rules that need a look first: failing, live, armed, no source", async () => {
     show();
     await screen.findByRole("group", { name: "Rules by state" });
-    const rows = within(screen.getByRole("grid", { name: "Rules" })).getAllByRole("row");
+    const rows = within(screen.getByRole("grid", { name: "Rules" })).getAllByRole("row").slice(1);
     expect(rows.map((r) => r.getAttribute("data-row-key"))).toEqual(["broken", "live_one", "quiet_one", "blind"]);
   });
 
   it("filters to a state from the URL", async () => {
     show("/detection?state=live");
     await screen.findByRole("group", { name: "Rules by state" });
-    const rows = within(screen.getByRole("grid", { name: "Rules" })).getAllByRole("row");
+    const rows = within(screen.getByRole("grid", { name: "Rules" })).getAllByRole("row").slice(1);
     expect(rows.map((r) => r.getAttribute("data-row-key"))).toEqual(["live_one"]);
   });
 
@@ -187,7 +187,7 @@ describe("the Detection screen", () => {
     expect(await screen.findByText("Can't tell")).toBeInTheDocument();
     expect(screen.queryByText("Live")).not.toBeInTheDocument();
     expect(screen.queryByText("Blind")).not.toBeInTheDocument();
-    await waitFor(() => expect(screen.getAllByRole("row").length).toBe(RULES.length));
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBe(RULES.length + 1));
     expect(screen.queryByText("never")).not.toBeInTheDocument();
   });
 

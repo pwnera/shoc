@@ -15,6 +15,8 @@ import { useListNav } from "@/lib/commands";
 import { age, num } from "@/lib/format";
 import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
+import { SEVERITIES } from "@/lib/labels";
+import { useSort } from "@/lib/sort";
 import type { CaseFinding } from "@/types";
 
 const PAGE = 25;
@@ -23,8 +25,26 @@ export function FindingsTab({ findings, total }: { findings: CaseFinding[]; tota
   const navigate = useNavigate();
   const location = useLocation();
   const now = useNow();
-  const paged = usePaged(findings, PAGE);
-  const uids = findings.map((f) => f.finding_uid);
+  const columns: Column<CaseFinding>[] = [
+    {
+      label: "Severity",
+      fit: true,
+      sort: (f) => SEVERITIES.indexOf(f.severity),
+      cell: (f) => <SeverityBadge severity={f.severity} />,
+    },
+    {
+      label: "Title",
+      strong: true,
+      truncate: false,
+      // Every finding names the case's entity, which the header shows once.
+      cell: (f) => <span className="block truncate">{f.title}</span>,
+    },
+    { label: "Seen", width: 72, align: "right", mono: true, sort: (f) => f.first_seen, cell: (f) => age(f.first_seen, now) },
+  ];
+  const sorted = useSort(findings, columns);
+  const rows = sorted.rows;
+  const paged = usePaged(rows, PAGE);
+  const uids = rows.map((f) => f.finding_uid);
   const nav = useListNav(paged.page, (f) => f.finding_uid, {
     onOpen: (f) =>
       navigate(`/findings/${encodeURIComponent(f.finding_uid)}`, {
@@ -33,17 +53,6 @@ export function FindingsTab({ findings, total }: { findings: CaseFinding[]; tota
     onPrevPage: paged.prev,
     onNextPage: paged.next,
   });
-  const columns: Column<CaseFinding>[] = [
-    { label: "", fit: true, cell: (f) => <SeverityBadge severity={f.severity} /> },
-    {
-      label: "",
-      strong: true,
-      truncate: false,
-      // Every finding names the case's entity, which the header shows once.
-      cell: (f) => <span className="block truncate">{f.title}</span>,
-    },
-    { label: "", width: 72, align: "right", mono: true, cell: (f) => age(f.first_seen, now) },
-  ];
   const capped = findings.length < total;
   const last = paged.start + paged.page.length;
 
@@ -52,6 +61,8 @@ export function FindingsTab({ findings, total }: { findings: CaseFinding[]; tota
       <Table
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={(f) => f.finding_uid}
         rowProps={nav.rowProps}
         empty="No findings"

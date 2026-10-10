@@ -15,6 +15,7 @@ import { Tip } from "@/components/ui/tip";
 import { useListNav } from "@/lib/commands";
 import { usePaged } from "@/lib/paged";
 import { useFollow } from "@/lib/popup";
+import { useSort } from "@/lib/sort";
 import { qualityTone, type ShownVolume } from "@/lib/sources";
 import type { SourceQuality } from "@/types";
 import { SCORE_MARKS, useQualityRows, volumeText } from "./state";
@@ -35,25 +36,27 @@ export function VolumeMark({ volume }: { volume: ShownVolume | undefined }) {
 /** `current` is the product whose dialog is open: the active row follows it. */
 export function Quality({ current, onOpen }: { current: string; onOpen: (product: string) => void }) {
   const { quality, volume, rows } = useQualityRows();
-  const { page, pager, start, prev, next } = usePaged(rows);
+  const columns: Column<SourceQuality>[] = [
+    { label: "", width: 28, truncate: false, cell: (row) => <VolumeMark volume={volume.of(row.product)} /> },
+    {
+      label: "Score",
+      width: 108,
+      truncate: false,
+      sort: (row) => row.score,
+      cell: (row) => (
+        <Meter badge value={row.score} tone={qualityTone} marks={SCORE_MARKS} label={`${row.product} quality`} />
+      ),
+    },
+    { label: "Product", strong: true, cell: (row) => row.product },
+  ];
+  const sorted = useSort(rows, columns);
+  const { page, pager, start, prev, next, first } = usePaged(sorted.rows);
   const nav = useListNav(page, (row) => row.product, {
     onOpen: (row) => onOpen(row.product),
     onPrevPage: prev,
     onNextPage: next,
   });
   useFollow(nav, current);
-  const columns: Column<SourceQuality>[] = [
-    { label: "", width: 28, truncate: false, cell: (row) => <VolumeMark volume={volume.of(row.product)} /> },
-    {
-      label: "",
-      width: 108,
-      truncate: false,
-      cell: (row) => (
-        <Meter badge value={row.score} tone={qualityTone} marks={SCORE_MARKS} label={`${row.product} quality`} />
-      ),
-    },
-    { label: "", strong: true, cell: (row) => row.product },
-  ];
   return (
     <>
       <Table
@@ -61,6 +64,8 @@ export function Quality({ current, onOpen }: { current: string; onOpen: (product
         columns={columns}
         rows={page}
         start={start}
+        sort={sorted.sort}
+        onSort={first}
         rowKey={(row) => row.product}
         rowProps={nav.rowProps}
         loading={quality.isPending}

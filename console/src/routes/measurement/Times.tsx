@@ -8,6 +8,7 @@
  * Capabilities used: none of its own; metrics.get arrives from the page.
  */
 import { useNavigate } from "react-router-dom";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, Fields } from "@/components/ui/dialog";
 import { Meter } from "@/components/ui/meter";
@@ -17,6 +18,7 @@ import { num, span } from "@/lib/format";
 import type { IncidentMetrics } from "@/types";
 import { useNarrow } from "@/lib/media";
 import { useFollow, useOpen } from "@/lib/popup";
+import { useSort, type Sorting } from "@/lib/sort";
 
 const PHASES = [
   { key: "mttd_minutes", label: "Detect" },
@@ -54,11 +56,23 @@ function PhaseBar({ minutes, max, label }: { minutes: number | null; max: number
   );
 }
 
+/** A head that sorts its column, as Table's own heads do. */
+function SortHead({ label, index, sort }: { label: string; index: number; sort: Sorting }) {
+  const on = sort.by?.by === index ? sort.by : null;
+  const Arrow = on?.desc ? ArrowDown : ArrowUp;
+  return (
+    <button type="button" className="sh-table__sort self-start" data-on={on ? "" : undefined} onClick={() => sort.toggle(index)}>
+      {label}
+      <Arrow aria-hidden />
+    </button>
+  );
+}
+
 /** A phase's head: its name, and under it where a minute, an hour and a day fall on the axis. */
-function Axis({ label, max, ticks }: { label: string; max: number; ticks: boolean }) {
+function Axis({ label, index, sort, max, ticks }: { label: string; index: number; sort: Sorting; max: number; ticks: boolean }) {
   return (
     <span className="flex flex-col gap-0.5 px-[var(--cell-pad-x)] py-1">
-      <span>{label}</span>
+      <SortHead label={label} index={index} sort={sort} />
       <span className="flex items-center gap-2" aria-hidden>
         <span className="relative h-3 min-w-0 flex-1">
           {ticks
@@ -99,15 +113,11 @@ export function Times({
   const phases = narrow ? PHASES.slice(-1) : PHASES;
   const type = narrow ? TYPE_NARROW : TYPE;
   const slowest = Math.max(1, ...types.flatMap((t) => PHASES.map((p) => t[p.key] ?? 0)));
-  const dialog = useOpen("type", types.map((t) => t.type));
-  const nav = useListNav(types, (t) => t.type, { onOpen: (t) => dialog.open(t.type) });
-  useFollow(nav, dialog.value);
-  const picked = types[dialog.at];
-
   const columns: Column<TypeRow>[] = [
     {
-      label: "",
+      label: "Type",
       width: type,
+      sort: (t) => t.type,
       cell: (t) => (
         <>
           <span className="text-fg-1">{t.type}</span>
@@ -117,13 +127,20 @@ export function Times({
     },
     ...phases.map(
       (p): Column<TypeRow> => ({
-        label: "",
+        label: p.label,
         truncate: false,
+        sort: (t) => t[p.key],
         cell: (t) => <PhaseBar minutes={t[p.key]} max={slowest} label={`${t.type} ${p.label.toLowerCase()}`} />,
       }),
     ),
   ];
   const minWidth = type + phases.length * PHASE_MIN;
+  const sorted = useSort(types, columns);
+  const rows = sorted.rows;
+  const dialog = useOpen("type", rows.map((t) => t.type));
+  const nav = useListNav(rows, (t) => t.type, { onOpen: (t) => dialog.open(t.type) });
+  useFollow(nav, dialog.value);
+  const picked = rows[dialog.at];
 
   return (
     <>
@@ -133,17 +150,19 @@ export function Times({
           <div
             className="grid border-b border-line-1 text-fg-4 uppercase [font:var(--text-label)] tracking-[var(--tracking-label)]"
             style={{ gridTemplateColumns: `${type}px repeat(${phases.length}, minmax(0, 1fr))` }}
-            aria-hidden
           >
-            <span className="self-start px-[var(--cell-pad-x)] py-1">Type</span>
-            {phases.map((p) => (
-              <Axis key={p.key} label={p.label} max={slowest} ticks={types.length > 0} />
+            <span className="self-start px-[var(--cell-pad-x)] py-1">
+              <SortHead label="Type" index={0} sort={sorted.sort} />
+            </span>
+            {phases.map((p, i) => (
+              <Axis key={p.key} label={p.label} index={i + 1} sort={sorted.sort} max={slowest} ticks={types.length > 0} />
             ))}
           </div>
           <Table
             label="Time by incident type"
             columns={columns}
-            rows={types}
+            rows={rows}
+            srHead
             rowKey={(t) => t.type}
             rowProps={nav.rowProps}
             loading={loading}

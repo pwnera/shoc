@@ -17,6 +17,7 @@ import { OUTCOMES } from "@/lib/labels";
 import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { useFollow, usePopParam } from "@/lib/popup";
+import { useSort } from "@/lib/sort";
 import type { HuntRun } from "@/types";
 import { HuntRunDialog } from "./HuntRunDialog";
 
@@ -41,24 +42,11 @@ export function Runs({
 }) {
   const now = useNow();
   const [params] = useSearchParams();
-  const rows = runs.filter(filters.keep);
-  const paged = usePaged(rows, 25);
-  // Opening is a history step, so Back closes the dialog; stepping and closing replace it.
-  const pop = usePopParam("run");
-  const open = (run: HuntRun | undefined, replace = false) => pop(run && run.run_uid, replace);
-  const nav = useListNav(paged.page, (r) => r.run_uid, {
-    onOpen: (r) => open(r),
-    onPrevPage: paged.prev,
-    onNextPage: paged.next,
-  });
-  const picked = rows.findIndex((r) => r.run_uid === params.get("run"));
-  const run = rows[picked] ?? runs.find((r) => r.run_uid === params.get("run"));
-  useFollow(nav, rows[picked]?.run_uid ?? "", { keys: rows.map((r) => r.run_uid), size: 25, go: paged.go });
-
   const columns: Column<HuntRun>[] = [
     {
-      label: "",
+      label: "Outcome",
       fit: true,
+      sort: (r) => Object.keys(OUTCOMES).indexOf(r.outcome),
       cell: (r) => {
         const o = OUTCOMES[r.outcome] ?? { word: r.outcome, tone: "idle" as const };
         return (
@@ -76,9 +64,23 @@ export function Runs({
         );
       },
     },
-    { label: "", strong: true, cell: (r) => titleOf(r.pack_id) },
-    { label: "", fit: true, mono: true, hide: "md", cell: (r) => age(r.ran_at, now) },
+    { label: "Pack", strong: true, cell: (r) => titleOf(r.pack_id) },
+    { label: "Ran", fit: true, mono: true, hide: "md", sort: (r) => r.ran_at, cell: (r) => age(r.ran_at, now) },
   ];
+  const sorted = useSort(runs.filter(filters.keep), columns);
+  const rows = sorted.rows;
+  const paged = usePaged(rows, 25);
+  // Opening is a history step, so Back closes the dialog; stepping and closing replace it.
+  const pop = usePopParam("run");
+  const open = (run: HuntRun | undefined, replace = false) => pop(run && run.run_uid, replace);
+  const nav = useListNav(paged.page, (r) => r.run_uid, {
+    onOpen: (r) => open(r),
+    onPrevPage: paged.prev,
+    onNextPage: paged.next,
+  });
+  const picked = rows.findIndex((r) => r.run_uid === params.get("run"));
+  const run = rows[picked] ?? runs.find((r) => r.run_uid === params.get("run"));
+  useFollow(nav, rows[picked]?.run_uid ?? "", { keys: rows.map((r) => r.run_uid), size: 25, go: paged.go });
 
   return (
     <>
@@ -97,6 +99,8 @@ export function Runs({
       <Table
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={(r) => r.run_uid}
         rowProps={nav.rowProps}
         loading={loading}

@@ -27,6 +27,7 @@ import { age, stamp } from "@/lib/format";
 import { actionLabel, readWord } from "@/lib/labels";
 import { useNow } from "@/lib/now";
 import { useCheckCredential } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import { sourceName } from "@/lib/sources";
 import type { CredentialList, ResponseCredential } from "@/types";
 import { ClickPath } from "./ConnectForm";
@@ -35,7 +36,7 @@ import type { Product } from "./products";
 import { words } from "./state";
 
 /* The act's name only: its autonomy and whether it can be undone are Response › Autonomy's. */
-const COLUMNS: Column<string>[] = [{ label: "", strong: true, cell: (type) => actionLabel(type) }];
+const COLUMNS: Column<string>[] = [{ label: "Act", strong: true, cell: (type) => actionLabel(type) }];
 
 const NEW = "+";
 
@@ -118,7 +119,11 @@ export function ResponseReview({
   const navigate = useNavigate();
   const { current } = useCredentialPick(product);
   const check = useCheckCredential();
-  const types = [...(credentials?.providers[product.provider]?.actions ?? [])].sort((a, b) => actionLabel(a).localeCompare(actionLabel(b)));
+  const sorted = useSort(
+    [...(credentials?.providers[product.provider]?.actions ?? [])].sort((a, b) => actionLabel(a).localeCompare(actionLabel(b))),
+    COLUMNS,
+  );
+  const types = sorted.rows;
   const nav = useListNav(types, (t) => t, {
     onOpen: (t) => navigate(`/response?tab=autonomy&policy=${encodeURIComponent(t)}`),
   });
@@ -135,7 +140,7 @@ export function ResponseReview({
           ) : null}
         </span>
         {types.length ? (
-          <Table label="Acts" columns={COLUMNS} rows={types} rowKey={(t) => t} rowProps={nav.rowProps} bounded={240} />
+          <Table label="Acts" columns={COLUMNS} rows={types} sort={sorted.sort} rowKey={(t) => t} rowProps={nav.rowProps} bounded={240} />
         ) : (
           <Empty kind="row" title="No act on this product" />
         )}

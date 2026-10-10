@@ -33,6 +33,7 @@ import { usePaged } from "@/lib/paged";
 import { useTab } from "@/lib/param";
 import { useFollow, usePopParam } from "@/lib/popup";
 import { MEMORY_CAP, useMemory, useRules } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import { toast } from "@/lib/toast";
 import type { Memory as Row } from "@/types";
 import { AddFactDialog } from "./memory/AddFactDialog";
@@ -87,7 +88,36 @@ export function Memory() {
   ];
   // The text goes to the kernel (`memory.search {query}`); the dimensions filter the loaded rows.
   const filters = useFilters(dims);
-  const rows = inTab(tab).filter(filters.keep);
+
+  const columns: Column<Row>[] = [
+    {
+      label: "Source",
+      fit: true,
+      sort: (r) => r.source,
+      cell: (r) => <Avatar who={ORIGINS[originOf(r.source)].who} size={16} />,
+    },
+    {
+      label: "Memory",
+      sort: (r) => (r.subject ? `${words(r)} · ${bodyOf(r)}` : bodyOf(r)),
+      cell: (r) => (
+        <>
+          {/* On a phone the subject gives up the row to the fact. */}
+          {r.subject ? (
+            <span className="text-fg-1">
+              <span className="max-md:inline-block max-md:max-w-[12ch] max-md:truncate max-md:align-bottom">
+                <Subject memory={r} ruleTitle={ruleTitle} mono />
+              </span>{" "}
+              ·{" "}
+            </span>
+          ) : null}
+          <span className="text-fg-2">{bodyOf(r)}</span>
+        </>
+      ),
+    },
+    { label: "Added", fit: true, mono: true, hide: "md", sort: (r) => r.created_at, cell: (r) => age(r.created_at, now) },
+  ];
+  const sorted = useSort(inTab(tab).filter(filters.keep), columns);
+  const rows = sorted.rows;
   // At the cap every slice is a lower bound: "of 37+".
   const paged = usePaged(rows, 25, capped ? { cap: rows.length } : {});
   const pop = usePopParam("memory");
@@ -105,27 +135,6 @@ export function Memory() {
   const told = all.filter((r) => r.source === "human").length;
   const newest = all.reduce((m, r) => (r.created_at > m ? r.created_at : m), "");
 
-  const columns: Column<Row>[] = [
-    { label: "", fit: true, cell: (r) => <Avatar who={ORIGINS[originOf(r.source)].who} size={16} /> },
-    {
-      label: "",
-      cell: (r) => (
-        <>
-          {/* On a phone the subject gives up the row to the fact. */}
-          {r.subject ? (
-            <span className="text-fg-1">
-              <span className="max-md:inline-block max-md:max-w-[12ch] max-md:truncate max-md:align-bottom">
-                <Subject memory={r} ruleTitle={ruleTitle} mono />
-              </span>{" "}
-              ·{" "}
-            </span>
-          ) : null}
-          <span className="text-fg-2">{bodyOf(r)}</span>
-        </>
-      ),
-    },
-    { label: "", fit: true, mono: true, hide: "md", cell: (r) => age(r.created_at, now) },
-  ];
 
   return (
     <div className="flex flex-col gap-4">
@@ -187,6 +196,8 @@ export function Memory() {
           <Table
             columns={columns}
             rows={paged.page}
+            sort={sorted.sort}
+            onSort={paged.first}
             rowKey={(r) => r.memory_id}
             rowProps={nav.rowProps}
             isNew={(r) => r.memory_id === fresh}

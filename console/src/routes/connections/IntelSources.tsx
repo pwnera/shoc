@@ -26,6 +26,7 @@ import { loadError } from "@/lib/loaded";
 import { useNow } from "@/lib/now";
 import { closeParams, useFollow } from "@/lib/popup";
 import { useIndicators, useRefreshIntel } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import { toastError } from "@/lib/toast";
 import { feedName, isReportSource } from "../intel/feeds";
 import { AddSourceDialog } from "./AddSourceDialog";
@@ -34,7 +35,7 @@ import { LookupDialog } from "./LookupDialog";
 
 const REFRESH = command("intel.refresh")?.label ?? "Pull feeds";
 
-type Row = { param: "feed" | "lookup"; id: string; kind: string; word: string; tone: StatusTone; when: string };
+type Row = { param: "feed" | "lookup"; id: string; kind: string; word: string; tone: StatusTone; when: string; at: string | null };
 
 /* Failing first, then the ones that need a look. */
 const RANK: Partial<Record<StatusTone, number>> = { bad: 0, warn: 1 };
@@ -52,18 +53,35 @@ export function IntelSources() {
 
   const feeds = list.data?.feeds ?? [];
   const lookups = list.data?.lookups ?? [];
-  const rows: Row[] = [
+  const listed: Row[] = [
     ...feeds.map((f): Row => {
       const s = feedState(f);
-      return { param: "feed", id: f.feed, kind: isReportSource(f) ? "reports" : "indicators", word: s.word, tone: s.tone, when: age(f.last_ok_at, now) };
+      return { param: "feed", id: f.feed, kind: isReportSource(f) ? "reports" : "indicators", word: s.word, tone: s.tone, when: age(f.last_ok_at, now), at: f.last_ok_at };
     }),
     ...lookups
       .filter((l) => l.configured)
       .map((l): Row => {
         const s = lookupState(l, now);
-        return { param: "lookup", id: l.source, kind: "lookup", word: s.word, tone: s.tone, when: `${num(l.calls_today)}/${num(l.per_day)}` };
+        return { param: "lookup", id: l.source, kind: "lookup", word: s.word, tone: s.tone, when: `${num(l.calls_today)}/${num(l.per_day)}`, at: null };
       }),
   ].sort((a, b) => (RANK[a.tone] ?? 2) - (RANK[b.tone] ?? 2) || feedName(a.id).localeCompare(feedName(b.id)));
+  const columns: Column<Row>[] = [
+    {
+      label: "State",
+      fit: true,
+      sort: (r) => RANK[r.tone] ?? 2,
+      cell: (r) => (
+        <Status tone={r.tone} badge>
+          {r.word}
+        </Status>
+      ),
+    },
+    { label: "Name", strong: true, cell: (r) => feedName(r.id) },
+    { label: "Kind", width: 96, hide: "md", mono: true, cell: (r) => r.kind },
+    { label: "Last", width: 96, align: "right", mono: true, sort: (r) => r.at, cell: (r) => r.when },
+  ];
+  const sorted = useSort(listed, columns);
+  const rows = sorted.rows;
   /** Open a row's dialog, or step to it in place (J and K, or Set up from Add intel source); the other kind's goes. */
   const open = (row: Pick<Row, "param" | "id">, push = true) =>
     setParams(
@@ -92,21 +110,6 @@ export function IntelSources() {
           onNext: at < rows.length - 1 ? () => open(rows[at + 1]!, false) : undefined,
         }
       : undefined;
-
-  const columns: Column<Row>[] = [
-    {
-      label: "",
-      fit: true,
-      cell: (r) => (
-        <Status tone={r.tone} badge>
-          {r.word}
-        </Status>
-      ),
-    },
-    { label: "", strong: true, cell: (r) => feedName(r.id) },
-    { label: "", width: 96, hide: "md", mono: true, cell: (r) => r.kind },
-    { label: "", width: 96, align: "right", mono: true, cell: (r) => r.when },
-  ];
 
   return (
     <>
@@ -151,6 +154,7 @@ export function IntelSources() {
         label="Intel sources"
         columns={columns}
         rows={rows}
+        sort={sorted.sort}
         rowKey={(r) => `${r.param}:${r.id}`}
         rowProps={nav.rowProps}
         loading={list.isPending}

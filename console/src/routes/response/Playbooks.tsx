@@ -37,6 +37,7 @@ import { usePaged } from "@/lib/paged";
 import { ruleOf } from "@/lib/policy";
 import { usePopValue } from "@/lib/popup";
 import { usePlaybooks, usePolicy, useRules, useRuns } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import type { Playbook, PlaybookRun, Rule } from "@/types";
 import { PlatformMark } from "./marks";
 import { newestRuns } from "./policy";
@@ -112,30 +113,45 @@ export function Playbooks() {
     match: (row, text) => `${row.book.title} ${row.book.id}`.toLowerCase().includes(text),
   });
 
-  const rows = all.filter(filters.keep).sort(
-    (a, b) =>
-      (LOOK[a.run?.state ?? ""] ?? 9) - (LOOK[b.run?.state ?? ""] ?? 9) ||
-      (b.run?.started_at ?? "").localeCompare(a.run?.started_at ?? "") ||
-      a.book.title.localeCompare(b.book.title),
-  );
-  const open = (row: Row) =>
-    navigate(`/response/playbooks/${encodeURIComponent(row.book.id)}`, { state: { back: location.pathname + location.search } });
-  const { page, pager, prev, next } = usePaged(rows, 25);
-  const nav = useListNav(page, (row) => row.book.id, { onOpen: open, onPrevPage: prev, onNextPage: next });
-
   const columns: Column<Row>[] = [
-    { label: "", width: 56, truncate: false, cell: (row) => <Glyphs row={row} pending={runs.isPending} /> },
-    { label: "", fit: true, cell: (row) => <You human={row.human} pending={policy.isPending} /> },
-    { label: "", strong: true, cell: (row) => row.book.title },
     {
-      label: "",
+      label: "Product",
+      width: 56,
+      truncate: false,
+      sort: (row) => (row.product ? productName(row.product) : null),
+      cell: (row) => <Glyphs row={row} pending={runs.isPending} />,
+    },
+    {
+      label: "Approval",
+      fit: true,
+      sort: (row) => (row.human === null ? null : Number(!row.human)),
+      cell: (row) => <You human={row.human} pending={policy.isPending} />,
+    },
+    { label: "Name", strong: true, cell: (row) => row.book.title },
+    {
+      label: "Last run",
       width: 64,
       align: "right",
       mono: true,
+      sort: (row) => row.run?.started_at,
       cell: (row) =>
         runs.isError && !runs.data ? "—" : runs.isPending ? <Skel kind="text" width={32} /> : row.run ? age(row.run.started_at, now) : "never",
     },
   ];
+  const sorted = useSort(
+    all.filter(filters.keep).sort(
+      (a, b) =>
+        (LOOK[a.run?.state ?? ""] ?? 9) - (LOOK[b.run?.state ?? ""] ?? 9) ||
+        (b.run?.started_at ?? "").localeCompare(a.run?.started_at ?? "") ||
+        a.book.title.localeCompare(b.book.title),
+    ),
+    columns,
+  );
+  const rows = sorted.rows;
+  const open = (row: Row) =>
+    navigate(`/response/playbooks/${encodeURIComponent(row.book.id)}`, { state: { back: location.pathname + location.search } });
+  const { page, pager, prev, next, first } = usePaged(rows, 25);
+  const nav = useListNav(page, (row) => row.book.id, { onOpen: open, onPrevPage: prev, onNextPage: next });
 
   return (
     <Card>
@@ -158,6 +174,8 @@ export function Playbooks() {
       <Table
         columns={columns}
         rows={page}
+        sort={sorted.sort}
+        onSort={first}
         rowKey={(row) => row.book.id}
         rowProps={nav.rowProps}
         loading={playbooks.isPending}

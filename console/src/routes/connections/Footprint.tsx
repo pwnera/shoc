@@ -28,6 +28,7 @@ import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { useFollow, useOpen, type Step } from "@/lib/popup";
 import { useAddOwn, useOwn, useRemoveOwn } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import { sourceName } from "@/lib/sources";
 import type { OwnIdentity } from "@/types";
 import { Logo } from "./parts";
@@ -76,18 +77,12 @@ export function FootprintTable({
     text: "oq",
     match: (row, text) => `${row.value} ${sourceName(row.source)} ${row.note}`.toLowerCase().includes(text),
   });
-  const rows = source ? all : all.filter(filters.keep);
-  const dialog = useOpen(source ? null : "own", rows.map(keyOf));
-  const { page, pager, start, prev, next } = usePaged(rows);
-  const nav = useListNav(page, keyOf, { onOpen: (row) => dialog.open(keyOf(row)), onPrevPage: prev, onNextPage: next });
-  useFollow(nav, dialog.value);
-  const picked = rows[dialog.at];
-
   const columns: Column<OwnIdentity>[] = [
     {
-      label: "",
+      label: "Source",
       width: 52,
       truncate: false,
+      sort: (row) => (row.source ? sourceName(row.source) : null),
       cell: (row) => {
         const Icon = KINDS[row.kind]?.icon ?? KeyRound;
         return (
@@ -98,10 +93,25 @@ export function FootprintTable({
         );
       },
     },
-    { label: "", fit: true, cell: (row) => <Badge tone="muted">{KINDS[row.kind]?.word ?? row.kind}</Badge> },
-    { label: "", mono: true, strong: true, cell: (row) => row.value },
-    { label: "", width: 72, align: "right", mono: true, hide: "md", cell: (row) => age(row.created_at, now) },
+    { label: "Kind", fit: true, cell: (row) => <Badge tone="muted">{KINDS[row.kind]?.word ?? row.kind}</Badge> },
+    { label: "Value", mono: true, strong: true, cell: (row) => row.value },
+    {
+      label: "Added",
+      width: 72,
+      align: "right",
+      mono: true,
+      hide: "md",
+      sort: (row) => row.created_at,
+      cell: (row) => age(row.created_at, now),
+    },
   ];
+  const sorted = useSort(source ? all : all.filter(filters.keep), columns);
+  const rows = sorted.rows;
+  const dialog = useOpen(source ? null : "own", rows.map(keyOf));
+  const { page, pager, start, prev, next, first } = usePaged(rows);
+  const nav = useListNav(page, keyOf, { onOpen: (row) => dialog.open(keyOf(row)), onPrevPage: prev, onNextPage: next });
+  useFollow(nav, dialog.value);
+  const picked = rows[dialog.at];
 
   return (
     <>
@@ -123,6 +133,8 @@ export function FootprintTable({
         columns={columns}
         rows={page}
         start={start}
+        sort={sorted.sort}
+        onSort={first}
         rowKey={keyOf}
         rowProps={nav.rowProps}
         loading={own.isPending}

@@ -47,6 +47,7 @@ import { useTab } from "@/lib/param";
 import { usePresence } from "@/lib/presence";
 import { CASE_CAP, useAlerts, useCaseLog, useProposals } from "@/lib/queries";
 import { sinceWord } from "@/lib/since";
+import { useSort } from "@/lib/sort";
 import type { Case, Verdict } from "@/types";
 
 const TAB_LABEL: Record<TabId, string> = {
@@ -210,9 +211,14 @@ export function Cases() {
   const isCapped = all.length >= CASE_CAP;
   const columns: Column<Case>[] = [
     {
-      label: "crew",
+      label: "Crew",
       width: 40,
       truncate: false,
+      // Working, waits on you, stalled, idle; then closed rows by who closed them.
+      sort: (row) =>
+        isOpen(row)
+          ? [working, crew.waiting!, crew.stalled!, () => true].findIndex((test) => test(row))
+          : 5 + ["crew", "human", "system"].indexOf(row.closed_by ?? ""),
       // A 16px box with or without a glyph: the badge column never moves between views.
       cell: (row) => (
         <span className="flex w-4">
@@ -225,9 +231,11 @@ export function Cases() {
       ),
     },
     {
-      // Severity on open rows, the verdict on closed ones: the badge says which, so the head stays silent.
-      label: "",
+      // Severity on open rows, the verdict on closed ones: the badge says which. Open rows sort first.
+      label: "Severity",
       fit: true,
+      sort: (row) =>
+        isOpen(row) ? SEVERITIES.indexOf(row.severity) : SEVERITIES.length + Object.keys(VERDICTS).indexOf(verdictOf(row)),
       // A phone keeps a verdict's glyph and drops its word (still heard), as a row's status badge does.
       cell: (row) =>
         isOpen(row) ? (
@@ -241,7 +249,13 @@ export function Cases() {
     // The time ends the name's cell rather than holding a 72px column: a column counts toward the
     // table's narrowest width, which a 375px phone cannot fit, and a column dropped under 1024px
     // left phone rows with no time at all.
-    { label: "case", strong: true, truncate: false, cell: (row) => <Name row={row} ago={timeOf(row, now)} /> },
+    {
+      label: "Case",
+      strong: true,
+      truncate: false,
+      sort: (row) => huntTitle(row.title) ?? row.title,
+      cell: (row) => <Name row={row} ago={timeOf(row, now)} />,
+    },
   ];
 
   return (
@@ -342,8 +356,9 @@ function CaseList({
   const navigate = useNavigate();
   const location = useLocation();
   const [held, setHeld] = useState<string[] | null>(null);
-  const shown = hold(order(rows, sortBy), held);
-  const { page, pager, start, prev, next } = usePaged(shown, 25, { cap: CASE_CAP });
+  const sorted = useSort(order(rows, sortBy), columns);
+  const shown = hold(sorted.rows, held);
+  const { page, pager, start, prev, next, first } = usePaged(shown, 25, { cap: CASE_CAP });
   // Set while rendering, the documented way to keep what an earlier render showed.
   if ((start > 0) !== (held !== null)) setHeld(start > 0 ? shown.map((row) => row.case_uid) : null);
   const nav = useListNav(page, (row) => row.case_uid, {
@@ -360,9 +375,10 @@ function CaseList({
     <>
       <Table
         label="Cases"
-        srHead
         columns={columns}
         rows={page}
+        sort={sorted.sort}
+        onSort={first}
         rowKey={(row) => row.case_uid}
         rowProps={nav.rowProps}
         activeKey={nav.activeKey}

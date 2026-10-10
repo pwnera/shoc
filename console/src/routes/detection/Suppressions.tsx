@@ -27,6 +27,7 @@ import { useFilters, type Dim } from "@/lib/filters";
 import { principalWord } from "@/lib/labels";
 import { usePaged } from "@/lib/paged";
 import { useSuppressions } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import type { Suppression } from "@/types";
 import { Left, LeftShort } from "./parts";
 import { SuppressionDialog } from "./SuppressionDialog";
@@ -77,24 +78,16 @@ export function Suppressions() {
         .toLowerCase()
         .includes(text),
   });
-  const rows = all.filter(filters.keep);
   // Duplicates are counted over the whole list, so a filter never hides why a row is marked.
   const seen = new Map<string, number>();
   for (const row of all) seen.set(dupKey(row), (seen.get(dupKey(row)) ?? 0) + 1);
 
-  const paged = usePaged(rows, SIZE);
-  const nav = useListNav(paged.page, (r) => r.suppression_uid, {
-    onOpen: (r) => pick[1](r.suppression_uid, true),
-    onPrevPage: paged.prev,
-    onNextPage: paged.next,
-  });
-  const stepper = useStepper(rows, (r) => r.suppression_uid, pick, { ...paged, size: SIZE, setActive: nav.setActive });
-
   const columns: Column<Suppression>[] = [
     {
-      label: "",
+      label: "By",
       width: 44,
       truncate: false,
+      sort: (r) => who(r.created_by).name,
       cell: (r) => (
         <span className="inline-flex items-center gap-2">
           <Avatar who={r.created_by} size={20} />
@@ -107,8 +100,9 @@ export function Suppressions() {
       ),
     },
     {
-      label: "",
+      label: "Muted",
       truncate: false,
+      sort: (r) => titles(r.rule_id).title ?? r.rule_id,
       cell: (r) => (
         <span className="flex min-w-0 items-center gap-2">
           {isHunt(r.rule_id) ? <Badge tone="faint">hunt</Badge> : null}
@@ -125,8 +119,25 @@ export function Suppressions() {
         </span>
       ),
     },
-    { label: "", width: 152, align: "right", truncate: false, hide: "md", cell: (r) => <Left row={r} /> },
+    {
+      label: "Left",
+      width: 152,
+      align: "right",
+      truncate: false,
+      hide: "md",
+      sort: (r) => r.expires_at,
+      cell: (r) => <Left row={r} />,
+    },
   ];
+  const sorted = useSort(all.filter(filters.keep), columns);
+  const rows = sorted.rows;
+  const paged = usePaged(rows, SIZE);
+  const nav = useListNav(paged.page, (r) => r.suppression_uid, {
+    onOpen: (r) => pick[1](r.suppression_uid, true),
+    onPrevPage: paged.prev,
+    onNextPage: paged.next,
+  });
+  const stepper = useStepper(rows, (r) => r.suppression_uid, pick, { ...paged, size: SIZE, setActive: nav.setActive });
 
   return (
     <section className="sh-card" aria-label="Muted">
@@ -143,6 +154,8 @@ export function Suppressions() {
         label="Muted"
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={(r) => r.suppression_uid}
         rowProps={nav.rowProps}
         loading={query.isPending}

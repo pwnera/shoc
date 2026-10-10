@@ -23,6 +23,7 @@ import { useNow } from "@/lib/now";
 import { usePaged } from "@/lib/paged";
 import { useParam } from "@/lib/param";
 import { focusRow, useFollow, usePopParam } from "@/lib/popup";
+import { useSort } from "@/lib/sort";
 import type { IntelReport } from "@/types";
 import { Queue } from "./Queue";
 import { ReportDialog } from "./ReportDialog";
@@ -86,7 +87,7 @@ export function Reports({ onRead, ...read }: Props & { onRead: () => void }) {
 }
 
 function Read({
-  reports,
+  reports: given,
   loading,
   fetching,
   error,
@@ -96,6 +97,24 @@ function Read({
 }: Props & { filtered: boolean; onClear: () => void }) {
   const now = useNow();
   const [params] = useSearchParams();
+  const columns: Column<IntelReport>[] = [
+    {
+      label: "Source",
+      fit: true,
+      sort: (r) => r.source_host,
+      cell: (r) => (
+        <Tip label={r.source_host || "pasted text"} mono>
+          <span className="flex items-center" role="img" aria-label={r.source_host || "pasted text"}>
+            <Globe className="h-3.5 w-3.5 text-fg-3" aria-hidden />
+          </span>
+        </Tip>
+      ),
+    },
+    { label: "Title", strong: true, cell: (r) => r.title },
+    { label: "Read", fit: true, mono: true, hide: "md", sort: (r) => r.digested_at, cell: (r) => age(r.digested_at, now) },
+  ];
+  const sorted = useSort(given, columns);
+  const reports = sorted.rows;
   const paged = usePaged(reports, 25, { cap: CAP });
   const pop = usePopParam("report");
   const open = (report: IntelReport | undefined, replace = false) => pop(report && report.report_uid, replace);
@@ -111,27 +130,13 @@ function Read({
   const at = reports.findIndex((r) => r.report_uid === asked);
   const [, redraw] = useState(0);
 
-  const columns: Column<IntelReport>[] = [
-    {
-      label: "",
-      fit: true,
-      cell: (r) => (
-        <Tip label={r.source_host || "pasted text"} mono>
-          <span className="flex items-center" role="img" aria-label={r.source_host || "pasted text"}>
-            <Globe className="h-3.5 w-3.5 text-fg-3" aria-hidden />
-          </span>
-        </Tip>
-      ),
-    },
-    { label: "", strong: true, cell: (r) => r.title },
-    { label: "", fit: true, mono: true, hide: "md", cell: (r) => age(r.digested_at, now) },
-  ];
-
   return (
     <>
       <Table
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={(r) => r.report_uid}
         rowProps={nav.rowProps}
         loading={loading}

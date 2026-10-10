@@ -13,8 +13,9 @@ const outcome = (status: unknown) => (status === "Success" ? "good" : status ===
 export function eventColumns(when: (value: string) => string): Column<EventRow>[] {
   return [
     {
-      label: "",
+      label: "Source",
       fit: true,
+      sort: (r) => String(r.metadata_product ?? ""),
       cell: (r) => (
         <span className="inline-flex items-center gap-1.5">
           <ProductLogo product={r.metadata_product} named />
@@ -23,7 +24,8 @@ export function eventColumns(when: (value: string) => string): Column<EventRow>[
       ),
     },
     {
-      label: "",
+      label: "Event",
+      sort: (r) => String(r.api_operation ?? r.activity_name ?? r.class_name ?? "event"),
       cell: (r) => (
         <>
           <span className="font-medium text-fg-1">{String(r.api_operation ?? r.activity_name ?? r.class_name ?? "event")}</span>
@@ -33,6 +35,6 @@ export function eventColumns(when: (value: string) => string): Column<EventRow>[
         </>
       ),
     },
-    { label: "", fit: true, mono: true, cell: (r) => when(String(r.time)) },
+    { label: "Time", fit: true, mono: true, sort: (r) => String(r.time ?? ""), cell: (r) => when(String(r.time)) },
   ];
 }

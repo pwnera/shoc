@@ -16,11 +16,12 @@ import { Table, type Column } from "@/components/ui/table";
 import { Tip } from "@/components/ui/tip";
 import { useListNav } from "@/lib/commands";
 import { age, num, stamp } from "@/lib/format";
+import { useSort } from "@/lib/sort";
 import type { SystemHealth } from "@/types";
 import type { Problem } from "./model";
 
 export function Problems({
-  rows,
+  rows: given,
   loading,
   error,
   onRetry,
@@ -37,12 +38,11 @@ export function Problems({
   const { pathname } = useLocation();
   // `back` lets the tab it opens return here on Escape.
   const open = (row: Problem) => (row.to ? navigate(row.to, { state: { back: pathname } }) : onStore());
-  const nav = useListNav(rows, (row) => row.key, { onOpen: open });
   const columns: Column<Problem>[] = [
     { label: "", width: 28, truncate: false, cell: (row) => <Mark tone={row.tone} label={row.tone === "bad" ? "failing" : "warning"} /> },
-    { label: "", fit: true, cell: (row) => <Badge tone="muted">{row.component}</Badge> },
+    { label: "Part", fit: true, cell: (row) => <Badge tone="muted">{row.component}</Badge> },
     {
-      label: "",
+      label: "Problem",
       truncate: false,
       // A long model name gives way; the word that says what is wrong stays whole.
       cell: (row) => (
@@ -59,11 +59,15 @@ export function Problems({
       ),
     },
   ];
+  const sorted = useSort(given, columns);
+  const rows = sorted.rows;
+  const nav = useListNav(rows, (row) => row.key, { onOpen: open });
   return (
     <Table
       label="Platform problems"
       columns={columns}
       rows={rows}
+      sort={sorted.sort}
       rowKey={(row) => row.key}
       rowProps={nav.rowProps}
       loading={loading}

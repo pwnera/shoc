@@ -45,6 +45,7 @@ import { usePaged } from "@/lib/paged";
 import { useParam } from "@/lib/param";
 import { useFollow } from "@/lib/popup";
 import { useDecideHunt, useIntelReports, useRunPack } from "@/lib/queries";
+import { useSort } from "@/lib/sort";
 import type { HuntBacklogItem } from "@/types";
 import { Story } from "@/routes/detection/BacklogDialog";
 import { contextRows, saidIn, techniqueChips } from "@/routes/detection/context";
@@ -387,9 +388,45 @@ export function Backlog({
     text: "hq",
     match: (i, text) => `${titleOf(i, titles)} ${i.hypothesis} ${i.pack_id}`.toLowerCase().includes(text),
   });
-  const rows = shown
-    .filter(filters.keep)
-    .sort((a, b) => a.priority - b.priority || b.created_at.localeCompare(a.created_at));
+  const columns: Column<HuntBacklogItem>[] = [
+    {
+      label: "Priority",
+      fit: true,
+      sort: (i) => i.priority,
+      cell: (i) => (
+        <span className="flex items-center gap-2">
+          {i.pack_id ? <span className="h-2.5 w-2.5 shrink-0" aria-hidden /> : <NoPack />}
+          <Badge>P{i.priority}</Badge>
+        </span>
+      ),
+    },
+    {
+      label: "Title",
+      strong: true,
+      sort: (i) => titleOf(i, titles),
+      cell: (i) =>
+        isGap(i) ? (
+          <span className="inline-flex min-w-0 items-center gap-2">
+            <span className="truncate">{titleOf(i, titles)}</span>
+            <Status tone={OUTCOMES.gap.tone} badge>
+              {OUTCOMES.gap.word}
+            </Status>
+          </span>
+        ) : (
+          titleOf(i, titles)
+        ),
+    },
+    // Closed, how each ended; the dialog says why.
+    ...(which === "closed"
+      ? [{ label: "Outcome", fit: true, cell: (i: HuntBacklogItem) => <Badge tone="faint">{decisionOf(i)?.word ?? i.state}</Badge> }]
+      : []),
+    { label: "When", fit: true, mono: true, hide: "md", sort: (i) => i.created_at, cell: (i) => age(i.created_at, now) },
+  ];
+  const sorted = useSort(
+    shown.filter(filters.keep).sort((a, b) => a.priority - b.priority || b.created_at.localeCompare(a.created_at)),
+    columns,
+  );
+  const rows = sorted.rows;
   const count = (open: boolean) =>
     loading || error ? undefined : items.filter((i) => (i.state === "open") === open && filters.keep(i)).length;
   const paged = usePaged(rows, 25);
@@ -411,39 +448,6 @@ export function Backlog({
   const item = items.find((i) => i.item_uid === params.get("item"));
   const at = item ? rows.indexOf(item) : -1;
   useFollow(nav, at >= 0 ? item!.item_uid : "", { keys: rows.map((i) => i.item_uid), size: 25, go: paged.go });
-
-  const columns: Column<HuntBacklogItem>[] = [
-    {
-      label: "",
-      fit: true,
-      cell: (i) => (
-        <span className="flex items-center gap-2">
-          {i.pack_id ? <span className="h-2.5 w-2.5 shrink-0" aria-hidden /> : <NoPack />}
-          <Badge>P{i.priority}</Badge>
-        </span>
-      ),
-    },
-    {
-      label: "",
-      strong: true,
-      cell: (i) =>
-        isGap(i) ? (
-          <span className="inline-flex min-w-0 items-center gap-2">
-            <span className="truncate">{titleOf(i, titles)}</span>
-            <Status tone={OUTCOMES.gap.tone} badge>
-              {OUTCOMES.gap.word}
-            </Status>
-          </span>
-        ) : (
-          titleOf(i, titles)
-        ),
-    },
-    // Closed, how each ended; the dialog says why.
-    ...(which === "closed"
-      ? [{ label: "", fit: true, cell: (i: HuntBacklogItem) => <Badge tone="faint">{decisionOf(i)?.word ?? i.state}</Badge> }]
-      : []),
-    { label: "", fit: true, mono: true, hide: "md", cell: (i) => age(i.created_at, now) },
-  ];
 
   return (
     <>
@@ -470,6 +474,8 @@ export function Backlog({
       <Table
         columns={columns}
         rows={paged.page}
+        sort={sorted.sort}
+        onSort={paged.first}
         rowKey={(i) => i.item_uid}
         rowProps={nav.rowProps}
         loading={loading}
