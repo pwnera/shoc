@@ -26,7 +26,6 @@ const Playbook = lazyNamed(() => import("./routes/Playbook"), "Playbook");
 const Hunts = lazyNamed(() => import("./routes/Hunts"), "Hunts");
 const Intel = lazyNamed(() => import("./routes/Intel"), "Intel");
 const Posture = lazyNamed(() => import("./routes/Posture"), "Posture");
-const Coverage = lazyNamed(() => import("./routes/Coverage"), "Coverage");
 const Memory = lazyNamed(() => import("./routes/Memory"), "Memory");
 const Connections = lazyNamed(() => import("./routes/Connections"), "Connections");
 const Health = lazyNamed(() => import("./routes/Health"), "Health");
@@ -79,7 +78,7 @@ export function App() {
                 <Route path="/hunts" element={<Hunts />} />
                 <Route path="/intel" element={<Intel />} />
                 <Route path="/posture" element={<Posture />} />
-                <Route path="/coverage" element={<Coverage />} />
+                <Route path="/coverage" element={<Moved to="/detection?tab=coverage" />} />
                 <Route path="/memory" element={<Memory />} />
                 <Route path="/connections" element={<Connections />} />
                 <Route path="/sources" element={<Moved to="/connections" />} />

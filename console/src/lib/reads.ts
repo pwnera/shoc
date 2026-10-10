@@ -167,7 +167,7 @@ export function usePrefetchRules(): void {
   }, [client]);
 }
 
-/** Warm each rule's health when the reader points at a screen that shows it (Detection, Coverage, Response). */
+/** Warm each rule's health when the reader points at a screen that shows it (Detection, Response). */
 export function useWarmRuleHealth(): () => void {
   const client = useQueryClient();
   return () => void client.prefetchQuery(ruleHealthQuery("all"));

@@ -1,14 +1,14 @@
 /**
- * Coverage: can our working rules and ready hunts see each ATT&CK tactic in
- * the data we actually ingest? The strip meters the tactics at least one
- * working rule covers on a scored product, and how many products have one; the
- * matrix crosses the products Connections › Quality scores (configured sources
- * with events in 30 days) with the tactics. A rule works when it can fire
- * (live, armed or noisy), read live from its health, never from a stored
+ * Detection › Coverage: can our working rules and ready hunts see each ATT&CK
+ * tactic in the data we actually ingest? The meter counts the tactics at least
+ * one working rule covers on a scored product, and how many products have one;
+ * the matrix crosses the products Connections › Quality scores (configured
+ * sources with events in 30 days) with the tactics. A rule works when it can
+ * fire (live, armed or noisy), read live from its health, never from a stored
  * survey; "live" keeps Detection's meaning, a rule that fired in 7 days.
  *
  * The matrix lives here rather than in routes/coverage/: console/.gitignore
- * ignores every `coverage/` folder, so Tailwind never scans one.
+ * ignores `coverage/`, so Tailwind never scans it.
  *
  * Capabilities: none of its own. Reads health.quality (the products, the
  * query Connections › Quality holds), rule.list, health.rules and hunt.results
@@ -20,19 +20,17 @@ import { Card } from "@/components/ui/card";
 import { ProductLogo } from "@/components/ui/logo";
 import { Meter } from "@/components/ui/meter";
 import { Empty, ErrorNote } from "@/components/ui/misc";
-import { PageHeader } from "@/components/ui/page";
 import { Popover } from "@/components/ui/pop";
 import { Skel } from "@/components/ui/state";
 import { Status } from "@/components/ui/status";
-import { Strip } from "@/components/ui/strip";
 import { Tip } from "@/components/ui/tip";
 import { TACTIC_SHORT, tacticLabel, TACTICS, type Tactic } from "@/lib/attack";
 import { ruleState, RULE_STATES } from "@/lib/labels";
 import { useNow } from "@/lib/now";
 import { useHuntResults, useQuality, useRuleHealth, useRules } from "@/lib/queries";
 import type { RuleHealth } from "@/types";
-import { coverage, logsourceOf, type Cell, type Coverage as Cover } from "./coverage/products";
-import { Readiness } from "./hunts/Packs";
+import { coverage, logsourceOf, type Cell, type Coverage as Cover } from "../coverage/products";
+import { Readiness } from "../hunts/Packs";
 
 const STEP: Record<string, [number, number]> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
 
@@ -46,7 +44,7 @@ function Behind({ cell, health, now }: { cell: Cell; health: Map<string, RuleHea
             {state ? (
               <Status tone={state.tone} label={state.word} />
             ) : null}
-            <Link to={`/detection/rules/${encodeURIComponent(rule.id)}`} state={{ back: "/coverage" }} className="sh-link min-w-0 truncate">
+            <Link to={`/detection/rules/${encodeURIComponent(rule.id)}`} state={{ back: "/detection?tab=coverage" }} className="sh-link min-w-0 truncate">
               {rule.title}
             </Link>
           </li>
@@ -234,72 +232,52 @@ export function Coverage() {
   const all = TACTICS.length;
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title="Coverage"
-        strip={
-          <Strip
-            state={
-              !products.length
-                ? { tone: "idle", word: "Nothing arriving" }
-                : lit === all
-                  ? { tone: "good", word: "Covered" }
-                  : { tone: "warn", word: "Partial" }
-            }
-            loading={pending}
-            error={failed?.error}
-            onRetry={() => {
-              for (const q of queries) if (q.isError) void q.refetch();
-            }}
-            viz={
-              pending || failed ? undefined : (
-                <Meter
-                  value={lit}
-                  max={all}
-                  tone={lit === all ? "good" : "warn"}
-                  label="Tactics a rule can see"
-                  valueText={`${lit} of ${all} tactics`}
-                  format={() => `${lit} of ${all} tactics`}
-                  size="md"
-                />
-              )
-            }
-            facts={[{ label: "products a rule can see", value: products.length ? `${watched} of ${products.length}` : null }]}
-          />
-        }
-      />
-      <Card>
-        {failed ? (
-          <ErrorNote
-            error={failed.error}
-            onRetry={() => {
-              for (const q of queries) if (q.isError) void q.refetch();
-            }}
-          />
-        ) : pending ? (
-          <div className="flex flex-col gap-2 p-3" aria-busy="true">
-            <span role="status" className="sr-only">
-              loading
+    <Card>
+      {failed ? (
+        <ErrorNote
+          error={failed.error}
+          onRetry={() => {
+            for (const q of queries) if (q.isError) void q.refetch();
+          }}
+        />
+      ) : pending ? (
+        <div className="flex flex-col gap-2 p-3" aria-busy="true">
+          <span role="status" className="sr-only">
+            loading
+          </span>
+          {Array.from({ length: 6 }, (_, i) => (
+            <Skel key={i} kind="row" width={`${60 + ((i * 13) % 30)}%`} />
+          ))}
+        </div>
+      ) : !products.length ? (
+        <Empty
+          title="No source delivered in 30 days"
+          action={
+            <Link to="/connections" className="sh-link">
+              Connections
+            </Link>
+          }
+        />
+      ) : (
+        <div className="flex flex-col gap-3 p-3">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <Meter
+              value={lit}
+              max={all}
+              tone={lit === all ? "good" : "warn"}
+              label="Tactics a rule can see"
+              valueText={`${lit} of ${all} tactics`}
+              format={() => `${lit} of ${all} tactics`}
+              size="md"
+              className="w-60"
+            />
+            <span className="text-fg-2">
+              {watched} of {products.length} products a rule can see
             </span>
-            {Array.from({ length: 6 }, (_, i) => (
-              <Skel key={i} kind="row" width={`${60 + ((i * 13) % 30)}%`} />
-            ))}
           </div>
-        ) : !products.length ? (
-          <Empty
-            title="No source delivered in 30 days"
-            action={
-              <Link to="/connections" className="sh-link">
-                Connections
-              </Link>
-            }
-          />
-        ) : (
-          <div className="p-3">
-            <Matrix products={products} cover={cover} health={byRule} now={now} />
-          </div>
-        )}
-      </Card>
-    </div>
+          <Matrix products={products} cover={cover} health={byRule} now={now} />
+        </div>
+      )}
+    </Card>
   );
 }

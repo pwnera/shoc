@@ -1,12 +1,13 @@
 /**
- * Detection: can my rules see an attack today, and what has the crew changed
- * or muted? Beside the state word, the readiness share splits the catalogue
- * with a count and word per state (each filters Rules); the tabs are the
- * rules, the crew's proposed changes and what is muted. Running every rule
+ * Detection: can my rules see an attack today, which tactics can they see in
+ * the data that arrives, and what has the crew changed or muted? Beside the
+ * state word, the readiness share splits the catalogue with a count and word
+ * per state (each filters Rules); the tabs are the rules, the tactics they
+ * cover, the crew's proposed changes and what is muted. Running every rule
  * lives in ⋯, behind a confirm.
  *
  * Capabilities used: rule.list, health.rules, detection.backlog,
- * suppression.list, detect.run.
+ * suppression.list, detect.run; Coverage adds health.quality and hunt.results.
  */
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -21,13 +22,14 @@ import { loadError, staleSince } from "@/lib/loaded";
 import { useTab } from "@/lib/param";
 import { useDetectionBacklog, useRunDetections, useSuppressions } from "@/lib/queries";
 import { Changes } from "./detection/Changes";
+import { Coverage } from "./detection/Coverage";
 import { MoreMenu } from "./detection/MoreMenu";
 import { Rules } from "./detection/Rules";
 import { ShareBar, type ShareSegment } from "./detection/ShareBar";
 import { Suppressions } from "./detection/Suppressions";
 import { useRuleRows } from "./detection/state";
 
-const TABS = ["rules", "changes", "suppressions"] as const;
+const TABS = ["rules", "coverage", "changes", "suppressions"] as const;
 const RUN_ALL = "Run every rule now";
 
 
@@ -147,6 +149,7 @@ export function Detection() {
         onChange={setTab}
         tabs={[
           { value: "rules", label: "Rules", count: rules.data ? rules.data.count : null },
+          { value: "coverage", label: "Coverage" },
           { value: "changes", label: "Changes", count: backlog.data ? backlog.data.count : null },
           {
             value: "suppressions",
@@ -157,6 +160,7 @@ export function Detection() {
       />
       <TabPanel id="detection" value={tab}>
         {tab === "rules" ? <Rules rows={rows} rules={rules} health={health} /> : null}
+        {tab === "coverage" ? <Coverage /> : null}
         {tab === "changes" ? <Changes /> : null}
         {tab === "suppressions" ? <Suppressions /> : null}
       </TabPanel>

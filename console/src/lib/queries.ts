@@ -1292,7 +1292,7 @@ export type Volume = {
 /** Under five events a day, a day with nothing can be a weekend rather than a silence: such a product reads low. */
 const SILENT_FLOOR = 5;
 
-/** Pure, for the tests: each product's last day against its 30-day average, on Connections, Health and Coverage alike. */
+/** Pure, for the tests: each product's last day against its 30-day average, on Connections, Health and Detection › Coverage alike. */
 export function volumes(
   month: { product: string; events: number }[] | undefined,
   days: number,
@@ -1312,7 +1312,7 @@ export function volumes(
 
 /**
  * Volume per product, 24 hours against the 30-day average: the cached
- * `health.cost` volume Health and Coverage hold, and one `events.summarize`.
+ * `health.cost` volume Health and Detection › Coverage hold, and one `events.summarize`.
  */
 export function useProductVolume() {
   const cost = useCost(30);

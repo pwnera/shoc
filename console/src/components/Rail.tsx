@@ -1,5 +1,5 @@
 /**
- * The rail: fifteen screens in three groups (`lib/nav.ts`). One number, the
+ * The rail: fourteen screens in three groups (`lib/nav.ts`). One number, the
  * inbox count on Overview in crew ink; two dots without numbers, Cases while an
  * open case is critical and Health while the store or the crew is down. Each
  * mirrors a fact its screen owns, from the same selectors. Collapsed (⌘\) it
@@ -18,7 +18,7 @@ import { useCriticalOpen, useCrewDown, useNeedsYou } from "@/lib/needs";
 import { useHealth, useWarmRuleHealth } from "@/lib/reads";
 import { Tip } from "./ui/tip";
 
-const WARMS = new Set(["/detection", "/coverage", "/response"]);
+const WARMS = new Set(["/detection", "/response"]);
 
 export function Rail({
   collapsed = false,
