@@ -206,9 +206,8 @@ Split content into its own repo only if rule packs need to ship faster than the 
 | Lint and format (ruff), types (pyright) | Every PR | Yes |
 | Unit tests, rule tests (positive and negative fixtures) | Every PR | Yes |
 | Conformance suite on Postgres (service container) | Every PR | Yes |
-| Conformance suite on Databricks SQL, Snowflake, Redshift and BigQuery | Nightly and on release, maintainers' credentials, never on fork PRs | Release only |
-| Agent eval smoke test (small replay set) | PRs touching `agents/` or `content/` | Yes |
-| Full agent eval, results published | Nightly and on release | Release only |
+| Conformance suite on Databricks SQL, Snowflake, Redshift and BigQuery | Before a release, run by a maintainer against a warehouse holding only test data; not in CI, which holds no warehouse credentials | Release only |
+| Agent eval with a model, results published | Before a release, and for changes to `agents/` or `content/`, run by a maintainer; not in CI, which holds no model key | Release only |
 | Dependency budget (core packages 8 or fewer), license compatibility | Every PR | Yes |
 | Docs build and link check | Every PR | Yes |
 
@@ -336,7 +335,7 @@ repository settings.
 
 | ID | Open |
 | --- | --- |
-| STO-3, STO-4, STO-5, STO-6, DET-1, DET-3 | The Databricks, Snowflake, Redshift and BigQuery load paths, their DDL, the compiled rules and the bucket-by-bucket cycle have never run on a real warehouse. The CI job that runs them skips without warehouse credentials, and none are configured. Redshift and BigQuery have no unit tests yet, and the rules with a `sequence` or `first_seen` correlation use a correlated subquery with a time range, which both warehouses may refuse to decorrelate |
+| STO-3, STO-4, STO-5, STO-6, DET-1, DET-3 | The Databricks, Snowflake, Redshift and BigQuery load paths, their DDL, the compiled rules and the bucket-by-bucket cycle have not passed the conformance suite on any warehouse, and CI holds no warehouse credentials. The Databricks load path and cycle ran on the main instance on Databricks Free Edition from 2026-10-07 to 2026-10-10; Snowflake, Redshift and BigQuery have never been used. Redshift and BigQuery have no unit tests yet, and the rules with a `sequence` or `first_seen` correlation use a correlated subquery with a time range, which both warehouses may refuse to decorrelate |
 | ING-1 | Every Entra sign-in comes from the Graph beta endpoint, the only one that serves non-interactive, service principal and managed identity sign-ins and the user agent of interactive ones, which Microsoft does not support for production. Wazuh is read only when shoc can reach the indexer, port 9200 by default |
 | ING-1 | The Stripe activity log is a public preview with no time filter, pinned here to `2026-09-30.preview`. It has recorded password, email, two-step, SSO and anomaly setting changes since 2026-10-05, but not sign-ins, and its object lists bank account changes (`payout_destination_added`) that the API does not return yet, so a new bank account shows only when a payout goes to it (D157). The key's permissions follow Stripe's event docs, which say a restricted key lists only the events whose object it can read; Stripe's permission list says `Events: read` lists every type, no live key has settled which holds, and no Stripe page names the early fraud warning permission |
 | ING-2 | A GitHub organisation webhook carries no source address and no event time, and GitHub sends none for an owner promotion (`org.update_member`), an app installed on the organisation, or a change to the webhook short of its deletion |
@@ -360,8 +359,8 @@ Exit criteria still unverified, and what they need:
 
 | Criterion | Needs |
 | --- | --- |
-| Investigator accuracy ≥ 80% on the public eval (v0.2) | An LLM key (`SHOC_LLM_API_KEY` for the Evals workflow). `python -m evals.run --investigate` scores it; a crew that calls everything malicious scores 64% |
-| Conformance green on Databricks SQL and Snowflake (v0.2, v0.4) | Warehouse credentials as CI secrets. The `warehouses` job runs the suite and every rule when they are set |
+| Investigator accuracy ≥ 80% on the public eval (v0.2) | A model run of `python -m evals.run --investigate` by a maintainer, which scores it; CI holds no model key; a crew that calls everything malicious scores 64% |
+| Conformance green on Databricks SQL and Snowflake (v0.2, v0.4) | A maintainer run of `tests/conformance` with `SHOC_BACKENDS` set against a warehouse that holds only test data. CI holds no warehouse credentials |
 | Three design partners running 24/7 for four weeks (v0.3) | Design partners |
 | Leaked key contained in under 10 minutes (v0.3) | A real tenant. In the replayed scenario the containment playbook completes without waiting for anyone, and a crew-proposed `aws.disable_access_key` names the key's user |
 | Third-party security review (v1.0) | A reviewer. `docs/security-model.md`, RFC 0024 and the registry-wide invariants in `tests/unit/test_security_invariants.py` are what they would start from |

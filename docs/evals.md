@@ -116,9 +116,10 @@ public addresses.
 5. **Ship the change with its numbers** in the commit or pull request:
    verdict accuracy, pass^k, `needs_human`, tokens, before and after.
 
-Pull requests that touch `shoc/agents/`, the action review, `content/` or
-`evals/` run the scenarios and the probes in CI when a model key is configured
-(`.github/workflows/evals.yml`), and every release publishes both reports.
+CI does not run the scenarios or the probes with a model: a key held as a
+secret in a public repository could leak, and every run spends model credit.
+Run them yourself before changing `shoc/agents/`, the action review, `content/`
+or `evals/`, and put the numbers in the change.
 
 ## Where new cases come from
 

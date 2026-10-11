@@ -27,18 +27,6 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  # The crew's verdict scores on the public scenarios, attached to the release (AGT-6).
-  evals:
-    needs: release-please
-    if: needs.release-please.outputs.released == 'true'
-    permissions:
-      contents: write
-    uses: ./.github/workflows/evals.yml
-    with:
-      tag: ${{ needs.release-please.outputs.tag }}
-    secrets:
-      SHOC_LLM_API_KEY: ${{ secrets.SHOC_LLM_API_KEY }}
-
   # Lint, unit, conformance on Postgres, the upgrade test and the image: all of CI.
   gate:
     needs: release-please
