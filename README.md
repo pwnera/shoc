@@ -103,7 +103,7 @@ has been run.
 | Event store | Status | How it is tested |
 | --- | --- | --- |
 | Postgres 16 | Tested | Every unit and conformance test, the 29 replayed attack and benign scenarios in `evals/`, and a deployment that runs around the clock |
-| Databricks SQL | In test | A deployment ran on Databricks Free Edition for three days. The conformance suite has not run on it yet; it gates v0.2 |
+| Databricks SQL | In test | A deployment has run on Databricks Free Edition. The conformance suite has not run on it yet; it gates v0.2 |
 | Snowflake | Untested | Unit tests translate all 271 rules and the query capabilities to its dialect. Never run against a live account; conformance gates v0.4 |
 | Amazon Redshift, Google BigQuery | Untested | Unit tests translate all 271 rules to each dialect. Never run against a live warehouse; planned after v1.0 |
 
