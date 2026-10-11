@@ -52,9 +52,11 @@ behind it.
   OpenAI and Claude API key, Wazuh from its indexer, and GitHub's organisation
   webhook. Each source is read the way its vendor documents for a SIEM.
 - **Store:** Postgres (schema per tenant, monthly partitions, `COPY` loading,
-  retention by partition drop) and Databricks SQL (catalog per tenant, UC volume
-  staging, insert-only `MERGE`), Snowflake, Amazon Redshift and Google BigQuery,
-  behind one `EventStore` interface and one conformance suite.
+  retention by partition drop), behind one `EventStore` interface and one
+  conformance suite. Databricks SQL (catalog per tenant, UC volume staging,
+  insert-only `MERGE`) is in test; the Snowflake, Amazon Redshift and Google
+  BigQuery adapters are written and untested. See
+  [what has been tested](#what-has-been-tested).
 - **Detection:** our own Sigma-subset compiler to canonical SQL, translated per
   dialect with SQLGlot; 271 rules mapped to ATT&CK across AWS, Azure, GCP,
   Okta, Entra ID, Google Workspace, Microsoft 365, GitHub, GitLab, EDR,
@@ -98,10 +100,12 @@ behind it.
 Nothing is released yet, so each backend and connector below says how far it
 has been run.
 
-| Event store | How it is tested |
-| --- | --- |
-| Postgres 16 | Every unit and conformance test, the 29 replayed attack and benign scenarios in `evals/`, and a deployment that runs around the clock |
-| Databricks SQL, Snowflake, Amazon Redshift, Google BigQuery | Unit tests translate all 271 rules and the query capabilities to each dialect. The conformance suite runs against a live warehouse only where CI holds that warehouse's credentials |
+| Event store | Status | How it is tested |
+| --- | --- | --- |
+| Postgres 16 | Tested | Every unit and conformance test, the 29 replayed attack and benign scenarios in `evals/`, and a deployment that runs around the clock |
+| Databricks SQL | In test | A deployment ran on Databricks Free Edition for three days. The conformance suite has not run on it yet; it gates v0.2 |
+| Snowflake | Untested | Unit tests translate all 271 rules and the query capabilities to its dialect. Never run against a live account; conformance gates v0.4 |
+| Amazon Redshift, Google BigQuery | Untested | Unit tests translate all 271 rules to each dialect. Never run against a live warehouse; planned after v1.0 |
 
 | Connector | How it is tested |
 | --- | --- |

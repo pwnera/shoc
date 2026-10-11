@@ -228,13 +228,18 @@ and the audit log names the caller for every step.
 
 ## Backends
 
-| Backend | Tenancy | Load path | Good for |
-| --- | --- | --- | --- |
-| Postgres | schema per tenant | `COPY` from NDJSON | the default; 30–90 days hot |
-| Databricks SQL | catalog per tenant | `PUT` to a UC volume, insert-only `MERGE` | volume and long retention |
-| Snowflake | database per tenant | `PUT` to a stage, `COPY INTO` a temporary table, insert-only `MERGE` | teams already on Snowflake |
-| Amazon Redshift | schema per tenant | `PUT` to an S3 prefix, `COPY` into a temporary table, insert what the table lacks | teams already on Redshift |
-| Google BigQuery | dataset per tenant, partitioned by day | load job into a staging table, insert-only `MERGE` | teams already on BigQuery |
+| Backend | Status | Tenancy | Load path | Good for |
+| --- | --- | --- | --- | --- |
+| Postgres | tested | schema per tenant | `COPY` from NDJSON | the default; 30–90 days hot |
+| Databricks SQL | in test | catalog per tenant | `PUT` to a UC volume, insert-only `MERGE` | volume and long retention |
+| Snowflake | untested | database per tenant | `PUT` to a stage, `COPY INTO` a temporary table, insert-only `MERGE` | teams already on Snowflake |
+| Amazon Redshift | untested | schema per tenant | `PUT` to an S3 prefix, `COPY` into a temporary table, insert what the table lacks | teams already on Redshift |
+| Google BigQuery | untested | dataset per tenant, partitioned by day | load job into a staging table, insert-only `MERGE` | teams already on BigQuery |
+
+Tested means the conformance suite and a running deployment. Databricks SQL has
+run a deployment but not the conformance suite. The untested adapters translate
+every rule in unit tests and have never run against a live warehouse, so expect
+to find bugs there first.
 
 Postgres stays required with a warehouse: findings, cases, jobs, cursors,
 indicators and memory live there, and only `ocsf_events` moves. Databricks and

@@ -226,7 +226,7 @@ class EventStore(Protocol):
 | Amazon Redshift | Customers already on Redshift | Schema per tenant | PUT to an S3 prefix, COPY into a temporary table, insert what the table lacks |
 | Google BigQuery | Customers already on BigQuery | Dataset per tenant | Load job into a staging table, insert-only MERGE |
 
-Redshift and BigQuery need no extra: Redshift speaks the Postgres protocol, so `psycopg` connects to it and S3 is one SigV4-signed request; BigQuery is its REST API over `httpx`, signed in as a service account with `pyjwt` (D131).
+Only Postgres has passed the conformance suite; [deploy.md](deploy.md#backends) says how far each other backend has been run. Redshift and BigQuery need no extra: Redshift speaks the Postgres protocol, so `psycopg` connects to it and S3 is one SigV4-signed request; BigQuery is its REST API over `httpx`, signed in as a service account with `pyjwt` (D131).
 
 ### What reaches the store
 

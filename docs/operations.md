@@ -199,7 +199,7 @@ What that means in practice: a 100-person company on AWS, Okta and GitHub
 produces roughly 1–5 million events a day, which is 3–20 minutes of ingest and
 about 1–6 GB a day at 90-day retention. Postgres is comfortable there. Above
 roughly 50 million events a day, or a retention window you cannot afford on one
-disk, move the events to Databricks SQL, Snowflake, Redshift or BigQuery. The rules, the crew and
+disk, move the events to a warehouse (see [which are tested](deploy.md#backends)). The rules, the crew and
 everything else stay exactly the same.
 
 Detection cost grows with the window, not with total storage: retention only
