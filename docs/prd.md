@@ -349,7 +349,7 @@ repository settings.
 | DET-11 | Hunt metrics count open backlog items as `gaps_open` and count every hunt promotion in any state with no window, and readiness checks the product but not whether a pack's fields arrive: a GitHub pack turns ready on 2026-11-01 over events whose source address is always empty |
 | OPS-1 | Time to contain counts dry-run actions and page steps as containment |
 | RSP-7 | `SHOC_DRY_RUN=0` does not turn response on: the policy's default `dry_run: true` wins over the environment |
-| Phase 0 | CodeQL and Scorecard skip while the repository is private; rulesets, 2FA, private vulnerability reporting, secret scanning and Renovate are repository settings not yet set. The release workflow has had no `0.0.1` dry run |
+| Phase 0 | The org does not require 2FA and the Renovate app is not installed. The ruleset on `main` blocks only deletion and force-push; review and required checks wait for a second maintainer. PyPI Trusted Publishing has no publisher configured, so the release dry run of 2026-10-11 built the `0.0.1` packages, image and SBOMs but nothing has been published |
 
 Both v0.1 exit criteria are met in CI. `tests/test_scenarios.py` replays the
 leaked-key scenario through detection on Postgres, and
@@ -375,9 +375,9 @@ Exit criteria still unverified, and what they need:
 
 - [ ] Confirm the final name (shoc), check the trademark, register the domain and GitHub org
 - [x] Create the monorepo with all required community files and `GOVERNANCE.md`
-- [ ] Turn on rulesets, 2FA, private vulnerability reporting, CodeQL, secret scanning, Renovate, Scorecard
+- [ ] Turn on rulesets, 2FA, private vulnerability reporting, CodeQL, secret scanning, Renovate, Scorecard (done 2026-10-11 except 2FA and Renovate; the ruleset is partial)
 - [x] CI skeleton: ruff, pyright, tests, DCO, dependency budget, license check
-- [ ] Set up release-please, PyPI Trusted Publishing and GHCR publishing on a `0.0.1` dry run
+- [ ] Set up release-please, PyPI Trusted Publishing and GHCR publishing on a `0.0.1` dry run (dry run green 2026-10-11; PyPI publisher not configured)
 - [x] Write the three foundation RFCs: capability registry, `EventStore` adapter, openspace protocol
 - [x] Seed 20 `good first issue` items (`docs/good-first-issues.md`)
 - [ ] Publish the roadmap board
