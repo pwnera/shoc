@@ -234,7 +234,7 @@ Releases are time-based, automated from Conventional Commits, and signed. Every 
 
 | Channel | What | How often |
 | --- | --- | --- |
-| Edge | Image built from `main`, tag `:edge` | Every merge |
+| Edge | Kernel and console images built from `main`, tags `:edge` and `:sha-<commit>` | Every merge that passes CI |
 | Release candidate | `vX.Y.0-rc.N`, feature-frozen | 1 week before each minor |
 | Stable minor | `vX.Y.0` | Every 6–8 weeks |
 | Patch | `vX.Y.Z`, fixes only | As needed |
