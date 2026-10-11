@@ -309,14 +309,14 @@ Adoption comes from a fast first run and from contributions that are easy to mak
 
 ## Roadmap
 
-Five releases take the project from an empty repo to v1.0 by 2027-06-30, one theme per release. The repo is public from Phase 0; the launch announcement waits for v0.1. The SaaS track starts only after v1.0 and runs on the same kernel.
+Five releases take the project from an empty repo to v1.0 by 2027-06-30, one theme per release. A release ships as soon as its exit criteria are met; its target is the latest date, not the planned one. The repo is public from Phase 0; the launch announcement waits for v0.1. The SaaS track starts only after v1.0 and runs on the same kernel.
 
 | Release | Target | Theme | Scope (requirement IDs) | Exit criteria |
 | --- | --- | --- | --- | --- |
 | Phase 0 | 2026-10-31 | Foundations | Repo, governance files, CI, rulesets, security settings, RFCs for registry, adapter and openspace protocol | All required files merged; CI and Scorecard green; 3 RFCs accepted |
 | v0.1 | 2026-12-15 | Kernel | API-1, STO-1, STO-2, ING-1 (AWS, Okta, GitHub), ING-3, DET-1, DET-2 (20 rules), DET-3, SEC-1 (audit) | Leaked-key scenario detected end to end on Postgres; findings queried from Claude over MCP |
 | v0.2 | 2027-02-15 | Crew | AGT-1, AGT-2, AGT-5, AGT-6, RSP-1, STO-3, ING-1 (rest), ING-2, ING-4, API-2, SEC-2 | Investigator accuracy 80% or more on the public eval; conformance green on Postgres and Databricks SQL |
-| v0.3 | 2027-04-15 | Response | RSP-2, RSP-3, RSP-4, RSP-5, RSP-6, AGT-3, AGT-4, AGT-8, DET-2 (50 rules), DET-4, DET-6, DET-7, DET-8, DET-9, DET-11, API-3, OPS-1, SEC-1 (rest) | 3 design partners running 24/7 for 4 weeks; leaked key contained in under 10 min, and no automatic block lands on shared infrastructure |
+| v0.3 | 2027-04-15 | Response | RSP-2, RSP-3, RSP-4, RSP-5, RSP-6, AGT-3, AGT-4, AGT-8, DET-2 (50 rules), DET-4, DET-6, DET-7, DET-8, DET-9, DET-11, API-3, OPS-1, SEC-1 (rest) | In the replayed leaked-key scenario the key is contained in under 10 min, and no automatic block lands on shared infrastructure |
 | v0.4 | 2027-05-31 | Freeze | STO-4, AGT-9, AGT-10, AGT-11, AGT-12, AGT-13, AGT-14, API-4, RSP-7, SEC-3, Helm chart; public contract documented and frozen | Conformance green on all 3 backends; no contract changes during the RC; a leaked key is contained end to end with nobody logged in |
 | v1.0 | 2027-06-30 | Stable | Hardening, docs, third-party security review of agents, policy and actions | Every v1.0 success metric met or waived by the maintainers in writing |
 
@@ -361,13 +361,13 @@ Exit criteria still unverified, and what they need:
 | --- | --- |
 | Investigator accuracy ≥ 80% on the public eval (v0.2) | A model run of `python -m evals.run --investigate` by a maintainer, which scores it; CI holds no model key; a crew that calls everything malicious scores 64% |
 | Conformance green on Databricks SQL and Snowflake (v0.2, v0.4) | A maintainer run of `tests/conformance` with `SHOC_BACKENDS` set against a warehouse that holds only test data. CI holds no warehouse credentials |
-| Three design partners running 24/7 for four weeks (v0.3) | Design partners |
-| Leaked key contained in under 10 minutes (v0.3) | A real tenant. In the replayed scenario the containment playbook completes without waiting for anyone, and a crew-proposed `aws.disable_access_key` names the key's user |
+| Three design partners running 24/7 for four weeks (after v1.0) | Design partners |
+| Leaked key contained in under 10 minutes at a real company (after v1.0) | A real tenant. In the replayed scenario, the v0.3 criterion, the containment playbook completes without waiting for anyone, and a crew-proposed `aws.disable_access_key` names the key's user |
 | Third-party security review (v1.0) | A reviewer. `docs/security-model.md`, RFC 0024 and the registry-wide invariants in `tests/unit/test_security_invariants.py` are what they would start from |
 
 **After v1.0 (second half of 2027)**
 
-- OSS: more connectors, Redshift and BigQuery conformance green (STO-5, STO-6; the adapters are wired, D131), console 1.0, calling external MCP tools from the crew, an LTS release if users ask for it, and a foundation decision.
+- OSS: three design partners running shoc 24/7 for four weeks, with a leaked key contained in under 10 minutes at one of them; more connectors, Redshift and BigQuery conformance green (STO-5, STO-6; the adapters are wired, D131), console 1.0, calling external MCP tools from the crew, an LTS release if users ask for it, and a foundation decision.
 - SaaS: multi-tenant control plane and managed hosting on AWS with Databricks SQL Serverless, built as a separate product on top of released OSS versions.
 
 **Phase 0: first 30 days**
