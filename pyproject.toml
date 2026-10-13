@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shoc"
-version = "0.0.1"
+version = "0.1.0"
 description = "shoc (Security Headless Operation Center): headless, AI-first, 24/7 agentic SOC"
 readme = "README.md"
 requires-python = ">=3.12"
