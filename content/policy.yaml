@@ -85,6 +85,8 @@ actions:
     reversible: false
 
   github.make_repo_private:
+    # GitHub drops stars and watchers and detaches public forks; undo makes the
+    # repository public again but does not bring those back.
     autonomy: L2
     reversible: true
 
@@ -370,8 +372,11 @@ actions:
     # precisely when the company's only technical person is needed. So there is
     # no confidence floor here — severity alone decides, and a page is what
     # `shoc/cases/unattended.py` falls back to when an approval never comes.
+    # A page changes nothing in the company's systems, so dry run never holds it
+    # back: the Manager sends it for real even while SHOC_DRY_RUN is on.
     autonomy: L1
     reversible: true
+    dry_run: false
     min_confidence: 0.0
     severity_at_least: high
 

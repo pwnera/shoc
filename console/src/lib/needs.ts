@@ -4,12 +4,25 @@
  * case is open. The rail count, the title, the favicon, the mobile tab and the
  * Overview heading all read these selectors, so they always agree.
  *
- * Capabilities used (through `lib/queries.ts`): action.list, case.list (and
- * its unacknowledged cases), source.list, ops.alerts, health.status; presence (`lib/presence.ts`) adds a
- * model failure the live stream saw before the alerts did.
+ * Capabilities used (through `lib/queries.ts`): action.list, case.list (its
+ * unacknowledged cases, and its open needs_human cases), source.list,
+ * ops.alerts, health.status; presence (`lib/presence.ts`) adds a model failure
+ * the live stream saw before the alerts did.
  */
+import { useQuery } from "@tanstack/react-query";
+import { callData } from "./api";
 import { usePresence } from "./presence";
-import { useAlerts, useActionLog, useCaseLog, useHealth, useProposals, useSourceList, useUnacknowledged } from "./reads";
+import {
+  CASE_CAP,
+  FOLLOWED,
+  useAlerts,
+  useActionLog,
+  useCaseLog,
+  useHealth,
+  useProposals,
+  useSourceList,
+  useUnacknowledged,
+} from "./reads";
 import type { Action, Case, ConfiguredSource, NeedsItem, Onboarding, OpsAlert, Severity } from "@/types";
 
 /** A source credential the provider refused, by the kernel's own test of the error text. */
@@ -50,12 +63,15 @@ export function inbox(input: {
   proposals?: Action[];
   actions?: Action[];
   cases?: Case[];
+  /** Open cases waiting on a person's verdict, however long ago they were updated. */
+  waiting?: Case[];
   /** Cases closed without their containment that nobody acknowledged (D152). */
   unacknowledged?: Case[];
   configured?: ConfiguredSource[];
   onboarding?: Onboarding[];
 }): NeedsItem[] {
-  const cases = new Map((input.cases ?? []).map((c) => [c.case_uid, c]));
+  const known = [...(input.cases ?? []), ...(input.waiting ?? [])];
+  const cases = new Map(known.map((c) => [c.case_uid, c]));
   const items: NeedsItem[] = [];
 
   for (const action of input.proposals ?? []) {
@@ -150,10 +166,21 @@ export type Needs = {
   retry: () => void;
 };
 
+/** Open needs_human cases, filtered by the kernel before its cap, so none hides behind 200 newer cases. */
+function useWaitingVerdicts() {
+  const asked = { verdict: "needs_human", open: true, limit: CASE_CAP };
+  return useQuery({
+    queryKey: ["case.list", asked],
+    queryFn: () => callData<{ rows: Case[]; count: number }>("case.list", asked),
+    ...FOLLOWED,
+  });
+}
+
 export function useNeedsYou(): Needs {
   const proposals = useProposals();
   const actions = useActionLog();
   const cases = useCaseLog();
+  const waiting = useWaitingVerdicts();
   const closed = useUnacknowledged();
   const sources = useSourceList();
   const named = [
@@ -167,6 +194,7 @@ export function useNeedsYou(): Needs {
     proposals: proposals.data?.rows,
     actions: actions.data?.rows,
     cases: cases.data?.rows,
+    waiting: waiting.data?.rows,
     unacknowledged: closed.data?.rows,
     configured: sources.data?.configured,
     onboarding: sources.data?.onboarding,
@@ -177,7 +205,8 @@ export function useNeedsYou(): Needs {
       lastDecision = a.approved_at;
   // A list fails only when it has nothing to show; a refresh that failed keeps its rows.
   const failed = named.filter(([, q]) => q.isError && !q.data).map(([name]) => name);
-  const pending = named.some(([, q]) => q.isPending);
+  // The waiting verdicts only add to the log's: when they fail, the log's still show.
+  const pending = named.some(([, q]) => q.isPending) || waiting.isPending;
   return {
     items,
     // Counted once every list is in, so the rail, the tab title and the icon never show part of the inbox.
@@ -186,7 +215,7 @@ export function useNeedsYou(): Needs {
     failed,
     lastDecision,
     retry: () => {
-      for (const [, q] of named) if (q.isError) void q.refetch();
+      for (const q of [...named.map(([, q]) => q), waiting]) if (q.isError) void q.refetch();
     },
   };
 }

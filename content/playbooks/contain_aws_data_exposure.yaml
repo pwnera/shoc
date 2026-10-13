@@ -61,17 +61,17 @@ steps:
     action: aws.block_s3_public_access
     optional: true
     params:
-      bucket: "{{ entity.resource }}"
+      bucket: "{{ rule.aws_s3_bucket_made_public.resource }}"
   - name: cancel the key's deletion
     action: aws.cancel_key_deletion
     optional: true
     params:
-      key_id: "{{ entity.resource }}"
+      key_id: "{{ rule.aws_kms_key_disabled_or_deleted.resource }}"
   - name: unshare the snapshot
     action: aws.unshare_snapshot
     optional: true
     params:
-      snapshot_id: "{{ entity.resource }}"
+      snapshot_id: "{{ rule.aws_ebs_snapshot_shared.resource }}"
   - name: revoke the sessions minted from the actor's key
     action: aws.revoke_sessions
     optional: true

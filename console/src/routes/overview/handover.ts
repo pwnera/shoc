@@ -11,12 +11,13 @@ import type { Action, Case, Finding, Severity } from "@/types";
 export type Source = "cases" | "actions" | "findings";
 
 export type Counter = {
-  id: "opened" | "closed" | "ran" | "undone" | "expired" | "paged" | "findings";
+  id: "opened" | "closed" | "failed" | "ran" | "undone" | "expired" | "paged" | "findings";
   source: Source;
   n: number;
   /** The list came back at its cap and may not reach back to `since`: "200+". */
   more: boolean;
   to: string;
+  tone?: "bad";
   /** Every action it counts was a dry run. */
   dry?: boolean;
   /** Findings by severity, for the stacked meter. */
@@ -27,6 +28,7 @@ export type Counter = {
 export const LABEL: Record<Counter["id"], string> = {
   opened: "opened",
   closed: "closed by crew",
+  failed: "failed",
   ran: "done",
   undone: "undone",
   expired: "expired",
@@ -37,7 +39,7 @@ export const LABEL: Record<Counter["id"], string> = {
 /** The counters of each source, in the order they show; drawn as "—" when the source failed. */
 export const COUNTERS: Record<Source, Counter["id"][]> = {
   cases: ["opened", "closed"],
-  actions: ["ran", "undone", "expired", "paged"],
+  actions: ["failed", "ran", "undone", "expired", "paged"],
   findings: ["findings"],
 };
 
@@ -78,6 +80,9 @@ export function caseCounters(rows: Case[], since: string, cap: number): Counter[
 
 /** Done without a person's approval, not a page: what the crew ran on its own. */
 const ran = (a: Action, from: number) => a.state === "done" && !a.approved_by && !isPage(a) && after(ranAt(a), from);
+/** A response that failed or was blocked, not a page: Response's Failed filter (pages are Health's Notify). */
+const failed = (a: Action, from: number) =>
+  (a.state === "failed" || a.state === "blocked") && !isPage(a) && after(ranAt(a), from);
 
 export function actionCounters(rows: Action[], since: string, cap: number): Counter[] {
   const from = Date.parse(since);
@@ -87,6 +92,14 @@ export function actionCounters(rows: Action[], since: string, cap: number): Coun
   const count = (test: (a: Action) => boolean) => rows.filter(test).length;
   const undone = rows.filter((a) => a.state === "rolled_back" && !isPage(a) && after(a.updated_at, from));
   return [
+    {
+      id: "failed",
+      source: "actions",
+      n: count((a) => failed(a, from)),
+      more,
+      to: `/response?since=${q}&state=failed`,
+      tone: "bad",
+    },
     {
       id: "ran",
       source: "actions",
@@ -138,10 +151,10 @@ export function findingCounter(rows: Finding[], since: string, cap: number): Cou
 }
 
 /**
- * One mark per counted thing, plus the crew's runs that failed: ▲ opened, ▽
- * closed by the crew, ■ ran (good) or failed (bad), ↺ undone, ■ expired
- * (warn), ⌁ paged, ● a finding. A mark opens its case, the action's dialog when
- * it has no case, or the finding.
+ * One mark per counted thing: ▲ opened, ▽ closed by the crew, ■ ran (good)
+ * or failed or blocked (bad), ↺ undone, ■ expired (warn), ⌁ paged, ● a
+ * finding. A mark opens its case, the action's dialog when it has no case, or
+ * the finding.
  */
 export function handoverMarks(input: {
   since: string;
@@ -164,7 +177,7 @@ export function handoverMarks(input: {
     const mark = (at: string, kind: Mark["kind"], tone: string, verb: string) =>
       out.push({ key: `a:${a.action_uid}`, at, kind, tone, label: `${what} ${verb}`, to });
     if (ran(a, from)) mark(ranAt(a), "action", "good", a.dry_run ? "planned" : "done");
-    else if (a.state === "failed" && !isPage(a) && after(ranAt(a), from)) mark(ranAt(a), "action", "bad", "failed");
+    else if (failed(a, from)) mark(ranAt(a), "action", "bad", a.state);
     else if (a.state === "rolled_back" && !isPage(a) && after(a.updated_at, from)) mark(a.updated_at!, "undone", "idle", a.dry_run ? "plan undone" : "undone");
     else if (unattended(a) && after(a.updated_at, from)) mark(a.updated_at!, "action", "warn", "expired");
     else if (isPage(a) && after(a.created_at, from)) mark(a.created_at, "page", "neutral", "paged");

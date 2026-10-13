@@ -21,6 +21,8 @@ detection:
 baseline:
   first_seen: [resource.uid, src_endpoint.asn]
   lookback: 30d
+  # A source that adds the token log later has a day of grants, not 30.
+  learns_from: selection
 pivot: [resource.uid, actor.user.name, src_endpoint.ip, src_endpoint.asn]
 triage: >
   Which app is this client, and does its vendor run on this network? A vendor

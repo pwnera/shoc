@@ -77,11 +77,30 @@ steps:
         case: "{{ case.case_uid }}"
         key: "{{ entity.key }}"
         source_ip: "{{ entity.ip }}"
+  # Every key the case's AWS findings name, one action each, so a second key
+  # that joins the case later gets a run of its own.
   - name: revoke the sessions minted from the key
     action: aws.revoke_sessions
     optional: true
     params:
-      access_key_id: "{{ entity.key }}"
+      access_key_id: "{{ platform.aws.key }}"
+  # The key the attacker made with CreateAccessKey has not acted yet, so no
+  # finding names it as a key; the CreateAccessKey response names its user.
+  # Before the step that can fail.
+  - name: disable the key the attacker created
+    action: aws.disable_access_key
+    optional: true
+    params:
+      access_key_id: "{{ rule.aws_access_key_created.resource }}"
+  # Every key the AWS findings name. A session key (ASIA…) among them is refused
+  # by IAM's check and skipped; aws.revoke_sessions above ends it.
+  - name: disable every key the findings name
+    action: aws.disable_access_key
+    optional: true
+    params:
+      access_key_id: "{{ platform.aws.key }}"
+  # The case's first key, which is a long-term one (AKIA sorts before ASIA)
+  # whenever the case has one, so a session key next to it cannot fail the run.
   - name: disable the access key
     action: aws.disable_access_key
     params:
@@ -90,4 +109,4 @@ steps:
     action: aws.quarantine_user
     optional: true
     params:
-      access_key_id: "{{ entity.key }}"
+      access_key_id: "{{ platform.aws.key }}"

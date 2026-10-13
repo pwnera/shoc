@@ -9,7 +9,7 @@ description: >
   No user sees either.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-09
+modified: 2026-10-12
 severity: high
 confidence: 0.65
 attack: [T1114.003, T1114.002]
@@ -17,17 +17,21 @@ logsource:
   product: google
   service: reports
 detection:
-  # One save logs several events in one activity: the legacy *_GMAIL_SETTING
-  # event names the rule type as SETTING_NAME, the *_APPLICATION_SETTING events
-  # carry it as SETTING_METADATA's rule_type. Only the first event is keyed, so
-  # the type is read from the activity's whole event list.
+  # One save logs several events in one activity, each a row of its own: the
+  # legacy *_GMAIL_SETTING event names the rule type as SETTING_NAME.
   selection:
-    api.operation: [CREATE_GMAIL_SETTING, CHANGE_GMAIL_SETTING, CREATE_APPLICATION_SETTING, CHANGE_APPLICATION_SETTING]
+    api.operation: [CREATE_GMAIL_SETTING, CHANGE_GMAIL_SETTING]
+    unmapped.params.SETTING_NAME: [EMAIL_ROUTE, UNIFIED_MAIL_ROUTING, ALIAS_TABLE, MESSAGE_SECURITY_RULE]
+  # An *_APPLICATION_SETTING event carries it as SETTING_METADATA's rule_type,
+  # a nested message no keyed parameter holds; a row's `raw.events` is its own
+  # event alone.
+  selection_application:
+    api.operation: [CREATE_APPLICATION_SETTING, CHANGE_APPLICATION_SETTING]
     raw.events|contains: [EMAIL_ROUTE, UNIFIED_MAIL_ROUTING, ALIAS_TABLE, MESSAGE_SECURITY_RULE]
   # One user's mail: an extra delivery address, an email monitor, an export.
   selection_user:
     api.operation: [MAIL_ROUTING_DESTINATION_ADDED, CREATE_EMAIL_MONITOR, REQUEST_MAILBOX_DUMP]
-  condition: selection or selection_user
+  condition: selection or selection_application or selection_user
   timeframe: 15m
 entity: actor.user.name
 fields: [actor.user.name, api.operation, resource.uid, unmapped.params.SETTING_NAME, unmapped.params.NEW_VALUE, unmapped.params.EMAIL_MONITOR_DEST_EMAIL, src_endpoint.ip]

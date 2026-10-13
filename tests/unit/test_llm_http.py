@@ -107,6 +107,7 @@ def test_the_responses_client_speaks_the_responses_api(monkeypatch):
     assert str(seen[0].url) == "https://api.kie.ai/openai/v1/responses"
     assert body["instructions"] == "you are Investigator"
     assert body["max_output_tokens"] == 512
+    assert "store" not in body
     assert body["input"] == [
         {"role": "user", "content": "who owns 192.0.2.10?"},
         {
@@ -128,6 +129,14 @@ def test_the_responses_client_speaks_the_responses_api(monkeypatch):
     assert completion.text == "checking"
     assert completion.calls == [ToolCall("call_1", "lookup_ip", {"ip": "192.0.2.10"})]
     assert completion.tokens_in == 300 and completion.tokens_out == 90
+
+
+def test_openai_is_told_not_to_store_responses(monkeypatch):
+    seen = recorder(monkeypatch, RESPONSES_REPLY)
+    OpenAIResponsesClient("key", "gpt-x", "https://api.openai.com/v1").complete(
+        "s", [Turn("user", "x")]
+    )
+    assert json.loads(seen[0].content)["store"] is False
 
 
 def test_a_responses_gateway_error_says_what_went_wrong(monkeypatch):

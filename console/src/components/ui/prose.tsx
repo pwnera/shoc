@@ -18,7 +18,10 @@ const EDGE = /^([("'[]*)(.*?)([)"'\].,;:!?]*)$/s;
 /** A tool or field name holds an underscore: identity_resolve, google.get_user. */
 const IDENT = /^[a-z][a-z0-9]*(?:[._][a-z0-9]+)*_[a-z0-9]+(?:[._][a-z0-9]+)*$/;
 /** Domains stay words: "events.query" and "posture.py" pass the domain pattern. */
-const CHIP = new Set<EntityKind>(["ip", "cidr", "url", "email", "hash", "key", "resource", "cve", "user", "account", "host", "repo"]);
+const CHIP = new Set<EntityKind>([
+  "ip", "cidr", "url", "email", "hash", "key", "session", "resource", "cve",
+  "user", "account", "host", "repo",
+]);
 
 /** An IPv4 address with its port: the address is the chip, ":443" stays text. */
 const PORT = /^((?:\d{1,3}\.){3}\d{1,3})(:\d{1,5})$/;

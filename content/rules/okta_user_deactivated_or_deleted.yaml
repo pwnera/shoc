@@ -5,8 +5,8 @@ description: >
   it is either a mistake or an attacker cleaning up.
 status: stable
 date: 2026-09-24
-modified: 2026-09-24
-severity: medium
+modified: 2026-10-12
+severity: low
 confidence: 0.55
 attack: [T1531]
 logsource:

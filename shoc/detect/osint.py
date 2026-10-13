@@ -18,8 +18,10 @@ Two guards are not configurable:
 
 - a private, loopback, link-local or otherwise internal value is never sent to a
   third party — only the local sources run for it;
-- a source only ever calls the hosts in its own declaration, so a value taken
-  from a log or a report can never steer a lookup at an attacker-chosen URL.
+- a source builds its URL from a fixed template on its own vendor's host, so a
+  value taken from a log or a report can never steer a lookup at an
+  attacker-chosen URL. A source with a key follows no redirect, so the key
+  stays on that host; one without follows a redirect only to a public address.
 
 v1 ships only sources that need no account, so research works on a fresh install
 with no configuration. Keyed platforms (VirusTotal, AbuseIPDB, GreyNoise,
@@ -38,14 +40,16 @@ import ipaddress
 import json
 import re
 import socket
+import threading
 import time
 from array import array
 from bisect import bisect_right
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
@@ -61,7 +65,11 @@ VERDICTS = ("malicious", "suspicious", "unknown", "benign")
 
 _HEX = re.compile(r"^[a-f0-9]+$", re.I)
 _CVE = re.compile(r"^CVE-\d{4}-\d{4,7}$", re.I)
-_DOMAIN = re.compile(r"^(?=.{1,253}$)([a-z0-9](-?[a-z0-9])*\.)+[a-z]{2,}$", re.I)
+# An internationalised name is written `xn--…`, a TLD (`.xn--p1ai`) or a label
+# (`xn--pple-43d.com`), and phishing uses both.
+_DOMAIN = re.compile(
+    r"^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,}|xn--[a-z0-9-]+)$", re.I
+)
 
 
 # -- what is this thing -----------------------------------------------------
@@ -89,12 +97,31 @@ def classify(value: str) -> str:
 
 
 def host_of(value: str, kind: str) -> str:
-    """The host a URL or email hangs off, so host-based sources can be asked."""
+    """The host a URL or email hangs off, so host-based sources can be asked.
+
+    A URL is parsed, so neither `user:pw@` nor an IPv6 literal's brackets are
+    taken for its host. One that does not parse has none, and is internal.
+    """
     if kind == "url":
-        return value.split("//", 1)[-1].split("/", 1)[0].split(":", 1)[0].lower()
+        try:
+            return urlsplit(value.strip()).hostname or ""
+        except ValueError:
+            return ""
     if kind == "email":
         return value.rsplit("@", 1)[-1].lower()
     return value.strip().lower()
+
+
+def _shareable(value: str, kind: str) -> str:
+    """What a third party is told: a URL without its user, query or fragment (DET-6).
+
+    A query can carry a password-reset token, a presigned signature or a
+    sharing link's key; the lookup asks about scheme, host and path only.
+    """
+    if kind != "url":
+        return value
+    parts = urlsplit(value)
+    return urlunsplit((parts.scheme, parts.netloc.rpartition("@")[2], parts.path, "", ""))
 
 
 # The ranges RFC 5737 and RFC 3849 reserve for documentation. Python calls them
@@ -107,20 +134,33 @@ DOCUMENTATION = tuple(
     for n in ("192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24", "2001:db8::/32")
 )
 
-INTERNAL_SUFFIXES = (".local", ".internal", ".lan", ".corp", ".home.arpa", ".intranet")
-
-
-def is_documentation(addr: Any) -> bool:
-    return any(addr.version == net.version and addr in net for net in DOCUMENTATION)
+# .localhost resolves to the machine itself (RFC 6761); .svc is a Kubernetes service.
+INTERNAL_SUFFIXES = (
+    ".local",
+    ".internal",
+    ".lan",
+    ".corp",
+    ".home.arpa",
+    ".intranet",
+    ".localhost",
+    ".svc",
+)
 
 
 def is_public_address(value: str) -> bool:
-    """Is this an address it is safe — and useful — to research?"""
+    """Is this an address on the internet, safe and useful to research?
+
+    The one answer for every caller. `is_global` already leaves out carrier-grade
+    NAT (100.64.0.0/10), where a tailnet lives; the documentation ranges stand
+    for internet addresses in this project's fixtures and docs, so they count.
+    """
     try:
-        addr = ipaddress.ip_address(value)
+        addr = ipaddress.ip_address(str(value).strip())
     except ValueError:
         return False
-    return addr.is_global or is_documentation(addr)
+    return addr.is_global or any(
+        addr.version == net.version and addr in net for net in DOCUMENTATION
+    )
 
 
 def is_internal(value: str, kind: str) -> bool:
@@ -287,9 +327,19 @@ KEYED: dict[str, Provider] = {
 }
 
 
-def _client(timeout: httpx.Timeout = TIMEOUT) -> httpx.Client:
+def _client(timeout: httpx.Timeout = TIMEOUT, redirects: bool = True) -> httpx.Client:
+    """A source's client. A keyed source passes `redirects=False`: httpx drops only
+    `Authorization` on a redirect to another host, and these keys ride in their
+    own headers or the query (priv-18). One that follows vets each hop and
+    connects to the address it vetted (SEC-1)."""
+    from shoc.detect import report
+
     return httpx.Client(
-        timeout=timeout, follow_redirects=True, headers={"User-Agent": "shoc/intel-research"}
+        timeout=timeout,
+        follow_redirects=redirects,
+        headers={"User-Agent": "shoc/intel-research"},
+        event_hooks={"response": [report.vet_redirect]} if redirects else None,
+        transport=report.Pinned() if redirects else None,
     )
 
 
@@ -297,9 +347,15 @@ def _client(timeout: httpx.Timeout = TIMEOUT) -> httpx.Client:
 # Answers that need no call per lookup. Each list is one download, kept per
 # process until its TTL runs out. A new copy that is under half or over one
 # and a half times the size of the last one is not trusted: the last one
-# stays, and `LIST_WARNINGS` says why. A failed download keeps the last copy
-# too. `warm()` loads them all, from the worker's intel job.
+# stays, and `LIST_WARNINGS` says why. A size that every download has kept for
+# two TTLs (each one within half and one and a half times the first refused
+# size) is the list's own, and is taken; a download off that size starts the
+# count again. A failed download keeps the last copy too. `warm()` loads them
+# all, from the worker's intel job. One list is downloaded once at a time.
 _LISTS: dict[str, tuple[datetime, Any]] = {}
+# When each list's downloads started being refused for their size, and that size.
+_REFUSED: dict[str, tuple[datetime, int]] = {}
+_KEY_LOCKS: dict[str, threading.Lock] = {}
 _LIST_TTL = timedelta(hours=6)
 _DAY = timedelta(days=1)
 _WEEK = timedelta(days=7)
@@ -316,6 +372,16 @@ def _size(value: Any) -> int:
 
 def _cached_list(key: str, build: Callable[[], Any], ttl: timedelta = _LIST_TTL) -> Any:
     hit = _LISTS.get(key)
+    if hit and datetime.now(UTC) - hit[0] < ttl:
+        return hit[1]
+    # The worker's warm, a `load_soon` thread and a lookup may all want the
+    # same list: the second waits for the first's copy instead of downloading.
+    with _KEY_LOCKS.setdefault(key, threading.Lock()):
+        return _refresh_list(key, build, ttl)
+
+
+def _refresh_list(key: str, build: Callable[[], Any], ttl: timedelta) -> Any:
+    hit = _LISTS.get(key)
     now = datetime.now(UTC)
     if hit and now - hit[0] < ttl:
         return hit[1]
@@ -328,11 +394,23 @@ def _cached_list(key: str, build: Callable[[], Any], ttl: timedelta = _LIST_TTL)
         _LISTS[key] = (now, hit[1])
         return hit[1]
     old, new = (_size(hit[1]) if hit else 0), _size(value)
-    if hit and old >= 10 and not old / 2 <= new <= old * 1.5:
-        LIST_WARNINGS[key] = f"kept the previous copy: it went from {old} to {new} entries"
-        _LISTS[key] = (now, hit[1])
-        return hit[1]
-    LIST_WARNINGS.pop(key, None)
+    # The cloud ranges are checked provider by provider (`cloud:aws`, ...), so
+    # a provider that answers again is not refused as growth.
+    if hit and key != "cloud" and old >= 10 and not old / 2 <= new <= old * 1.5:
+        since, first = _REFUSED.get(key, (now, new))
+        # Only the size that was refused first can wear the refusal down: a
+        # truncated download after two TTLs of growth starts the count again.
+        if not (first and first / 2 <= new <= first * 1.5):
+            since, first = now, new
+        _REFUSED[key] = (since, first)
+        if now - since < 2 * ttl:
+            LIST_WARNINGS[key] = f"kept the previous copy: it went from {old} to {new} entries"
+            _LISTS[key] = (now, hit[1])
+            return hit[1]
+        LIST_WARNINGS[key] = f"took the new copy: {old} to {new} entries since {since:%Y-%m-%d}"
+    else:
+        LIST_WARNINGS.pop(key, None)
+    _REFUSED.pop(key, None)
     _LISTS[key] = (now, value)
     return value
 
@@ -435,27 +513,28 @@ def _tor_exits() -> set[str]:
 
 def _cloud_networks() -> Ranges:
     """Published ranges of the clouds and CDNs: AWS, GCP, Cloudflare, Azure,
-    Oracle, Fastly, GitHub and DigitalOcean. Each is labelled provider and scope."""
-    nets = Ranges()
+    Oracle, Fastly, GitHub and DigitalOcean. Each is labelled provider and scope.
 
-    def aws(http: httpx.Client) -> None:
+    Each provider is a list of its own (`cloud:aws`, ...): one that fails keeps
+    its last copy, and one missing from the first load is taken when it answers.
+    """
+
+    def aws(http: httpx.Client) -> Iterator[tuple[str, str]]:
         body = _get(http, "https://ip-ranges.amazonaws.com/ip-ranges.json").json()
         for p in body.get("prefixes", []) + body.get("ipv6_prefixes", []):
-            nets.add(
-                p.get("ip_prefix") or p.get("ipv6_prefix") or "", f"AWS\t{p.get('region', '')}"
-            )
+            yield p.get("ip_prefix") or p.get("ipv6_prefix") or "", f"AWS\t{p.get('region', '')}"
 
-    def gcp(http: httpx.Client) -> None:
+    def gcp(http: httpx.Client) -> Iterator[tuple[str, str]]:
         body = _get(http, "https://www.gstatic.com/ipranges/cloud.json").json()
         for p in body.get("prefixes", []):
-            nets.add(p.get("ipv4Prefix") or p.get("ipv6Prefix") or "", f"GCP\t{p.get('scope', '')}")
+            yield p.get("ipv4Prefix") or p.get("ipv6Prefix") or "", f"GCP\t{p.get('scope', '')}"
 
-    def cloudflare(http: httpx.Client) -> None:
+    def cloudflare(http: httpx.Client) -> Iterator[tuple[str, str]]:
         for ver in ("v4", "v6"):
             for line in _get(http, f"https://www.cloudflare.com/ips-{ver}").text.splitlines():
-                nets.add(line, f"Cloudflare\t{ver}")
+                yield line, f"Cloudflare\t{ver}"
 
-    def azure(http: httpx.Client) -> None:
+    def azure(http: httpx.Client) -> Iterator[tuple[str, str]]:
         # The weekly file's name changes; the download page links the current one.
         page = _get(http, "https://www.microsoft.com/en-us/download/details.aspx?id=56519").text
         found = re.search(
@@ -471,20 +550,20 @@ def _cloud_networks() -> Ranges:
             if "." in name:  # a region's copy of a global tag
                 continue
             for cidr in (tag.get("properties") or {}).get("addressPrefixes", []):
-                nets.add(cidr, f"Azure\t{name}")
+                yield cidr, f"Azure\t{name}"
 
-    def oracle(http: httpx.Client) -> None:
+    def oracle(http: httpx.Client) -> Iterator[tuple[str, str]]:
         body = _get(http, "https://docs.oracle.com/en-us/iaas/tools/public_ip_ranges.json").json()
         for region in body.get("regions", []):
             for c in region.get("cidrs", []):
-                nets.add(c.get("cidr", ""), f"Oracle\t{region.get('region', '')}")
+                yield c.get("cidr", ""), f"Oracle\t{region.get('region', '')}"
 
-    def fastly(http: httpx.Client) -> None:
+    def fastly(http: httpx.Client) -> Iterator[tuple[str, str]]:
         body = _get(http, "https://api.fastly.com/public-ip-list").json()
         for cidr in body.get("addresses", []) + body.get("ipv6_addresses", []):
-            nets.add(cidr, "Fastly\tCDN")
+            yield cidr, "Fastly\tCDN"
 
-    def github(http: httpx.Client) -> None:
+    def github(http: httpx.Client) -> Iterator[tuple[str, str]]:
         body = _get(http, "https://api.github.com/meta").json()
         # `actions` is every Azure region's ranges, where GitHub's hosted runners
         # live; Azure's own tags name those better (an Entra sign-in is not CI).
@@ -492,20 +571,27 @@ def _cloud_networks() -> Ranges:
         for service, cidrs in body.items():
             if isinstance(cidrs, list) and service not in skip:
                 for cidr in cidrs:
-                    nets.add(str(cidr), f"GitHub\t{service}")
+                    yield str(cidr), f"GitHub\t{service}"
 
-    def digitalocean(http: httpx.Client) -> None:
+    def digitalocean(http: httpx.Client) -> Iterator[tuple[str, str]]:
         for row in csv.reader(
             _get(http, "https://digitalocean.com/geo/google.csv").text.splitlines()
         ):
             if row:
-                nets.add(row[0], f"DigitalOcean\t{row[1] if len(row) > 1 else ''}")
+                yield row[0], f"DigitalOcean\t{row[1] if len(row) > 1 else ''}"
 
+    nets = Ranges()
     with _client(LIST_TIMEOUT) as http:
         for provider in (aws, gcp, cloudflare, azure, oracle, fastly, github, digitalocean):
+            key = f"cloud:{provider.__name__}"
             # One provider being down must not blind the others.
-            with contextlib.suppress(Exception):
-                provider(http)
+            try:
+                rows = _cached_list(key, lambda p=provider: list(p(http)), _DAY)
+            except Exception as exc:
+                LIST_WARNINGS[key] = f"not loaded: {type(exc).__name__}: {exc}"[:300]
+                continue
+            for cidr, label in rows:
+                nets.add(cidr, label)
     return nets
 
 
@@ -733,14 +819,60 @@ def _listed(key: str) -> Any:
     return _cached_list(key, build, ttl)
 
 
-def known_benign(value: str, kind: str) -> str:
-    """The warninglist a value is on, or "".
+def loaded(key: str) -> Any:
+    """This process's copy of a list, or None: never a download."""
+    hit = _LISTS.get(key)
+    return hit[1] if hit else None
+
+
+_LOADING: dict[str, threading.Thread] = {}
+_LOADING_LOCK = threading.Lock()
+# When a list's last load beside a caller failed. It is not tried again, or
+# waited for, before `_RETRY` has passed: a blocked egress costs one wait.
+_FAILED: dict[str, datetime] = {}
+_RETRY = timedelta(minutes=15)
+
+
+def _load(key: str) -> None:
+    try:
+        _listed(key)
+    except Exception as exc:
+        _FAILED[key] = datetime.now(UTC)
+        LIST_WARNINGS[key] = f"not loaded: {type(exc).__name__}: {exc}"[:300]
+
+
+def load_soon(key: str, wait: float = 0.0) -> bool:
+    """Is the list in? If not, load it beside the caller, once at a time, and wait
+    at most `wait` seconds for it. `shoc serve` and `shoc mcp` start it at startup
+    and a check that finds the list missing starts it again; the worker warms its
+    own (RFC 0030). Callers start it only when the default feeds are on:
+    SHOC_INTEL_FEEDS=off reaches no host nobody configured."""
+    failed = _FAILED.get(key)
+    if key not in _LISTS and not (failed and datetime.now(UTC) - failed < _RETRY):
+        with _LOADING_LOCK:
+            thread = _LOADING.get(key)
+            if thread is None or not thread.is_alive():
+                thread = threading.Thread(
+                    target=_load, args=(key,), name=f"shoc-list-{key}", daemon=True
+                )
+                _LOADING[key] = thread
+                thread.start()
+        if wait:
+            thread.join(wait)
+    return key in _LISTS
+
+
+def known_benign(value: str, kind: str) -> str | None:
+    """The warninglist a value is on, "" when it is on none, or None when this
+    process does not have the lists yet and they would check this kind.
 
     Reads the lists only if this process has them already: it is called while
     reading a report or adding an indicator, which must not wait on a download.
     """
-    hit = _LISTS.get("warninglists")
-    return hit[1].get(value, kind) if hit else ""
+    benign = loaded("warninglists")
+    if benign is None:
+        return None if kind in ("ip", "domain", "sha256", "md5") else ""
+    return benign.get(value, kind)
 
 
 # -- sources ----------------------------------------------------------------
@@ -1001,7 +1133,7 @@ def disposable_email(value: str, kind: str) -> Observation:
 
 # -- sources that need an account (RFC 0030) ---------------------------------
 def _abuse_ch(http_secret: dict[str, Any]) -> httpx.Client:
-    client = _client()
+    client = _client(redirects=False)
     client.headers["Auth-Key"] = str(http_secret.get("auth_key") or "")
     return client
 
@@ -1134,7 +1266,7 @@ def malwarebazaar(value: str, kind: str, secret: dict[str, Any]) -> Observation:
 
 def ipapi_is(value: str, kind: str, secret: dict[str, Any]) -> Observation:
     """ipapi.is: VPN, proxy, Tor, datacenter or known abuser, and the AS behind it."""
-    with _client() as http:
+    with _client(redirects=False) as http:
         resp = http.get("https://api.ipapi.is/", params={"q": value, "key": secret.get("key", "")})
         resp.raise_for_status()
         body = resp.json()
@@ -1160,7 +1292,7 @@ def ipapi_is(value: str, kind: str, secret: dict[str, Any]) -> Observation:
 
 
 def abuseipdb(value: str, kind: str, secret: dict[str, Any]) -> Observation:
-    with _client() as http:
+    with _client(redirects=False) as http:
         resp = http.get(
             "https://api.abuseipdb.com/api/v2/check",
             params={"ipAddress": value, "maxAgeInDays": 90},
@@ -1185,7 +1317,7 @@ def abuseipdb(value: str, kind: str, secret: dict[str, Any]) -> Observation:
 
 
 def greynoise(value: str, kind: str, secret: dict[str, Any]) -> Observation:
-    with _client() as http:
+    with _client(redirects=False) as http:
         resp = http.get(
             f"https://api.greynoise.io/v3/community/{value}",
             headers={"key": str(secret.get("api_key") or "")},
@@ -1231,7 +1363,7 @@ def _ports(source: str, ports: list[Any], org: str) -> Observation:
 
 
 def shodan(value: str, kind: str, secret: dict[str, Any]) -> Observation:
-    with _client() as http:
+    with _client(redirects=False) as http:
         resp = http.get(
             f"https://api.shodan.io/shodan/host/{value}",
             params={"key": str(secret.get("api_key") or ""), "minify": "true"},
@@ -1244,7 +1376,7 @@ def shodan(value: str, kind: str, secret: dict[str, Any]) -> Observation:
 
 
 def netlas(value: str, kind: str, secret: dict[str, Any]) -> Observation:
-    with _client() as http:
+    with _client(redirects=False) as http:
         resp = http.get(
             f"https://app.netlas.io/api/host/{value}/",
             headers={"X-API-Key": str(secret.get("api_key") or "")},
@@ -1264,7 +1396,7 @@ def virustotal(value: str, kind: str, secret: dict[str, Any]) -> Observation:
     ident = (
         base64.urlsafe_b64encode(value.encode()).decode().rstrip("=") if kind == "url" else value
     )
-    with _client() as http:
+    with _client(redirects=False) as http:
         resp = http.get(
             f"https://www.virustotal.com/api/v3/{path}/{ident}",
             headers={"x-apikey": str(secret.get("api_key") or "")},
@@ -1294,7 +1426,7 @@ def urlscan(value: str, kind: str, secret: dict[str, Any]) -> Observation:
     """urlscan.io's earlier scans. Only searched, never scanned: a public scan publishes the URL."""
     clean = value.replace('"', "").replace("\\", "")
     query = f'page.url:"{clean}"' if kind == "url" else f"domain:{clean}"
-    with _client() as http:
+    with _client(redirects=False) as http:
         resp = http.get(
             "https://urlscan.io/api/v1/search/",
             params={"q": query, "size": 20},
@@ -1378,7 +1510,9 @@ SOURCES: dict[str, Source] = {
         # The registry IANA's bootstrap names for the TLD or block, else rdap.org.
         Source("rdap", ("ip", "domain", "url", "email"), ("data.iana.org", "rdap.org"), rdap),
         Source("reverse_dns", ("ip",), (), reverse_dns),
-        Source("resolve", ("domain", "url", "email"), (), resolve),
+        # A domain only: a URL's or a mailbox's host is context, and resolving
+        # it from here tells the attacker's nameserver we are looking (DET-6).
+        Source("resolve", ("domain",), (), resolve),
         # Downloaded lists: the value goes nowhere (RFC 0030).
         Source("asn", ("ip",), ("download.db-ip.com", "www.spamhaus.org"), asn, listed=True),
         Source(
@@ -1452,13 +1586,34 @@ SOURCES: dict[str, Source] = {
 LOCAL = ("local_iocs", "history")
 
 
+def _restricted(conn: Conn, tenant_id: str, value: str, kind: str) -> str:
+    """The TLP marking that keeps this value, or the host it hangs off, from
+    third parties, as the source that shared it set it (DET-6); else ""."""
+    from shoc.detect.report import RESTRICTED_TLP
+
+    row = fetch_one(
+        conn,
+        """SELECT tlp FROM shoc.iocs
+           WHERE tenant_id = %s AND value = ANY(%s) AND tlp = ANY(%s) LIMIT 1""",
+        (tenant_id, sorted({value.lower(), host_of(value, kind)}), list(RESTRICTED_TLP)),
+    )
+    return str(row["tlp"]) if row else ""
+
+
 def local_iocs(conn: Conn, tenant_id: str, value: str, kind: str) -> Observation:
     """Is it on a feed we pull? A URL is judged by itself: its host on a feed is
     context (`relation: host_of`), not the URL's verdict (DET-4). An email is
-    judged by its domain, which owns every mailbox under it."""
+    judged by its domain, which owns every mailbox under it.
+
+    Weighed as matching weighs it (D143): a value not found in its
+    report's text or held as prevalent weighs nothing, and a lead (below
+    `intel.LEAD_BELOW`) stays under "suspicious" on its own (DET-6, RSP-5)."""
+    from shoc.detect.intel import LEAD_BELOW
+
     rows = fetch_all(
         conn,
-        """SELECT value, source, confidence, severity, description, tags, first_seen
+        """SELECT value, source, confidence, severity, description, tags, first_seen,
+                  unverified OR 'prevalent' = ANY(tags) AS held
            FROM shoc.iocs
            WHERE tenant_id = %s AND value = ANY(%s)
              AND (expires_at IS NULL OR expires_at > now())
@@ -1480,14 +1635,28 @@ def local_iocs(conn: Conn, tenant_id: str, value: str, kind: str) -> Observation
         return Observation(
             source="local_iocs", verdict="informational", summary="not on any feed we pull"
         )
-    best = max(float(r["confidence"]) for r in rows)
+    if all(r["held"] for r in rows):
+        feeds = sorted({str(r["source"]) for r in rows})
+        return Observation(
+            source="local_iocs",
+            verdict="informational",
+            summary=f"listed but unverified or held as prevalent by {', '.join(feeds)}; "
+            "not matched",
+            data={"feeds": feeds, "held": True},
+        )
+    rows = [r for r in rows if not r["held"]]
     feeds = sorted({str(r["source"]) for r in rows})
+    best = max(float(r["confidence"]) for r in rows)
+    lead = best < LEAD_BELOW
     return Observation(
         source="local_iocs",
-        verdict="malicious",
-        weight=4.0 * best,
-        summary=f"on {len(feeds)} feed(s) we already pull: {', '.join(feeds)}",
+        verdict="suspicious" if lead else "malicious",
+        weight=1.0 if lead else 4.0 * best,
+        summary=f"a lead from {', '.join(feeds)}, not enough on its own"
+        if lead
+        else f"on {len(feeds)} feed(s) we already pull: {', '.join(feeds)}",
         data={
+            "lead": lead,
             "feeds": feeds,
             "confidence": best,
             "descriptions": [str(r["description"]) for r in rows][:3],
@@ -1495,16 +1664,54 @@ def local_iocs(conn: Conn, tenant_id: str, value: str, kind: str) -> Observation
     )
 
 
-def history(store: Any, tenant_id: str, value: str, kind: str) -> Observation:
-    """Has this ever been in our own logs? The most important source we have."""
-    from shoc.capabilities.events import EventQuery, build_query
+def seen_query(
+    tenant_id: str, value: str, kind: str, since: str = "-90d", limit: int = 500
+) -> tuple[str, dict[str, Any], int]:
+    """The events that carry a value where its type is written, newest first.
 
-    query = EventQuery(since="-90d", limit=500)
-    if kind == "ip":
-        query.src_ip = value
-    else:
-        query.contains = host_of(value, kind)
-    sql, params, limit = build_query(query, tenant_id)
+    The columns the matcher compares the type with (`intel.MATCH_COLUMNS`); an
+    email as the actor, or its host in the domain columns; a hunt's `actor` as
+    the actor; a hunt's `src_ip` as the source only. A value of no type the
+    events hold is looked for in the message and the operation.
+    """
+    from shoc.capabilities.events import _SELECT, EventFilter, build_where
+    from shoc.detect.intel import MATCH_COLUMNS, normalise
+    from shoc.store import ocsf as layout
+
+    columns = {
+        "email": ("actor_user_name",),
+        "actor": ("actor_user_name",),
+        "src_ip": ("src_endpoint_ip",),
+    }.get(kind) or MATCH_COLUMNS.get(kind, ())
+    where, params = build_where(
+        EventFilter(since=since, contains="" if columns else value), tenant_id
+    )
+    if columns:
+        # An address as events store it: a long IPv6 form finds the short one.
+        ip = normalise("ip", value) if kind in ("ip", "src_ip") else ""
+        params["indicator"] = ip or value.strip().lower()
+        match = [f"LOWER({c}) = :indicator" for c in columns]
+        if kind == "email":
+            # A mailbox is a user, and its host is a domain the company may
+            # have resolved or mailed: a phishing sender's domain is found.
+            params["mail_host"] = host_of(value, "email")
+            match += [f"LOWER({c}) = :mail_host" for c in MATCH_COLUMNS["domain"]]
+        where.append("(" + " OR ".join(match) + ")")
+    limit = max(1, min(limit, 1000))
+    sql = (
+        f"SELECT {', '.join(_SELECT)} FROM {layout.EVENTS_TABLE} "
+        f"WHERE {' AND '.join(where)} ORDER BY time DESC LIMIT {limit}"
+    )
+    return sql, params, limit
+
+
+def history(store: Any, tenant_id: str, value: str, kind: str) -> Observation:
+    """Has this ever been in our own logs? The most important source we have.
+
+    Searched where the matcher looks, so an address the company called out to
+    or a domain it resolved is found, not only a source address (DET-6).
+    """
+    sql, params, limit = seen_query(tenant_id, value, kind)
     rows = store.query(sql, params, limit).rows
     if not rows:
         return Observation(
@@ -1597,7 +1804,16 @@ def research(
         out.summary = f"'{value}' is not an indicator type we recognise."
         return out
 
-    out.internal = is_internal(value, kind)
+    from shoc.detect.intel import ours
+
+    # Internal, or the company's own (its operator's and automation's domains,
+    # the addresses shoc calls out from): only our own data is asked.
+    out.internal = ours(conn, tenant_id)(value, kind)
+    # What a third party is asked about, and what its answers are cached under.
+    sent = "" if out.internal else _shareable(value, kind)
+    # A value a source shared under TLP:AMBER or RED is not sent out either:
+    # only downloaded lists answer for it, and that answer is not cached.
+    restricted = "" if out.internal else _restricted(conn, tenant_id, value, kind)
     observations: list[Observation] = []
 
     # Our own data first: it is free, it is private, and it is the most relevant.
@@ -1609,7 +1825,7 @@ def research(
     ):
         if only and name not in only:
             continue
-        if name == "history" and kind not in ("ip", "domain", "url", "email"):
+        if name == "history" and kind not in ("ip", "domain", "url", "sha256", "email"):
             continue
         try:
             observations.append(fn())
@@ -1620,7 +1836,8 @@ def research(
 
     # Third parties, only for values it is safe to disclose. Their answers are
     # what the cache holds; a lookup limited to some sources is not cached.
-    remote = None if refresh or only else _from_cache(conn, tenant_id, value, kind)
+    fresh = refresh or only or out.internal
+    remote = None if fresh else _from_cache(conn, tenant_id, sent, kind)
     out.cached = remote is not None
     if remote is not None:
         observations += remote
@@ -1630,6 +1847,8 @@ def research(
         chosen = []
         for source in SOURCES.values():
             if kind not in source.kinds or (only and source.name not in only):
+                continue
+            if restricted and not source.listed:
                 continue
             if source.key:
                 if source.key not in keys:
@@ -1642,7 +1861,7 @@ def research(
         if chosen:
             with ThreadPoolExecutor(max_workers=min(8, len(chosen))) as pool:
                 futures = {
-                    pool.submit(_run_source, s, value, kind, keys[s.key][0] if s.key else None): s
+                    pool.submit(_run_source, s, sent, kind, keys[s.key][0] if s.key else None): s
                     for s in chosen
                 }
                 deadline = budget_seconds - (time.monotonic() - started)
@@ -1665,14 +1884,29 @@ def research(
             if wait and SOURCES.get(obs.source) and SOURCES[obs.source].key:
                 _pause(conn, tenant_id, SOURCES[obs.source].key, int(wait))
         observations += remote
-        if not only:
-            _to_cache(conn, tenant_id, value, kind, remote)
+        # A cache hit asks no source, so answers are kept only when every
+        # source asked answered: one that failed is asked again next time. One
+        # refused for its quota would be refused again until the quota resets.
+        asked = {s.name for s in chosen}
+        if not (only or restricted) and all(o.ok for o in remote if o.source in asked):
+            _to_cache(conn, tenant_id, sent, kind, remote)
+        if restricted:
+            observations.append(
+                Observation(
+                    source="disclosure_guard",
+                    verdict="informational",
+                    summary=f"{value} was shared as TLP:{restricted.upper()}, so it was not "
+                    "sent to any third party; only downloaded lists were asked",
+                    data={"tlp": restricted},
+                )
+            )
     else:
         observations.append(
             Observation(
                 source="disclosure_guard",
                 verdict="informational",
-                summary=f"{value} is internal, so it was not sent to any third party",
+                summary=f"{value} is internal or the company's own, so it was not sent to any "
+                "third party",
                 data={"internal": True},
             )
         )
@@ -1710,9 +1944,22 @@ def _run_source(
                 error="rate limited (429); paused",
                 data={"retry_after": int(after) if after.isdigit() else 3600},
             )
-        return Observation(source=source.name, ok=False, error=f"{type(exc).__name__}: {exc}")
+        return Observation(source=source.name, ok=False, error=_failure(exc))
     except Exception as exc:
-        return Observation(source=source.name, ok=False, error=f"{type(exc).__name__}: {exc}")
+        return Observation(source=source.name, ok=False, error=_failure(exc))
+
+
+def _failure(exc: Exception) -> str:
+    """Why a call failed, without its URL: Shodan and ipapi.is take their key in
+    the query string, and httpx puts the whole URL in its message."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        return f"HTTP {exc.response.status_code} from {exc.request.url.host}"
+    if isinstance(exc, httpx.RequestError):
+        try:
+            return f"{type(exc).__name__} from {exc.request.url.host}"
+        except RuntimeError:  # raised before a request was built
+            return type(exc).__name__
+    return f"{type(exc).__name__}: {exc}"
 
 
 def _keys(
@@ -1826,6 +2073,11 @@ def _from_cache(conn: Conn, tenant_id: str, value: str, kind: str) -> list[Obser
 def _to_cache(
     conn: Conn, tenant_id: str, value: str, kind: str, observations: list[Observation]
 ) -> None:
+    # Only answers: an error's text is never kept (`research` skips the write
+    # when a source asked failed, so the next lookup asks it again).
+    observations = [o for o in observations if o.ok]
+    if not observations:
+        return
     verdict, total, confidence = score(observations)
     payload = {"observations": [asdict(o) for o in observations]}
     with contextlib.suppress(Exception):

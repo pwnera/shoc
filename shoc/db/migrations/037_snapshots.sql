@@ -1,4 +1,4 @@
--- 040 configuration snapshots (D49, AGT-8), and what the survey and Ops keep (D47).
+-- 037 configuration snapshots (D49, AGT-8), and what the survey and Ops keep (D47).
 -- One row per thing a source's own API says exists, replaced on every pass, so
 -- a user deleted at the vendor is gone after the next one.
 CREATE TABLE IF NOT EXISTS shoc.snapshots (

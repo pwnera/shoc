@@ -18,7 +18,9 @@ two JSON columns:
   visible there before anyone maps it.
 
 The column list is part of the [public contract](contract.md): adding a column is
-a minor release, removing one is a major.
+a minor release, removing one is a major. Existing tenants and the merge gates'
+scratch stores get a new column at the next `shoc migrate` or the next gate
+run.
 
 | OCSF attribute | Column |
 | --- | --- |
@@ -50,7 +52,20 @@ a minor release, removing one is a major.
 
 `tenant_id`, `event_uid` and `ingested_at` complete the row. A rule names a field
 by its OCSF path (`actor.user.name`), its column name, or a `raw.` / `unmapped.`
-path; all three resolve to the same column.
+path; all three resolve to the same column. Equality, `contains`,
+`startswith`, `endswith` and `fieldref` ignore case. `re`, and the keys a
+correlation groups on (a sequence's `by`, `first_seen`, `group_by`), compare
+text as stored, case included (RFC 0023).
+
+`actor_session_uid` holds a sign-in session where the source has one. Entra's
+comes from `sessionId` only; its `correlationId` is a request or flow id and
+stays in `unmapped` and `raw`. Azure Activity's `correlationId` is not a
+session id either and stays in `raw`. Where a mapping types the column as a
+`Session UID` observable (Okta, Entra, Microsoft 365 from `SessionId`,
+`AADSessionId` or `UserSessionId`, SentinelOne Cloud Funnel from
+`targetLogonId`), a case names it as a `session:` entity, and so do the
+timeline, the world graph, the Surveyor's posture and the review's principal
+count.
 
 `resource` and `device` are singular here, where OCSF has `resources[]` on some
 classes. A mapping picks the resource the event is about. Other targets stay in

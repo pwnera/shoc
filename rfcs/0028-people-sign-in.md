@@ -100,6 +100,10 @@ the authenticator.
 | `SHOC_MAIL_FROM` | The `From` address. Defaults to the SMTP user when that is an address. |
 | `SHOC_TRUSTED_PROXIES` | Comma-separated networks whose `X-Forwarded-For` is believed when sign-in attempts are counted per client address. Defaults to loopback and `172.16.0.0/12`, where Docker puts its networks. |
 
+> Amended on 2026-10-12 (D167). `shoc/mail.py` carries sign-in mail and the
+> page fallback: a page the pager did not take is emailed to every enabled
+> admin and operator who has signed in at least once.
+
 ### Tenant
 
 A request that is not signed in yet acts on the tenant its `X-Shoc-Tenant`
@@ -184,7 +188,9 @@ more than one session cookie is refused.
 
 `authenticate` reads a bearer token first, as today, then the cookie. Either is
 looked up in `api_tokens`; a session row takes its role from its account, so a
-role change applies on the next request, and a disabled account signs out. The
+role change applies on the next request, and a disabled account signs out. A
+role change also ends the role tokens issued to the email under another role,
+and disabling erases the password and the authenticator (D189, 2026-10-12). The
 caller is a human with the account's role and the email as its id, so the audit
 log names the person. A cookie request that is a `POST` passes the same
 content-type and `Origin` check as the sign-in routes. A cookie that names no
@@ -247,7 +253,7 @@ seconds and ends when the session does.
 | --- | --- | --- |
 | `user.invite {email, role}` | `users:write` | L2, human-only, audited. `role` defaults to `reader`. In an SSO domain it creates the account with no link. Otherwise it needs `SHOC_PUBLIC_URL`, and creates the account and an enrolling link valid 7 days, emailed when mail is configured and returned once when it is not or the mail cannot be sent. |
 | `user.reset {email}` | `users:write` | L2. An enrolling link valid 1 day, delivered like an invitation, that replaces the password and the authenticator. Needs `SHOC_PUBLIC_URL`. Refused in an SSO domain. |
-| `user.update {email, role, disabled}` | `users:write` | L2. Empty fields are left as they are. Disabling ends the person's sessions, links and the role tokens issued to their email. Refuses to leave no active admin. |
+| `user.update {email, role, disabled}` | `users:write` | L2. Empty fields are left as they are. Disabling ends the person's sessions, links and the role tokens issued to their email, and clears the password and authenticator, so re-enabling a password account needs `user.reset`. A role change revokes the role tokens issued to the email under any other role (D189). Refuses to leave no active admin. |
 | `user.list {disabled}` | `users:read` | L0, human-only. |
 | `user.me` | `meta:read` | L0. The caller's id, kind, role, tenant and, for an account, its email. |
 | `sso.show` | `sso:read` | L0, human-only. |

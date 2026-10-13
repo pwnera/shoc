@@ -27,7 +27,11 @@ them is waiting:
   propose something reversible it can do by itself.
 - **What is left goes in the weekly**, which is the thing the operator reads
   when they do come back. A case below `high` that passes its deadline twice
-  is closed with the reason written into it, rather than paged.
+  is closed with the reason written into it, rather than paged. One the crew
+  tried and never read is held instead, and so is one while the model fails.
+  Once the model has been down long enough for the Manager to page the outage,
+  that page stands for every case, and the high ones are held too (ai-4).
+  Severity here is never below the case's worst finding (ai-3).
 
 Nothing here raises an action's autonomy or approves anything. An abandoned
 action is rejected, not run, and whether a page goes out is the Manager's
@@ -42,7 +46,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from shoc.cases import engine
-from shoc.db.pool import Conn, execute, fetch_all
+from shoc.db.pool import Conn, execute, fetch_all, fetch_one
 
 # How long a proposed action waits for a person before this module resolves it.
 # Four hours is a working morning: long enough that somebody who does check the
@@ -73,12 +77,18 @@ class Chased:
     nudged: list[str] = field(default_factory=list)
     fell_back: list[str] = field(default_factory=list)
     closed: list[str] = field(default_factory=list)
+    # Past two deadlines, and neither closed nor paged: the crew never read them.
+    held: list[str] = field(default_factory=list)
 
     @property
     def summary(self) -> str:
-        if not (self.paged or self.abandoned or self.nudged or self.fell_back or self.closed):
+        if not any(
+            (self.paged, self.abandoned, self.nudged, self.fell_back, self.closed, self.held)
+        ):
             return "unattended: nothing has been waiting long enough to chase"
         parts = []
+        if self.held:
+            parts.append(f"held {len(self.held)} case(s) the crew could not read")
         if self.fell_back:
             parts.append(f"fell back on {len(self.fell_back)} unanswered action(s)")
         if self.closed:
@@ -110,8 +120,9 @@ def _undecided_actions(conn: Conn, tenant_id: str, config: Any, out: Chased) -> 
     """Actions that have waited past their deadline for an approval."""
     rows = fetch_all(
         conn,
-        """SELECT a.action_uid, a.type, a.target, a.case_uid, a.rationale, a.chased_at,
-                  a.params, a.fallback, a.blast_radius, a.grounded, c.severity, c.verdict
+        f"""SELECT a.action_uid, a.type, a.target, a.case_uid, a.rationale, a.chased_at,
+                  a.params, a.fallback, a.blast_radius, a.grounded, c.verdict,
+                  {engine.FLOORED} AS severity
            FROM shoc.actions a
            LEFT JOIN shoc.cases c
              ON c.tenant_id = a.tenant_id AND c.case_uid = a.case_uid
@@ -136,7 +147,9 @@ def _undecided_actions(conn: Conn, tenant_id: str, config: Any, out: Chased) -> 
                 conn,
                 tenant_id,
                 row,
-                (f"somebody was paged {DECIDE_WITHIN_HOURS}h ago and nobody decided"),
+                f"nobody decided within {DECIDE_WITHIN_HOURS}h, and no page could go out"
+                if _page_failed(conn, tenant_id, str(row["case_uid"] or ""))
+                else f"somebody was paged {DECIDE_WITHIN_HOURS}h ago and nobody decided",
             )
             out.abandoned.append(action_uid)
             continue
@@ -146,14 +159,19 @@ def _undecided_actions(conn: Conn, tenant_id: str, config: Any, out: Chased) -> 
             (tenant_id, action_uid),
         )
         if _worth_paging(severity):
-            if _page(
+            paged = _page(
                 conn,
                 tenant_id,
                 str(row["case_uid"] or ""),
                 f"{row['type']} on {row['target']} has been waiting "
                 f"{DECIDE_WITHIN_HOURS}h for your approval on a {severity} case.",
                 config,
-            ):
+            )
+            # Still being retried: undecided, so the action stays proposed and
+            # chased, and the next pass decides once the retries have settled.
+            if paged is None:
+                continue
+            if paged:
                 out.paged.append(action_uid)
                 continue
             _abandon(
@@ -256,10 +274,13 @@ def _stalled_cases(conn: Conn, tenant_id: str, config: Any, out: Chased) -> None
     running its window, or that was paged within the day, used to hold one of
     the 25 places on every pass while newer stalled cases waited behind it.
     """
+    from shoc.agents import ops
+
     rows = fetch_all(
         conn,
-        """SELECT * FROM (
-             SELECT case_uid, severity, verdict, entity_key, deadline, opened_at,
+        f"""SELECT * FROM (
+             SELECT case_uid, s.severity, verdict, entity_key, deadline, opened_at,
+                    tokens_used, crew_attempts,
                     (SELECT max(m.created_at) FROM shoc.openspace_messages m
                       WHERE m.tenant_id = c.tenant_id AND m.case_uid = c.case_uid
                         AND m.agent = 'Ops' AND m.kind = 'inject'
@@ -267,11 +288,13 @@ def _stalled_cases(conn: Conn, tenant_id: str, config: Any, out: Chased) -> None
                     ) AS nudged_at,
                     now() AS now
              FROM shoc.cases c,
+                  -- Never below its worst finding, whatever the case was lowered to (ai-3).
+                  LATERAL (SELECT coalesce({engine.FLOORED}, 'medium') AS severity) s,
                   LATERAL (SELECT CASE WHEN c.verdict = 'needs_human'
-                            THEN least(%s, (%s::jsonb ->> coalesce(c.severity, 'medium'))::int)
-                            ELSE (%s::jsonb ->> coalesce(c.severity, 'medium'))::int
+                            THEN least(%s, (%s::jsonb ->> s.severity)::int)
+                            ELSE (%s::jsonb ->> s.severity)::int
                           END * interval '1 hour' AS deadline) d
-             WHERE tenant_id = %s AND state <> 'closed'
+             WHERE c.tenant_id = %s AND c.state <> 'closed'
                AND coalesce(worked_at, opened_at) <= now() - deadline
                AND NOT EXISTS (
                    SELECT 1 FROM shoc.notices n
@@ -292,6 +315,12 @@ def _stalled_cases(conn: Conn, tenant_id: str, config: Any, out: Chased) -> None
             PAGE_AT_MOST_EVERY_HOURS,
         ),
     )
+    # A model that answers nothing reads no case, and no case is closed for a
+    # crew that could not speak. Once the outage is long enough for the Manager
+    # to page it (`manager.coverage`, ai-4), that one page stands for every
+    # case; before then a high or critical case is still paged on its own.
+    dark = ops.model_down(conn, tenant_id) if rows else None
+    failing = bool(rows and ops.provider_failing(conn, tenant_id))
     for row in rows:
         case_uid = str(row["case_uid"])
         severity = str(row["severity"] or "medium")
@@ -305,6 +334,10 @@ def _stalled_cases(conn: Conn, tenant_id: str, config: Any, out: Chased) -> None
         # A nudge the crew has not answered yet is not repeated (the query
         # leaves those out): one case collected 37 copies while the crew never
         # came back to read the first. A second expiry is an outcome.
+        unread = int(row["tokens_used"] or 0) == 0 and int(row["crew_attempts"] or 0) > 0
+        if dark is not None or ((unread or failing) and not _worth_paging(severity)):
+            out.held.append(case_uid)
+            continue
         if not _worth_paging(severity):
             _close(conn, tenant_id, case_uid, severity, hours)
             out.closed.append(case_uid)
@@ -367,12 +400,14 @@ def _nudge(verdict: str, severity: str, hours: int) -> str:
     )
 
 
-def _page(conn: Conn, tenant_id: str, case_uid: str, why: str, config: Any) -> bool:
+def _page(conn: Conn, tenant_id: str, case_uid: str, why: str, config: Any) -> bool | None:
     """Ask the Manager to wake somebody, and say whether anybody was.
 
     Delivered here rather than queued, because the answer decides what happens
     to the action: a page that went out, or one already sent for this incident,
-    buys a second window; one that could not go out does not (RFC 0015).
+    buys a second window; one that could not go out does not (RFC 0015). None
+    is not decided yet: the pager failed on the way and the Manager tries again
+    (`manager.RETRY_MINUTES`).
     """
     from shoc.agents import manager
 
@@ -387,12 +422,28 @@ def _page(conn: Conn, tenant_id: str, case_uid: str, why: str, config: Any) -> b
         deliver=False,
     )
     manager.deliver(conn, tenant_id, config)
-    row = fetch_all(
+    row = fetch_one(
         conn,
-        "SELECT outcome FROM shoc.notices WHERE tenant_id = %s AND notice_uid = %s",
+        """SELECT outcome, delivered_at, retry_at FROM shoc.notices
+           WHERE tenant_id = %s AND notice_uid = %s""",
         (tenant_id, notice),
     )
-    return bool(row) and row[0]["outcome"] in ("paged", "merged")
+    if row and row["delivered_at"] is None and row["retry_at"] is not None:
+        return None
+    return bool(row) and row["outcome"] in ("paged", "merged")
+
+
+def _page_failed(conn: Conn, tenant_id: str, case_uid: str) -> bool:
+    """Whether the case's last deadline page settled as one nobody got."""
+    row = fetch_one(
+        conn,
+        """SELECT outcome FROM shoc.notices
+           WHERE tenant_id = %s AND case_uid = %s AND source = 'unattended'
+             AND condition = 'deadline_expired'
+           ORDER BY created_at DESC LIMIT 1""",
+        (tenant_id, case_uid),
+    )
+    return bool(row) and row["outcome"] == "failed"
 
 
 def _say(conn: Conn, tenant_id: str, case_uid: str, body: str) -> None:

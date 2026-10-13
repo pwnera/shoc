@@ -1,6 +1,7 @@
 /**
  * What kind of thing a value is, typed precisely: a URL is not a domain, a
- * domain is not an IP, an Okta session id is not an AWS key. Entity chips, the
+ * domain is not an IP, an Okta session id is not an AWS key (the kernel keys
+ * an Okta or Entra sign-in session `session:<id>`). Entity chips, the
  * palette's Entity row, EntityDialog and the graphs all read their kind here.
  * A `kind:` prefix (`user:alice`, the kernel's entity keys) wins over patterns.
  */
@@ -14,6 +15,7 @@ export type EntityKind =
   | "domain"
   | "hash"
   | "key"
+  | "session"
   | "resource"
   | "cve"
   | "user"
@@ -81,6 +83,7 @@ const PREFIXES: EntityKind[] = [
   "domain",
   "hash",
   "key",
+  "session",
   "resource",
   "cve",
   "user",
@@ -136,6 +139,7 @@ export function intelType(entity: Entity): string {
 const FIELD: Partial<Record<EntityKind, string>> = {
   user: "actor.user.name",
   key: "actor.session.uid",
+  session: "actor.session.uid",
   ip: "src_endpoint.ip",
   resource: "resource.uid",
   account: "cloud.account.uid",

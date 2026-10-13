@@ -76,6 +76,24 @@ def test_a_non_http_webhook_is_refused(ctx, config, clean):
         call("stream.subscribe", ctx, {"url": "file:///etc/passwd"})
 
 
+def test_plain_http_is_refused_to_a_public_host_only(ctx, config, clean):
+    """Deliveries carry findings and case titles; only a receiver inside the network gets http."""
+    for url in ("http://hooks.example.com/shoc", "http://192.0.2.10/hook"):
+        with pytest.raises(ValidationError, match="must be https"):
+            call("stream.subscribe", ctx, {"url": url})
+    for url in (
+        "http://n8n:5678/hook",
+        "http://10.0.0.5/hook",
+        "http://soar.corp/hook",
+        "http://n8n.ns.svc:5678/hook",
+        "http://app.localhost/hook",
+    ):
+        assert call("stream.subscribe", ctx, {"url": url}).data.webhook_id
+    assert call("stream.subscribe", ctx, {"url": "https://hooks.example.com/shoc"}).data.secret
+    with pytest.raises(ValidationError, match="must name a host"):
+        call("stream.subscribe", ctx, {"url": "http://[::1/hook"})
+
+
 def test_signatures_round_trip_and_reject_tampering():
     body = json.dumps({"events": [{"type": "case.opened"}]}).encode()
     signature = sign("s3cret", "1790000000", body)

@@ -1,9 +1,9 @@
 /**
  * The shapes shoc returns.
  *
- * These mirror the capability output schemas in `contract/v1.json`. They are
- * hand-written on purpose: the console should break loudly at build time when
- * the contract changes, not silently at runtime.
+ * These mirror the capability output schemas in `contract/v1.json`, by hand:
+ * tsc cannot see the contract. tests/contract.test.ts holds the top-level
+ * fields of the shapes the console reads most to it; the rest are kept by hand.
  */
 
 export type Severity = "critical" | "high" | "medium" | "low" | "informational";
@@ -67,6 +67,7 @@ export type Finding = {
   event_count: number;
   event_uids: string[];
   attack: string[];
+  /** `finding.list` keeps kind, indicator, sentinel, own and intake; `sample` and `group` come with `finding.get`. */
   evidence: Record<string, unknown>;
   /** Absent from `finding.list` and `finding.get` today; the Sentinel's decision carries it (section 7 item 22). */
   case_uid?: string | null;
@@ -194,6 +195,12 @@ export type SourceHealth = {
   stale: boolean;
   error: string | null;
   events_seen: number;
+  /** The last pull read some streams and not others; `error` names the ones refused. */
+  partial?: boolean;
+  /** Nothing polls it: only the vendor's pushes keep it fresh. */
+  pushed?: boolean;
+  /** A pushed source with nothing to send lately, which is not an outage. */
+  quiet?: boolean;
 };
 
 export type RuleHealth = {
@@ -233,7 +240,8 @@ export type SystemHealth = {
     detail?: string;
   };
   sources: SourceHealth[];
-  rules: { tracked: number; failing: number; fires: number };
+  /** `firings` is every rule firing summed, not a count of rules. */
+  rules: { tracked: number; failing: number; firings: number };
   jobs: {
     pending: number;
     running: number;
@@ -242,7 +250,16 @@ export type SystemHealth = {
     /** Schedules more than an hour late: no worker is ticking. */
     overdue_schedules?: string[];
   };
+  /** `high` leaves out shoc's own (`self`) and suppressed findings. */
   findings: { total: number; open: number; high: number };
+  /** How shoc reaches a person; none true makes `ok` false. */
+  reachable?: { pager: boolean; slack: boolean; mail: boolean; webhook: boolean };
+  /** Postgres' size, and its share of SHOC_DISK_BUDGET_GB (0 with no budget). */
+  disk?: { bytes: number; budget_gb: number; used: number };
+  /** Whether SHOC_HEARTBEAT_URL is set; unset is a notice, not a fault. */
+  heartbeat?: boolean;
+  /** Migrations the database has and this release does not ship (after a rollback). */
+  schema_ahead?: string[];
 };
 
 export type FailedJob = { kind: string; error: string | null; jobs: number; last_at: string };
@@ -793,6 +810,8 @@ export type HuntReadiness = {
   ready_at: string | null;
   sources: string[];
   accounts: string[];
+  /** Accounts of a ready pack still learning, left out of its runs, by the day each is ready (YYYY-MM-DD). Untyped in the contract. */
+  learning_accounts?: Record<string, string>;
   title?: string;
   product?: string;
   attack?: string[];
@@ -985,6 +1004,8 @@ export type AuditRow = {
   capability: string;
   error: string | null;
   hash: string;
+  /** A short, masked summary of what the call was about (migration 058). */
+  subject?: string | null;
 };
 
 export type CapabilityDoc = {
@@ -1016,15 +1037,21 @@ export type JsonSchema = {
 };
 
 /** The parts of report.get's body the console draws. Every part is optional: shift, weekly and exec differ. */
-/** A notice the Manager held back instead of paging, as `report.get` lists them (100 at most). */
+/**
+ * Notices the Manager held back instead of paging, as `report.get` lists them
+ * (100 groups at most): one row per source, kind and group, its latest body
+ * cut at 300 characters, and how many notices it stands for.
+ */
 export type HeldNotice = {
   notice_uid: string;
   source: string;
   kind: string;
+  group_key: string;
   severity: Severity | string;
   case_uid: string | null;
   body: string;
   created_at: string;
+  count: number;
 };
 
 /**
@@ -1086,6 +1113,8 @@ export type PolicyView = {
   action_params: Record<string, { required: string[]; summary: string; reversible: boolean }>;
   guards?: Record<string, unknown>;
   principals?: Record<string, string>;
+  /** Where `defaults.dry_run`, the dry run in force, comes from: SHOC_DRY_RUN or the policy file. */
+  dry_run_from?: "env" | "policy";
 };
 
 /** One crew role as `lib/crew.ts` draws it. */

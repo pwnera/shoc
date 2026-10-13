@@ -68,3 +68,40 @@ def test_every_probe_names_a_role_the_harness_can_drive():
     )
     ids = [f"{role}/{p['id']}" for role, p in probes]
     assert len(ids) == len(set(ids))
+
+
+@pytest.mark.parametrize(
+    ("tuples", "wrong"),
+    [
+        ([{"verdict": "inconclusive"}], []),
+        ([], ["okta_first_login_country: gap, expected suspicious"]),
+    ],
+)
+def test_without_a_model_only_a_gap_left_for_triage_passes(monkeypatch, tuples, wrong):
+    """A stale source or a pack whose query raised is a gap with no tuples (DET-8)."""
+    from types import SimpleNamespace
+
+    import evals.run as harness
+    from shoc.agents import hunter
+    from shoc.config import Config
+    from shoc.db import pool
+
+    gap = hunter.Run("R1", "okta_first_login_country", outcome="gap", tuples=tuples)
+    monkeypatch.setattr(hunter, "run_pack", lambda *a, **k: gap)
+    monkeypatch.setattr(pool, "fetch_all", lambda *a, **k: [])
+    ctx = SimpleNamespace(config=Config(), db=None, store=None, tenant_id="t")
+    expected = {"expected_hunts": {"okta_first_login_country": "suspicious"}}
+    assert harness._hunts(ctx, expected) == ({"okta_first_login_country": "gap"}, wrong)
+
+
+def test_the_verdict_is_scored_on_the_case_the_expected_rules_opened():
+    """A neighbour case, however confident, is not the one the scenario is about."""
+    from evals.run import scored_case
+
+    worked = [
+        {"case_uid": "C-attack", "verdict": "malicious", "confidence": 0.7},
+        {"case_uid": "C-noise", "verdict": "benign_expected", "confidence": 0.95},
+    ]
+    assert scored_case(worked, {"C-attack"}) == worked[0]
+    assert scored_case(worked, set()) == worked[1], "else the most confident"
+    assert scored_case([], set()) is None

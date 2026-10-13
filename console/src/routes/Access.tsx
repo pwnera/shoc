@@ -1,8 +1,8 @@
 /**
  * Access: who signs in or holds a key, what each may call, and who called
- * what? The strip reads the audit chain (intact or broken), how many
- * capabilities need a person, and how many rows the chain verified (the Audit
- * pager leaves the total to it). Tabs split the people who sign in (RFC 0028),
+ * what? The strip reads how many capabilities need a person and, on the Audit
+ * tab only, the audit chain (intact or broken) and how many rows it verified
+ * (the Audit pager leaves the total to it). Tabs split the people who sign in (RFC 0028),
  * the live tokens, the registry and the audit log; the tab, each tab's filters and
  * an open capability (`?cap=&view=`) live in the URL. Changing tabs drops the
  * last tab's filters, and each tab keeps its own: Capabilities filters on who
@@ -42,7 +42,10 @@ export function Access() {
   const registry = useCapabilities();
   const users = useUsers();
   const tokens = useTokens();
-  const audit = useAudit({ limit: 200 });
+  // The chain is walked on the Audit tab only (the same query as the tab's own
+  // list); elsewhere the strip's L2 count and the dialog's calls only need rows.
+  const onAudit = tab === "audit";
+  const audit = useAudit(onAudit ? { limit: 200 } : { limit: 200, verify: false });
 
   const capabilities = registry.data?.capabilities ?? [];
   // A failed refresh keeps the strip's last answer, as of its time.
@@ -83,12 +86,13 @@ export function Access() {
         strip={
           <Strip
             state={
-              audit.data
+              audit.data?.checked
                 ? audit.data.chain_ok
                   ? { tone: "good", word: "Intact" }
                   : { tone: "bad", word: "Broken" }
                 : undefined
             }
+            stateless={!onAudit}
             loading={audit.isPending}
             error={audit.isLoadingError ? audit.error : undefined}
             onRetry={() => void audit.refetch()}
@@ -103,7 +107,7 @@ export function Access() {
                 onClick: () =>
                   set(tab === "capabilities" && autonomy === "L2" ? { autonomy: null } : { ...drop, tab: "capabilities", autonomy: "L2" }),
               },
-              { label: "verified", value: audit.data?.rows_verified, to: "?tab=audit" },
+              ...(onAudit ? [{ label: "verified", value: audit.data?.checked ? audit.data.rows_verified : null }] : []),
             ]}
           />
         }

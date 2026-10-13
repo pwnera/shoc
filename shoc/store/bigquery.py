@@ -1,24 +1,26 @@
 """Google BigQuery event store (STO-6).
 
 Dataset per tenant, the same OCSF layout as every other backend, partitioned
-by day, and the warehouse-native load path: a load job writes the NDJSON batch
-to a staging table, one insert-only MERGE adds the events the table lacks, and
-the staging table is dropped. It talks to the REST API with `httpx` and signs
-in as a service account through `googleauth`, so it needs no Google SDK.
+by the day an event was loaded, and the warehouse-native load path: a load job
+writes the NDJSON batch to a staging table, one insert-only MERGE adds the
+events the table lacks, and the staging table is dropped. It talks to the REST
+API with `httpx` and signs in as a service account through `googleauth`, so it
+needs no Google SDK.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import os
 import time
+import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import httpx
 
+from shoc.config import Config
 from shoc.errors import ConfigError, StoreError
 from shoc.ingest.batch import read_unique
 from shoc.ingest.connectors import googleauth
@@ -58,6 +60,8 @@ class BigQueryStore:
         dataset: str,
         location: str = "US",
         reader: str = "",
+        statement_timeout_seconds: int = 120,
+        max_bytes_billed: int | None = None,
     ) -> None:
         if not (project and credentials):
             raise ConfigError(
@@ -70,6 +74,14 @@ class BigQueryStore:
         self.location = location
         # The service account agents read as, granted dataViewer per dataset (SEC-1).
         self.reader = reader
+        self.statement_timeout_seconds = statement_timeout_seconds
+        # Sent with every read from query() (SHOC_BIGQUERY_MAX_BYTES_BILLED); 0
+        # sends none. The load's MERGE, retention, reset and DDL prune only by
+        # clustering, whose estimate the cap is checked against, so they run
+        # uncapped: a retention that failed on it every day would grow the table.
+        self.max_bytes_billed = (
+            Config().bigquery_max_bytes_billed if max_bytes_billed is None else max_bytes_billed
+        )
         self._http: httpx.Client | None = None
 
     # -- connection -----------------------------------------------------
@@ -96,12 +108,48 @@ class BigQueryStore:
             raise StoreError(f"bigquery: {detail}")
         return resp
 
+    def _deadline(self) -> tuple[float, dict[str, str]]:
+        """When a job is given up on, and the `jobTimeoutMs` that stops it on the server."""
+        seconds = self.statement_timeout_seconds
+        if not seconds:
+            return float("inf"), {}
+        return time.monotonic() + seconds, {"jobTimeoutMs": str(int(seconds * 1000))}
+
+    def _cancel_past(self, deadline: float, job: str) -> None:
+        """Cancel a job past the statement timeout: one queued for slots held the
+        worker until its watchdog killed it, and went on running (STO-6)."""
+        if time.monotonic() < deadline:
+            return
+        try:
+            if job:  # no jobReference came back: nothing to cancel, jobTimeoutMs stops it
+                self._call(
+                    "POST",
+                    f"{API}/projects/{self.project}/jobs/{job}/cancel",
+                    params={"location": self.location},
+                )
+        except (StoreError, httpx.HTTPError) as exc:
+            log.warning("could not cancel bigquery job %s: %s", job, exc)
+        raise StoreError(
+            f"bigquery: job {job} ran past {self.statement_timeout_seconds}s and was cancelled"
+        )
+
     def _run(
-        self, sql: str, params: dict[str, Any] | None = None, limit: int = 100_000
+        self,
+        sql: str,
+        params: dict[str, Any] | None = None,
+        limit: int = 100_000,
+        cap: bool = False,
     ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         """Run one statement; its rows (at most `limit` + 1) and the last response."""
         base = f"{API}/projects/{self.project}/queries"
+        deadline, limited = self._deadline()
         body: dict[str, Any] = {
+            **limited,
+            **(
+                {"maximumBytesBilled": str(self.max_bytes_billed)}
+                if cap and self.max_bytes_billed
+                else {}
+            ),
             "query": sql,
             "useLegacySql": False,
             "location": self.location,
@@ -120,7 +168,10 @@ class BigQueryStore:
             "formatOptions.useInt64Timestamp": "true",
         }
         while not resp.get("jobComplete"):
-            resp = self._call("GET", f"{base}/{job}", params=query).json()
+            self._cancel_past(deadline, job)
+            # A poll waits at most until the deadline, so the cancel is not a minute late.
+            wait = max(1, int(min(60_000, (deadline - time.monotonic()) * 1000)))
+            resp = self._call("GET", f"{base}/{job}", params={**query, "timeoutMs": wait}).json()
         fields = resp.get("schema", {}).get("fields", [])
         rows = [_row(fields, r) for r in resp.get("rows", [])]
         while resp.get("pageToken") and len(rows) <= limit:
@@ -140,11 +191,14 @@ class BigQueryStore:
             f"CREATE SCHEMA IF NOT EXISTS `{self.project}.{self.dataset}` "
             f"OPTIONS (location = '{self.location}')"
         )
+        # Detection reads by ingested_at, so that is what prunes partitions;
+        # reads by time, the load's MERGE and retention prune by clustering.
+        # The dataset is the tenant's, so tenant_id would prune nothing (wh-6).
         self._run(
             f"""CREATE TABLE IF NOT EXISTS {self.table} (
   {_ddl_columns()}
-) PARTITION BY DATE(time)
-  CLUSTER BY tenant_id, metadata_product, api_operation, actor_user_name"""
+) PARTITION BY DATE(ingested_at)
+  CLUSTER BY time, metadata_product, api_operation, actor_user_name"""
         )
         if self.reader:
             self._run(
@@ -152,7 +206,7 @@ class BigQueryStore:
                 f'TO "serviceAccount:{self.reader}"'
             )
 
-    def migrate(self, ocsf_version: str = "1.3.0") -> None:
+    def migrate(self) -> None:
         self.create_tenant()
         columns = ", ".join(
             f"ADD COLUMN IF NOT EXISTS `{n}` {_BQ_TYPES[t]}" for n, t in ocsf.COLUMNS
@@ -160,7 +214,7 @@ class BigQueryStore:
         self._run(f"ALTER TABLE {self.table} {columns}")
 
     # -- load -----------------------------------------------------------
-    def load_batch(self, path: str, table: str = ocsf.EVENTS_TABLE) -> LoadStats:
+    def load_batch(self, path: str) -> LoadStats:
         """Load the batch into a staging table, then MERGE in the events the table lacks.
 
         BigQuery has no primary key. An insert-only MERGE on (event_uid, time)
@@ -170,11 +224,19 @@ class BigQueryStore:
         started = time.monotonic()
         rows = read_unique(path)
         if not rows:
-            return LoadStats(table=table)
+            return LoadStats()
         body = "".join(json.dumps(row, default=str) + "\n" for row in rows)
         times = [datetime.fromisoformat(str(row["time"])) for row in rows]
-        staging = f"_stage_{int(time.time() * 1000)}_{os.getpid()}"
+        # A dataset table, shared by every worker: the name is unique to this load.
+        staging = f"_stage_{uuid.uuid4().hex}"
         try:
+            # It expires by itself, so a worker killed before the drop below
+            # leaves no copy of the events outside retention.
+            self._run(
+                f"CREATE TABLE `{self.project}.{self.dataset}.{staging}` ({_ddl_columns()}) "
+                "OPTIONS (expiration_timestamp = "
+                "TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR))"
+            )
             self._load(staging, body)
             columns = ", ".join(f"`{c}`" for c in ocsf.COLUMN_NAMES)
             _, merged = self._run(
@@ -194,13 +256,14 @@ VALUES ({", ".join(f"s.`{c}`" for c in ocsf.COLUMN_NAMES)})""",
             rows=int(merged.get("numDmlAffectedRows") or 0),
             bytes=len(body),
             duration_ms=int((time.monotonic() - started) * 1000),
-            table=table,
         )
 
     def _load(self, staging: str, body: str) -> None:
         """A resumable upload: one call opens the load job, one sends the batch."""
+        deadline, limited = self._deadline()
         job = {
             "configuration": {
+                **limited,
                 "load": {
                     "destinationTable": {
                         "projectId": self.project,
@@ -211,9 +274,10 @@ VALUES ({", ".join(f"s.`{c}`" for c in ocsf.COLUMN_NAMES)})""",
                         "fields": [{"name": n, "type": _BQ_TYPES[t]} for n, t in ocsf.COLUMNS]
                     },
                     "sourceFormat": "NEWLINE_DELIMITED_JSON",
-                    "writeDisposition": "WRITE_TRUNCATE",
+                    # Into the empty table made for this load, and never over rows.
+                    "writeDisposition": "WRITE_EMPTY",
                     "ignoreUnknownValues": True,
-                }
+                },
             },
             "jobReference": {"projectId": self.project, "location": self.location},
         }
@@ -231,6 +295,7 @@ VALUES ({", ".join(f"s.`{c}`" for c in ocsf.COLUMN_NAMES)})""",
         ).json()
         ref = done["jobReference"]
         while done.get("status", {}).get("state") != "DONE":
+            self._cancel_past(deadline, ref["jobId"])
             time.sleep(1)
             done = self._call(
                 "GET",
@@ -255,11 +320,11 @@ VALUES ({", ".join(f"s.`{c}`" for c in ocsf.COLUMN_NAMES)})""",
         sql, args = prepare(self._qualify(canonical_sql), params, self.dialect, limit + 1)
         started = time.monotonic()
         try:
-            rows, _ = self._run(sql, args, limit)
+            rows, _ = self._run(sql, args, limit, cap=True)
         except (StoreError, httpx.HTTPError) as exc:
             raise StoreError(f"query failed: {exc}") from exc
         return QueryResult(
-            rows=rows[:limit],
+            rows=ocsf.decoded(rows[:limit]),
             sql=sql,
             duration_ms=int((time.monotonic() - started) * 1000),
             truncated=len(rows) > limit,

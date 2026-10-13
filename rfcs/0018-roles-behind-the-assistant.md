@@ -85,7 +85,13 @@ show the prompt gets `confirmation_required` back, with the Slack or CLI route.
   `accept` with `confirm: true`. The prompt text is built by shoc: for an
   action, its type, target, uid and rationale from `shoc.actions`; otherwise
   the arguments, with any field named like a secret, token, key or password
-  hidden.
+  hidden. A prompt that does not fit in 600 characters is refused and the
+  person is sent to the CLI; it is never cut. `config.apply`'s prompt is the
+  plan's list of changes, and the crew's rationale comes last, labelled
+  unverified, or is left out when it does not fit (D184, 2026-10-12).
+- A tool name is the capability name with `.` written `_`, and only that form
+  is accepted. A dotted name is `unknown_tool`, so no second spelling of an L2
+  tool skips the confirmation (D183, 2026-10-12).
 - The HTTP `/mcp` mount becomes stateful (`stateless=False`), because the
   prompt and its answer travel on the same session. The Helm chart defaults to
   one serve replica; more than one needs `/mcp` routed by the `Mcp-Session-Id`

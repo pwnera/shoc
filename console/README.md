@@ -23,7 +23,7 @@ slice behind it and Back undoes a step.
 | --- | --- | --- |
 | Overview | Does anything need me, and what happened while I was away? | `action.list`, `case.list`, `source.list`, `finding.list`, `ops.alerts`, `health.status`, `health.sources`, `policy.show`; approvals through the approval card |
 | Cases | Which cases are open, how far along is each, and is the crew on it? | `case.list`, `action.list`, `ops.alerts` |
-| Case | What happened, what did the crew conclude on which events, is it contained, and what waits on me? | `case.get`, `timeline.build`, `case.history`, `case.set_state`, `case.close`, `case.investigate`, `action.list`, `action.propose`, `playbook.list`, `playbook.runs`, `playbook.run`, `openspace.post`, `slack.notify`, `policy.show`, `ops.alerts`; approvals through the approval card |
+| Case | What happened, what did the crew conclude on which events, is it contained, and what waits on me? | `case.get`, `timeline.build`, `case.history`, `case.set_state`, `case.close`, `case.acknowledge`, `case.investigate`, `action.list`, `action.propose`, `credential.list`, `playbook.list`, `playbook.runs`, `playbook.run`, `openspace.post`, `slack.notify`, `policy.show`, `ops.alerts`; approvals through the approval card |
 | Findings | What fired, and which of it is not handled yet? | `finding.list` |
 | Finding | Why did it fire, on what, and is it handled? | `finding.get`, `finding.list`, `finding.set_status` |
 | Explore | What exactly happened in the events: who did what, from where, and when? | `events.query`, `events.summarize` |
@@ -39,6 +39,25 @@ slice behind it and Back undoes a step.
 | Health | Is shoc itself working, and what does it cost? | `health.status`, `ops.alerts`, `llm.show` (spend, hunt and intel budgets), `health.jobs`, `health.cost`, `health.sources`, `source.list`, `playbook.runs`, `action.list`, `stream.tail`, `health.audit` |
 | Measurement | How fast and how accurate is shoc, per incident type, over time? | `metrics.get`, `case.list`, `ops.alerts`, `report.get` and `report.send` (Export only) |
 | Access | Who signs in or holds a key, what may each call, and who called what? | `capability.list`, `user.list`, `user.invite`, `user.reset`, `user.update`, `sso.show`, `sso.configure`, `token.list`, `token.create`, `token.revoke`, `health.audit` |
+
+The Overview heading is the state: "Crew down" or "Can't tell" first, then
+"Nothing connected" (no source configured) or "Sources down" (no configured
+source delivering), each linking to Connections, then "N need you". Standing
+shows "response · dry run" in warn while `policy.show` reports dry run, linked
+to Response › Autonomy. "Since you left" draws its failed responses first (pages
+excluded; those are Health's Notify), linked to Response's Failed filter, and
+with no visit on record its window reads "last 24 hours"; a 24h or 7d choice
+lasts for the tab. Health's Crew stage fails as "No model" when `llm.show` names
+none or no key, and Notify as "Page not sent" for any page in the last 24 hours
+that failed, was blocked or was rejected. Cases has the tabs All, Investigating,
+Responding (the phases from containment to post-incident) and Closed, and shows
+the NIST 800-61 phases as sorting, investigating, containing, removing,
+restoring, lessons and closed; the API keeps the state ids. On a case, closing
+confirms in a popover that names every action the close rejects, and closed as
+Attack or Suspicious with actions waiting, "Approve and close" approves and runs
+them first. Proposing an action whose vendor has no credential shows
+`will fail · connect <vendor>`, except `notify.page`, which the Manager sends
+without one.
 
 Four dialogs open over any screen from the URL: an event (`?event=`,
 `events.query`), an action (`?action=`, with `action.undo` and `action.run`; a
@@ -91,10 +110,13 @@ CONSOLE_BIND=127.0.0.1 CONSOLE_PORT=8089 docker compose up -d --build
 
 nginx serves the build and proxies `/v1`, `/auth`, `/healthz`, `/metrics`,
 `/mcp` and `/ingest` to shoc, so the browser sees one origin: no CORS, and the
-session cookie goes nowhere else. Set `SHOC_PUBLIC_URL` on shoc to the address
-people open, ideally `https` (`tailscale serve` will do): sign-in accepts no
-other `Origin`, and builds emailed links and the SSO redirect from it. The first
-admin comes from the host:
+session cookie goes nowhere else. The image is built on
+`nginxinc/nginx-unprivileged` and runs as uid 101 on port 8080. Its build runs
+`npm ci`, so a `package-lock.json` out of step with `package.json` fails it;
+commit the lockfile with every dependency change. Set `SHOC_PUBLIC_URL` on shoc
+to the address people open, ideally `https` (`tailscale serve` will do): sign-in
+accepts no other `Origin`, and builds emailed links and the SSO redirect from
+it. The first admin comes from the host:
 
 ```bash
 shoc user invite you@example.com --role admin
@@ -117,7 +139,9 @@ token" turns a person's bearer token into a session. Each sets an HttpOnly
 session cookie that no script can read and the browser sends with every
 call. `/welcome` takes invitation and reset links. The console asks `user.me`
 whether it is signed in, shows the front page when it is not, and raises a
-"Signed out" banner when a session ends.
+"Signed out" banner when a session ends. The crew thread and the recent
+records and queries belong to the person signed in: Log out drops them, and so
+does signing in as someone else on the same browser.
 
 The console can do exactly what the person's role allows. A `reader` gets a
 read-only console because the API refuses the rest, not because the console
@@ -128,7 +152,11 @@ Every call is `POST /v1/<area>/<name>` and every answer is
 SSE, which refreshes exactly the queries each event changes. `health.status`
 refetches every 30 seconds while the tab is visible; the shared logs and the
 alerts do so only while the stream is down, and sources only on Connections and
-Health.
+Health. A tab hidden for 30 seconds closes its stream and resumes from the last
+event once it is in view again. Over plain HTTP/1.1 a browser shares six
+connections per host across all its tabs; an HTTP/2 front (Caddy, Traefik,
+`tailscale serve`) removes that limit. A failed read is retried only when shoc
+could not be reached; a timeout or a kernel error shows Retry at once.
 
 ## Working on it
 

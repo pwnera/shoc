@@ -266,6 +266,8 @@ def test_a_patch_cannot_set_what_identifies_an_event(ctx, store, config, clean):
     _moved_tailscale(ctx)
     for fields in (
         {"metadata_product": "eventName"},
+        # batch.load refuses a row of another tenant, so every load would fail.
+        {"tenant_id": "eventName"},
         {"class_uid": "eventName"},
         {"not_a_column": "eventName"},
         {"resource_uid": {"const": "x"}},

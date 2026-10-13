@@ -9,7 +9,6 @@ import pytest
 from starlette.testclient import TestClient
 
 from shoc.api.rest import build_app
-from shoc.db.pool import execute
 from tests.conformance.test_rest import _webhook
 
 pytestmark = pytest.mark.postgres
@@ -18,7 +17,9 @@ pytestmark = pytest.mark.postgres
 def test_a_replayed_delivery_loads_nothing_whatever_its_id(config, ctx, store, clean):
     from shoc.capabilities.registry import call
 
-    execute(ctx.db, "DELETE FROM shoc.push_deliveries WHERE tenant_id = %s", (config.tenant_id,))
+    if config.backend != "postgres":
+        pytest.skip("a warehouse keeps a delivery for the cycle's load (test_lifecycle)")
+
     key = call("source.push_key", ctx, {"source": "github", "rotate": True}).data.push_key
     body = json.dumps(
         {

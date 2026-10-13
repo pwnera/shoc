@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import contextlib
 import csv
-import hashlib
 import io
 import ipaddress
 import json
@@ -82,6 +81,12 @@ class Indicator:
     description: str = ""
     tags: list[str] = field(default_factory=list)
     expires_at: datetime | None = None
+    # A value the model named that its report's text does not hold (D33).
+    unverified: bool = False
+    # The digested report that brought it in, so withdrawing that report removes it.
+    report_uid: str | None = None
+    # The TLP marking it was shared under, lower case; "" for none (DET-6).
+    tlp: str = ""
 
 
 @dataclass
@@ -89,12 +94,32 @@ class FeedResult:
     feed: str
     fetched: int = 0
     stored: int = 0
+    # Values left out: not a well-formed value, the company's own, or on a
+    # warninglist (DET-4).
+    held: int = 0
     error: str | None = None
 
 
+class Pulled(list[Any]):
+    """What a feed returned. `short` says why the pull stopped before the end (DET-4)."""
+
+    short: str = ""
+
+
 # -- feeds ------------------------------------------------------------------
-def _client(headers: dict[str, str] | None = None) -> httpx.Client:
-    return httpx.Client(timeout=TIMEOUT, headers=headers or {}, follow_redirects=True)
+def _client(headers: dict[str, str] | None = None, follow_redirects: bool = True) -> httpx.Client:
+    """A feed's client. One that carries a key follows no redirect: httpx drops
+    only `Authorization` on a redirect to another host, not `Auth-Key` (priv-18).
+    One that does follow vets each hop as a report fetch does (SEC-1)."""
+    from shoc.detect import report
+
+    follow = follow_redirects and not headers
+    return httpx.Client(
+        timeout=TIMEOUT,
+        headers=headers or {},
+        follow_redirects=follow,
+        event_hooks={"response": [report.vet_redirect]} if follow else None,
+    )
 
 
 # How long after it was last seen online a C2 address is still matched.
@@ -206,16 +231,53 @@ def urlhaus(settings: dict[str, Any], secret: dict[str, Any]) -> list[Indicator]
     return out
 
 
-def _otx_pulses(settings: dict[str, Any], secret: dict[str, Any]) -> list[dict[str, Any]]:
+# Pages a pull reads before it stops and says so; `pages` in a feed's settings.
+OTX_PAGES = 20
+MISP_PAGES = 10
+
+
+def _otx_pulses(settings: dict[str, Any], secret: dict[str, Any]) -> Pulled:
+    """Subscribed pulses modified in the window, and why the pull stopped short, if it did.
+
+    The key goes only where it was configured to go: a redirect is an error,
+    and a next page is followed only on the configured host and path, over
+    the configured scheme.
+    """
     api_key = secret.get("api_key")
     if not api_key:
         raise ConfigError("otx: the secret needs api_key")
-    base = settings.get("url", "https://otx.alienvault.com/api/v1")
+    base = str(settings.get("url", "https://otx.alienvault.com/api/v1")).rstrip("/")
     since = (datetime.now(UTC) - timedelta(days=int(settings.get("days", 7)))).isoformat()
-    with _client({"X-OTX-API-KEY": api_key}) as http:
-        resp = http.get(f"{base}/pulses/subscribed", params={"modified_since": since, "limit": 50})
-        resp.raise_for_status()
-        return resp.json().get("results", [])
+    pages = int(settings.get("pages", OTX_PAGES))
+    home = urlparse(base)
+    pulses = Pulled()
+    url = f"{base}/pulses/subscribed"
+    params: dict[str, Any] | None = {"modified_since": since, "limit": 50}
+    with _client({"X-OTX-API-KEY": api_key}, follow_redirects=False) as http:
+        for _ in range(pages):
+            resp = http.get(url, params=params)
+            resp.raise_for_status()
+            body = resp.json()
+            # A TLP:RED pulse is for its subscribers' eyes, not a model's (DET-6).
+            pulses += [p for p in body.get("results", []) if _tlp(p) != "red"]
+            following, params = urlparse(str(body.get("next") or "")), None
+            if not following.path:
+                return pulses
+            if following.hostname != home.hostname or not following.path.startswith(
+                home.path + "/"
+            ):
+                pulses.short = f"truncated: OTX's next page is not under {base}"
+                return pulses
+            url = following._replace(scheme=home.scheme, netloc=home.netloc).geturl()
+    pulses.short = f"truncated: OTX has more than {pages} pages of pulses; raise `pages`"
+    return pulses
+
+
+def _tlp(pulse: dict[str, Any]) -> str:
+    """An OTX pulse's `tlp` field ("white", "amber", ...) as a TLP marking."""
+    from shoc.detect.report import tlp_of
+
+    return tlp_of(f"TLP:{pulse.get('tlp') or ''}")
 
 
 def otx(settings: dict[str, Any], secret: dict[str, Any]) -> list[Indicator]:
@@ -229,11 +291,17 @@ def otx(settings: dict[str, Any], secret: dict[str, Any]) -> list[Indicator]:
         "FileHash-SHA256": "sha256",
         "CVE": "cve",
     }
-    out = []
-    for pulse in _otx_pulses(settings, secret):
+    pulses = _otx_pulses(settings, secret)
+    now = datetime.now(UTC)
+    out = Pulled()
+    out.short = pulses.short
+    for pulse in pulses:
         for item in pulse.get("indicators", []):
             kind = kinds.get(item.get("type", ""))
-            if not kind:
+            # The pulse's author retires an indicator with is_active or its own
+            # expiration; past either, it is somebody's address again (DET-4).
+            expires = _when(str(item.get("expiration") or "")) or now + timedelta(days=60)
+            if not (kind and item.get("indicator")) or item.get("is_active") == 0 or expires <= now:
                 continue
             out.append(
                 Indicator(
@@ -244,10 +312,11 @@ def otx(settings: dict[str, Any], secret: dict[str, Any]) -> list[Indicator]:
                     severity="medium",
                     description=pulse.get("name", "")[:200],
                     tags=["otx", *pulse.get("tags", [])[:5]],
-                    expires_at=datetime.now(UTC) + timedelta(days=60),
+                    expires_at=expires,
+                    tlp=_tlp(pulse),
                 )
             )
-    return [i for i in out if i.value]
+    return out
 
 
 def _misp(settings: dict[str, Any], secret: dict[str, Any], path: str, body: dict[str, Any]) -> Any:
@@ -255,14 +324,25 @@ def _misp(settings: dict[str, Any], secret: dict[str, Any], path: str, body: dic
     api_key = secret.get("api_key")
     if not (url and api_key):
         raise ConfigError("misp: settings need url and the secret needs api_key")
-    with _client({"Authorization": api_key, "Accept": "application/json"}) as http:
+    # The key goes only to the configured instance: a redirect is an error.
+    with _client(
+        {"Authorization": api_key, "Accept": "application/json"}, follow_redirects=False
+    ) as http:
         resp = http.post(f"{str(url).rstrip('/')}/{path}", json=body)
         resp.raise_for_status()
         return resp.json()
 
 
 def misp(settings: dict[str, Any], secret: dict[str, Any]) -> list[Indicator]:
-    """A MISP instance the team already runs."""
+    """A MISP instance the team already runs.
+
+    Only published attributes flagged for detection (to_ids) and on no MISP
+    warninglist: an event also carries the victim's addresses and sinkholes as
+    context. Each one is matched for `days` (30), and at 0.7 it is below the
+    floor of every IP, domain, URL and hash action on its own (DET-4).
+    """
+    from shoc.detect.rules import SEVERITIES
+
     kinds = {
         "ip-src": "ip",
         "ip-dst": "ip",
@@ -271,34 +351,70 @@ def misp(settings: dict[str, Any], secret: dict[str, Any]) -> list[Indicator]:
         "url": "url",
         "sha256": "sha256",
     }
-    payload = _misp(
-        settings,
-        secret,
-        "attributes/restSearch",
-        {
-            "returnFormat": "json",
-            "type": list(kinds),
-            "last": settings.get("last", "7d"),
-            "limit": int(settings.get("limit", 1000)),
-        },
-    )
-    out = []
-    for attribute in (payload.get("response", {}) or {}).get("Attribute", []):
-        kind = kinds.get(attribute.get("type", ""))
-        if not kind:
-            continue
-        out.append(
-            Indicator(
-                type=kind,
-                value=str(attribute.get("value", "")),
-                source="misp",
-                confidence=0.8,
-                severity="high",
-                description=str(attribute.get("comment", ""))[:200],
-                tags=["misp"],
-            )
+    severity = str(settings.get("severity") or "high").lower()
+    severity = severity if severity in SEVERITIES else "high"
+    limit = int(settings.get("limit", 1000))
+    pages = int(settings.get("pages", MISP_PAGES))
+    expires = datetime.now(UTC) + timedelta(days=int(settings.get("days", 30)))
+    out = Pulled()
+    for page in range(1, pages + 1):
+        payload = _misp(
+            settings,
+            secret,
+            "attributes/restSearch",
+            {
+                "returnFormat": "json",
+                "type": list(kinds),
+                "last": settings.get("last", "7d"),
+                "to_ids": 1,
+                "published": 1,
+                "enforceWarninglist": 1,
+                "tags": _misp_tags(settings),
+                # The event's tags ride on each attribute, its TLP marking among them.
+                "includeEventTags": 1,
+                "limit": limit,
+                "page": page,
+            },
         )
-    return [i for i in out if i.value]
+        attributes = (payload.get("response", {}) or {}).get("Attribute", [])
+        out += [
+            Indicator(
+                type=kinds[str(a.get("type", ""))],
+                value=str(a.get("value", "")),
+                source="misp",
+                confidence=0.7,
+                severity=severity,
+                description=str(a.get("comment", ""))[:200],
+                tags=["misp"],
+                expires_at=expires,
+                tlp=_misp_tlp(a.get("Tag")),
+            )
+            for a in attributes
+            if a.get("type") in kinds and a.get("value")
+        ]
+        if len(attributes) < limit:
+            return out
+    out.short = f"truncated: MISP returned {pages} full pages of {limit} attributes; raise `pages`"
+    return out
+
+
+def _misp_tags(settings: dict[str, Any]) -> list[str]:
+    """MISP's tag filter: `tags` in the settings (one tag or a list), plus
+    `!tlp:red` unless the settings name tlp:red themselves: TLP:RED is never
+    pulled on a schedule unless a person asks for it (DET-6)."""
+    tags = settings.get("tags") or []
+    tags = [tags] if isinstance(tags, str) else [str(t) for t in tags]
+    if not any(t.lower().lstrip("!") == "tlp:red" for t in tags):
+        tags.append("!tlp:red")
+    return tags
+
+
+def _misp_tlp(tags: Any) -> str:
+    """The TLP marking among MISP tags, or ""."""
+    from shoc.detect.report import tlp_of
+
+    names = [str(t.get("name", "")) for t in tags or [] if isinstance(t, dict)]
+    return next((m for n in names if (m := tlp_of(n))), "")
 
 
 def indicators_in(
@@ -341,21 +457,40 @@ def indicators_in(
     ]
 
 
+def from_page(url: str, **kw: Any) -> tuple[list[Indicator], list[str]]:
+    """Every indicator a fetched page names (`indicators_in`), and the values left
+    out as the page's own: its host and its subdomains (DET-4).
+
+    An HTML page is read as text first, so its scripts, stylesheets, fonts and
+    menus are not indicators; a plain list or a CSV is read as it is.
+    """
+    from shoc.detect import osint, report
+
+    page = (urlparse(url).hostname or "").lower().removeprefix("www.")
+    kept: list[Indicator] = []
+    own: list[str] = []
+    for ioc in indicators_in(report.text_of(report.get(url)), **kw):
+        host = osint.host_of(ioc.value, ioc.type) if ioc.type in ("ip", "domain", "url") else ""
+        if host and (host == page or host.endswith("." + page)):
+            own.append(ioc.value)
+        else:
+            kept.append(ioc)
+    return kept, own
+
+
 def listing(settings: dict[str, Any], secret: dict[str, Any]) -> list[Indicator]:
     """Any URL that publishes indicators: a blocklist, a CSV, a page of IOCs."""
-    from shoc.detect import report
-
     url = settings.get("url")
     if not url:
         raise ConfigError("list: settings need url")
-    return indicators_in(
-        report.get(url).text[: report.MAX_BYTES],
+    return from_page(
+        url,
         source=f"list:{urlparse(url).hostname}",
         confidence=float(settings.get("confidence", 0.6)),
         severity=str(settings.get("severity", "medium")),
         description=str(settings.get("description", "")),
         days=int(settings.get("days", 30)),
-    )
+    )[0]
 
 
 FEEDS = {
@@ -453,7 +588,7 @@ def rss(settings: dict[str, Any], secret: dict[str, Any]) -> list[ReportItem]:
         raise ConfigError("rss: settings need url")
     # ElementTree resolves no external entity, and the expat bundled with
     # Python 3.12 refuses entity-expansion bombs.
-    root = ElementTree.fromstring(report.get(url).content[: report.MAX_BYTES])
+    root = ElementTree.fromstring(report.get(url).content)
     items = []
     for node in root.iter():
         if _local(node.tag) not in ("item", "entry"):
@@ -464,7 +599,9 @@ def rss(settings: dict[str, Any], secret: dict[str, Any]) -> list[ReportItem]:
         links = [c for c in node if _local(c.tag) == "link"]
         link = next((c for c in links if c.get("rel") in (None, "alternate")), None)
         href = ((link.get("href") or link.text or "") if link is not None else "").strip()
-        if not href:
+        # Only a web page is a report: a `javascript:` or `file:` link is
+        # neither fetched nor shown as one.
+        if not href.lower().startswith(("http://", "https://")):
             continue
         # RSS `content:encoded` is "encoded" once the namespace is dropped, Atom's
         # is "content"; RSS `description`, Atom `summary`.
@@ -492,11 +629,17 @@ def otx_pulses(settings: dict[str, Any], secret: dict[str, Any]) -> list[ReportI
     """OTX pulses as reports: their description, references and indicators.
 
     A pulse names its tags, industries, countries, adversary, malware families
-    and ATT&CK ids; those are its categories.
+    and ATT&CK ids; those are its categories. `short` on what it returns says
+    why the pull stopped before the end.
     """
-    items = []
-    for pulse in _otx_pulses(settings, secret):
+    pulses = _otx_pulses(settings, secret)
+    items = Pulled()
+    items.short = pulses.short
+    for pulse in pulses:
+        # The marking goes into the text, so the read stores its values under it.
+        marking = _tlp(pulse)
         lines = [
+            *([f"TLP:{marking.upper()}", ""] if marking else []),
             pulse.get("description", ""),
             "",
             "References:",
@@ -523,6 +666,7 @@ def otx_pulses(settings: dict[str, Any], secret: dict[str, Any]) -> list[ReportI
                 categories=[
                     str(c)
                     for c in (
+                        *([f"tlp:{marking}"] if marking else []),
                         *(pulse.get("tags") or []),
                         *(pulse.get("industries") or []),
                         *(pulse.get("targeted_countries") or []),
@@ -546,12 +690,20 @@ def misp_events(settings: dict[str, Any], secret: dict[str, Any]) -> list[Report
             "returnFormat": "json",
             "last": settings.get("last", "7d"),
             "limit": int(settings.get("limit", 20)),
+            "tags": _misp_tags(settings),
         },
     )
     items = []
     for wrapper in payload.get("response", []) if isinstance(payload, dict) else payload:
         event = wrapper.get("Event", wrapper)
-        lines = [event.get("info", ""), "", "Attributes:"]
+        # The marking goes into the text, so the read stores its values under it.
+        marking = _misp_tlp(event.get("Tag"))
+        lines = [
+            *([f"TLP:{marking.upper()}", ""] if marking else []),
+            event.get("info", ""),
+            "",
+            "Attributes:",
+        ]
         lines += [
             f"{a.get('type')} {a.get('value')} {a.get('comment', '')}".strip()
             for a in event.get("Attribute", [])
@@ -673,15 +825,56 @@ def ours(conn: Conn, tenant_id: str) -> Callable[[str, str], bool]:
     return test
 
 
+def normalise(kind: str, value: str) -> str:
+    """A value in the form events store it, or "" when it is not one (DET-4).
+
+    An address is written the way the event mapping writes it, so a long IPv6
+    form matches and a CIDR is dropped; a domain loses its trailing dot.
+    """
+    value = value.strip().lower()
+    if kind == "ip":
+        try:
+            return str(ipaddress.ip_address(value))
+        except ValueError:
+            return ""
+    return value.rstrip(".") if kind == "domain" else value
+
+
+# When a source listing a stored value takes its row over (`store_indicators`).
+_TAKES = (
+    "(EXCLUDED.confidence > shoc.iocs.confidence "
+    "OR (shoc.iocs.unverified AND NOT EXCLUDED.unverified))"
+)
+# TLP markings from least to most restrictive; '' is none.
+_TLP_ORDER = "ARRAY['', 'clear', 'white', 'green', 'amber', 'amber+strict', 'red']"
+
+
 def store_indicators(conn: Conn, tenant_id: str, indicators: list[Indicator]) -> int:
-    """Insert or refresh indicators. A new one is left un-hunted for the retro-hunt."""
+    """Insert or refresh indicators. A new one is left un-hunted for the retro-hunt.
+
+    Each indicator's value is set to the stored form, so a caller that goes on
+    to name the row (intel.add's release of a held value) names the same one.
+
+    A source that lists a value already stored with more confidence, or that
+    verifies a value its report did not, takes the row over: its source, report,
+    tags and description. The TLP marking is the more restrictive of the two,
+    whoever lists the value, so a person re-adding an amber value does not
+    clear the marking that keeps it from third-party lookups (DET-6). A feed or
+    a person that confirms a value a report named unverified makes it match, and
+    withdrawing that report no longer removes it (DET-4, DET-7). A value held as
+    prevalent stays held.
+    """
     stored = 0
     for ioc in indicators:
+        value = ioc.value = normalise(ioc.type, ioc.value)
+        if not value:
+            continue
         row = fetch_one(
             conn,
-            """INSERT INTO shoc.iocs
-                   (tenant_id, type, value, source, confidence, severity, description, tags, expires_at)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            f"""INSERT INTO shoc.iocs
+                   (tenant_id, type, value, source, confidence, severity, description, tags,
+                    expires_at, unverified, report_uid, tlp)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                ON CONFLICT (tenant_id, type, value) DO UPDATE SET
                    last_seen = now(),
                    confidence = GREATEST(shoc.iocs.confidence, EXCLUDED.confidence),
@@ -689,18 +882,34 @@ def store_indicators(conn: Conn, tenant_id: str, indicators: list[Indicator]) ->
                    -- shorten it: a report must not expire a feed's C2 address.
                    expires_at = CASE
                        WHEN shoc.iocs.expires_at IS NULL OR EXCLUDED.expires_at IS NULL THEN NULL
-                       ELSE GREATEST(shoc.iocs.expires_at, EXCLUDED.expires_at) END
+                       ELSE GREATEST(shoc.iocs.expires_at, EXCLUDED.expires_at) END,
+                   unverified = shoc.iocs.unverified AND EXCLUDED.unverified,
+                   source = CASE WHEN {_TAKES} THEN EXCLUDED.source ELSE shoc.iocs.source END,
+                   report_uid = CASE WHEN {_TAKES} THEN EXCLUDED.report_uid
+                                ELSE shoc.iocs.report_uid END,
+                   tags = CASE WHEN NOT {_TAKES} THEN shoc.iocs.tags
+                               WHEN 'prevalent' = ANY(shoc.iocs.tags)
+                               THEN array_append(EXCLUDED.tags, 'prevalent')
+                               ELSE EXCLUDED.tags END,
+                   description = CASE WHEN {_TAKES} THEN EXCLUDED.description
+                                 ELSE shoc.iocs.description END,
+                   tlp = CASE WHEN array_position({_TLP_ORDER}, EXCLUDED.tlp)
+                                   > array_position({_TLP_ORDER}, shoc.iocs.tlp)
+                              THEN EXCLUDED.tlp ELSE shoc.iocs.tlp END
                RETURNING (xmax = 0) AS inserted""",
             (
                 tenant_id,
                 ioc.type,
-                ioc.value.lower(),
+                value,
                 ioc.source,
                 ioc.confidence,
                 ioc.severity,
                 ioc.description,
                 ioc.tags,
                 ioc.expires_at,
+                ioc.unverified,
+                ioc.report_uid,
+                ioc.tlp,
             ),
         )
         stored += 1 if row and row["inserted"] else 0
@@ -715,7 +924,14 @@ def refresh(
     secret: dict[str, Any],
     parser: str = "",
 ) -> FeedResult:
-    """Pull one indicator source and store what it returns. A broken one is health, not an outage."""
+    """Pull one indicator source and store what it returns. A broken one is health, not an outage.
+
+    A value that is the company's own, internal, or on a warninglist this
+    process has loaded is held, whichever feed listed it (DET-4, D123). A pull
+    cut short by its page cap stores what it read and is reported as an error.
+    """
+    from shoc.detect import osint
+
     parser = parser or feed
     if parser not in FEEDS:
         raise ConfigError(f"unknown intel feed '{parser}' (have: {', '.join(sorted(FEEDS))})")
@@ -723,7 +939,39 @@ def refresh(
     try:
         indicators = FEEDS[parser](settings, secret)
         result.fetched = len(indicators)
-        result.stored = store_indicators(conn, tenant_id, indicators)
+        # Without the warninglists in this process (the worker loads them only
+        # with the default feeds on) the load starts now, beside this run, and
+        # the next run holds what they list.
+        if indicators:
+            osint.load_soon("warninglists")
+        excluded = ours(conn, tenant_id)
+        kept: list[Indicator] = []
+        held: list[Indicator] = []
+        for ioc in indicators:
+            ioc.value = normalise(ioc.type, ioc.value)
+            if not ioc.value:
+                continue
+            if excluded(ioc.value, ioc.type) or osint.known_benign(ioc.value, ioc.type):
+                held.append(ioc)
+            else:
+                kept.append(ioc)
+        result.held = len(indicators) - len(kept)
+        # A value this feed stored before it was held (before the lists loaded,
+        # or before the company named it as its own) stops matching now.
+        if held:
+            execute(
+                conn,
+                """DELETE FROM shoc.iocs WHERE tenant_id = %s AND (type, value, source) IN
+                       (SELECT * FROM unnest(%s::text[], %s::text[], %s::text[]))""",
+                (
+                    tenant_id,
+                    [i.type for i in held],
+                    [i.value for i in held],
+                    [i.source for i in held],
+                ),
+            )
+        result.stored = store_indicators(conn, tenant_id, kept)
+        result.error = getattr(indicators, "short", "") or None
     except Exception as exc:
         result.error = f"{type(exc).__name__}: {exc}"
     record_run(conn, tenant_id, feed, settings, result)
@@ -775,11 +1023,6 @@ def indicators_for(
 
 
 # -- matching ---------------------------------------------------------------
-def _finding_uid(tenant_id: str, rule_id: str, value: str, window_start: datetime) -> str:
-    blob = f"{tenant_id}|{rule_id}|{value}|{window_start.isoformat()}"
-    return "F-" + hashlib.sha256(blob.encode()).hexdigest()[:24]
-
-
 def _open_finding(conn: Conn, tenant_id: str, kind: str, value: str) -> dict[str, Any] | None:
     """The finding this indicator already has open, forward or retro-hunted."""
     return fetch_one(
@@ -933,7 +1176,7 @@ def findings_from_hits(
 ) -> list[str]:
     """Turn indicator hits into findings, one per indicator value."""
     from shoc.cases import engine as case_engine
-    from shoc.detect.engine import Finding, upsert
+    from shoc.detect.engine import Finding, finding_uid, upsert
 
     grouped: dict[str, list[dict[str, Any]]] = {}
     for hit in hits:
@@ -951,15 +1194,22 @@ def findings_from_hits(
         if held:
             rule_id, window_start = held["rule_id"], held["window_start"]
         actors = {str(r["actor_user_name"]) for r in rows if r.get("actor_user_name")}
+        confidence = float(indicator["confidence"])
+        columns = sorted({str(r.get("matched") or "") for r in rows} - {""})
+        # Held: a lead, or a value only seen coming in or signing in, which is
+        # the office's egress or a shared service more often than an attack.
+        # A listed value everybody reached out to is a mass click or a worm,
+        # and opens one finding that names every account (D143, as amended).
+        came_in = {r.get("matched") for r in rows if r.get("class_uid") != AUTHENTICATION}
+        inbound = not set(columns) & set(OUTBOUND) and came_in <= {"src_endpoint_ip"}
         if (
             not held
             and len(actors) > PREVALENT_ACTORS
+            and (confidence < LEAD_BELOW or inbound)
             and not _matched_before(conn, tenant_id, indicator["type"], value)
         ):
             _hold(conn, tenant_id, indicator, len(actors))
             continue
-        confidence = float(indicator["confidence"])
-        columns = sorted({str(r.get("matched") or "") for r in rows} - {""})
         if set(columns) & set(OUTBOUND):
             attack = ["T1071"]
         elif any(r.get("class_uid") == AUTHENTICATION for r in rows):
@@ -969,7 +1219,7 @@ def findings_from_hits(
         finding = Finding(
             finding_uid=held["finding_uid"]
             if held
-            else _finding_uid(tenant_id, rule_id, value, window_start),
+            else finding_uid(tenant_id, rule_id, value, window_start),
             tenant_id=tenant_id,
             rule_id=rule_id,
             title=f"{NOUN.get(indicator['type'], 'A value')} listed by {indicator['source']}: "
@@ -991,9 +1241,7 @@ def findings_from_hits(
                     "confidence": confidence,
                 },
                 "columns": columns,
-                "users": sorted(
-                    {str(r.get("actor_user_name")) for r in rows if r.get("actor_user_name")}
-                )[:10],
+                "users": sorted(actors),
             },
             entities=sorted(
                 {entity}
@@ -1029,10 +1277,11 @@ def _matched_before(conn: Conn, tenant_id: str, kind: str, value: str) -> bool:
 
 
 def _hold(conn: Conn, tenant_id: str, indicator: dict[str, Any], actors: int) -> None:
-    """Tag a value too common here to be anybody's attack, and say so once.
+    """Tag a value too common here to be anybody's attack, and tell the Manager once.
 
     A report or a feed that names the office's egress or a shared service would
-    otherwise open a finding on every user. `intel.add` by a person releases it.
+    otherwise open a finding on every user. Only a person's `intel.add` releases
+    it, so the exception report asks one, by the notice's group (D166).
     """
     from shoc.agents import manager
 
@@ -1053,22 +1302,38 @@ def _hold(conn: Conn, tenant_id: str, indicator: dict[str, Any], actors: int) ->
                 f"{indicator['value']}, listed by {indicator['source']}, touched {actors} "
                 "accounts on its first match: held as too common here to raise. "
                 "intel.add by a person matches it again.",
-                deliver=False,
+                group_key=f"intel:held:{indicator['type']}:{indicator['value']}",
             )
 
 
 def retro_hunt(
-    conn: Conn, store: EventStore, tenant_id: str, days: int = 90, limit: int = 500
+    conn: Conn,
+    store: EventStore,
+    tenant_id: str,
+    days: int = 90,
+    limit: int = 500,
+    values: list[tuple[str, str]] | None = None,
 ) -> dict[str, Any]:
-    """Search the retention window for indicators that arrived after the events did."""
+    """Search the retention window for indicators that arrived after the events did.
+
+    `values` (type, stored value) hunts only those, as `intel.add` and a report's
+    read do, so what they report is about what they stored and not the feeds'
+    backlog, which the scheduled refresh drains best first (DET-4, DET-7).
+    """
+    only = ""
+    params: list[Any] = [tenant_id, list(MATCHED)]
+    if values is not None:
+        only = "AND (type, value) IN (SELECT * FROM unnest(%s::text[], %s::text[]))"
+        params += [[t for t, _ in values], [v for _, v in values]]
     pending = fetch_all(
         conn,
-        """SELECT type, value, source, confidence, severity, description, tags
-           FROM shoc.iocs
-           WHERE tenant_id = %s AND retro_hunted_at IS NULL AND type = ANY(%s)
-             AND NOT unverified AND NOT ('prevalent' = ANY(tags))
-           ORDER BY confidence DESC LIMIT %s""",
-        (tenant_id, list(MATCHED), limit),
+        f"""SELECT type, value, source, confidence, severity, description, tags
+            FROM shoc.iocs
+            WHERE tenant_id = %s AND retro_hunted_at IS NULL AND type = ANY(%s)
+              AND (expires_at IS NULL OR expires_at > now())
+              AND NOT unverified AND NOT ('prevalent' = ANY(tags)) {only}
+            ORDER BY confidence DESC LIMIT %s""",
+        (*params, limit),
     )
     if not pending:
         return {"indicators": 0, "hits": 0, "findings": []}

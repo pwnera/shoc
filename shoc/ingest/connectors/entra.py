@@ -12,10 +12,20 @@ the others.
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 from shoc.errors import ConfigError
-from shoc.ingest.connectors.base import FetchResult, Streams, client, since_default
+from shoc.ingest.connectors.base import (
+    OVERLAP,
+    FetchResult,
+    Streams,
+    client,
+    reached,
+    settled,
+    since_default,
+    utc,
+)
 from shoc.ingest.connectors.msgraph import access_token
 
 GRAPH = "https://graph.microsoft.com/v1.0"
@@ -42,6 +52,12 @@ STREAMS = {
     "riskyUsers": (f"{GRAPH}/identityProtection/riskyUsers", "riskLastUpdatedDateTime", ""),
 }
 RISK = ("riskDetections", "riskyUsers")
+# Microsoft's "Microsoft Entra reporting latencies" reference gave audit and
+# sign-in logs 2 minutes at the 95th percentile and 5 at the 99th. A sign-in or
+# audit read stops that far behind now, and starts at the newest event the last
+# one read (D164). Risk is scored again after the fact and has no figure: those
+# streams re-read the overlap instead.
+LAG = timedelta(minutes=5)
 
 
 class EntraConnector:
@@ -50,16 +66,26 @@ class EntraConnector:
     def fetch(
         self, settings: dict[str, Any], secret: dict[str, Any], cursor: dict[str, Any], limit: int
     ) -> FetchResult:
-        token = access_token(secret)
-        since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
         stream = settings["stream"]
         if stream not in STREAMS:
             raise ConfigError(f"entra: unknown stream '{stream}' (have: {', '.join(STREAMS)})")
         endpoint, field, kind = STREAMS[stream]
+        risk = stream in RISK
+        since = since_default(cursor, settings, OVERLAP if risk else timedelta(0))
+        window = f"{field} gt {since}"
+        until = ""
+        if not risk:
+            until = settled(cursor, LAG)
+            if utc(since) >= utc(until):
+                return FetchResult(cursor=dict(cursor), since=str(cursor.get("since") or ""))
+            # `ge`: an event sharing the newest time read is not skipped, and
+            # the one already stored is dropped before the store.
+            window = f"{field} ge {since} and {field} le {until}"
+        token = access_token(secret)
         url = cursor.get("next_link") or endpoint
         params: dict[str, Any] = {}
         if not cursor.get("next_link"):
-            params = {"$filter": f"{field} gt {since}" + (f" and {kind}" if kind else "")}
+            params = {"$filter": window + (f" and {kind}" if kind else "")}
             if stream in RISK:
                 params["$top"] = min(int(limit), 500)
             else:
@@ -72,16 +98,17 @@ class EntraConnector:
         records = payload.get("value", [])
         for record in records:
             record["_stream"] = stream
-        newest = max(
-            [str(r.get(field, "")) for r in records] + [str(cursor.get("newest") or since)]
-        )
+        newest = max([str(r.get(field, "")) for r in records] + [reached(cursor, since)])
+        late = str(cursor.get("since") or "")
         next_link = payload.get("@odata.nextLink")
         if next_link and records:
-            # The nextLink carries the $filter it was issued for: hold `since`
-            # until the pages run out.
-            held = {"since": since, "newest": newest, "next_link": next_link}
-            return FetchResult(records=records, cursor=held, more=True)
-        return FetchResult(records=records, cursor={"since": newest}, more=False)
+            # The nextLink carries the $filter it was issued for: hold its start
+            # and end until the pages run out.
+            held = {**cursor, "start": since, "newest": newest, "next_link": next_link}
+            if until:
+                held["until"] = until
+            return FetchResult(records=records, cursor=held, more=True, since=late)
+        return FetchResult(records=records, cursor={"since": newest}, more=False, since=late)
 
 
 CONNECTOR = Streams(EntraConnector(), "stream", tuple(STREAMS))

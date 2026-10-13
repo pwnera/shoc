@@ -8,7 +8,7 @@ description: >
   does editing a ruleset that was already off.
 status: stable
 date: 2026-09-24
-modified: 2026-10-03
+modified: 2026-10-12
 severity: high
 confidence: 0.7
 attack: [T1562.001, T1195]
@@ -38,7 +38,8 @@ detection:
     raw.repository_ruleset.enforcement: [disabled, evaluate]
   condition: (selection and not filter_create_or_blocked) or selection_all_off or selection_ruleset or (selection_ruleset_off and ruleset_off_*)
   timeframe: 15m
-entity: resource.uid
+# An organisation ruleset names no repository; it protects the organisation.
+entity: [resource.uid, cloud.account.uid]
 fields: [actor.user.name, api.operation, resource.uid, raw.ruleset_name]
 sources:
   - name: Elastic

@@ -40,7 +40,7 @@ example: |
   disposition: malicious, because a sign-in path nobody wrote down is already in use.
 trigger:
   verdict: [malicious]
-  severity_at_least: high
+  severity_at_least: medium
   min_confidence: 0.8
 steps:
   - name: revoke the actor's sessions in Okta

@@ -29,6 +29,7 @@ baseline:
     by: [process.cmd_line]
     among: device.uid
     seen_by_fewer_than: 2
+    new_only: true
   lookback: 30d
 pivot: [device.hostname, device.uid, process.cmd_line, process.parent_process.name, actor.user.name]
 triage: >

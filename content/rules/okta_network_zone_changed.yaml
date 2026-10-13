@@ -7,8 +7,8 @@ description: >
   comes from it without touching a policy.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.6
 attack: [T1556.009, T1562.007]
 logsource:

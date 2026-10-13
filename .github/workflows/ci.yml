@@ -15,7 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SHOC_MASTER_KEY: ci-master-key-not-a-secret
+  # serve, worker and migrate warn about a key shorter than 32 characters.
+  SHOC_MASTER_KEY: ci-master-key-not-a-secret-but-long-enough
 
 jobs:
   lint:
@@ -53,9 +54,11 @@ jobs:
           --health-cmd "pg_isready -U postgres" --health-interval 5s
           --health-timeout 5s --health-retries 10
     env:
-      # An ordinary role, as in deploy/: a superuser bypasses row-level
-      # security, and a suite run as one would test none of it (SEC-1).
-      SHOC_DSN: postgresql://shoc:shoc@127.0.0.1:5432/shoc
+      # The roles deploy/ uses: serve and worker run as shoc_app, which does not
+      # own the schema, and only migrate connects as its owner (RFC 0024).
+      # Neither is a superuser, which bypasses row-level security (SEC-1).
+      SHOC_DSN: postgresql://shoc_app:ci-app@127.0.0.1:5432/shoc
+      SHOC_MIGRATE_DSN: postgresql://shoc:shoc@127.0.0.1:5432/shoc
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -80,9 +83,9 @@ jobs:
         run: sh scripts/check_upgrade.sh
       - name: unit tests
         run: pytest tests/unit -q
-      - name: grant the read-only agent role
+      - name: grant the runtime role and the read-only agent role
         run: |
-          shoc migrate
+          shoc migrate # as SHOC_MIGRATE_DSN, granting SHOC_DSN's role what it runs with
           shoc grant-readonly --role shoc_agent
       - name: conformance suite (Postgres), with agents on the read-only role
         env:
@@ -112,7 +115,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
-      - name: a scaffolded connector and rule still pass their own tests
+      # A scaffolded rule's loading and compiling is tests/unit/test_scaffold.py's.
+      - name: the scaffolds generate, and a scaffolded connector's mapping passes its test
         run: |
           shoc new connector ci_example
           shoc new rule ci_example_rule --product aws --service cloudtrail
@@ -147,6 +151,11 @@ jobs:
         run: docker build -f deploy/Dockerfile -t shoc:ci .
       - name: the image starts and answers
         run: docker run --rm shoc:ci --version
+      - name: the image ships every rule, and each compiles
+        run: |
+          want=$(ls content/rules/*.yaml | wc -l)
+          docker run --rm shoc:ci rules check | tee /tmp/rules
+          grep -qx "$want/$want rule(s) compile" /tmp/rules
 
   helm:
     runs-on: ubuntu-latest

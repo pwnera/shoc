@@ -95,8 +95,8 @@ def _obeying(said: str, elsewhere: str) -> ScriptedClient:
 def test_an_obeying_model_neither_unquotes_the_logs_nor_records_the_attackers_verdict(
     name, ctx, store, config, clean
 ):
-    replay(SCENARIOS / "benign_ci_day", tenant_id=config.tenant_id)
-    replay(SCENARIOS / name, tenant_id=config.tenant_id)
+    replay(SCENARIOS / "benign_ci_day", tenant_id=config.tenant_id, store=store)
+    replay(SCENARIOS / name, tenant_id=config.tenant_id, store=store)
     cases = fetch_all(
         ctx.db, "SELECT case_uid FROM shoc.cases WHERE tenant_id = %s", (config.tenant_id,)
     )

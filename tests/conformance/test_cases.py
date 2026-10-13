@@ -136,7 +136,7 @@ def _grouped(ctx, store, config) -> tuple[str, dict[str, str]]:
     """The leaked-key case as code grouped it, and its findings by rule."""
     from evals.run import SCENARIOS, replay
 
-    replay(SCENARIOS / "leaked_aws_key", tenant_id=config.tenant_id)
+    replay(SCENARIOS / "leaked_aws_key", tenant_id=config.tenant_id, store=store)
     case = fetch_one(
         ctx.db, "SELECT case_uid FROM shoc.cases WHERE tenant_id = %s", (config.tenant_id,)
     )
@@ -229,7 +229,7 @@ def test_sentinel_attaches_only_on_a_link_it_names(ctx, store, config, clean):
 
 
 def test_a_case_sentinel_emptied_is_closed_and_not_investigated(ctx, store, config, clean):
-    from shoc.agents import sentinel
+    from shoc.agents import reporter, sentinel
 
     case_uid, found = _grouped(ctx, store, config)
     keep, *rest = found.values()
@@ -247,8 +247,29 @@ def test_a_case_sentinel_emptied_is_closed_and_not_investigated(ctx, store, conf
         ]
     )
     assert sentinel.shape(ctx.db, store, config.tenant_id, [case_uid], client, config) == [other]
-    assert engine.require(ctx.db, config.tenant_id, case_uid)["state"] == "closed"
+    closed = engine.require(ctx.db, config.tenant_id, case_uid)
+    assert closed["state"] == "closed"
     assert all(_finding(ctx, uid)["case_uid"] == other for uid in rest)
+    # It says why and where the findings went, and is no incident in the weekly (live-16).
+    assert closed["disposition_reason"] == "Sentinel attached every finding to another case"
+    assert closed["related_case_uid"] == other
+    weekly = reporter.build(ctx.db, store, config.tenant_id, "weekly", config=config)
+    assert case_uid not in [c["case_uid"] for c in weekly.body["cases"]["rows"]]
+
+
+def test_a_close_keeps_its_note_as_the_reason_unless_the_crew_closed_it(ctx, store, config, clean):
+    """A case whose findings vanished closed critical with no reason at all (live-16)."""
+    case_uid, found = _grouped(ctx, store, config)
+    other = engine.move(ctx.db, config.tenant_id, [found["aws_access_key_created"]])
+    engine.transition(ctx.db, config.tenant_id, other, "closed", "crew decision", by="crew")
+    assert engine.require(ctx.db, config.tenant_id, other)["disposition_reason"] == "", (
+        "the crew's reason is its verdict's summary"
+    )
+    engine.transition(ctx.db, config.tenant_id, case_uid, "closed", "its findings no longer exist")
+    assert (
+        engine.require(ctx.db, config.tenant_id, case_uid)["disposition_reason"]
+        == "its findings no longer exist"
+    )
 
 
 def test_a_closed_case_takes_no_finding(ctx, store, config, clean):
@@ -257,6 +278,20 @@ def test_a_closed_case_takes_no_finding(ctx, store, config, clean):
     engine.transition(ctx.db, config.tenant_id, other, "closed", "done")
     with pytest.raises(ValidationError, match="closed"):
         engine.move(ctx.db, config.tenant_id, [found["aws_discovery_burst"]], into=other)
+
+
+def test_a_case_opened_by_a_move_is_published_with_its_severity(ctx, store, config, clean):
+    """The console raises a toast for a critical case.opened (API-2)."""
+    _, found = _grouped(ctx, store, config)
+    other = engine.move(ctx.db, config.tenant_id, [found["aws_access_key_created"]])
+    published = fetch_one(
+        ctx.db,
+        """SELECT payload FROM shoc.stream_events
+           WHERE tenant_id = %s AND type = 'case.opened' AND subject = %s""",
+        (config.tenant_id, other),
+    )
+    case = engine.require(ctx.db, config.tenant_id, other)
+    assert published and published["payload"].get("severity") == case["severity"]
 
 
 def test_a_token_request_is_written_when_it_is_made(ctx, config, clean):

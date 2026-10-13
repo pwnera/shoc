@@ -42,6 +42,16 @@ def _ingest(store, tenant: str, pack, kind: str, when) -> int:
     return len(rows)
 
 
+def _learnt(store, tenant: str, pack, now) -> None:
+    """A pack that learns from its own selection waits until its own first match
+    is a lookback old (D287): its baseline fixture, matched back then, older than
+    any window read now looks back."""
+    if pack.baseline.learns_from != "selection":
+        return
+    span = timedelta(days=1, seconds=pack.baseline.lookback_seconds + pack.window_seconds)
+    _ingest(store, tenant, pack, "baseline", now - span)
+
+
 def _connect(ctx, config, pack, started_days_ago: int = 60, name: str = "") -> str:
     """A connected source sending the pack's product, whose data starts back then."""
     products = layout.products_for(
@@ -135,6 +145,7 @@ def test_every_pack_has_fixtures(pack):
 @pytest.mark.parametrize("pack", PACKS, ids=lambda p: p.id)
 def test_a_pack_surfaces_its_own_fixture(pack, ctx, store, config, clean, now):
     _connect(ctx, config, pack)
+    _learnt(store, config.tenant_id, pack, now)
     _ingest(store, config.tenant_id, pack, "surfaced", now)
     run = hunter.run_pack(ctx.db, store, config.tenant_id, pack, client=NoLLM(), config=config)
     assert run.rows > 0, f"{pack.id} did not surface the behaviour it exists to find: {run.error}"
@@ -150,6 +161,7 @@ def test_a_baseline_silences_a_pack(pack, ctx, store, config, clean, now):
     quiet on its own.
     """
     _connect(ctx, config, pack)
+    _learnt(store, config.tenant_id, pack, now)
     when = now - timedelta(days=10) if pack.baseline.kind == "first_seen" else now
     floor_only = pack.baseline.seen_by_at_least and not pack.baseline.seen_by_fewer_than
     if not floor_only:
@@ -175,6 +187,152 @@ def test_a_failed_call_does_not_make_the_successful_one_familiar(ctx, store, con
     _ingest(store, config.tenant_id, FIRST, "surfaced", now)
     run = hunter.run_pack(ctx.db, store, config.tenant_id, FIRST, client=NoLLM(), config=config)
     assert run.rows == len(surfaced)
+
+
+OKTA_COUNTRY = next(p for p in PACKS if p.id == "okta_first_login_country")
+
+
+def test_a_challenge_nobody_passed_does_not_make_a_country_familiar(ctx, store, config, clean, now):
+    """Yesterday's MFA challenge from the new country got nobody in, so today's
+    sign-in from there is still the first (DET-8)."""
+    _connect(ctx, config, OKTA_COUNTRY)
+    surfaced = json.loads((FIXTURES / OKTA_COUNTRY.id / "surfaced.json").read_text())
+    challenged = [
+        {**r, "uuid": f"{r['uuid']}-{result}", "outcome": {"result": result}}
+        for r in surfaced
+        for result in ("CHALLENGE", "UNKNOWN")
+    ]
+    batch.load(
+        store,
+        fixture_rows(challenged, _source(OKTA_COUNTRY), config.tenant_id, now - timedelta(days=1)),
+    )
+    _mark_hunted(ctx, config, OKTA_COUNTRY)
+    _ingest(store, config.tenant_id, OKTA_COUNTRY, "surfaced", now)
+    run = hunter.run_pack(
+        ctx.db, store, config.tenant_id, OKTA_COUNTRY, client=NoLLM(), config=config
+    )
+    assert run.rows == len(surfaced)
+
+
+OFFICE_CHILD = next(p for p in PACKS if p.id == "endpoint_office_child_process_rare")
+
+
+def test_a_rare_grouping_seen_before_the_window_does_not_come_back(ctx, store, config, clean, now):
+    """A rarity pack reports a grouping the window it first appears, not every run after."""
+    _connect(ctx, config, OFFICE_CHILD)
+    _ingest(store, config.tenant_id, OFFICE_CHILD, "surfaced", now - timedelta(days=2))
+    _mark_hunted(ctx, config, OFFICE_CHILD)
+    surfaced = json.loads((FIXTURES / OFFICE_CHILD.id / "surfaced.json").read_text())
+    again = [
+        {**r, "properties": {**r["properties"], "ProcessCommandLine": "mshta.exe /again"}}
+        for r in surfaced
+    ]
+    batch.load(store, fixture_rows(again, _source(OFFICE_CHILD), config.tenant_id, now))
+    run = hunter.run_pack(
+        ctx.db, store, config.tenant_id, OFFICE_CHILD, client=NoLLM(), config=config
+    )
+    assert run.rows == 0, "the same single-device grouping came back"
+
+
+def test_a_rare_pack_finding_names_the_host_it_ran_on(ctx, store, config, clean, now):
+    """A rare row carries the pivots its grouping does not fix, so the finding has an actor."""
+    _connect(ctx, config, OFFICE_CHILD)
+    _ingest(store, config.tenant_id, OFFICE_CHILD, "surfaced", now)
+    run = hunter.run_pack(
+        ctx.db, store, config.tenant_id, OFFICE_CHILD, client=Hunter("suspicious"), config=config
+    )
+    assert run.outcome == "suspicious" and run.finding_uid
+    (row,) = fetch_all(
+        ctx.db, "SELECT entities FROM shoc.findings WHERE tenant_id = %s", (config.tenant_id,)
+    )
+    assert any(e.startswith("host:") for e in row["entities"]), row["entities"]
+
+
+OKTA_SESSIONS = next(p for p in PACKS if p.id == "okta_session_from_several_addresses")
+
+
+def test_a_hunt_finding_names_a_session_as_a_session(ctx, store, config, clean, now):
+    """An Okta session id is no credential: the finding names it `session:`, so the
+    case is not titled with it as if a key had leaked (DET-11)."""
+    _connect(ctx, config, OKTA_SESSIONS)
+    _ingest(store, config.tenant_id, OKTA_SESSIONS, "surfaced", now)
+    run = hunter.run_pack(
+        ctx.db, store, config.tenant_id, OKTA_SESSIONS, client=Hunter("suspicious"), config=config
+    )
+    assert run.outcome == "suspicious" and run.finding_uid
+    kinds = {
+        e.split(":", 1)[0]
+        for row in fetch_all(
+            ctx.db, "SELECT entities FROM shoc.findings WHERE tenant_id = %s", (config.tenant_id,)
+        )
+        for e in row["entities"]
+    }
+    assert "session" in kinds and "key" not in kinds, kinds
+
+
+# -- what a pack reads ----------------------------------------------------------------
+RELAY = next(p for p in PACKS if p.id == "dns_remote_access_relay_first_seen")
+
+
+def _lookup(name: str) -> dict:
+    return {
+        "_source": "cloudflare_logs",
+        "_dataset": "gateway_dns",
+        "QueryName": name,
+        "ResolverDecision": "allowedOnNoPolicyMatch",
+        "DeviceName": "LAPTOP-0042",
+        "DeviceID": "b72ac397-e5c3-913e-11ed-03face9f2b6b",
+        "Email": "john.doe@example.com",
+        "SrcIP": "203.0.113.81",
+        "QueryTypeName": "A",
+        "RCode": 0,
+    }
+
+
+def test_a_new_anydesk_relay_each_day_is_not_a_new_vendor(ctx, store, config, clean, now):
+    """AnyDesk hands every session a relay of its own: a company that uses it saw a
+    "first" relay every day. A look-alike of the vendor's domain is not the vendor."""
+    _connect(ctx, config, RELAY)
+    yesterday = [_lookup("boot.net.anydesk.com"), _lookup("relay-1a2b3c4d.net.anydesk.com")]
+    batch.load(
+        store, fixture_rows(yesterday, _source(RELAY), config.tenant_id, now - timedelta(days=1))
+    )
+    _mark_hunted(ctx, config, RELAY)
+    today = [
+        _lookup("boot.net.anydesk.com"),
+        _lookup("relay-5e6f7a8b.net.anydesk.com"),
+        _lookup("router7.teamviewer.com"),
+        _lookup("notanydesk.com"),
+    ]
+    batch.load(store, fixture_rows(today, _source(RELAY), config.tenant_id, now))
+    run = hunter.run_pack(ctx.db, store, config.tenant_id, RELAY, client=NoLLM(), config=config)
+    assert run.rows == 0, run.tuples
+    _mark_hunted(ctx, config, RELAY)
+    first = [_lookup("anydesk.com"), _lookup("master1.teamviewer.com")]
+    batch.load(store, fixture_rows(first, _source(RELAY), config.tenant_id, now))
+    run = hunter.run_pack(ctx.db, store, config.tenant_id, RELAY, client=NoLLM(), config=config)
+    assert run.rows == 2, "a vendor's own names, looked up for the first time, are new"
+
+
+EXCLUSION = next(p for p in PACKS if p.id == "endpoint_defender_exclusion_registry_first_seen")
+
+
+def test_an_exclusion_defender_wrote_itself_is_new_by_its_path(ctx, store, config, clean, now):
+    """Defender writes every exclusion with the same command line, so keyed on it
+    a new excluded path was never new; the path is the key (DET-8)."""
+    _connect(ctx, config, EXCLUSION)
+    surfaced = json.loads((FIXTURES / EXCLUSION.id / "surfaced.json").read_text())
+    build = [
+        {**r, "properties": {**r["properties"], "RegistryValueName": "C:\\src\\build"}}
+        for r in surfaced
+    ]
+    batch.load(
+        store, fixture_rows(build, _source(EXCLUSION), config.tenant_id, now - timedelta(days=3))
+    )
+    _mark_hunted(ctx, config, EXCLUSION)
+    _ingest(store, config.tenant_id, EXCLUSION, "surfaced", now)
+    run = hunter.run_pack(ctx.db, store, config.tenant_id, EXCLUSION, client=NoLLM(), config=config)
+    assert run.rows == len(surfaced), run.error
 
 
 # -- readiness: only data that can answer the question -------------------------
@@ -263,6 +421,24 @@ def test_a_late_delivery_is_hunted_rather_than_lost(ctx, store, config, clean, n
     assert run.rows > 0
 
 
+def test_a_run_asked_for_directly_leaves_its_last_minutes_to_the_next_window(
+    ctx, store, config, clean
+):
+    """It reads up to now, but its cursor stops SETTLE before the database's now, so
+    a batch that commits just after it is read by the next window (D64)."""
+    _connect(ctx, config, FIRST)
+    run = hunter.run_pack(ctx.db, store, config.tenant_id, FIRST, client=NoLLM(), config=config)
+    assert run.outcome == "clear"
+    (row,) = fetch_all(
+        ctx.db,
+        """SELECT ingested_through <= now() - interval '10 minutes' AS settled,
+                  ingested_through < %s AS behind
+           FROM shoc.hunt_packs WHERE tenant_id = %s AND pack_id = %s""",
+        (run.ingested_to, config.tenant_id, FIRST.id),
+    )
+    assert row["settled"] and row["behind"]
+
+
 def test_without_a_model_the_window_is_read_again_rather_than_guessed(
     ctx, store, config, clean, now
 ):
@@ -331,6 +507,32 @@ def test_a_fact_about_someone_else_is_no_basis(ctx, store, config, clean, now):
     assert run.outcome == "inconclusive", "a live fact used to explain any tuple (SEC-2)"
 
 
+def test_a_fact_about_the_same_operation_by_someone_else_is_no_basis(
+    ctx, store, config, clean, now
+):
+    """The fact has to name the tuple's actor: its operation is in everybody's tuples."""
+    from shoc.agents import memory
+
+    fact = memory.add(
+        ctx.db,
+        config.tenant_id,
+        "alice reads GetSecretValue from the office every morning",
+        subject="alice",
+        source="human",
+    )
+    _connect(ctx, config, FIRST)
+    _ingest(store, config.tenant_id, FIRST, "surfaced", now)
+    run = hunter.run_pack(
+        ctx.db,
+        store,
+        config.tenant_id,
+        FIRST,
+        client=Hunter("explained", "human_fact", fact),
+        config=config,
+    )
+    assert run.outcome == "inconclusive", "a fact about alice explained deploy-ci's call"
+
+
 def test_an_explanation_that_cites_nothing_is_inconclusive(ctx, store, config, clean, now):
     from shoc.agents import memory
 
@@ -387,6 +589,61 @@ def test_suspicious_without_events_is_inconclusive(ctx, store, config, clean, no
     assert run.outcome == "inconclusive"
 
 
+@pytest.mark.parametrize(
+    ("days_ago", "failed", "looked_up", "product", "expected"),
+    [
+        (40, False, True, "", "explained"),
+        (40, False, False, "", "inconclusive"),
+        (40, True, True, "", "inconclusive"),
+        (10, True, True, "", "inconclusive"),
+        (40, False, True, "Okta", "inconclusive"),
+    ],
+    ids=[
+        "a-return-from-before-the-lookback",
+        "an-event-no-lookup-returned",
+        "a-failure-before-the-lookback",
+        "the-attackers-own-earlier-try",
+        "another-products-return",
+    ],
+)
+def test_an_older_event_explains_only_a_routine_return(
+    days_ago, failed, looked_up, product, expected, ctx, store, config, clean, now
+):
+    """An older event counts as it would in first-seen history: a success, in the
+    pack's products, from before the lookback, that a lookup returned (D79, SEC-2)."""
+    from types import SimpleNamespace
+
+    _connect(ctx, config, FIRST)
+    surfaced = json.loads((FIXTURES / FIRST.id / "surfaced.json").read_text())
+    denied = {"errorCode": "AccessDenied"} if failed else {}
+    older = [{**r, "eventID": f"{r['eventID']}-older", **denied} for r in surfaced]
+    when = now - timedelta(days=days_ago)
+    rows = fixture_rows(older, "aws_cloudtrail", config.tenant_id, when)
+    if product:
+        rows = [{**r, "metadata_product": product} for r in rows]
+    batch.load(store, rows)
+    _mark_hunted(ctx, config, FIRST)
+    _ingest(store, config.tenant_id, FIRST, "surfaced", now)
+    run = hunter.run_pack(ctx.db, store, config.tenant_id, FIRST, client=NoLLM(), config=config)
+    item = run.tuples[0]
+    ref = next(
+        str(r["event_uid"])
+        for r in rows
+        if all(str(r.get(k)) == v for k, v in item["values"].items())
+    )
+    verdict = SimpleNamespace(
+        outcome="explained",
+        basis="older_event",
+        basis_ref=ref,
+        citations=item["event_uids"][:1],
+        reasoning="the same call every quarter",
+        missing="",
+    )
+    seen = [json.dumps({"rows": [{"event_uid": ref}]})] if looked_up else []
+    got, _ = hunter.check(ctx.db, store, config.tenant_id, run, item, verdict, seen, FIRST)
+    assert got == expected
+
+
 # -- routing: a finding, never a case -------------------------------------------
 def test_a_suspicious_tuple_raises_a_low_finding_with_actor_entities(
     ctx, store, config, clean, now
@@ -427,11 +684,48 @@ def test_a_case_only_hunts_opened_has_a_token_ceiling(ctx, store, config, clean,
 def test_too_many_tuples_are_triaged_in_order_and_the_rest_named(
     ctx, store, config, clean, now, monkeypatch
 ):
+    """Tuples past the cap wait for the retries, and Ops says the pack is too broad."""
+    from shoc.agents import ops
+
     monkeypatch.setattr(hunter, "TOO_MANY_TUPLES", 0)
     _connect(ctx, config, FIRST)
     _ingest(store, config.tenant_id, FIRST, "surfaced", now)
     run = hunter.run_pack(ctx.db, store, config.tenant_id, FIRST, client=NoLLM(), config=config)
     assert run.unseen and "too broad" in run.unseen[0]
+    assert run.outcome == "gap" and run.cut
+    kept = fetch_all(
+        ctx.db,
+        "SELECT verdict, row_data FROM shoc.hunt_observations WHERE tenant_id = %s",
+        (config.tenant_id,),
+    )
+    assert len(kept) == len(run.cut), "a cut tuple is kept, not dropped"
+    assert all(r["verdict"] == "inconclusive" and r["row_data"]["cut"] for r in kept)
+    raised = [a for a in ops.alerts(ctx.db, config.tenant_id) if a.kind == "hunt.gap"]
+    assert [(a.subject, "too broad" in a.detail) for a in raised] == [(FIRST.id, True)]
+    monkeypatch.setattr(hunter, "TOO_MANY_TUPLES", 200)
+    retries = hunter._retries(ctx.db, config.tenant_id, [], config)
+    assert [len(r.tuples) for _, r in retries] == [len(run.cut)]
+
+
+def test_a_cut_tuple_read_inconclusive_on_a_sensitive_pack_raises_nothing_yet(
+    ctx, store, config, clean, now, monkeypatch
+):
+    """Its retry is its first reading; the second inconclusive is the one that raises."""
+    sensitive = next(p for p in PACKS if p.id == "aws_secret_first_read")
+    assert sensitive.sensitive
+    monkeypatch.setattr(hunter, "TOO_MANY_TUPLES", 0)
+    _connect(ctx, config, sensitive)
+    _ingest(store, config.tenant_id, sensitive, "surfaced", now)
+    hunter.run_pack(ctx.db, store, config.tenant_id, sensitive, client=NoLLM(), config=config)
+    monkeypatch.setattr(hunter, "TOO_MANY_TUPLES", 200)
+    model = Hunter("inconclusive")
+    for _ in range(2):
+        hunter.triaged(ctx.db, store, config.tenant_id, [], model, config)
+    findings = fetch_all(
+        ctx.db, "SELECT rule_id FROM shoc.findings WHERE tenant_id = %s", (config.tenant_id,)
+    )
+    assert len(model.prompts) == 2 and findings, "read twice, inconclusive twice, raised"
+    assert hunter.triaged(ctx.db, store, config.tenant_id, [], model, config) == 0
 
 
 def test_a_pack_that_stops_at_its_limit_ends_its_window_at_the_last_row_read(
@@ -573,6 +867,72 @@ def test_a_pack_is_not_run_twice_in_its_cadence(ctx, store, config, clean):
     hunter.run_pack(ctx.db, store, config.tenant_id, FIRST, client=NoLLM(), config=config)
     chosen = hunter.select(ctx.db, config.tenant_id, config)
     assert FIRST.id not in {c.pack_id for c in chosen}
+
+
+def test_a_weekly_pack_whose_window_was_left_unread_is_due_the_next_day(ctx, store, config, clean):
+    """A gap the ceiling, a missing model or a failed triage left is read again the
+    next day, as its message says, not a cadence later (D106, DET-9). A gap that
+    advanced (too broad) waits for its cadence."""
+    weekly = [p.id for p in PACKS if p.cadence_days == 7][:3]
+    assert len(weekly) == 3
+    # (whether the run advanced, days before now its window started): the third
+    # read a window a late load had pulled back behind the cursor, and did not
+    # advance.
+    cases = ((False, 2), (True, 2), (False, 3))
+    for pack_id, (advanced, began) in zip(weekly, cases, strict=True):
+        execute(
+            ctx.db,
+            """INSERT INTO shoc.hunt_packs
+                   (tenant_id, pack_id, last_outcome, last_run_at, cadence_days, ingested_through)
+               VALUES (%s,%s,'gap', now() - interval '1 day', 7, now() - interval '2 days')""",
+            (config.tenant_id, pack_id),
+        )
+        execute(
+            ctx.db,
+            """INSERT INTO shoc.hunt_runs (run_uid, tenant_id, pack_id, ran_at, outcome,
+                                           ingested_from, ingested_to, advanced)
+               VALUES (%s,%s,%s, now() - interval '1 day', 'gap',
+                       now() - %s * interval '1 day', now() - interval '1 day', %s)""",
+            (f"HUNT-{pack_id}", config.tenant_id, pack_id, began, advanced),
+        )
+    chosen = {c.pack_id for c in hunter.select(ctx.db, config.tenant_id, config)}
+    assert weekly[0] in chosen, "the unread window waited a week"
+    assert weekly[2] in chosen, "a window started before the cursor is still unread"
+    assert weekly[1] not in chosen, "a gap that advanced keeps its cadence"
+
+
+def test_the_pack_read_longest_ago_leads_its_rank(ctx, store, config, clean):
+    """Ties within a rank go to the stalest pack, not the first in the alphabet, and
+    a pack too broad every day does not take the lead for being a gap (DET-9)."""
+    first, last = sorted(p.id for p in PACKS)[0], sorted(p.id for p in PACKS)[-1]
+    for pack_id, outcome, days in ((first, "gap", 1), (last, "clear", 2)):
+        execute(
+            ctx.db,
+            """INSERT INTO shoc.hunt_packs
+                   (tenant_id, pack_id, last_outcome, last_run_at, ingested_through)
+               VALUES (%s,%s,%s, now() - interval '30 days', now() - %s * interval '1 day')""",
+            (config.tenant_id, pack_id, outcome, days),
+        )
+    order = [c.pack_id for c in hunter.select(ctx.db, config.tenant_id, config)]
+    assert order.index(last) < order.index(first), "the pack read longest ago goes first"
+    assert order[-1] == first, "a broad pack that advanced yesterday goes last"
+
+
+def test_retries_read_sensitive_packs_first(ctx, store, config, clean, monkeypatch):
+    """A sensitive pack's second reading is the one that raises a finding (D79)."""
+    plain = next(p for p in PACKS if not p.sensitive)
+    sensitive = next(p for p in PACKS if p.sensitive)
+    for n, (pack, age) in enumerate(((plain, 3), (sensitive, 1))):
+        execute(
+            ctx.db,
+            """INSERT INTO shoc.hunt_observations
+                   (observation_uid, tenant_id, run_uid, pack_id, row_data, verdict, seen_at)
+               VALUES (%s,%s,'HUNT-x',%s,%s,'inconclusive', now() - %s * interval '1 day')""",
+            (f"TUP-{n:016d}", config.tenant_id, pack.id, json.dumps({"values": {}}), age),
+        )
+    monkeypatch.setattr(hunter, "TOO_MANY_TUPLES", 1)
+    retries = hunter._retries(ctx.db, config.tenant_id, [], config)
+    assert [p.id for p, _ in retries] == [sensitive.id]
 
 
 # -- through the registry -----------------------------------------------------------
@@ -793,6 +1153,68 @@ def test_the_gate_refuses_a_pack_no_source_answers_or_a_shipped_id(ctx, store, c
     _connect(ctx, config, BEDROCK)
     with pytest.raises(ValidationError, match="ships in content/"):
         hunter.merge_pack(ctx.db, store, config.tenant_id, config, _spec(uid, BEDROCK.id))
+
+
+def test_the_gate_refuses_a_lookback_past_what_the_store_keeps(
+    ctx, store, config, clean, monkeypatch
+):
+    """What the store keeps is the retention `config.apply` set, over
+    SHOC_RETENTION_DAYS (API-4)."""
+    from shoc.db import jobs
+    from shoc.errors import GateRefused
+
+    _connect(ctx, config, BEDROCK)
+    retention = f"{config.tenant_id}:retention"
+    execute(ctx.db, "DELETE FROM shoc.schedules WHERE schedule_id = %s", (retention,))
+    monkeypatch.setattr(config, "retention_days", 7)
+    with pytest.raises(GateRefused, match="reaches past the 7 days"):
+        hunter.merge_pack(ctx.db, store, config.tenant_id, config, {**_spec(""), "dry_run": True})
+    monkeypatch.setattr(config, "retention_days", 90)
+    applied = {"days": 7, "set_by": "config.apply"}
+    jobs.upsert_schedule(ctx.db, retention, config.tenant_id, "retention", 86400, applied)
+    try:
+        with pytest.raises(GateRefused, match="reaches past the 7 days"):
+            hunter.merge_pack(
+                ctx.db, store, config.tenant_id, config, {**_spec(""), "dry_run": True}
+            )
+    finally:
+        execute(ctx.db, "DELETE FROM shoc.schedules WHERE schedule_id = %s", (retention,))
+
+
+def test_a_pack_learning_on_its_selection_still_meets_the_volume_gate(
+    ctx, store, config, clean, now, monkeypatch
+):
+    """`learns_from: selection` leaves the sources ready: the gate still runs the
+    pack here and refuses one that floods triage."""
+    from shoc.errors import GateRefused
+
+    _connect(ctx, config, BEDROCK)
+    _ingest(store, config.tenant_id, BEDROCK, "surfaced", now)
+    monkeypatch.setattr(hunter, "TOO_MANY_TUPLES", 0)
+    spec = _spec("")
+    spec["pack"]["baseline"]["learns_from"] = "selection"
+    with pytest.raises(GateRefused, match="tuples") as refused:
+        hunter.merge_pack(ctx.db, store, config.tenant_id, config, {**spec, "dry_run": True})
+    assert refused.value.stage == "volume"
+
+
+def test_a_merged_pack_that_no_longer_loads_is_told_once(ctx, store, config, clean):
+    """A merged pack past a bound a later release added stops running, and says so."""
+    body = {**_spec("")["pack"], "window": "30d"}
+    execute(
+        ctx.db,
+        """INSERT INTO shoc.merged_hunts (tenant_id, pack_id, body, merged_by)
+           VALUES (%s,%s,%s,'Hunter')""",
+        (config.tenant_id, body["id"], json.dumps(body)),
+    )
+    for _ in range(2):
+        hunter.daily(ctx.db, store, config.tenant_id, config, client=NoLLM(), limit=1)
+    told = fetch_all(
+        ctx.db,
+        "SELECT body FROM shoc.notices WHERE tenant_id = %s AND group_key = %s",
+        (config.tenant_id, f"hunt:{body['id']}"),
+    )
+    assert len(told) == 1 and "a window is at most 7d" in told[0]["body"]
 
 
 class PackWriter:

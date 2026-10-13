@@ -1,0 +1,37 @@
+id: m365_mfa_denied_burst
+title: Repeated MFA failures for one Microsoft 365 user (Microsoft 365 audit)
+description: >
+  One user failed the MFA step five times in ten minutes after entering the
+  right password. Someone has the password and is either pushing prompts until
+  the user gives in or guessing one-time codes. This copy of the Entra rule
+  reads the unified audit log, for tenants without Entra P1.
+status: experimental
+date: 2026-10-12
+severity: high
+confidence: 0.65
+attack: [T1621, T1110.001]
+logsource:
+  product: m365
+  service: management
+detection:
+  selection:
+    api.operation: UserLoginFailed
+    status_code: "500121"
+  condition: selection
+  timeframe: 10m
+  group_by: [actor.user.name]
+  count: ">= 5"
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, message, http_request.user_agent]
+sources:
+  - name: Sigma
+    title: Multifactor Authentication Denied
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_mfa_denies.yml
+    author: AlertIQ
+    license: DRL-1.1
+    relation: inspired
+  - name: Elastic
+    title: Entra ID MFA TOTP Brute Force Attempted
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/azure/credential_access_entra_id_totp_brute_force_attempts
+    license: Elastic-2.0
+    relation: inspired

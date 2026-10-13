@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import json
 import re
 import threading
 import time
@@ -286,12 +287,20 @@ def test_password_and_code_sign_in(browser, ctx, clock, conn):
     browser.cookies.clear()
     assert me(browser).status_code == 401  # no credential, and single-user mode is over
     before = audit_seq(conn, ctx.tenant_id)
-    answer = login(browser, clock, "ann@example.com", seed)
+    answer = login(browser, clock, "ann@example.com", seed, **{"x-forwarded-for": "203.0.113.20"})
     assert answer.status_code == 200, answer.text
     assert answer.json() == {"email": "ann@example.com"}
     assert answer.headers["cache-control"] == "no-store"
     assert me(browser).json()["data"]["role"] == "admin"
     assert audited(conn, ctx.tenant_id, before, "auth.signin") == ["human:ann@example.com"]
+    # The row says how and from where.
+    row = fetch_one(
+        conn,
+        """SELECT subject FROM shoc.audit_log
+           WHERE tenant_id = %s AND seq > %s AND capability = 'auth.signin'""",
+        (ctx.tenant_id, before),
+    )
+    assert row and json.loads(row["subject"]) == {"method": "password", "from": "203.0.113.20"}
     # The email is matched whatever its case.
     browser.cookies.clear()
     assert login(browser, clock, "ANN@example.com", seed).status_code == 200
@@ -573,10 +582,47 @@ def test_disabling_a_person_ends_their_sessions_links_and_role_tokens(browser, c
     assert [u["email"] for u in call("user.list", ctx, {}).data.users] == []
     assert [u["email"] for u in call("user.list", ctx, {"disabled": True}).data.users] == [email]
 
-    # Enabled again: they sign in anew; nothing that ended comes back.
-    call("user.update", ctx, {"email": email, "disabled": False})
+    # Disabling wipes the password and the authenticator seed.
+    row = user_row(ctx.db, ctx.tenant_id, email)
+    assert (row["password_hash"], row["secret"], row["totp_step"]) == (None, None, 0)
+
+    # Enabled again: nothing that ended comes back, the old password and phone included.
+    out = call("user.update", ctx, {"email": email, "disabled": False})
+    assert "user.reset" in out.summary
     assert me(browser, cookie=f"{COOKIE}={old}").status_code == 401
-    assert login(browser, clock, email, seed).status_code == 200
+    assert login(browser, clock, email, seed).status_code == 401
+    # They enrol anew through a reset link.
+    link = link_of(call("user.reset", ctx, {"email": email}).data)
+    new_seed = credentials.link_seed(ctx.config.master_key, link)
+    clock.advance()
+    accepted = browser.post(
+        "/auth/link/accept",
+        json={"link": link, "password": NEW_PASSWORD, "code": clock.code(new_seed)},
+    )
+    assert accepted.status_code == 200, accepted.text
+    browser.cookies.clear()
+    assert login(browser, clock, email, new_seed, password=NEW_PASSWORD).status_code == 200
+
+
+def test_a_role_change_ends_role_tokens_issued_under_another_role(browser, ctx, clock, config):
+    enrol(browser, ctx, clock, "ann@example.com", role="admin")
+    an_admin_token(ctx)  # so ann is not the last admin
+    admin = call("token.create", ctx, {"who": "Ann@Example.com", "role": "admin"}).data
+    reader = call("token.create", ctx, {"who": "ann@example.com", "role": "reader"}).data
+    scoped = {"who": "ann@example.com", "scopes": ["events:write"]}
+    machine = call("token.create", ctx, scoped).data
+
+    out = call("user.update", ctx, {"email": "ann@example.com", "role": "reader"})
+    assert admin.token_id in out.summary and admin.token_id in out.citations
+    assert reader.token_id not in out.citations
+    host = {"host": "shoc.example.com"}
+    with pytest.raises(Unauthenticated):
+        auth.authenticate(host | {"authorization": f"Bearer {admin.token}"}, "default", config)
+    # A token that matches the new role, and a machine token, stay.
+    kept = auth.authenticate(host | {"authorization": f"Bearer {reader.token}"}, "default", config)
+    assert kept[0].id == "ann@example.com"
+    bearer = {"authorization": f"Bearer {machine.token}"}
+    assert auth.authenticate(host | bearer, "default", config)[0].kind == "service"
 
 
 def test_the_last_admin_cannot_be_demoted_or_disabled(ctx, signing, monkeypatch):

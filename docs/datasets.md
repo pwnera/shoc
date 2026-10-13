@@ -40,7 +40,11 @@ its own timestamps either way; `scripts/replay_datasets.py` loads one shifted so
 its newest event lands two hours before now (`--margin-hours`), which puts it
 back inside the detection windows. The script refuses a tenant that reads live
 sources, where those events would open real cases: load into a tenant of its
-own (`SHOC_TENANT=lab`, after `shoc --tenant lab migrate`), or pass `--force`.
+own (`SHOC_TENANT=lab`, after `docker compose run --rm migrate --tenant lab
+migrate`, or `shoc --tenant lab migrate` in a checkout), or pass `--force`.
+That migrate step registers the tenant and is needed once. Later upgrades
+migrate it with the default tenant's `shoc migrate`, as long as it is on the
+same backend.
 
 ## Checking a mapping against it
 

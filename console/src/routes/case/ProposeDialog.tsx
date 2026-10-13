@@ -3,12 +3,15 @@
  * Pick from the actions the policy allows, grouped by platform; a required
  * parameter starts filled only when a case entity fits it, and offers the
  * entities that fit it (all of them when none does) in one click; a pill says what will happen (waits for you, runs now,
- * notifies only, dry run); a reason is required.
+ * notifies only, dry run); a reason is required. A platform with no credential
+ * says so and sorts last; acting for real, its action will fail, and the pill
+ * links to connect one.
  * Propose confirms first, in a popover on the button.
  *
- * Capabilities used: policy.show, action.propose.
+ * Capabilities used: policy.show, credential.list, action.propose.
  */
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -17,10 +20,11 @@ import { Empty, Input, Label } from "@/components/ui/misc";
 import { Confirm, Popover } from "@/components/ui/pop";
 import { QueryState } from "@/components/ui/state";
 import { AutonomyBadge } from "@/components/ui/status";
+import { vendorName } from "@/lib/credentials";
 import { isAwsKey, PATTERNS } from "@/lib/entity";
 import { actionLabel, actionState } from "@/lib/labels";
 import { ruleOf } from "@/lib/policy";
-import { useProposeAction, usePolicy } from "@/lib/queries";
+import { useCredentials, useProposeAction, usePolicy } from "@/lib/queries";
 import { toast } from "@/lib/toast";
 import type { Action, PolicyView } from "@/types";
 
@@ -72,6 +76,7 @@ export function ProposeDialog({
   onClose: () => void;
 }) {
   const policy = usePolicy();
+  const credentials = useCredentials();
   const propose = useProposeAction();
   const [action, setAction] = useState(again?.type ?? "");
   const [params, setParams] = useState<Record<string, string>>(
@@ -90,6 +95,11 @@ export function ProposeDialog({
     setAsking(false);
   };
 
+  // An action's provider is its platform (`aws.disable_access_key` acts with an `aws` credential).
+  // A person's page goes to the Manager, who reaches people by Slack, mail or webhook without one.
+  const held = new Set((credentials.data?.configured ?? []).map((c) => c.provider));
+  const uncredentialed = (platform: string) =>
+    platform !== "notify" && Boolean(credentials.data) && !held.has(platform);
   const groups = new Map<string, string[]>();
   for (const name of data?.available_actions ?? []) {
     const text = `${name} ${actionLabel(name)}`.toLowerCase();
@@ -97,17 +107,25 @@ export function ProposeDialog({
     const platform = name.split(".")[0] ?? name;
     groups.set(platform, [...(groups.get(platform) ?? []), name]);
   }
+  const platforms = [...groups].sort(([a], [b]) => Number(uncredentialed(a)) - Number(uncredentialed(b)));
   const known = Object.entries(entities).filter(([, value]) => value);
   const chipsFor = (param: string) => {
     const fit = fitting(action, param, entities);
     return fit.length ? fit : known;
   };
   const pill = data && action ? consequence(data, action) : null;
+  const provider = action.split(".")[0] ?? "";
   const facts = pill ? (
     <>
       <AutonomyBadge level={pill.level} />
       {pill.reversible ? <Badge tone="idle">↺ reversible</Badge> : <Badge tone="bad">⊘ one-way</Badge>}
       {pill.dry ? <Badge tone="idle">dry run</Badge> : null}
+      {/* A dry run needs no credential; acting for real, the runner has none to act with. */}
+      {!pill.dry && uncredentialed(provider) ? (
+        <Link to={`/connections?vendor=${encodeURIComponent(provider)}&view=credential`} className="sh-link">
+          <Badge tone="bad">will fail · connect {vendorName(provider)}</Badge>
+        </Link>
+      ) : null}
     </>
   ) : null;
 
@@ -198,9 +216,12 @@ export function ProposeDialog({
               aria-label="Find an action"
             />
             {groups.size ? (
-              [...groups].map(([platform, names]) => (
+              platforms.map(([platform, names]) => (
                 <div key={platform} className="flex flex-col gap-1">
-                  <Label>{platform}</Label>
+                  <span className="flex items-center gap-2">
+                    <Label>{platform}</Label>
+                    {uncredentialed(platform) ? <Badge tone="warn">no credential</Badge> : null}
+                  </span>
                   <div className="flex flex-wrap gap-1">
                     {names.map((name) => (
                       <button key={name} type="button" className="sh-chip" onClick={() => choose(name)}>

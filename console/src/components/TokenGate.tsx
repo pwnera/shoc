@@ -13,6 +13,9 @@
  * opens the console at that address (`/login` gives way to `/`). When shoc
  * cannot be reached the console opens and its banner says so.
  *
+ * Signing in as someone other than this browser's last person drops the
+ * crew thread and recent lookups they left (`signedInAs`).
+ *
  * Capabilities used: user.me (the check).
  */
 import {
@@ -44,11 +47,13 @@ import {
   Zap,
 } from "lucide-react";
 import { ApiError, call } from "@/lib/api";
+import { signedInAs } from "@/lib/chat";
 import { cn } from "@/lib/cn";
 import { actionLabel } from "@/lib/labels";
 import { takeSigninProblem } from "@/lib/signin";
 import { lazyNamed } from "@/lib/stale";
 import { useTheme } from "@/lib/theme";
+import type { Me } from "@/types";
 import { ROLES } from "@/lib/crew";
 import { BRANDS, type Brand } from "./brands";
 import { ErrorBoundary } from "./ErrorBoundary";
@@ -208,8 +213,11 @@ function Gate({ children }: { children: ReactNode }) {
       if (next === "in" && window.location.pathname === "/login") history.replaceState(null, "", "/");
       setState(next);
     };
-    call("user.me").then(
-      () => settle("in"),
+    call<Me>("user.me").then(
+      (envelope) => {
+        signedInAs(envelope.data?.id ?? "");
+        settle("in");
+      },
       (error: unknown) => settle(error instanceof ApiError && error.isAuth ? "out" : "in"),
     );
   }, []);
@@ -476,7 +484,8 @@ function Landing() {
           <span className="flex items-center gap-2">
             <img src="/favicon.svg" alt="" className="h-5 w-5" />
             <span className="text-[13px] font-semibold text-fg-1">shoc</span>
-            <span className="sh-mono">v0.0.1 · Apache 2.0</span>
+            {/* No version: release-please bumps the kernel's, not the console's, so any here would go stale. */}
+            <span className="sh-mono">Apache 2.0</span>
           </span>
           <nav aria-label="Project" className="flex flex-wrap items-center gap-x-4 gap-y-1">
             {FOOTER.map((link) => (

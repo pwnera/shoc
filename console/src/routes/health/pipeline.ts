@@ -10,10 +10,12 @@
  */
 import type { Step } from "@/components/ui/steps";
 import { age, num } from "@/lib/format";
+import { isPage } from "@/lib/labels";
 import { useNow } from "@/lib/now";
 import { usePresence } from "@/lib/presence";
 import { useActionLog, useAlerts, useHealth, useLlm, useRuns } from "@/lib/queries";
 import { sourceName } from "@/lib/sources";
+import type { Action, LlmConfig } from "@/types";
 import { useSourceState } from "../connections/state";
 import { problemsOf, type Problem } from "./model";
 
@@ -32,8 +34,35 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 export type Stage = Step & { to?: string; down?: string };
 export type PipelineState = { tone: "good" | "warn" | "bad"; word: string };
 
-/** A bad Problems row's state word, by its component. */
-const DOWN: Record<Problem["component"], string> = { worker: "Jobs failing", model: "Crew down", spend: "Over budget", store: "Down" };
+/** A bad Problems row's state word, by its component; the Notify stage words its own. */
+const DOWN: Record<Exclude<Problem["component"], "notify">, string> = {
+  worker: "Jobs failing",
+  model: "Crew down",
+  spend: "Over budget",
+  store: "Down",
+  disk: "Disk filling",
+};
+
+/** No model to call: the test Connections › Services draws "not connected" with. */
+export const noModel = (llm: LlmConfig) => llm.provider === "none" || llm.key !== "set";
+
+/** Where Notify is fixed: Services when nobody can be reached, as its Problems row; else Pages. */
+export const notifyTo = (unreachable: boolean) =>
+  unreachable ? "/connections?tab=services" : "/response?tab=pages";
+
+/**
+ * Pages in the last 24h that reached nobody: failed, blocked (no PagerDuty
+ * route), or let go by the Manager or by nobody answering in time.
+ */
+export const unsentPages = (rows: Action[], now: number) =>
+  rows.filter(
+    (a) =>
+      isPage(a) &&
+      (a.state === "failed" ||
+        a.state === "blocked" ||
+        (a.state === "rejected" && (a.approved_by === "manager" || a.approved_by === "unattended"))) &&
+      now - Date.parse(a.created_at) < DAY,
+  );
 
 export function usePipeline() {
   const health = useHealth();
@@ -51,12 +80,16 @@ export function usePipeline() {
   // A stage the queries cannot tell about reads "todo" (a hollow square), never good.
   const known = (q: { data?: unknown }, state: () => Step["state"]): Step["state"] => (q.data ? state() : "todo");
   const words = delivery.configured.map((row) => ({ source: row.source, word: delivery.state(row) }));
-  const troubled = words.filter((w) => w.word === "failing" || w.word === "late");
+  const troubled = words.filter((w) => w.word === "failing" || w.word === "partial" || w.word === "late");
   const failingSources = troubled.filter((w) => w.word === "failing").length;
   const failedRuns = (runs.data?.runs ?? []).filter(
     (r) => r.state === "failed" && within(r.finished_at ?? r.updated_at ?? r.started_at, DAY),
   );
-  const failedPages = (actions.data?.rows ?? []).filter((a) => a.type === "notify.page" && a.state === "failed" && within(a.created_at, DAY));
+  const failedPages = unsentPages(actions.data?.rows ?? [], now);
+  // Pages the Manager sent that reached nobody, and no channel to a person at all (`reachable`, all false).
+  const pageAlert = (alerts.data?.alerts ?? []).some((a) => a.kind === "page.failed");
+  const unreachable = Boolean(h?.reachable && !Object.values(h.reachable).some(Boolean));
+  const modelless = Boolean(llm.data && noModel(llm.data));
   const overdue = h?.jobs.overdue_schedules ?? [];
   const stages: Stage[] = [
     {
@@ -96,8 +129,9 @@ export function usePipeline() {
       label: "Crew",
       to: "/health/crew",
       // Down comes from Ops and presence, not llm.show: a failing llm.show still shows a model that is down.
-      state: modelDown ? "failed" : alerts.data ? "done" : "todo",
-      down: "Crew down",
+      // With no model the crew calls nothing, so nothing fails, yet nobody investigates.
+      state: modelDown || modelless ? "failed" : alerts.data ? "done" : "todo",
+      down: modelDown ? "Crew down" : "No model",
       tip: llm.data ? llm.data.model || "no model" : undefined,
     },
     {
@@ -111,10 +145,18 @@ export function usePipeline() {
     {
       key: "notify",
       label: "Notify",
-      to: "/response?tab=pages",
-      state: known(actions, () => (failedPages.length ? "failed" : "done")),
-      down: plural(failedPages.length, "Page failed", "Pages failed"),
-      tip: failedPages.length ? `${num(failedPages.length)} pages failed in 24h` : undefined,
+      to: notifyTo(unreachable),
+      state: unreachable || pageAlert ? "failed" : known(actions, () => (failedPages.length ? "failed" : "done")),
+      down: unreachable
+        ? "Nobody can be paged"
+        : failedPages.length === 1 && !pageAlert
+          ? "Page not sent"
+          : "Pages not sent",
+      tip: unreachable
+        ? "no pager, Slack, mail or webhook"
+        : failedPages.length
+          ? `${num(failedPages.length)} pages not sent in 24h`
+          : undefined,
     },
   ];
   const queries = [health, alerts, runs, actions, delivery.list, delivery.health];
@@ -124,7 +166,9 @@ export function usePipeline() {
     ...new Set([
       ...stages.filter((s) => s.state === "failed").map((s) => s.down ?? "Failing"),
       ...(overdue.length ? ["Worker stalled"] : []),
-      ...problems.filter((p) => p.tone === "bad" && !p.key.startsWith("overdue:")).map((p) => DOWN[p.component]),
+      ...problems.flatMap((p) =>
+        p.tone === "bad" && !p.key.startsWith("overdue:") && p.component !== "notify" ? [DOWN[p.component]] : [],
+      ),
     ]),
   ];
   // Undefined until health.status and ops.alerts answer; a stage query that failed leaves its square hollow, never "Healthy".

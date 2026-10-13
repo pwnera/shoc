@@ -88,4 +88,5 @@ def combine(**parts: FetchResult) -> FetchResult:
         records=[r for p in parts.values() for r in p.records],
         cursor={name: p.cursor for name, p in parts.items()},
         more=any(p.more for p in parts.values()),
+        parts=[(name, len(p.records), p.since) for name, p in parts.items()],
     )

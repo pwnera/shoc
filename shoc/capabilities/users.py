@@ -215,13 +215,34 @@ def update(ctx: Context, inp: UserUpdate) -> Result:
            WHERE tenant_id = %s AND user_id = %s""",
         (role, disabled, disabled, ctx.caller.id, ctx.tenant_id, user_id),
     )
+    ended: list[str] = []
     if disabled:
         people.revoke_person(ctx.db, ctx.tenant_id, user, ctx.caller.id)
-    state = "disabled; their sessions, links and role tokens ended" if disabled else "active"
+        state = "disabled; their sessions, links, role tokens, password and authenticator ended"
+    else:
+        state = "active"
+        if user["disabled_at"] and not people.in_sso_domain(ctx.db, ctx.tenant_id, email):
+            state += "; user.reset sends them a link to set a password and authenticator"
+        if role != user["role"]:
+            # A role token keeps the role it was issued with (tokens.find), so
+            # one issued to this address under another role would outlive the change.
+            ended = [
+                r["token_id"]
+                for r in fetch_all(
+                    ctx.db,
+                    """UPDATE shoc.api_tokens SET revoked_at = now(), revoked_by = %s
+                       WHERE tenant_id = %s AND role IS NOT NULL AND lower(who) = %s
+                         AND role <> %s AND revoked_at IS NULL
+                       RETURNING token_id""",
+                    (ctx.caller.id, ctx.tenant_id, email, role),
+                )
+            ]
+    if ended:
+        state += f"; role tokens issued to them under another role ended: {', '.join(ended)}"
     return Result(
         data=UserState(user_id=user_id, email=email, role=role, disabled=disabled),
         summary=f"{email} is {role}, {state}.",
-        citations=[user_id],
+        citations=[user_id, *ended],
     )
 
 

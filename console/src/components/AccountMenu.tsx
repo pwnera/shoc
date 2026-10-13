@@ -3,7 +3,7 @@
  * browser is signed in as, with the role, and where it talks to; the theme,
  * the single-key switch (WCAG 2.1.4: chords and ⌘ keys stay on), the shortcut
  * sheet, the version, and Log out, which ends the session (RFC 0028) and
- * empties the tab's session storage; a logout the kernel did not take stays
+ * empties the tab's session storage and the recent lookups; a logout the kernel did not take stays
  * here with a toast, since the login page would sign straight back in. The
  * version is read only when the menu opens.
  *
@@ -13,6 +13,7 @@
 import { useState } from "react";
 import { Keyboard, LogOut } from "lucide-react";
 import { ApiError, apiHost, auth } from "@/lib/api";
+import { forgetHistory } from "@/lib/chat";
 import { browser } from "@/lib/signin";
 import { toastError } from "@/lib/toast";
 import { keyLabel, useSingleKeys } from "@/lib/commands";
@@ -94,7 +95,8 @@ function Account({ open, close, onKeys }: { open: boolean; close: () => void; on
           // Ends the session and clears the cookie, then opens the login page.
           setLeaving(true);
           const leave = () => {
-            // The next person on this tab starts without the crew thread; the theme stays in localStorage.
+            // The next person on this tab starts without the crew thread or recent lookups; the theme stays.
+            forgetHistory();
             try {
               sessionStorage.clear();
             } catch {

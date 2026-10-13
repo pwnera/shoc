@@ -141,6 +141,13 @@ def test_a_technique_no_delivering_product_can_show_is_left_off(ctx, tenant):
     )
 
 
+def test_an_id_that_is_not_an_attack_technique_is_left_off(ctx, tenant):
+    # A report read before ids were checked can still hold a name or an id ATT&CK lacks.
+    _report(ctx, tenant, ["Phishing", "T9999", "t1499"])
+    items = engineer.intake(ctx.db, tenant, ctx.config)
+    assert {i.evidence["technique"] for i in items if i.intake == "cti"} == {"T1499"}
+
+
 def test_only_a_configured_source_or_a_person_puts_a_report_on_the_backlog(ctx, tenant):
     _report(ctx, tenant, ["T1499"], source="", by="agent:CTI")
     items = engineer.intake(ctx.db, tenant, ctx.config)
@@ -154,11 +161,25 @@ def test_only_a_configured_source_or_a_person_puts_a_report_on_the_backlog(ctx, 
     assert [i for i in items if i.intake == "cti"]
 
 
+def _reads(rule) -> set[str]:
+    from shoc.detect.context import _near
+
+    return _near(rule).products
+
+
 def test_a_technique_a_rule_already_covers_does_not_reach_the_backlog(ctx, tenant):
     from shoc.detect import rules as ruleset
 
-    covered = next((t for rule in ruleset.load(ctx.config) for t in (rule.attack or [])), None)
-    assert covered, "the shipped rule set must map to ATT&CK at all"
+    covered = next(
+        (
+            t
+            for rule in ruleset.load(ctx.config)
+            if "AWS CloudTrail" in _reads(rule)
+            for t in (rule.attack or [])
+        ),
+        None,
+    )
+    assert covered, "the shipped CloudTrail rules must map to ATT&CK at all"
     _report(ctx, tenant, [covered])
     items = engineer.intake(ctx.db, tenant, ctx.config)
     assert not [i for i in items if i.intake == "cti"], (
@@ -166,18 +187,44 @@ def test_a_technique_a_rule_already_covers_does_not_reach_the_backlog(ctx, tenan
     )
 
 
-def test_a_sub_technique_is_covered_by_a_rule_that_maps_to_its_parent(ctx, tenant):
+def test_a_rule_on_a_product_we_do_not_receive_covers_nothing(ctx, tenant):
     from shoc.detect import rules as ruleset
 
-    parent = next(
-        (t for rule in ruleset.load(ctx.config) for t in (rule.attack or []) if "." not in t),
+    rules = ruleset.load(ctx.config)
+    # T1539 is SaaS too, so GitHub could show it; the rules on it read other products.
+    assert any("T1539" in r.attack for r in rules)
+    assert not any("T1539" in r.attack for r in rules if "GitHub Audit Log" in _reads(r))
+    _report(ctx, tenant, ["T1539"], deliver="GitHub Audit Log")
+    items = engineer.intake(ctx.db, tenant, ctx.config)
+    assert [i.evidence["technique"] for i in items if i.intake == "cti"] == ["T1539"]
+
+
+def test_a_sub_technique_is_not_covered_by_a_rule_that_maps_to_its_parent(ctx, tenant):
+    """A pass-through of a vendor's alerts tags a parent; it looks for no sub-technique."""
+    from shoc.detect import rules as ruleset
+    from shoc.store import ocsf as layout
+
+    rules = ruleset.load(ctx.config)
+    tagged = {t for r in rules for t in r.attack}
+    known = engineer._technique_platforms(ctx.config)
+    seen = layout.platforms({"AWS CloudTrail"})
+    child = next(
+        (
+            code
+            for r in rules
+            if "AWS CloudTrail" in _reads(r)
+            for parent in r.attack
+            if "." not in parent
+            for code in sorted(known)
+            if code.startswith(f"{parent}.") and code not in tagged and set(known[code]) & seen
+        ),
         None,
     )
-    if parent is None:
-        pytest.skip("no rule maps to a bare technique")
-    _report(ctx, tenant, [f"{parent}.001"])
+    if child is None:
+        pytest.skip("every sub-technique of a CloudTrail rule's parent tag has a rule")
+    _report(ctx, tenant, [child])
     items = engineer.intake(ctx.db, tenant, ctx.config)
-    assert not [i for i in items if i.intake == "cti"]
+    assert [i.evidence["technique"] for i in items if i.intake == "cti"] == [child]
 
 
 # -- observability ----------------------------------------------------------
@@ -495,6 +542,35 @@ def test_the_daily_turn_ends_items_and_does_not_believe_an_unmerged_merge(ctx, t
     assert closed[items["T1499"]]["state"] == "rejected"
     assert closed[items["T1499"]]["observability"] == "none"
     assert closed[items["T1498"]]["state"] == "open", "a merge the gate never saw is not one"
+
+
+def test_a_coverage_gap_digest_names_the_technique_and_what_to_connect(ctx, tenant):
+    from shoc.agents.llm import ScriptedClient
+
+    said = {"id": "T1499", "name": "Endpoint Denial of Service", "seen_in": ["network"]}
+    _report(ctx, tenant, ["T1499"], [said])
+    (item,) = [i for i in engineer.intake(ctx.db, tenant, ctx.config) if i.intake == "cti"]
+    reply = {"outcomes": [{"item_uid": item.item_uid, "outcome": "source_gap", "because": "-"}]}
+    engineer.work(
+        ctx.db, ctx.store, tenant, ctx.config, client=ScriptedClient(default=json.dumps(reply))
+    )
+
+    closed = {r["item_uid"]: r for r in engineer.backlog(ctx.db, tenant, state="")}
+    waiting = closed[item.item_uid]["evidence"]["waiting_for"]
+    assert waiting and "AWS CloudTrail" not in waiting, "what carries network logs, not ours"
+    (body,) = [
+        r["body"]
+        for r in fetch_all(
+            ctx.db,
+            "SELECT body FROM shoc.notices WHERE tenant_id = %s AND source = 'Detection Engineer'",
+            (tenant,),
+        )
+        if "T1499" in r["body"]
+    ]
+    assert body.startswith(
+        "T1499 (Endpoint Denial of Service): connect a source that sends network connections ("
+    )
+    assert "no rule maps to" not in body
 
 
 def test_without_a_model_the_turn_says_so_and_touches_nothing(ctx, tenant):

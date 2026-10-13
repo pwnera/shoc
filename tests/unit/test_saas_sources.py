@@ -14,9 +14,9 @@ from shoc.actions import get
 from shoc.actions.base import Credentials
 from shoc.errors import ConfigError, ValidationError
 from shoc.ingest import connectors
-from shoc.ingest.connectors import tailscale
+from shoc.ingest.connectors import base, tailscale
 from shoc.ingest.connectors.stripe import PREVIEW
-from tests.unit.test_connectors import SINCE, query, transport
+from tests.unit.test_connectors import REREAD, SINCE, query, transport
 
 
 def epoch(iso: str) -> str:
@@ -50,8 +50,9 @@ def test_cloudflare_holds_the_window_while_following_the_cursor(monkeypatch):
     asked = query(seen[0])
     assert seen[0].url.path == "/client/v4/accounts/acc1/logs/audit"
     assert seen[0].headers["authorization"] == "Bearer tok"
-    assert asked["since"] == SINCE and asked["direction"] == "asc" and asked["limit"] == "1000"
+    assert asked["since"] == REREAD and asked["direction"] == "asc" and asked["limit"] == "1000"
     assert first.more and first.cursor["page"] == "c2" and first.cursor["since"] == SINCE
+    assert first.cursor["start"] == REREAD and first.since == SINCE
 
     second = connector.fetch(settings, secret, first.cursor, 5000)
     assert query(seen[1])["cursor"] == "c2"
@@ -68,7 +69,7 @@ def test_cloudflare_needs_an_account_and_a_token():
 
 
 def test_tailscale_reads_a_bounded_window_and_names_each_event(monkeypatch):
-    tailscale._TOKENS.clear()
+    monkeypatch.setattr(base, "_TOKENS", {})
     seen = transport(
         monkeypatch,
         [
@@ -94,17 +95,30 @@ def test_tailscale_reads_a_bounded_window_and_names_each_event(monkeypatch):
     token, logs = seen
     assert token.url.path == "/api/v2/oauth/token"
     assert logs.url.path == "/api/v2/tailnet/-/logging/configuration"
-    assert query(logs) == {"start": "2026-09-20T09:00:00Z", "end": "2026-09-20T15:00:00Z"}
+    # The window starts `OVERLAP` before the last one ended (D164).
+    assert query(logs) == {"start": "2026-09-20T08:45:00Z", "end": "2026-09-20T14:45:00Z"}
     assert logs.headers["authorization"] == "Bearer minted"
     assert page.records[0]["event"] == "TAILNET.UPDATE.ACL"
     assert page.records[0]["tailnet"] == "T1CNTRL"
-    assert page.more and page.cursor == {"since": "2026-09-20T15:00:00+00:00"}
+    assert page.more and page.cursor == {"since": "2026-09-20T14:45:00+00:00"}
+    assert page.since == SINCE, "an entry behind the last window's end arrived late"
 
 
 def test_a_tailscale_access_token_is_used_as_given():
     assert tailscale.access_token({"api_key": "tskey-api-x"}) == "tskey-api-x"
     with pytest.raises(ConfigError):
         tailscale.access_token({})
+
+
+def test_a_tailscale_token_request_is_noted_as_shoc_own_once_per_token(monkeypatch):
+    """The configuration log records each mint; a cached token is no new request (D78)."""
+    monkeypatch.setattr(base, "_TOKENS", {})
+    noted: list[str] = []
+    monkeypatch.setattr("shoc.cases.own.note_token", noted.append)
+    seen = transport(monkeypatch, [{"json": {"access_token": "minted", "expires_in": 3600}}])
+    secret = {"client_id": "k123", "client_secret": "tskey-client-x"}
+    assert tailscale.access_token(secret) == tailscale.access_token(secret) == "minted"
+    assert len(seen) == 1 and noted == ["k123"]
 
 
 # -- Stripe ------------------------------------------------------------------
@@ -142,10 +156,12 @@ def test_stripe_reads_the_activity_log_and_payment_events_each_with_its_cursor(m
         "radar.early_fraud_warning.created",
         "payout.created",
     ]
-    assert events.url.params["created[gt]"] == epoch(SINCE)
+    assert events.url.params["created[gte]"] == epoch(REREAD), "the overlap again (D164)"
     assert page.cursor["logs"] == {"next": "/v2/iam/activity_logs?page=p2", "version": PREVIEW}
     held = page.cursor["events"]
     assert held["since"] == SINCE and held["after"] == "evt_1", "paging back, newest first"
+    assert held["start"] == REREAD
+    assert page.parts == [("logs", 1, ""), ("events", 2, SINCE), ("payouts", 0, "")]
     assert page.more and not page.cursor["payouts"], "no payout event, so no payouts read"
 
 
@@ -199,7 +215,7 @@ def test_stripe_reads_sixty_days_of_payouts_once_the_first_payout_event_arrives(
     page = stripe.fetch({}, {"api_key": "rk"}, {"events": {"since": SINCE}}, 100)
     first, more = seen[2], seen[3]
     assert first.url.path == "/v1/payouts" and more.url.params["starting_after"] == "po_2"
-    end = int(epoch(SINCE))
+    end = int(epoch(REREAD))
     assert first.url.params["created[lte]"] == str(end)
     assert first.url.params["created[gte]"] == str(end - 60 * 86400)
     assert [(r["id"], r["type"]) for r in page.records] == [
@@ -266,7 +282,8 @@ def test_openai_reads_the_audit_log_and_settled_hours_of_key_usage(monkeypatch):
     audit, usage = seen
     assert audit.url.path == "/v1/organization/audit_logs"
     assert (
-        audit.url.params["effective_at[gt]"] == epoch(SINCE) and audit.url.params["limit"] == "100"
+        audit.url.params["effective_at[gte]"] == epoch(REREAD)
+        and audit.url.params["limit"] == "100"
     )
     entry, spent = page.records
     assert entry["details"] == {"id": "key_new"} and entry["key_id"] == "key_new"

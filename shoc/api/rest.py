@@ -22,11 +22,13 @@ import asyncio
 import contextlib
 import json
 import logging
+import secrets
 import threading
 import time
 from collections.abc import AsyncIterator
 from typing import Any
 
+import psycopg
 from starlette.applications import Starlette
 from starlette.datastructures import Headers
 from starlette.requests import Request
@@ -38,6 +40,7 @@ from shoc.api import signin
 from shoc.api.auth import SINGLE_USER, authenticate
 from shoc.capabilities.registry import Caller, Capability, Context, all_capabilities, get
 from shoc.config import Config
+from shoc.db import audit
 from shoc.errors import Denied, ShocError, ValidationError
 
 log = logging.getLogger("shoc.serve")
@@ -46,6 +49,8 @@ log = logging.getLogger("shoc.serve")
 SCHEDULER_CHECK_SECONDS = 300.0
 # How often an open event stream asks again who is reading it.
 STREAM_RECHECK_SECONDS = 30.0
+# How long /readyz answers from its last look at Postgres.
+READY_SECONDS = 2.0
 
 
 def watch_scheduler(cfg: Config, stop: threading.Event, every: float) -> None:
@@ -71,27 +76,47 @@ def watch_scheduler(cfg: Config, stop: threading.Event, every: float) -> None:
     pool.close()
 
 
-def _too_large(limit: int) -> JSONResponse:
+# Slack's commands and button presses are a few kilobytes.
+SLACK_MAX_BODY = 64 * 1024
+
+
+class TooLarge(ShocError):
+    status = 413
+    code = "payload_too_large"
+
+
+async def _body(request: Request, limit: int) -> bytes:
+    """The request body, refused as soon as it passes `limit` bytes.
+
+    A chunked body declares no length, so it is counted as it arrives.
+    """
+    too_large = TooLarge(f"request body exceeds {limit} bytes; send it in batches")
+    declared = request.headers.get("content-length", "")
+    if declared.isdigit() and int(declared) > limit:
+        raise too_large
+    raw = bytearray()
+    async for chunk in request.stream():
+        raw.extend(chunk)
+        if len(raw) > limit:
+            raise too_large
+    return bytes(raw)
+
+
+def _error(exc: Exception) -> JSONResponse:
+    if isinstance(exc, ShocError):
+        return JSONResponse({"error": exc.to_json()}, exc.status)
+    # Its message may name the database host and role, a path or a vendor's answer.
+    request_id = secrets.token_hex(4)
+    log.error("request failed (%s)", request_id, exc_info=exc)
     return JSONResponse(
         {
             "error": {
-                "code": "payload_too_large",
-                "message": f"request body exceeds {limit} bytes; send it in batches",
+                "code": "internal_error",
+                "message": f"shoc failed; see the serve log ({request_id})",
             }
         },
-        413,
+        500,
     )
-
-
-def _over_limit(request: Request, limit: int) -> bool:
-    declared = request.headers.get("content-length")
-    return bool(declared and declared.isdigit() and int(declared) > limit)
-
-
-def _error(exc: ShocError | Exception) -> JSONResponse:
-    if isinstance(exc, ShocError):
-        return JSONResponse({"error": exc.to_json()}, exc.status)
-    return JSONResponse({"error": {"code": "internal_error", "message": str(exc)}}, 500)
 
 
 def _context(request: Request, config: Config) -> Context:
@@ -102,36 +127,38 @@ def _context(request: Request, config: Config) -> Context:
 def _handler(cap: Capability, config: Config):
     async def handle(request: Request) -> JSONResponse:
         try:
-            if _over_limit(request, config.max_request_bytes):
-                return _too_large(config.max_request_bytes)
-            body: Any = {}
-            if await request.body():
-                body = await request.json()
-            if not isinstance(body, dict):
-                raise ValidationError("request body must be a JSON object")
             # Off the event loop, the token lookup included: case.investigate runs
             # the crew for minutes, and one blocking call would stall every other request.
-            result = await asyncio.to_thread(lambda: cap.invoke(_context(request, config), body))
+            # Who is calling is known before a byte of the body is read.
+            ctx = await asyncio.to_thread(_context, request, config)
+            raw = await _body(request, config.max_request_bytes)
+            try:
+                body: Any = json.loads(raw) if raw else {}
+            except ValueError as exc:
+                raise ValidationError(f"bad JSON: {exc}") from exc
+            if not isinstance(body, dict):
+                raise ValidationError("request body must be a JSON object")
+            result = await asyncio.to_thread(_invoke, cap, ctx, body)
             return JSONResponse(result.to_json())
-        except ShocError as exc:
-            return _error(exc)
-        except json.JSONDecodeError as exc:
-            return JSONResponse(
-                {"error": {"code": "validation_error", "message": f"bad JSON: {exc}"}}, 400
-            )
         except Exception as exc:
             return _error(exc)
 
     return handle
 
 
+def _invoke(cap: Capability, ctx: Context, body: Any) -> Any:
+    """One capability call that closes the event store it opened (STO-4)."""
+    try:
+        return cap.invoke(ctx, body)
+    finally:
+        ctx.close()
+
+
 async def _slack(request: Request, cfg: Config, kind: str) -> JSONResponse:
     """Verify the request really came from Slack, then let the registry decide (API-3)."""
     try:
-        raw = await request.body()
+        raw = await _body(request, SLACK_MAX_BODY)
         return await asyncio.to_thread(_slack_sync, raw, request.headers, cfg, kind)
-    except ShocError as exc:
-        return _error(exc)
     except Exception as exc:
         return _error(exc)
 
@@ -141,19 +168,22 @@ def _slack_sync(raw: bytes, headers: Any, cfg: Config, kind: str) -> JSONRespons
 
     tenant = headers.get("x-shoc-tenant") or cfg.tenant_id
     ctx = Context(tenant_id=tenant, caller=Caller(kind="external_agent", id="slack"), config=cfg)
-    app = slack.load_app(ctx.db, tenant, cfg.master_key)
-    slack.verify(
-        app.signing_secret,
-        headers.get(slack.TIMESTAMP_HEADER, ""),
-        raw,
-        headers.get(slack.SIGNATURE_HEADER, ""),
-    )
-    payload = slack.parse_payload(raw, headers.get("content-type", ""))
-    if payload.get("type") == "url_verification":
-        return JSONResponse({"challenge": payload.get("challenge", "")})
-    if kind == "command":
-        return JSONResponse(slack.handle_command(ctx, app, payload))
-    return JSONResponse(slack.handle_interaction(ctx, app, payload))
+    try:
+        app = slack.load_app(ctx.db, tenant, cfg.master_key)
+        slack.verify(
+            app.signing_secret,
+            headers.get(slack.TIMESTAMP_HEADER, ""),
+            raw,
+            headers.get(slack.SIGNATURE_HEADER, ""),
+        )
+        payload = slack.parse_payload(raw, headers.get("content-type", ""))
+        if payload.get("type") == "url_verification":
+            return JSONResponse({"challenge": payload.get("challenge", "")})
+        if kind == "command":
+            return JSONResponse(slack.handle_command(ctx, app, payload))
+        return JSONResponse(slack.handle_interaction(ctx, app, payload))
+    finally:
+        ctx.close()
 
 
 # What an operation answers besides 200, every one in the same envelope.
@@ -163,6 +193,7 @@ ERRORS = {
     "403": "A scope, principal, tenant or autonomy check failed",
     "404": "What it names does not exist",
     "409": "What it would create exists already",
+    "413": "The request body is over SHOC_MAX_REQUEST_BYTES (payload_too_large)",
     "500": "shoc is misconfigured or failed",
 }
 ERROR_SCHEMA = {
@@ -249,6 +280,32 @@ def build_app(config: Config | None = None) -> Starlette:
     async def healthz(_: Request) -> PlainTextResponse:
         return PlainTextResponse("ok")
 
+    def database_answers() -> bool:
+        try:
+            with psycopg.connect(cfg.dsn, connect_timeout=2) as conn:
+                conn.execute("SELECT 1")
+        except psycopg.Error:
+            return False
+        return True
+
+    # The last answer and when it was had. Unauthenticated, so one probe at a
+    # time and at most one connection every READY_SECONDS, however often it is hit.
+    ready = {"ok": False, "at": float("-inf")}
+    ready_lock = asyncio.Lock()
+
+    async def readyz(_: Request) -> PlainTextResponse:
+        """The readiness probe: a pod that cannot reach Postgres takes no traffic.
+
+        Liveness stays on /healthz, so a database blip never restarts a pod.
+        """
+        async with ready_lock:
+            if time.monotonic() - ready["at"] >= READY_SECONDS:
+                ready["ok"] = await asyncio.to_thread(database_answers)
+                ready["at"] = time.monotonic()
+        if ready["ok"]:
+            return PlainTextResponse("ok")
+        return PlainTextResponse("database unreachable", 503)
+
     async def index(request: Request) -> JSONResponse:
         """What this is, for whoever just opened it in a browser.
 
@@ -294,9 +351,7 @@ def build_app(config: Config | None = None) -> Starlette:
         """`metrics.export` as Prometheus scrapes it: a GET, answered in text."""
         cap = get("metrics.export")
         try:
-            result = await asyncio.to_thread(lambda: cap.invoke(_context(request, cfg), {}))
-        except ShocError as exc:
-            return _error(exc)
+            result = await asyncio.to_thread(lambda: _invoke(cap, _context(request, cfg), {}))
         except Exception as exc:
             return _error(exc)
         return PlainTextResponse(result.data.text, media_type="text/plain; version=0.0.4")
@@ -309,12 +364,14 @@ def build_app(config: Config | None = None) -> Starlette:
         named in the URL (`?tenant=`). Every other source is polled, and records
         loaded by hand go through `events.ingest`.
         """
+        from shoc.agents.ops import record_push_refused
         from shoc.api.ingest import (
             GITHUB_SIGNATURE_HEADER,
             first_delivery,
             forget_delivery,
             verify_github,
         )
+        from shoc.capabilities.events import GITHUB_WEBHOOK
         from shoc.capabilities.registry import get
         from shoc.cases import engine
         from shoc.ingest.connectors import github
@@ -322,32 +379,39 @@ def build_app(config: Config | None = None) -> Starlette:
 
         cap = get("events.ingest")
         try:
-            if _over_limit(request, cfg.max_request_bytes):
-                return _too_large(cfg.max_request_bytes)
             source = request.path_params["source"]
-            raw = await request.body()
             hub = request.headers.get(GITHUB_SIGNATURE_HEADER)
             if connector_of(source) != "github" or hub is None:
                 raise Denied(
                     f"shoc takes no push for '{source}' but GitHub's signed webhook; "
                     "the source is polled"
                 )
+            # Read whole before the signature can be checked, so bounded as it arrives.
+            raw = await _body(request, cfg.max_request_bytes)
             ctx = Context(
                 tenant_id=request.query_params.get("tenant") or cfg.tenant_id,
-                caller=Caller(kind="service", id="github-webhook", scopes=("events:write",)),
+                caller=GITHUB_WEBHOOK,
                 config=cfg,
             )
 
             def run() -> Any:
-                verify_github(ctx.db, ctx.tenant_id, cfg.master_key, raw, hub, source)
+                try:
+                    verify_github(ctx.db, ctx.tenant_id, cfg.master_key, raw, hub, source)
+                except Denied:
+                    # GitHub may still sign with a rotated key: source health shows it.
+                    record_push_refused(ctx.db, ctx.tenant_id, source)
+                    raise
                 records = github.from_webhook(request.headers, raw)
                 delivery = request.headers.get("x-github-delivery", "")
                 if records and not first_delivery(
                     ctx.db, ctx.tenant_id, source, delivery, cfg.retention_days
                 ):
                     records = []  # a replay: it loaded the first time
+                # A warehouse loads it with the next cycle, kept in Postgres till
+                # then: a load and a detection run per delivery kept it awake.
+                spool = cfg.backend != "postgres"
                 try:
-                    result = cap.invoke(ctx, {"source": source, "records": records})
+                    result = cap.invoke(ctx, {"source": source, "records": records, "spool": spool})
                 except Exception:
                     forget_delivery(ctx.db, ctx.tenant_id, source, delivery)
                     raise
@@ -363,10 +427,15 @@ def build_app(config: Config | None = None) -> Starlette:
                     )
                 return result
 
-            result = await asyncio.to_thread(run)
+            def closing() -> Any:
+                # In the thread that loads: one GitHub gave up on still finishes.
+                try:
+                    return run()
+                finally:
+                    ctx.close()
+
+            result = await asyncio.to_thread(closing)
             return JSONResponse(result.to_json())
-        except ShocError as exc:
-            return _error(exc)
         except Exception as exc:
             return _error(exc)
 
@@ -380,7 +449,7 @@ def build_app(config: Config | None = None) -> Starlette:
             since = request.headers.get("last-event-id") or request.query_params.get("since")
             if since and not (since.isascii() and since.isdigit()):
                 raise ValidationError("since must be a sequence number")
-        except ShocError as exc:
+        except Exception as exc:
             return _error(exc)
         types = [t for t in request.query_params.get("types", "").split(",") if t]
 
@@ -388,7 +457,7 @@ def build_app(config: Config | None = None) -> Starlette:
             # A fresh context per poll, like any other capability call: the
             # connection it takes is pinned to the caller's tenant in `Context.db`.
             ctx = Context(tenant_id=tenant, caller=caller, config=cfg)
-            return tail.invoke(ctx, {"since_seq": seq, "types": types, "limit": 100}).data.events
+            return _invoke(tail, ctx, {"since_seq": seq, "types": types, "limit": 100}).data.events
 
         def recheck() -> None:
             # A revoked token, an ended session or a lowered role ends the stream (RFC 0028).
@@ -447,7 +516,7 @@ def build_app(config: Config | None = None) -> Starlette:
             caller, tenant = await asyncio.to_thread(
                 authenticate, Headers(scope=scope), cfg.tenant_id, cfg, scope.get("method", "POST")
             )
-        except ShocError as exc:
+        except Exception as exc:
             await _error(exc)(scope, receive, send)
             return
         # Single-user mode is for the person at the keyboard. A model that
@@ -458,6 +527,9 @@ def build_app(config: Config | None = None) -> Starlette:
 
     @contextlib.asynccontextmanager
     async def lifespan(_app: Starlette) -> AsyncIterator[None]:
+        # A key the audit log was not keyed with would let the first audited
+        # change commit and then fail to write its row: refuse to start instead.
+        await asyncio.to_thread(audit.check_key, cfg)
         stop = threading.Event()
         threading.Thread(
             target=watch_scheduler, args=(cfg, stop, SCHEDULER_CHECK_SECONDS), daemon=True
@@ -476,6 +548,7 @@ def build_app(config: Config | None = None) -> Starlette:
         Route("/v1/stream", stream, methods=["GET"]),
         Route("/v1/openapi.json", openapi, methods=["GET"]),
         Route("/healthz", healthz, methods=["GET"]),
+        Route("/readyz", readyz, methods=["GET"]),
         Route("/metrics", metrics, methods=["GET"]),
         Route("/ingest/{source}", ingest, methods=["POST"]),
     ]

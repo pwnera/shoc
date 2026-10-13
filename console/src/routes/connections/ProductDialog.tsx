@@ -24,6 +24,7 @@ import { Seg } from "@/components/ui/seg";
 import { Status } from "@/components/ui/status";
 import { Steps } from "@/components/ui/steps";
 import { Table, type Column } from "@/components/ui/table";
+import { cn } from "@/lib/cn";
 import { useListNav } from "@/lib/commands";
 import { credentialName, vendorName } from "@/lib/credentials";
 import { age, num, span, stamp } from "@/lib/format";
@@ -186,7 +187,13 @@ export function ProductDialog({
       ) : !source ? (
         <Unread product={product} credentials={credentials} />
       ) : shown === "delivery" ? (
-        <Delivery row={source} polled={polled} alert={model.alert(source)} sample={sample} />
+        <Delivery
+          row={source}
+          polled={polled}
+          alert={model.alert(source)}
+          partial={model.state(source) === "partial"}
+          sample={sample}
+        />
       ) : shown === "settings" ? (
         <ConnectForm key={name} source={name} current={source} formId={formId} />
       ) : shown === "onboarding" ? (
@@ -223,16 +230,20 @@ function Delivery({
   row,
   polled,
   alert,
+  partial,
   sample,
 }: {
   row: ConfiguredSource;
   polled: boolean;
-  /** The detail of Ops' `source.failing` alert on this source. */
+  /** The detail of Ops' `source.failing` or `source.partial` alert on this source. */
   alert?: string;
+  /** Some streams refused, the rest read: its error is a warning. */
+  partial?: boolean;
   sample: ReturnType<typeof useSampleSource>;
 }) {
   const now = useNow();
   const error = alert ? alert.replace(/^last error: /, "") : row.last_error;
+  const tone = partial ? "text-warn" : "text-bad";
   return (
     <>
       <Fields
@@ -245,12 +256,16 @@ function Delivery({
           ["Acts with", row.response?.length ? <ActsWith row={row} /> : null],
           [
             "Error",
-            error ? <span className="sh-mono whitespace-pre-wrap break-words text-bad">{sourceError(error)}</span> : null,
+            error ? (
+              <span className={cn("sh-mono whitespace-pre-wrap break-words", tone)}>
+                {sourceError(error)}
+              </span>
+            ) : null,
           ],
         ]}
       />
       {sample.error ? <ErrorNote error={sample.error} inline /> : null}
-      {sample.data ? <Sample data={sample.data} /> : null}
+      {sample.data ? <Sample data={sample.data} partial={partial} /> : null}
     </>
   );
 }
@@ -285,7 +300,7 @@ function ActsWith({ row }: { row: ConfiguredSource }) {
 type SampleRow = Record<string, unknown>;
 
 /** One page as the vendor sends it: a few top-level fields per row; a row opens its whole record. */
-export function Sample({ data }: { data: SourceSample }) {
+export function Sample({ data, partial }: { data: SourceSample; partial?: boolean }) {
   const [open, setOpen] = useState<number | null>(null);
   const keys = Object.keys(data.rows[0] ?? {})
     .filter((k) => data.rows.some((r) => ["string", "number", "boolean"].includes(typeof r[k])))
@@ -310,7 +325,9 @@ export function Sample({ data }: { data: SourceSample }) {
       <div className="flex flex-wrap items-center gap-2">
         <Label>sample</Label>
         <span className="sh-mono">{num(data.fetched)} fetched</span>
-        {data.error ? <span className="sh-mono text-bad">{data.error}</span> : null}
+        {data.error ? (
+          <span className={cn("sh-mono", partial ? "text-warn" : "text-bad")}>{data.error}</span>
+        ) : null}
       </div>
       {data.rows.length ? (
         <Table

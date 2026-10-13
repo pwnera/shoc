@@ -24,6 +24,8 @@ class DeleteApiKey(BaseAction):
     target_kind = "key"
     summary = "Delete an OpenAI project API key"
     required_params = ("key_id", "project_id")
+    # The project only locates the key: one action per key.
+    identity_params = ("key_id",)
 
     def plan(self, params: dict[str, Any]) -> str:
         return (

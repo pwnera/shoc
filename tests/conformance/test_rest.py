@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import time
+import uuid
 
 import pytest
 from starlette.testclient import TestClient
@@ -27,7 +28,9 @@ def api(config, conn, store, clean):
         yield client
 
 
-def test_serve_pages_when_no_worker_ticks_the_schedule(config, conn, store, clean, monkeypatch):
+def test_serve_pages_when_no_worker_ticks_the_schedule(
+    config, conn, store, clean, monkeypatch, pager
+):
     """With every worker down, nothing scheduled could report it (OPS-1)."""
     monkeypatch.setattr(rest, "SCHEDULER_CHECK_SECONDS", 0.1)
     execute(
@@ -62,12 +65,21 @@ def test_every_capability_has_a_route(api):
     assert document["openapi"].startswith("3.1")
 
 
+def test_readyz_answers_only_while_postgres_does(api, config, monkeypatch):
+    monkeypatch.setattr(rest, "READY_SECONDS", 0.0)
+    assert api.get("/readyz").text == "ok"
+    monkeypatch.setattr(config, "dsn", "postgresql://shoc@127.0.0.1:1/shoc")
+    gone = api.get("/readyz")
+    assert gone.status_code == 503
+    assert api.get("/healthz").status_code == 200  # liveness never asks the database
+
+
 def test_healthz_and_openapi(api):
     assert api.get("/healthz").text == "ok"
     document = api.get("/v1/openapi.json").json()
     assert document["info"]["title"] == "shoc"
     answers = document["paths"]["/v1/finding/list"]["post"]["responses"]
-    assert set(answers) == {"200", "400", "401", "403", "404", "409", "500"}
+    assert set(answers) == {"200", "400", "401", "403", "404", "409", "413", "500"}
     error = answers["401"]["content"]["application/json"]["schema"]["$ref"].rpartition("/")[2]
     assert document["components"]["schemas"][error]["required"] == ["error"]
 
@@ -165,7 +177,12 @@ def test_tokens_gate_scopes(config, conn, store, clean, monkeypatch):
         )
 
 
-def _webhook(key: str, body: bytes, delivery: str = "72d3162e-cb52-11e3-8bc7-4c9367dc0958"):
+# A version-1 UUID, as GitHub hands out; one dated outside its three-day
+# redelivery window is refused.
+DELIVERY = str(uuid.uuid1())
+
+
+def _webhook(key: str, body: bytes, delivery: str = DELIVERY):
     import hashlib
     import hmac
 
@@ -194,9 +211,15 @@ def test_a_github_webhook_loads_on_its_own_signature(config, ctx, store, clean):
     # Not addressed to localhost and carrying no token, as GitHub's request is.
     with TestClient(build_app(config), base_url="https://shoc.example.com") as github:
         resp = github.post(url, content=body, headers=_webhook(key, body))
-        assert resp.status_code == 200 and resp.json()["data"]["loaded"] == 1
+        data = resp.json()["data"]
+        # A warehouse keeps it for the cycle's load; Postgres loads it now.
+        assert resp.status_code == 200 and data["loaded"] + data["spooled"] == 1
         # Redelivered: the same delivery id is the same event.
-        assert github.post(url, content=body, headers=_webhook(key, body)).json()["data"]
+        again = github.post(url, content=body, headers=_webhook(key, body))
+        assert again.status_code == 200 and again.json()["data"]["loaded"] == 0
+        assert again.json()["data"]["spooled"] == 0, "nor kept a second time"
+        kept = "SELECT 1 FROM shoc.push_spool WHERE tenant_id = %s"
+        assert len(fetch_all(ctx.db, kept, (config.tenant_id,))) == data["spooled"]
         assert github.post(url, content=body, headers=_webhook("wrong", body)).status_code == 403
         assert (
             github.post(
@@ -206,6 +229,9 @@ def test_a_github_webhook_loads_on_its_own_signature(config, ctx, store, clean):
             ).status_code
             == 403
         ), "only /ingest/github takes GitHub's signature"
+    from shoc.capabilities.events import flush_spool
+
+    flush_spool(ctx)
     rows = store.query(
         "SELECT api_operation FROM ocsf_events WHERE tenant_id = :t", {"t": config.tenant_id}
     ).rows
@@ -246,6 +272,14 @@ def test_rotating_the_key_invalidates_the_old_one(config, ctx, store, clean):
     with TestClient(build_app(config), base_url="https://shoc.example.com") as github:
         assert github.post(url, content=body, headers=_webhook(first, body)).status_code == 403
         assert github.post(url, content=body, headers=_webhook(second, body)).status_code == 200
+        # GitHub still signing with the replaced key shows on the source's health.
+        assert github.post(url, content=body, headers=_webhook(first, body)).status_code == 403
+    [state] = fetch_all(
+        ctx.db,
+        "SELECT push_refused_at FROM shoc.connector_state WHERE tenant_id = %s AND source = %s",
+        (config.tenant_id, "github"),
+    )
+    assert state["push_refused_at"] is not None
 
 
 def test_metrics_are_served_as_text(api):
@@ -482,6 +516,23 @@ def test_a_tool_the_caller_may_not_use_answers_with_an_error_not_a_crash(api):
     assert json.loads(result["content"][0]["text"])["error"]["code"] == "denied"
 
 
+def test_an_l2_tool_called_by_its_dotted_name_is_unknown(config, conn, store, clean, monkeypatch):
+    """`token.create` once ran with no confirmation, where `token_create` asks (RFC 0018)."""
+    monkeypatch.setenv("SHOC_TOKENS", json.dumps({"tok-admin": {"role": "admin", "id": "ann"}}))
+    with TestClient(build_app(config), base_url=LOCAL) as client:
+        client.headers["authorization"] = "Bearer tok-admin"
+        dotted = {"name": "token.create", "arguments": {"who": "mallory", "role": "admin"}}
+        result = _mcp(client, "tools/call", dotted, 2)["result"]
+    assert result["isError"] is True
+    assert json.loads(result["content"][0]["text"])["error"]["code"] == "unknown_tool"
+    minted = fetch_all(
+        conn,
+        "SELECT token_id FROM shoc.api_tokens WHERE tenant_id = %s AND who = 'mallory'",
+        (config.tenant_id,),
+    )
+    assert minted == [], "nothing ran"
+
+
 def test_the_serve_process_principal_does_not_reach_http_mcp(
     config, conn, store, clean, monkeypatch
 ):
@@ -523,8 +574,8 @@ def test_mcp_over_http_checks_the_token_and_takes_its_principal(
 
 
 # -- limits -----------------------------------------------------------------
-def test_an_oversized_body_is_refused_before_it_is_read(config, conn, store, clean):
-    config.max_request_bytes = 1024
+def test_an_oversized_body_is_refused_before_it_is_read(config, conn, store, clean, monkeypatch):
+    monkeypatch.setattr(config, "max_request_bytes", 1024)
     with TestClient(build_app(config), base_url=LOCAL) as client:
         client.headers["x-shoc-tenant"] = config.tenant_id
         resp = client.post(
@@ -538,7 +589,9 @@ def test_the_ingest_endpoint_has_the_same_limit(config, conn, store, clean, monk
     monkeypatch.setattr(config, "max_request_bytes", 1024)
     with TestClient(build_app(config), base_url=LOCAL) as client:
         client.headers["x-shoc-tenant"] = config.tenant_id
-        assert client.post("/ingest/github", content=b"[]" + b" " * 2048).status_code == 413
+        signed = {"x-hub-signature-256": "sha256=" + "0" * 64}
+        resp = client.post("/ingest/github", content=b"[]" + b" " * 2048, headers=signed)
+        assert resp.status_code == 413
 
 
 def test_too_many_records_in_one_call_is_refused(ctx, config, clean, monkeypatch):

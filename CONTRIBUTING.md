@@ -26,6 +26,25 @@ python -m scripts.check_dependency_budget && python -m scripts.check_licenses
 `pytest` skips the Postgres-backed tests when `SHOC_DSN` is unset, so a quick
 `pytest tests/unit` works with no database at all.
 
+The suite refuses a database where a tenant other than a test or eval one
+(prefixes `test` and `eval`, or `SHOC_TEST_TENANT`) has a configured source or
+a finding, because it migrates the database and empties its job queue. Point
+`SHOC_DSN` at a scratch database, or set `SHOC_TEST_ALLOW_LIVE=1`. Whatever the
+shell exported, the Postgres-backed tests run with `SHOC_LLM_PROVIDER=none` and
+`SHOC_DRY_RUN` unset, so no test spends model credit; `SHOC_TEST_ALLOW_MODEL=1`
+opts a run back into the configured model.
+
+CI runs the suite the way `deploy/` runs shoc: `SHOC_DSN` is the runtime role
+`shoc_app` and `SHOC_MIGRATE_DSN` the owner `shoc`. The `conn` fixture migrates
+and tears down as the owner, and capabilities and stores run as `SHOC_DSN`, so
+a path that needs owner rights fails in CI. To reproduce that, create the roles
+with `deploy/postgres-init/10-shoc-role.sh` and set both DSNs. With `SHOC_DSN`
+alone the suite runs as the owner, and `test_runtime_role` skips.
+
+The upgrade test (`scripts/check_upgrade.sh`) fills tenant `evalupgrade` with
+the previous release's own code, a replayed `leaked_aws_key` and one
+`shoc worker --once` with no model, then migrates it to the checkout.
+
 ## How the project is laid out
 
 | Directory | What lives there |
@@ -40,6 +59,16 @@ python -m scripts.check_dependency_budget && python -m scripts.check_licenses
 
 **Never hand-write a REST route or an MCP tool.** Add a capability in
 `shoc/capabilities/`; the surfaces are generated from it.
+
+## Engineering guidelines
+
+Read [docs/guidelines.md](docs/guidelines.md) before you change `shoc/`,
+`content/`, `console/`, `tests/`, `deploy/` or a documented command. Each
+guideline names the tests that check it, so searching the page for a failing
+test's name finds the rule behind it. A change
+that breaks a guideline on purpose links an entry in `docs/decisions.md` or an
+RFC, and a change that fixes a new class of defect adds a guideline in the same
+PR.
 
 ## Adding a detection rule
 
@@ -81,7 +110,9 @@ python -m scripts.check_dependency_budget && python -m scripts.check_licenses
    the positive fixture and stay silent on the negative one.
 4. Add the rule id to the `rules` list of the one playbook in
    `content/playbooks/` that answers it. `tests/unit/test_rules_content.py`
-   fails on a rule that no playbook, or more than one, claims.
+   fails on a rule that no playbook, or more than one, claims. The same holds
+   for a hunt pack, listed as `hunt:<id>`: a pack in no playbook leaves its
+   findings with no containment.
 
 Test data uses the documentation ranges (192.0.2.0/24, 198.51.100.0/24,
 203.0.113.0/24) and fake account IDs. Never commit real logs or IOCs from a

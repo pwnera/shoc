@@ -1,0 +1,74 @@
+[
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-ok-1",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "100000000000000000016",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.150",
+    "_application": "login",
+    "events": [
+      {
+        "type": "login",
+        "name": "login_success",
+        "parameters": [
+          {
+            "name": "login_type",
+            "value": "google_password"
+          },
+          {
+            "name": "login_challenge_method",
+            "multiValue": [
+              "password",
+              "google_prompt"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-refused-1",
+      "applicationName": "login",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "100000000000000000016",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.150",
+    "_application": "login",
+    "events": [
+      {
+        "type": "login",
+        "name": "login_failure",
+        "parameters": [
+          {
+            "name": "login_type",
+            "value": "google_password"
+          },
+          {
+            "name": "login_challenge_method",
+            "multiValue": [
+              "password",
+              "google_prompt"
+            ]
+          },
+          {
+            "name": "login_failure_type",
+            "value": "login_failure_invalid_second_factor"
+          }
+        ]
+      }
+    ]
+  }
+]

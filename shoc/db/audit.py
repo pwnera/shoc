@@ -3,7 +3,11 @@
 Each row commits to the one before it in the same tenant's chain:
 
     hash = HMAC-SHA256(key, [prev_hash, tenant, ts, principal, capability,
-                             input_hash, output_hash, error])
+                             input_hash, output_hash, error, subject?])
+
+`subject` (migration 058) is a short, masked summary of what the call was
+about; it joins the hash only when the row has one, so rows written before it
+still verify.
 
 The key is derived from SHOC_MASTER_KEY, which never reaches the database.
 Appends take a per-tenant advisory lock, so two writers cannot both chain onto
@@ -12,6 +16,8 @@ the same row. `shoc migrate` records a fingerprint of the key in
 append, so one misconfigured shell cannot write a row that never verifies.
 `verify` walks the whole chain and reports every row that does not match; the
 worker runs it every hour in `ops.check` and pages once for each new break.
+`check` walks only the rows after the last walk that found the chain whole,
+and the worker walks the whole chain once a day.
 
 What this protects, and what it does not:
 
@@ -42,6 +48,7 @@ import hmac
 import json
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import urlsplit
 
 from shoc.errors import ConfigError
 from shoc.jsonschema import to_json
@@ -64,6 +71,56 @@ def _sha(value: str) -> str:
 
 def hash_payload(value: Any) -> str:
     return _sha(json.dumps(to_json(value), sort_keys=True, default=str))
+
+
+# Input fields that hold a secret, and any `*_secret`: never shown or recorded.
+# Exact names, so a budget such as intel_tokens_per_day still shows.
+SECRET_FIELDS = frozenset({"secret", "api_key", "password", "token", "bot_token"})
+SUBJECT_LIMIT = 1000
+
+
+def _identifier(value: Any) -> Any:
+    """A number, a yes/no or one word (an email, a role, an id); a URL as its host. Else None."""
+    if isinstance(value, bool | int | float):
+        return value
+    if not isinstance(value, str) or not value or len(value) > 200:
+        return None
+    if any(c.isspace() for c in value):
+        return None  # free text: it may quote a log or name someone in passing
+    if "://" in value:
+        # A path or query can carry a key (a webhook URL); the host says where.
+        # A defanged value such as hxxps://evil[.]example[.]test is no URL, and the
+        # audit row must never fail the call it records.
+        try:
+            parts = urlsplit(value)
+            return f"{parts.scheme}://{parts.hostname or ''}"
+        except ValueError:
+            return None
+    return value
+
+
+def subject_of(inp: Any, citations: Any = ()) -> str | None:
+    """What a call was about, for its audit row: identifiers only, secrets masked.
+
+    A row is never deleted, so text with spaces, objects and secret fields stay
+    out; what a call changed is named by its input's identifiers and its citations.
+    """
+    data = to_json(inp)
+    shown: dict[str, Any] = {}
+    for name, value in data.items() if isinstance(data, dict) else ():
+        if name in SECRET_FIELDS or name.endswith("_secret"):
+            if value:
+                shown[name] = "(hidden)"
+        elif isinstance(value, list):
+            kept = [i for i in map(_identifier, value[:20]) if i is not None]
+            if kept:
+                shown[name] = kept
+        elif (kept := _identifier(value)) is not None:
+            shown[name] = kept
+    cites = [c for c in map(_identifier, [str(c) for c in citations][:10]) if c is not None]
+    if cites:
+        shown["cites"] = cites
+    return json.dumps(shown, sort_keys=True)[:SUBJECT_LIMIT] if shown else None
 
 
 def chain_key(master: str | None = None) -> bytes:
@@ -95,6 +152,17 @@ def _key(conn: Any) -> bytes:
     return key
 
 
+def check_key(config: Any) -> None:
+    """Refuse to start a process whose key the audit log was not keyed with.
+
+    `serve` calls it as it starts, so a wrong SHOC_MASTER_KEY stops it before
+    an audited change can commit and then fail to write its row.
+    """
+    from shoc.db.pool import connect
+
+    _key(connect(config))
+
+
 def _ts(value: datetime) -> str:
     return value.astimezone(UTC).isoformat()
 
@@ -109,6 +177,7 @@ def chain_hash(
     input_hash: str,
     output_hash: str | None,
     error: str | None,
+    subject: str | None = None,
 ) -> str:
     parts = [
         prev_hash,
@@ -120,6 +189,8 @@ def chain_hash(
         output_hash or "",
         error or "",
     ]
+    if subject is not None:  # a row from before migration 058 has none
+        parts.append(subject)
     return hmac.new(key, json.dumps(parts).encode(), hashlib.sha256).hexdigest()
 
 
@@ -155,14 +226,17 @@ def append(
     output_hash: str | None = None,
     error: str | None = None,
     key: bytes | None = None,
+    subject: str | None = None,
 ) -> str:
     """Append one row to a tenant's chain. Returns its hash.
 
     `key` is for `rotate` alone, which appends with the key it is moving to.
+    `subject` is what the row is about (`subject_of`).
     """
     from shoc.db.pool import fetch_one
 
     key = key or _key(conn)
+    subject = subject or None
     with conn.transaction(), conn.cursor() as cur:
         # Held until the enclosing transaction ends, so the row read below is
         # the last one committed and nobody else can chain onto it meanwhile.
@@ -187,12 +261,16 @@ def append(
             input_hash,
             output_hash,
             error,
+            subject,
         )
+        # The column is named only with a value: migration 025's checkpoint rows
+        # are appended before migration 058 adds it.
+        named = ", subject" if subject is not None else ""
         cur.execute(
-            """INSERT INTO shoc.audit_log
+            f"""INSERT INTO shoc.audit_log
                (tenant_id, ts, principal_kind, principal_id, capability,
-                input_hash, output_hash, error, prev_hash, hash)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                input_hash, output_hash, error, prev_hash, hash{named})
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s{",%s" if named else ""})""",
             (
                 tenant_id,
                 ts,
@@ -204,6 +282,7 @@ def append(
                 error,
                 prev,
                 digest,
+                *([subject] if named else []),
             ),
         )
     return digest
@@ -222,6 +301,7 @@ def record(
         hash_payload(inp),
         hash_payload(result.data) if result is not None else None,
         error,
+        subject=subject_of(inp, result.citations if result is not None else ()),
     )
 
 
@@ -327,6 +407,63 @@ def verify(conn: Any, tenant_id: str, batch: int = 5000, head: str = "") -> tupl
     the message stays the same. `head` is a `seq:hash` kept outside Postgres (a
     webhook delivery carries one), and the chain must still hold that row.
     """
+    return _walk(conn, tenant_id, batch, head)[:3]
+
+
+def check(conn: Any, tenant_id: str, head: str = "", full: bool = False) -> tuple[bool, int, str]:
+    """`verify` from the last row a walk found whole, or from the first with `full`.
+
+    The log is never pruned, so a walk from the first row on every call grew
+    with it (data-11). A walk that finds the chain whole keeps where it ended in
+    `shoc.audit_checkpoints`; one that does not keeps nothing, so the next walk
+    finds the same break and says it the same way. The checkpoint is a row the
+    runtime role can write, so it only saves work: the worker's daily `full`
+    walk does not read it.
+    """
+    import contextlib
+
+    import psycopg
+
+    from shoc.db.pool import execute, fetch_one
+
+    mark = (
+        None
+        if full
+        else fetch_one(
+            conn,
+            "SELECT seq, hash FROM shoc.audit_checkpoints WHERE tenant_id = %s",
+            (tenant_id,),
+        )
+    )
+    start = (int(mark["seq"]), str(mark["hash"])) if mark else None
+    ok, count, detail, end = _walk(conn, tenant_id, head=head, start=start)
+    # An agent checks on the read-only role (D22), which saves nothing: the
+    # next walk on the runtime role does.
+    with contextlib.suppress(psycopg.errors.InsufficientPrivilege):
+        if ok and end and end != start:
+            execute(
+                conn,
+                """INSERT INTO shoc.audit_checkpoints (tenant_id, seq, hash) VALUES (%s, %s, %s)
+                   ON CONFLICT (tenant_id) DO UPDATE SET
+                       seq = EXCLUDED.seq, hash = EXCLUDED.hash, verified_at = now()
+                   WHERE shoc.audit_checkpoints.seq <= EXCLUDED.seq""",
+                (tenant_id, *end),
+            )
+        elif not ok and not start:
+            # A break before the checkpoint: every later walk starts at the first row.
+            execute(conn, "DELETE FROM shoc.audit_checkpoints WHERE tenant_id = %s", (tenant_id,))
+    return ok, count, detail
+
+
+def _walk(
+    conn: Any,
+    tenant_id: str,
+    batch: int = 5000,
+    head: str = "",
+    start: tuple[int, str] | None = None,
+) -> tuple[bool, int, str, tuple[int, str] | None]:
+    """`verify`, from after `start` (a row an earlier walk found whole) when given,
+    and with the last row walked. That row must still hold the hash it had."""
     from shoc.db.pool import fetch_all, fetch_one
 
     key = _key(conn)
@@ -341,11 +478,26 @@ def verify(conn: Any, tenant_id: str, batch: int = 5000, head: str = "") -> tupl
     held = not head
     prev, count, last = GENESIS, 0, 0
     broken, first_bad, last_bad = 0, 0, 0
+    if start:
+        last, prev = start
+
+        def holds(seq: int, digest: str) -> bool:
+            row = fetch_one(
+                conn,
+                "SELECT hash FROM shoc.audit_log WHERE tenant_id = %s AND seq = %s",
+                (tenant_id, seq),
+            )
+            return bool(row) and row["hash"] == digest
+
+        if not holds(last, prev):
+            broken, first_bad, last_bad = 1, last, last
+        if head and head_seq.isdigit() and int(head_seq) <= last:
+            held = holds(int(head_seq), head_hash)
     while True:
         rows = fetch_all(
             conn,
             """SELECT seq, tenant_id, ts, principal_kind, principal_id, capability,
-                      input_hash, output_hash, error, prev_hash, hash
+                      input_hash, output_hash, error, prev_hash, hash, subject
                FROM shoc.audit_log WHERE tenant_id = %s AND seq > %s ORDER BY seq LIMIT %s""",
             (tenant_id, last, batch),
         )
@@ -358,7 +510,9 @@ def verify(conn: Any, tenant_id: str, batch: int = 5000, head: str = "") -> tupl
             expect = (
                 legacy_hash(r["prev_hash"], r["tenant_id"], principal, *fields)
                 if r["seq"] < keyed_from
-                else chain_hash(keyed, r["prev_hash"], r["tenant_id"], r["ts"], principal, *fields)
+                else chain_hash(
+                    keyed, r["prev_hash"], r["tenant_id"], r["ts"], principal, *fields, r["subject"]
+                )
             )
             if r["prev_hash"] != prev or expect != r["hash"]:
                 broken += 1
@@ -367,6 +521,7 @@ def verify(conn: Any, tenant_id: str, batch: int = 5000, head: str = "") -> tupl
             prev = r["hash"]
             count += 1
         last = rows[-1]["seq"]
+    end = (int(last), prev) if last else None
     if not held:
         return (
             False,
@@ -375,9 +530,11 @@ def verify(conn: Any, tenant_id: str, batch: int = 5000, head: str = "") -> tupl
                 f"the chain no longer holds row {head_seq} as it was recorded outside the "
                 "database: rows were removed or replaced"
             ),
+            end,
         )
     if not broken:
-        return True, count, f"{count} audit rows verified"
+        since = f" after row {start[0]}, which an earlier walk verified" if start else ""
+        return True, count, f"{count} audit rows verified{since}", end
     return (
         False,
         count,
@@ -385,4 +542,5 @@ def verify(conn: Any, tenant_id: str, batch: int = 5000, head: str = "") -> tupl
             f"{broken} audit row(s) do not match the chain, the first at row {first_bad} "
             f"and the last at row {last_bad}"
         ),
+        end,
     )

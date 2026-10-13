@@ -125,7 +125,12 @@ function CounterLink({ counter }: { counter: Counter }) {
       className="group inline-flex items-center gap-1.5 whitespace-nowrap rounded-control no-underline"
       aria-label={`${value} ${label}`}
     >
-      <span className="[font:var(--text-fact)] text-fg-1 tabular">{value}</span>
+      <span
+        className={`[font:var(--text-fact)] tabular ${counter.tone ? "text-[var(--tone-ink)]" : "text-fg-1"}`}
+        data-tone={counter.tone}
+      >
+        {value}
+      </span>
       <span className="text-fg-3 group-hover:text-fg-1">{label}</span>
       {mix ? (
         <Meter

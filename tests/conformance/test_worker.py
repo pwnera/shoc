@@ -540,6 +540,15 @@ def test_a_follower_takes_over_when_the_cron_leader_goes_away(conn, config, monk
         config.dsn, row_factory=dict_row, autocommit=True
     )
     assert jobs.become_cron_leader(old_leader)
+    asked: list[bool] = []
+    real_become = jobs.become_cron_leader
+
+    def become(c) -> bool:
+        won = real_become(c)
+        asked.append(won)
+        return won
+
+    monkeypatch.setattr(jobs, "become_cron_leader", become)
     schedule_id = f"{config.tenant_id}:failover"
     jobs.upsert_schedule(conn, schedule_id, config.tenant_id, "detect.run", 300, {})
 
@@ -561,7 +570,11 @@ def test_a_follower_takes_over_when_the_cron_leader_goes_away(conn, config, monk
     thread = threading.Thread(target=follower)
     thread.start()
     try:
-        time.sleep(1.5)
+        # Refused twice: the first pass, the one that would have ticked, is over.
+        deadline = time.time() + 20
+        while time.time() < deadline and asked.count(False) < 2:
+            time.sleep(0.05)
+        assert asked.count(False) >= 2, "the follower asked for the lock and was refused"
         assert not ticked(), "only the leader ticks"
         old_leader.close()
         deadline = time.time() + 20
@@ -656,6 +669,23 @@ def test_a_hung_worker_exits_so_its_cron_lock_frees(conn, config, monkeypatch):
     assert not thread.is_alive()
 
 
+def test_the_worker_will_not_start_on_a_key_the_audit_log_was_not_keyed_with(
+    conn, config, clean, monkeypatch
+):
+    """As `serve`: a job's change would commit and then fail to write its audit row (SEC-1)."""
+    from shoc.errors import ConfigError
+
+    job_id = jobs.enqueue(conn, config.tenant_id, "detect.run", {"lookback": "1h"})
+    monkeypatch.setenv("SHOC_MASTER_KEY", "not-the-key-migrate-recorded")
+    try:
+        with pytest.raises(ConfigError, match="SHOC_MASTER_KEY"):
+            worker.run(config, once=True)
+        queued = fetch_one(conn, "SELECT state FROM shoc.jobs WHERE job_id = %s", (job_id,))
+        assert queued and queued["state"] == "pending", "no job was claimed"
+    finally:
+        execute(conn, "DELETE FROM shoc.jobs WHERE job_id = %s", (job_id,))
+
+
 def test_the_worker_runs_a_detection_job_end_to_end(conn, store, config, clean, ctx):
     from evals.run import SCENARIOS, replay
 
@@ -686,8 +716,16 @@ def test_a_queued_job_wakes_an_idle_worker(conn, config, clean, monkeypatch):
             done.set()
         return "ok"
 
+    waiting = threading.Event()
+    real_wait = worker.wait_for_jobs
+
+    def wait(listener, seconds, stop) -> None:
+        waiting.set()
+        real_wait(listener, seconds, stop)
+
     monkeypatch.setattr(worker, "handle", handled)
     monkeypatch.setattr(worker, "ensure_default_schedules", lambda conn, cfg: None)
+    monkeypatch.setattr(worker, "wait_for_jobs", wait)
     stop = threading.Event()
 
     def idle() -> None:
@@ -699,7 +737,9 @@ def test_a_queued_job_wakes_an_idle_worker(conn, config, clean, monkeypatch):
     thread = threading.Thread(target=idle)
     thread.start()
     try:
-        time.sleep(1.5)  # past its first, empty pass: it is waiting now
+        # Queued only once the first, empty pass is over, so nothing but the
+        # NOTIFY can bring the worker to it.
+        assert waiting.wait(20), "the idle worker never started waiting"
         jobs.enqueue(conn, config.tenant_id, "detect.run", {})
         assert done.wait(10), "a NOTIFY must wake the worker long before its 120 s poll"
     finally:
@@ -987,36 +1027,82 @@ def test_a_job_claimed_by_a_dead_worker_comes_back(conn, config):
 
 
 def test_the_worker_reconnects_when_the_database_goes_away(config, conn, store, clean, monkeypatch):
-    """A restarted database is an ordinary event for a process that runs for months."""
+    """A restarted database is an ordinary event for a process that runs for months.
+
+    The test holds the cron lock, so the worker is a follower and goes straight
+    to the queue: a leader's housekeeping (other tenants' runs and actions left
+    by earlier tests) is not what this waits on. The stand-in for `jobs.claim`
+    takes whatever the worker passes, so a new argument cannot kill the thread
+    before its first claim, as `most_tier` did.
+    """
     import threading
 
     import psycopg
+    from psycopg.rows import DictRow, dict_row
 
     from shoc.db import pool
 
     calls = {"claims": 0}
     real_claim = jobs.claim
 
-    def flaky_claim(connection, limit=1):
+    def flaky_claim(connection, *args, **kwargs):
         calls["claims"] += 1
         if calls["claims"] == 1:
             raise psycopg.OperationalError("terminating connection due to administrator command")
-        return real_claim(connection, limit)
+        return real_claim(connection, *args, **kwargs)
 
-    monkeypatch.setattr(jobs, "claim", flaky_claim)
-    stop = threading.Event()
-    thread = threading.Thread(
-        target=worker.run, args=(config,), kwargs={"poll_seconds": 0.1, "stop": stop}
+    reconnected: list[object] = []
+    real_reconnect = worker.reconnect
+
+    def counted_reconnect(cfg, *args, **kwargs):
+        fresh = real_reconnect(cfg, *args, **kwargs)
+        reconnected.append(fresh)
+        return fresh
+
+    handled = threading.Event()
+
+    def handle(job, cfg) -> str:
+        handled.set()
+        return "ok"
+
+    # Earlier tests may hold the lock on the fixture's or this thread's session.
+    execute(conn, "SELECT pg_advisory_unlock_all()")
+    pool.close()
+    leader: psycopg.Connection[DictRow] = psycopg.Connection[DictRow].connect(
+        config.dsn, row_factory=dict_row, autocommit=True
     )
+    assert jobs.become_cron_leader(leader)
+    monkeypatch.setattr(jobs, "claim", flaky_claim)
+    monkeypatch.setattr(worker, "reconnect", counted_reconnect)
+    monkeypatch.setattr(worker, "handle", handle)
+    failed: list[Exception] = []
+    stop = threading.Event()
+
+    def follower() -> None:
+        try:
+            worker.run(config, poll_seconds=0.1, stop=stop)
+        except Exception as exc:
+            failed.append(exc)
+        finally:
+            pool.close()
+
+    thread = threading.Thread(target=follower)
     thread.start()
     try:
         deadline = time.time() + 20
-        while time.time() < deadline and calls["claims"] < 3:
-            time.sleep(0.2)
-        assert calls["claims"] >= 3, "the worker kept going after the connection died"
+        while time.time() < deadline and not reconnected and not failed:
+            time.sleep(0.05)
+        assert not failed, f"the worker died instead of reconnecting: {failed!r}"
+        assert len(reconnected) == 1, "the worker reconnected once after the connection died"
+        # Only the new session can claim this: the first claim was the one that failed.
+        jobs.enqueue(conn, config.tenant_id, "detect.run", {})
+        assert handled.wait(10), "the reconnected worker took the next job"
+        assert calls["claims"] >= 2
+        assert not failed
     finally:
         stop.set()
         thread.join(timeout=10)
+        leader.close()
         pool.close()
     assert not thread.is_alive()
 
@@ -1037,7 +1123,7 @@ def test_a_single_pass_still_surfaces_a_dead_database(config, conn, clean, monke
     """`--once` is for scripts and tests: it should fail loudly, not loop."""
     import psycopg
 
-    def dead_claim(connection, limit=1):
+    def dead_claim(connection, limit=1, most_tier=None):
         raise psycopg.OperationalError("server closed the connection unexpectedly")
 
     monkeypatch.setattr(jobs, "claim", dead_claim)
@@ -1162,3 +1248,363 @@ def test_the_hourly_check_tells_the_stream_an_ongoing_alert_once(conn, config):
         (config.tenant_id,),
     )
     assert [r["subject"] for r in sent] == ["gemini-3-pro"]
+
+
+def test_the_hourly_check_pings_the_outside_monitor_only_when_it_ran(conn, config, monkeypatch):
+    """Every outage signal came from inside shoc: with Postgres or the workers
+    down, nothing told anybody (sre-2). A check that could not run sends nothing."""
+    import httpx
+
+    from shoc.agents import ops
+
+    sent: list[str] = []
+
+    def answer(url: str, **_: object) -> httpx.Response:
+        sent.append(url)
+        return httpx.Response(200, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(httpx, "get", answer)
+    monkeypatch.setattr(config, "heartbeat_url", "https://hc.example.test/ping/0000-test")
+    job = {"kind": "ops.check", "tenant_id": config.tenant_id, "payload": {}}
+    worker.handle(job, config)
+    assert sent == ["https://hc.example.test/ping/0000-test"]
+
+    def down(*_a: object, **_k: object) -> list:
+        raise RuntimeError("the database went away")
+
+    monkeypatch.setattr(ops, "alerts", down)
+    with pytest.raises(Exception, match="went away"):
+        worker.handle(job, config)
+    assert len(sent) == 1
+
+
+def _job(conn, job_id: int) -> dict:
+    row = fetch_one(
+        conn,
+        """SELECT state, attempts, locked_by, locked_at, last_error, finished_at
+           FROM shoc.jobs WHERE job_id = %s""",
+        (job_id,),
+    )
+    assert row
+    return row
+
+
+def test_a_page_is_claimed_before_older_model_work(conn, config):
+    """A critical page queued behind 25 investigations waited for all of them (AGT-1)."""
+    early = datetime.now(UTC) - timedelta(minutes=5)
+    tenant = config.tenant_id
+    jobs.enqueue(conn, tenant, "case.investigate", {"case_uid": "CASE-x"}, run_at=early)
+    jobs.enqueue(conn, tenant, "detect.run", {}, run_at=early)
+    jobs.enqueue(conn, tenant, "manager.deliver", {})
+    order = [jobs.claim(conn)[0]["kind"] for _ in range(3)]
+    assert order == ["manager.deliver", "detect.run", "case.investigate"]
+
+
+def test_the_fast_lane_leaves_routine_model_work_and_takes_a_critical_case(conn, config):
+    """With one worker, a page still waited for the ten-minute model job in hand (AGT-1)."""
+    tenant = config.tenant_id
+    critical = f"CASE-{tenant}-critical"
+    execute(
+        conn,
+        """INSERT INTO shoc.cases (case_uid, tenant_id, title, severity)
+           VALUES (%s, %s, 'Access key used from 203.0.113.7', 'critical')""",
+        (critical, tenant),
+    )
+    early = datetime.now(UTC) - timedelta(minutes=5)
+    routine = jobs.enqueue(conn, tenant, "case.investigate", {"case_uid": "CASE-x"}, run_at=early)
+    assert routine
+    jobs.enqueue(conn, tenant, "case.investigate", {"case_uid": critical})
+    jobs.enqueue(conn, tenant, "manager.deliver", {})
+    lane: list[str] = []
+    while claimed := jobs.claim(conn, most_tier=jobs.URGENT):
+        lane.append(claimed[0]["payload"].get("case_uid", claimed[0]["kind"]))
+    assert lane == ["manager.deliver", critical], "the page, then the case that pages"
+    assert _job(conn, routine)["state"] == "pending"
+    assert jobs.seconds_to_next(conn, 30, jobs.URGENT) == 30, "nothing due it may take"
+    assert [j["job_id"] for j in jobs.claim(conn)] == [routine]
+
+
+def test_a_worker_whose_job_was_taken_back_does_not_write_over_it(conn, config):
+    """The first holder's late outcome overwrote the second run's (AGT-1)."""
+    job_id = jobs.enqueue(conn, config.tenant_id, "detect.run", {})
+    assert job_id
+    jobs.claim(conn)
+    execute(
+        conn, "UPDATE shoc.jobs SET locked_by = 'other:2:0badf00d' WHERE job_id = %s", (job_id,)
+    )
+    jobs.finish(conn, job_id)
+    jobs.fail(conn, job_id, "late")
+    row = _job(conn, job_id)
+    assert row["state"] == "running" and row["locked_by"] == "other:2:0badf00d"
+    assert row["last_error"] is None
+
+
+def test_a_long_job_keeps_its_lease_while_its_worker_runs_it(conn, config):
+    """Its lease ran out at 30 minutes and a second worker ran it again (AGT-1)."""
+    import threading
+
+    from shoc.db import pool
+
+    pool.connect(config)  # this process has a session, named after it
+    job_id = jobs.enqueue(conn, config.tenant_id, "detect.run", {})
+    assert job_id
+    jobs.claim(conn)
+    execute(
+        conn,
+        "UPDATE shoc.jobs SET locked_at = now() - interval '1 hour' WHERE job_id = %s",
+        (job_id,),
+    )
+    hour_ago = datetime.now(UTC) - timedelta(minutes=59)
+    stop = threading.Event()
+    thread = threading.Thread(target=worker.keep_lease, args=(config, [job_id], stop, 0.1))
+    thread.start()
+    try:
+        deadline = time.time() + 10
+        while time.time() < deadline and _job(conn, job_id)["locked_at"] < hour_ago:
+            time.sleep(0.1)
+    finally:
+        stop.set()
+        thread.join(timeout=10)
+    assert jobs.requeue_stale(conn) == 0, "a renewed lease is not stale"
+    assert _job(conn, job_id)["state"] == "running"
+
+
+def test_a_job_that_keeps_losing_its_worker_is_parked(conn, config):
+    """A job that killed its worker came back after every restart, for ever, unrecorded."""
+    job_id = jobs.enqueue(conn, config.tenant_id, "detect.run", {})
+    assert job_id
+    for _ in range(5):
+        execute(conn, "UPDATE shoc.jobs SET run_at = now() WHERE job_id = %s", (job_id,))
+        assert [j["job_id"] for j in jobs.claim(conn)] == [job_id]
+        execute(conn, "UPDATE shoc.jobs SET locked_by = 'gone:1:dead' WHERE job_id = %s", (job_id,))
+        assert jobs.requeue_stale(conn) == 1
+    row = _job(conn, job_id)
+    assert row["state"] == "failed" and row["finished_at"] is not None
+    assert "lost" in row["last_error"] and "5 attempt" in row["last_error"]
+
+
+def test_a_query_that_times_out_fails_its_job_instead_of_reconnecting(conn, config, monkeypatch):
+    """psycopg calls a cancelled query an OperationalError; the job sat running half an hour."""
+    import psycopg
+
+    def timed_out(job: dict, cfg: object) -> str:
+        raise psycopg.errors.QueryCanceled("canceling statement due to statement timeout")
+
+    monkeypatch.setattr(worker, "handle", timed_out)
+    monkeypatch.setattr(worker, "ensure_default_schedules", lambda *_: None)
+    job_id = jobs.enqueue(conn, config.tenant_id, "detect.run", {})
+    assert job_id
+    assert worker.run(config, once=True) == 1
+    row = _job(conn, job_id)
+    assert row["state"] == "pending" and "QueryCanceled" in row["last_error"]
+
+
+def test_a_job_in_hand_when_the_database_went_away_comes_back_at_once(conn, config, monkeypatch):
+    """The new session had the old one's name, so the job looked held for half an hour (D147)."""
+    import threading
+
+    import psycopg
+
+    from shoc.db import pool
+
+    seen: list[int] = []
+    stop = threading.Event()
+
+    def handled(job: dict, cfg: object) -> str:
+        if job["kind"] != "detect.run":
+            return "skipped"
+        seen.append(job["job_id"])
+        if len(seen) == 1:
+            pool.connect(config).close()  # the server went away mid-job
+            raise psycopg.OperationalError("server closed the connection unexpectedly")
+        stop.set()
+        return "ok"
+
+    monkeypatch.setattr(worker, "handle", handled)
+    monkeypatch.setattr(worker, "ensure_default_schedules", lambda *_: None)
+    job_id = jobs.enqueue(conn, config.tenant_id, "detect.run", {})
+    assert job_id
+
+    def run() -> None:
+        try:
+            worker.run(config, poll_seconds=0.1, stop=stop)
+        finally:
+            pool.close()
+
+    thread = threading.Thread(target=run)
+    thread.start()
+    thread.join(timeout=20)
+    stop.set()
+    thread.join(timeout=10)
+    assert seen == [job_id, job_id], "the worker took its own job back on reconnecting"
+    assert _job(conn, job_id)["state"] == "done"
+
+
+def test_a_stopped_worker_takes_no_job_after_the_one_in_hand(conn, config, monkeypatch):
+    """SIGTERM let it start the rest of a batch of four, and the grace period cut one off."""
+    import threading
+
+    from shoc.db import pool
+
+    stop = threading.Event()
+    seen: list[int] = []
+
+    def handled(job: dict, cfg: object) -> str:
+        seen.append(job["job_id"])
+        stop.set()  # SIGTERM arrives while the job runs
+        return "ok"
+
+    monkeypatch.setattr(worker, "handle", handled)
+    monkeypatch.setattr(worker, "ensure_default_schedules", lambda *_: None)
+    for n in range(3):
+        jobs.enqueue(conn, config.tenant_id, "detect.run", {"n": n})
+
+    def run() -> None:
+        try:
+            worker.run(config, poll_seconds=0.1, stop=stop)
+        finally:
+            pool.close()
+
+    thread = threading.Thread(target=run)
+    thread.start()
+    thread.join(timeout=20)
+    assert not thread.is_alive()
+    assert len(seen) == 1
+    states = [
+        r["state"]
+        for r in fetch_all(
+            conn, "SELECT state FROM shoc.jobs WHERE tenant_id = %s", (config.tenant_id,)
+        )
+    ]
+    assert states.count("done") == 1 and "running" not in states, "nothing else was taken"
+
+
+def test_webhook_delivery_is_not_queued_without_a_webhook(conn, config, clean):
+    """1,440 jobs a day that each found nothing to send (D163)."""
+    tenant = config.tenant_id
+    schedule = f"{tenant}:webhooks"
+    jobs.upsert_schedule(conn, schedule, tenant, "stream.deliver", 60, {})
+
+    def queued() -> int:
+        row = fetch_one(
+            conn,
+            "SELECT count(*) AS n FROM shoc.jobs WHERE tenant_id = %s AND kind = 'stream.deliver'",
+            (tenant,),
+        )
+        return int(row["n"]) if row else 0
+
+    def due() -> None:
+        execute(
+            conn,
+            "UPDATE shoc.schedules SET next_run_at = now() - interval '1 second' "
+            "WHERE schedule_id = %s",
+            (schedule,),
+        )
+
+    due()
+    assert jobs.tick(conn) >= 1, "the schedule fell due"
+    assert queued() == 0
+    execute(
+        conn,
+        """INSERT INTO shoc.webhooks (webhook_id, tenant_id, url, secret)
+           VALUES (%s, %s, 'https://hooks.example.test/shoc', '\\x00'::bytea)""",
+        (f"WH-{tenant}", tenant),
+    )
+    due()
+    assert jobs.tick(conn) >= 1
+    assert queued() == 1
+
+
+def test_the_nightly_retention_prunes_the_control_plane(conn, store, config, clean):
+    """Only event partitions expired; copies of events and finished jobs stayed for good."""
+    tenant = config.tenant_id
+    old = "now() - interval '200 days'"
+
+    def done(job_id: int | None, when: str) -> None:
+        execute(
+            conn,
+            f"UPDATE shoc.jobs SET state = 'done', finished_at = {when} WHERE job_id = %s",
+            (job_id,),
+        )
+
+    stale = jobs.enqueue(conn, tenant, "detect.run", {"n": 1})
+    guard = jobs.enqueue(
+        conn, tenant, "playbook.run", {"n": 2}, idempotency_key=f"playbook:pb-x:CASE-{tenant}"
+    )
+    recent = jobs.enqueue(conn, tenant, "detect.run", {"n": 3})
+    done(stale, old)
+    done(guard, old)
+    done(recent, "now()")
+    sent = fetch_one(
+        conn,
+        f"""INSERT INTO shoc.stream_events (tenant_id, type, created_at)
+            VALUES (%s, 'case.updated', {old}) RETURNING seq""",
+        (tenant,),
+    )
+    unsent = fetch_one(
+        conn,
+        f"""INSERT INTO shoc.stream_events (tenant_id, type, created_at)
+            VALUES (%s, 'case.updated', {old}) RETURNING seq""",
+        (tenant,),
+    )
+    assert sent and unsent
+    execute(
+        conn,
+        """INSERT INTO shoc.webhooks (webhook_id, tenant_id, url, secret, last_seq)
+           VALUES (%s, %s, 'https://hooks.example.test/shoc', '\\x00'::bytea, %s)""",
+        (f"WH-{tenant}", tenant, sent["seq"]),
+    )
+    execute(
+        conn,
+        f"""INSERT INTO shoc.hunt_observations (observation_uid, tenant_id, run_uid, pack_id,
+                                                row_data, seen_at)
+            VALUES (%s, %s, 'HR-1', 'pack', '{{"src_ip": "192.0.2.10"}}', {old})""",
+        (f"OBS-{tenant}", tenant),
+    )
+    execute(
+        conn,
+        f"""INSERT INTO shoc.graph_nodes (tenant_id, node_id, kind, last_seen)
+            VALUES (%s, 'user:old@example.test', 'user', {old}),
+                   (%s, 'user:new@example.test', 'user', now())""",
+        (tenant, tenant),
+    )
+    execute(
+        conn,
+        f"""INSERT INTO shoc.graph_edges (tenant_id, src, dst, last_seen)
+            VALUES (%s, 'user:old@example.test', 'ip:192.0.2.10', {old})""",
+        (tenant,),
+    )
+    execute(
+        conn,
+        f"""INSERT INTO shoc.intel_lookups (tenant_id, type, value, looked_up_at, expires_at)
+            VALUES (%s, 'ip', '192.0.2.10', {old}, {old})""",
+        (tenant,),
+    )
+    execute(
+        conn,
+        """INSERT INTO shoc.memory (memory_id, tenant_id, body, expires_at)
+           VALUES (%s, %s, 'expired', now() - interval '1 day'),
+                  (%s, %s, 'kept', NULL)""",
+        (f"MEM-{tenant}-old", tenant, f"MEM-{tenant}-new", tenant),
+    )
+
+    summary = worker.handle({"tenant_id": tenant, "kind": "retention", "payload": {}}, config)
+    assert "pruned" in summary
+
+    def left(sql: str) -> list:
+        return [next(iter(r.values())) for r in fetch_all(conn, sql, (tenant,))]
+
+    kept = left("SELECT job_id FROM shoc.jobs WHERE tenant_id = %s")
+    assert stale not in kept and recent in kept
+    assert guard in kept, "a key that guards a once-only effect stays"
+    old_events = left(
+        "SELECT seq FROM shoc.stream_events WHERE tenant_id = %s "
+        "AND created_at < now() - interval '1 day'"
+    )
+    assert old_events == [unsent["seq"]], "an event a webhook has not sent stays"
+    assert left("SELECT observation_uid FROM shoc.hunt_observations WHERE tenant_id = %s") == []
+    nodes = left("SELECT node_id FROM shoc.graph_nodes WHERE tenant_id = %s")
+    assert nodes == ["user:new@example.test"]
+    assert left("SELECT src FROM shoc.graph_edges WHERE tenant_id = %s") == []
+    assert left("SELECT value FROM shoc.intel_lookups WHERE tenant_id = %s") == []
+    assert left("SELECT body FROM shoc.memory WHERE tenant_id = %s") == ["kept"]

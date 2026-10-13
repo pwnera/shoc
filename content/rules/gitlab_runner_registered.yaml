@@ -9,7 +9,8 @@ description: >
   few times a year.
 status: experimental
 date: 2026-10-09
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.55
 attack: [T1195.002, T1543]
 logsource:

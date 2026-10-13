@@ -26,7 +26,7 @@ def test_logpush_audit_export_maps_like_the_api():
         "gateway_create_location",
     )
     assert created["actor_user_name"] == "john.doe@example.org"
-    assert created["cloud_account_uid"] == "1d1e650b3385b95db72bba7cfb1287e9"
+    assert created["cloud_account_uid"] == "0000000000000000000000000000beef"
     assert updated["activity_name"] == "Update" and updated["status"] == "Success"
     assert v2["event_uid"] == "8d7e5f9a-1b2c-4d3e-a4f5-0b1c2d3e4f56"
     assert v2["time"].startswith("2026-09-29T15:57:41")

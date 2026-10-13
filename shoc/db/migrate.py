@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
+
+import psycopg
 
 from shoc.config import Config
 from shoc.db import audit, secrets
@@ -21,10 +24,32 @@ CREATE TABLE IF NOT EXISTS shoc.schema_migrations (
 
 def pending(conn: Conn) -> list[Path]:
     with conn.cursor() as cur:
-        cur.execute(q(BOOTSTRAP))
+        # CREATE ... IF NOT EXISTS still needs CREATE on the schema, which the
+        # runtime role lacks (RFC 0024), so it runs only on a new database.
+        cur.execute("SELECT to_regclass('shoc.schema_migrations') IS NOT NULL AS ready")
+        row = cur.fetchone()
+        if not (row and row["ready"]):
+            cur.execute(q(BOOTSTRAP))
         cur.execute("SELECT version FROM shoc.schema_migrations")
         done = {r["version"] for r in cur.fetchall()}
     return [p for p in sorted(MIGRATIONS_DIR.glob("*.sql")) if p.stem not in done]
+
+
+def drift(conn: Conn) -> tuple[list[str], list[str]]:
+    """The migrations this code has that the database lacks, and the reverse (sre-14).
+
+    Read-only, so `serve` and `worker` can ask without owning the schema. The
+    second list is a database migrated by a newer release: a `helm rollback`,
+    or old pods still serving while the pre-upgrade hook migrates.
+    """
+    from shoc.db.pool import fetch_all, fetch_one
+
+    known = sorted(p.stem for p in MIGRATIONS_DIR.glob("*.sql"))
+    row = fetch_one(conn, "SELECT to_regclass('shoc.schema_migrations') IS NOT NULL AS made")
+    if not (row and row["made"]):
+        return known, []
+    done = {r["version"] for r in fetch_all(conn, "SELECT version FROM shoc.schema_migrations")}
+    return [v for v in known if v not in done], sorted(done - set(known))
 
 
 CREATE_ROLE_SQL = """
@@ -74,8 +99,10 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA "{schema}" FROM 
 # What `serve` and `worker` need, as a role that does not own the schema
 # (RFC 0024). The audit log takes rows and gives them back, and nothing else:
 # without ownership, its triggers cannot be disabled either.
+# TEMPORARY: a load COPYs into a temporary staging table (store/postgres.py), and
+# deploy/postgres-init revokes PUBLIC's default TEMPORARY on the database.
 RUNTIME_SQL = """
-GRANT CONNECT, CREATE ON DATABASE {database} TO {role};
+GRANT CONNECT, CREATE, TEMPORARY ON DATABASE {database} TO {role};
 GRANT USAGE ON SCHEMA shoc TO {role};
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA shoc TO {role};
 GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA shoc TO {role};
@@ -199,6 +226,34 @@ def revoke_private(conn: Conn) -> None:
             cur.execute(q(f"REVOKE ALL ON {PRIVATE} FROM {row['role']}"))
 
 
+# How long one statement of a migration waits for a lock (data-13). The Helm
+# pre-upgrade hook migrates while the old pods still serve, and an ALTER queued
+# behind a long reader holds every later query on that table behind it. The
+# migration gives up instead, rolls back, and tries again a little later.
+LOCK_TIMEOUT = "10s"
+LOCK_TRIES = 5
+LOCK_PAUSE_SECONDS = 5.0
+
+
+def _apply(conn: Conn, path: Path) -> None:
+    """One migration and its row in schema_migrations, in one transaction."""
+    with conn.transaction(), conn.cursor() as cur:
+        cur.execute("SELECT set_config('shoc.tenant_id', %s, true)", (ALL_TENANTS,))
+        cur.execute("SELECT set_config('lock_timeout', %s, true)", (LOCK_TIMEOUT,))
+        cur.execute(q(path.read_text()))
+        if path.stem == audit.KEYED_FROM:
+            # Needs the master key, which SQL never sees (SEC-1).
+            audit.seal_legacy(conn)
+        if path.stem == "043_vendor_actions":
+            from shoc.cases import credentials
+
+            credentials.split_legacy(conn)
+        cur.execute(
+            "INSERT INTO shoc.schema_migrations (version) VALUES (%s)",
+            (path.stem,),
+        )
+
+
 def migrate(conn: Conn) -> list[str]:
     """Apply every pending migration. Returns the versions applied.
 
@@ -208,21 +263,14 @@ def migrate(conn: Conn) -> list[str]:
     """
     applied: list[str] = []
     for path in pending(conn):
-        sql = path.read_text()
-        with conn.transaction(), conn.cursor() as cur:
-            cur.execute("SELECT set_config('shoc.tenant_id', %s, true)", (ALL_TENANTS,))
-            cur.execute(q(sql))
-            if path.stem == audit.KEYED_FROM:
-                # Needs the master key, which SQL never sees (SEC-1).
-                audit.seal_legacy(conn)
-            if path.stem == "043_vendor_actions":
-                from shoc.cases import credentials
-
-                credentials.split_legacy(conn)
-            cur.execute(
-                "INSERT INTO shoc.schema_migrations (version) VALUES (%s)",
-                (path.stem,),
-            )
+        for attempt in range(LOCK_TRIES):
+            try:
+                _apply(conn, path)
+                break
+            except psycopg.errors.LockNotAvailable:
+                if attempt == LOCK_TRIES - 1:
+                    raise
+                time.sleep(LOCK_PAUSE_SECONDS)
         applied.append(path.stem)
     if applied:
         # A migration that adds a table and forgets this call still gets RLS.

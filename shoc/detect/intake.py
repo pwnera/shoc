@@ -25,6 +25,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from itertools import chain
 
 from shoc.db.pool import Conn, fetch_all, fetch_one
 
@@ -121,8 +122,23 @@ _STOP_WORDS = """the and for with from into over under after before about this t
 those how why what who new our your their its are was were has have been using used use via
 amid threat threats attack attacks attacker attackers campaign campaigns malware analysis
 report reports security research update updates part targets targeting targeted actor actors
-group groups week weekly"""
+group groups week weekly account accounts user users"""
 _STOP = frozenset(_STOP_WORDS.split())
+# Product and threat-class phrases, every word in them, and the words news
+# titles use for any flaw or attack. Two titles that share only these are two
+# stories about one product or one kind of attack (DET-7).
+_PHRASES = "|".join(chain(*(patterns for _, patterns in PRODUCTS.values()), *THREATS.values()))
+_GENERIC = re.compile(_PHRASES)
+_NEWS_WORDS = """exploit exploits exploited exploiting exploitation flaw flaws bug bugs
+vulnerability vulnerabilities vulnerable vuln vulns zero-day zero-days 0-day 0-days zeroday
+patch patches patched fix fixes fixed critical severe actively active wild in-the-wild hacker
+hackers hit hits abuse abuses abused breach breaches breached leak leaks leaked steal steals
+stolen theft bypass bypasses hijack hijacks warn warns warning alert alerts 2fa mfa phishing
+credential credentials login logins windows microsoft google cloud apple linux android ios
+data access"""
+_GENERIC_WORDS = frozenset(
+    re.findall(r"[a-z0-9]+", re.sub(r"\\[a-z]", " ", _PHRASES)) + _NEWS_WORDS.split()
+)
 _WORD = re.compile(r"[a-z0-9][a-z0-9.\-]+")
 _CVE = re.compile(r"\bCVE-\d{4}-\d{4,7}\b", re.I)
 SAME_STORY_DAYS = 14
@@ -227,19 +243,28 @@ def words(title: str) -> set[str]:
     return {w.strip(".-") for w in _WORD.findall(title.lower()) if w not in _STOP and len(w) > 2}
 
 
+def names(title: str) -> set[str]:
+    """A title's words that name something: a kit, a family, an actor, a CVE."""
+    return words(_GENERIC.sub(" ", title.lower())) - _GENERIC_WORDS
+
+
 def cves(text: str) -> set[str]:
     return {c.upper() for c in _CVE.findall(text)}
 
 
 def same_as(title: str, text: str, earlier: list[tuple[str, str, str]]) -> str:
-    """The id of an earlier item telling the same story, or "".
+    """The id of an earlier report telling the same story, or "".
 
-    `earlier` is (id, title, text) for each report read or item queued in the
-    last two weeks. The same story is three or more title words in common that
-    are at least half of the shorter title, or two CVEs in common.
+    `earlier` is (id, title, text) for each report read in the last two weeks;
+    the check runs when an item is queued and again before it is read (RFC
+    0029). Two titles must share a word that names something, not only product
+    or threat-class words. Then the same story is three or more title words in
+    common that are at least half of the shorter title, or two CVEs in common.
     """
-    mine, my_cves = words(title), cves(f"{title} {text}")
+    mine, my_cves, my_names = words(title), cves(f"{title} {text}"), names(title)
     for uid, other_title, other_text in earlier:
+        if not my_names & names(other_title):
+            continue
         theirs = words(other_title)
         common = mine & theirs
         if len(common) >= 3 and len(common) * 2 >= min(len(mine), len(theirs)):

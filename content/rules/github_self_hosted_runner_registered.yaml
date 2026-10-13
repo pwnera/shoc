@@ -8,8 +8,8 @@ description: >
   github_self_hosted_runner_first_seen hunt.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-02
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.55
 attack: [T1195.002, T1543]
 logsource:

@@ -29,13 +29,13 @@ is kept and marked `self` with the events it cited; nothing is dropped (D44).
 
 from __future__ import annotations
 
-import ipaddress
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
 
 from shoc.db.pool import Conn, execute, fetch_all, fetch_one
+from shoc.detect.osint import is_public_address
 
 KINDS = ("credential", "address", "operator", "automation")
 
@@ -147,51 +147,72 @@ def values(conn: Conn, tenant_id: str, *kinds: str) -> set[str]:
     }
 
 
+# The people who run shoc: its enabled admins and operators. Readers are left
+# out, since every SSO email is admitted as one (D120).
+PEOPLE = """SELECT email FROM shoc.users WHERE tenant_id = %s
+            AND role IN ('admin', 'operator') AND disabled_at IS NULL"""
+# The fields of a credential that name who shoc acts as there: its AWS key, its
+# Google admin and service account, its Microsoft or EDR app, and the login a
+# token acts as where a probe recorded it (`acts_as`: Okta, GitHub). None of
+# them is the secret half.
+ACTS_AS = ("access_key_id", "admin_email", "client_email", "client_id", "acts_as")
+
+
 def is_person(conn: Conn, tenant_id: str, value: str) -> bool:
     """Whether this is one of the operator's own accounts: one registered with
-    `own.add`, or the email a shoc admin or operator signs in with. Readers are
-    left out, since every SSO email is admitted as one (D120)."""
+    `own.add`, or the email a shoc admin or operator signs in with."""
     value = bare(value).lower()
     if value in values(conn, tenant_id, "operator"):
         return True
-    return bool(
-        fetch_one(
-            conn,
-            """SELECT 1 FROM shoc.users WHERE tenant_id = %s AND email = %s
-               AND role IN ('admin', 'operator') AND disabled_at IS NULL""",
-            (tenant_id, value),
-        )
-    )
+    return bool(fetch_one(conn, PEOPLE + " AND email = %s", (tenant_id, value)))
 
 
-def protected(conn: Conn, tenant_id: str) -> set[str]:
-    """Targets an agent's proposal against which always waits for a human (L2)."""
-    return values(conn, tenant_id, *KINDS)
+def protected(conn: Conn, tenant_id: str, master_key: str = "") -> set[str]:
+    """Targets an agent's proposal against which always waits for a human (L2):
+    what is recorded as shoc's own, the people who run shoc, and, given the
+    master key, who each response credential and each source's credential acts
+    as, and the AWS role either assumes. A playbook that disabled shoc's own key
+    could not undo it with that key,
+    and one that disabled the key shoc reads CloudTrail with would blind it
+    (RFC 0021)."""
+    out = values(conn, tenant_id, *KINDS)
+    out |= {str(r["email"]).lower() for r in fetch_all(conn, PEOPLE, (tenant_id,))}
+    if master_key:
+        from shoc.cases import credentials
+        from shoc.ingest.connectors.base import read_config
+
+        held: list[dict[str, Any]] = []
+        for name in credentials.providers(conn, tenant_id):
+            try:
+                response = credentials.load(conn, tenant_id, name, master_key)
+            except Exception:  # unreadable, it cannot act either
+                continue
+            held.append({**response.settings, **response.secret})
+        for row in fetch_all(
+            conn, "SELECT source FROM shoc.connector_config WHERE tenant_id = %s", (tenant_id,)
+        ):
+            try:
+                settings, secret, _enabled = read_config(conn, tenant_id, row["source"], master_key)
+            except Exception:  # unreadable, it reads nothing either
+                continue
+            held.append({**settings, **secret})
+        for fields in held:
+            out |= {str(fields[k]).strip().lower() for k in ACTS_AS if fields.get(k)}
+            # The AWS role shoc assumes: revoking its sessions cuts shoc off (po-15).
+            arn = str(fields.get("role_arn") or "").strip().lower()
+            if ":role/" in arn:
+                out |= {arn, arn.rpartition("/")[2]}
+    return out
 
 
 def bare(value: str) -> str:
     """`user:alice@example.com` and `alice@example.com` are the same account."""
     value = str(value or "").strip()
     kind, sep, rest = value.partition(":")
-    if sep and kind in ("user", "key", "ip", "host", "resource", "account", "entity") and rest:
+    kinds = ("user", "key", "session", "ip", "host", "resource", "account", "entity")
+    if sep and kind in kinds and rest:
         return rest.strip()
     return value
-
-
-def routable(ip: str) -> bool:
-    """An address on the internet. Carrier-grade NAT (100.64.0.0/10), which
-    Tailscale and Starlink use, is not, though `is_global` disagrees on some
-    Python versions. The documentation ranges stand for internet addresses in
-    this project's fixtures and docs, so they count as routable."""
-    from shoc.detect.osint import is_documentation
-
-    try:
-        addr = ipaddress.ip_address(str(ip).strip())
-    except ValueError:
-        return False
-    if addr.version == 4 and addr in ipaddress.ip_network("100.64.0.0/10"):
-        return False
-    return addr.is_global or is_documentation(addr)
 
 
 # -- the intake check ----------------------------------------------------------
@@ -239,24 +260,11 @@ def classify(conn: Conn, store: Any, tenant_id: str, finding: dict[str, Any]) ->
 
 
 def _events(store: Any, tenant_id: str, uids: list[str]) -> list[dict[str, Any]]:
-    from shoc.store import ocsf as layout
+    # events.by_uid keeps each uid's newest row with no DISTINCT, which BigQuery
+    # refuses over its JSON `raw`, and rereads a uid another one's updates pushed out.
+    from shoc.capabilities.events import by_uid
 
-    wanted = list(dict.fromkeys(uids))[:200]
-    params: dict[str, Any] = {f"u{i}": u for i, u in enumerate(wanted)}
-    params["tenant_id"] = tenant_id
-    marks = ", ".join(f":u{i}" for i in range(len(wanted)))
-    rows = store.query(
-        f"""SELECT DISTINCT event_uid, time, api_operation, activity_name, resource_uid,
-                   actor_user_uid, actor_session_uid, src_endpoint_ip, raw
-            FROM {layout.EVENTS_TABLE}
-            WHERE tenant_id = :tenant_id AND event_uid IN ({marks})""",
-        params,
-        limit=len(wanted) * 4,
-    ).rows
-    seen: dict[str, dict[str, Any]] = {}
-    for row in rows:
-        seen.setdefault(str(row["event_uid"]), row)
-    return list(seen.values())
+    return by_uid(store, tenant_id, list(dict.fromkeys(uids))[:200], include_raw=True).rows
 
 
 def _own_event(
@@ -281,7 +289,7 @@ def _own_event(
     operation = f"{event.get('api_operation') or ''} {event.get('activity_name') or ''}"
     ip = str(event.get("src_endpoint_ip") or "")
     # An address shoc does not call out from is not shoc, whatever the credential.
-    if ip and routable(ip) and addresses and ip.lower() not in addresses:
+    if ip and is_public_address(ip) and addresses and ip.lower() not in addresses:
         return ""
     scopes = scopes_of(event.get("raw"))
     granted = {s for s in str(held.get("scope") or "").split() if s}
@@ -307,13 +315,6 @@ def _own_event(
 def scopes_of(raw: Any) -> set[str]:
     """Every scope a record names: a `scope`/`scopes` key, or a named parameter
     called `scope` (Google's `{name: scope, multiValue: [...]}`)."""
-    import json
-
-    if isinstance(raw, str):
-        try:
-            raw = json.loads(raw)
-        except ValueError:
-            return set()
     found: set[str] = set()
 
     def take(value: Any) -> None:

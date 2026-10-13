@@ -19,6 +19,7 @@ spec:
         app.kubernetes.io/component: serve
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name | default (include "shoc.fullname" .) }}
+      automountServiceAccountToken: false
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -31,6 +32,10 @@ spec:
           env:
             {{- include "shoc.env" . | nindent 12 }}
             {{- include "shoc.runtimeEnv" . | nindent 12 }}
+            {{- with .Values.diskBudgetGb }}
+            - name: SHOC_DISK_BUDGET_GB
+              value: {{ . | quote }}
+            {{- end }}
           envFrom:
             - secretRef:
                 name: {{ include "shoc.secretName" . }}
@@ -41,7 +46,7 @@ spec:
             httpGet: { path: /healthz, port: http }
             initialDelaySeconds: 10
           readinessProbe:
-            httpGet: { path: /healthz, port: http }
+            httpGet: { path: /readyz, port: http }
             initialDelaySeconds: 5
           resources:
             {{- toYaml .Values.serve.resources | nindent 12 }}
@@ -50,7 +55,7 @@ spec:
               mountPath: /tmp
       volumes:
         - name: tmp
-          emptyDir: {}
+          emptyDir: { sizeLimit: {{ .Values.tmpSizeLimit }} }
       {{- with .Values.nodeSelector }}
       nodeSelector: {{- toYaml . | nindent 8 }}
       {{- end }}

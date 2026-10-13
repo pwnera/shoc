@@ -58,7 +58,9 @@ is finished when that directory passes unchanged.
   (`COPY`, or `PUT` and then an insert-only `MERGE` on a warehouse). Staging
   then inserting with `ON CONFLICT DO NOTHING`, or `WHEN NOT MATCHED`, makes a
   replayed batch a no-op, which is what makes connector cursors safe to overlap.
-- **Retention** drops whole partitions rather than deleting rows.
+- **Retention** drops whole monthly partitions on Postgres, and deletes the
+  older rows on a warehouse. `events.retain` never keeps fewer days than the
+  configured retention, and reports which it removed in `data.unit`.
 - **Per-dialect overrides are allowed inside an adapter** for performance, never
   in the core, and never in a way that changes results.
 

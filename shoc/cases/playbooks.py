@@ -29,13 +29,12 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from shoc.actions import get as get_action
 from shoc.cases import actions as action_store
 from shoc.cases import credentials, engine
 from shoc.db.pool import Conn, execute, fetch_all, fetch_one
 from shoc.errors import ConfigError, GateRefused, NotFound, ValidationError
+from shoc.ids import make_id
 
 PLACEHOLDER = re.compile(r"\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}")
 
@@ -275,11 +274,12 @@ class Playbook:
 def load(config: Any = None, conn: Any = None, tenant_id: str = "") -> list[Playbook]:
     """Every playbook in content/ and, with a tenant, the ones merged there (RFC 0033)."""
     from shoc.config import Config
+    from shoc.detect.rules import load_yaml
 
     cfg = config or Config.load()
     directory = Path(cfg.content_dir) / "playbooks"
     books = [
-        Playbook.from_dict(yaml.safe_load(p.read_text()) or {}, p)
+        Playbook.from_dict(load_yaml(p.read_text()) or {}, p)
         for p in (sorted(directory.glob("*.yaml")) if directory.is_dir() else [])
     ]
     seen: set[str] = set()
@@ -534,19 +534,44 @@ def _cancel_runs(conn: Conn, tenant_id: str, playbook_id: str, why: str) -> int:
     )
 
 
+def cancel_case_runs(conn: Conn, tenant_id: str, case_uid: str, why: str) -> int:
+    """Cancel a closed case's open runs: a run parked on a timer or a retry
+    would otherwise wake and act on a case a person has finished (RSP-1)."""
+    return len(
+        fetch_all(
+            conn,
+            """UPDATE shoc.playbook_runs
+                  SET state = 'cancelled', error = %s, updated_at = now(), finished_at = now()
+                WHERE tenant_id = %s AND case_uid = %s
+                  AND state NOT IN ('done', 'failed', 'cancelled')
+               RETURNING run_uid""",
+            (why[:500], tenant_id, case_uid),
+        )
+    )
+
+
 # -- context ----------------------------------------------------------------
 def entities_of_case(conn: Conn, tenant_id: str, case_uid: str) -> dict[str, str]:
-    """The typed entities on a case, as `{kind: value}` for template use."""
+    """The typed entities on a case, as `{kind: value}` for template use: the
+    first value of each kind, which `{{ entity.<kind> }}` renders."""
+    return {kind: v[0] for kind, v in _entity_values(conn, tenant_id, case_uid).items()}
+
+
+def _entity_values(conn: Conn, tenant_id: str, case_uid: str) -> dict[str, list[str]]:
     rows = fetch_all(
         conn,
         "SELECT entity FROM shoc.case_entities WHERE tenant_id=%s AND case_uid=%s ORDER BY entity",
         (tenant_id, case_uid),
     )
-    out: dict[str, str] = {}
+    out: dict[str, list[str]] = {}
     for row in rows:
         kind, _, value = str(row["entity"]).partition(":")
-        out.setdefault(kind, value)
+        out.setdefault(kind, []).append(value)
     return out
+
+
+def _first(values: dict[str, dict[str, list[str]]]) -> dict[str, dict[str, str]]:
+    return {scope: {k: v[0] for k, v in kinds.items()} for scope, kinds in values.items()}
 
 
 def rules_of_case(conn: Conn, tenant_id: str, case_uid: str) -> set[str]:
@@ -574,6 +599,13 @@ def scoped_entities(
     the one who signed in, a Gateway lookup's WARP device and the EDR's device
     id. A step names the findings its target comes from.
     """
+    rules, platforms = _scoped_values(conn, tenant_id, case_uid, config)
+    return _first(rules), _first(platforms)
+
+
+def _scoped_values(
+    conn: Conn, tenant_id: str, case_uid: str, config: Any = None
+) -> tuple[dict[str, dict[str, list[str]]], dict[str, dict[str, list[str]]]]:
     rows = fetch_all(
         conn,
         """SELECT rule_id, entities FROM shoc.findings
@@ -581,21 +613,30 @@ def scoped_entities(
         (tenant_id, case_uid),
     )
     product = engine.products(conn, tenant_id, config)
-    rules: dict[str, dict[str, str]] = {}
-    platforms: dict[str, dict[str, str]] = {}
+    rules: dict[str, dict[str, list[str]]] = {}
+    platforms: dict[str, dict[str, list[str]]] = {}
     for row in rows:
+        scopes = [rules.setdefault(str(row["rule_id"]), {})]
+        if where := product.get(str(row["rule_id"]), ""):
+            scopes.append(platforms.setdefault(where, {}))
         for entity in sorted(row["entities"] or []):
             kind, _, value = str(entity).partition(":")
-            rules.setdefault(str(row["rule_id"]), {}).setdefault(kind, value)
-            if where := product.get(str(row["rule_id"]), ""):
-                platforms.setdefault(where, {}).setdefault(kind, value)
+            for scope in scopes:
+                if value not in scope.setdefault(kind, []):
+                    scope[kind].append(value)
+    for scope in [*rules.values(), *platforms.values()]:
+        for kind in scope:
+            scope[kind].sort()
     return rules, platforms
 
 
 def context_for(
     conn: Conn, tenant_id: str, case: dict[str, Any], config: Any = None
 ) -> dict[str, Any]:
-    rules, platforms = scoped_entities(conn, tenant_id, case["case_uid"], config)
+    """What a step's `{{ … }}` renders from. `each` holds every value of a kind,
+    which a step's target fans out over (RFC 0026)."""
+    rule_values, platform_values = _scoped_values(conn, tenant_id, case["case_uid"], config)
+    entity_values = _entity_values(conn, tenant_id, case["case_uid"])
     return {
         "case": {
             "case_uid": case["case_uid"],
@@ -606,37 +647,124 @@ def context_for(
             "entity": case["entity_key"],
             "summary": case["summary"],
         },
-        "entity": entities_of_case(conn, tenant_id, case["case_uid"]),
-        "rule": rules,
-        "platform": platforms,
+        "entity": {kind: values[0] for kind, values in entity_values.items()},
+        "rule": _first(rule_values),
+        "platform": _first(platform_values),
+        "each": {"entity": entity_values, "rule": rule_values, "platform": platform_values},
     }
 
 
-def render(value: Any, context: dict[str, Any]) -> Any:
+def render(
+    value: Any, context: dict[str, Any], bind: dict[str, str] | None = None, joined: bool = False
+) -> Any:
     """Substitute `{{ case.title }}`, `{{ entity.key }}`, `{{ rule.<id>.user }}` and
-    `{{ platform.<product>.device }}`. Missing values stay empty."""
+    `{{ platform.<product>.device }}`. Missing values stay empty. A placeholder
+    renders its first value, the one `bind` gives it, or with `joined` every one
+    of its values, as a page names every account it is about."""
     if isinstance(value, dict):
-        return {k: render(v, context) for k, v in value.items()}
+        return {k: render(v, context, bind, joined) for k, v in value.items()}
     if isinstance(value, list):
-        return [render(v, context) for v in value]
+        return [render(v, context, bind, joined) for v in value]
     if not isinstance(value, str):
         return value
 
     def lookup(match: re.Match[str]) -> str:
-        cursor: Any = context
-        for part in match.group(1).split("."):
-            cursor = cursor.get(part) if isinstance(cursor, dict) else None
-            if cursor is None:
-                return ""
-        return str(cursor)
+        path = match.group(1)
+        if bind and path in bind:
+            return bind[path]
+        if joined and len(every := _each(context, path)) > 1:
+            return ", ".join(every)
+        return _at(context, path)
 
     return PLACEHOLDER.sub(lookup, value)
 
 
+def _at(context: dict[str, Any], path: str) -> str:
+    cursor: Any = context
+    for part in path.split("."):
+        cursor = cursor.get(part) if isinstance(cursor, dict) else None
+        if cursor is None:
+            return ""
+    return str(cursor)
+
+
+def _each(context: dict[str, Any], path: str) -> list[str]:
+    """Every value of a placeholder; [] in a run started before they were kept."""
+    cursor: Any = context.get("each") or {}
+    for part in path.split("."):
+        cursor = cursor.get(part) if isinstance(cursor, dict) else None
+    return [str(v) for v in cursor] if isinstance(cursor, list) else []
+
+
+# A target with more values than this is not acted on value by value: the step
+# fails as ambiguous, which pages, rather than act on twenty accounts (RFC 0026).
+FAN_OUT_AT_MOST = 10
+
+
+def _fans(path: str) -> bool:
+    """Whether a step fans out over every value of this placeholder. Only a rule's
+    or a platform's: `entity.<kind>` holds every finding linked to the case, the
+    accounts a spray failed on and the CI key next to the leaked one, so it still
+    names its first value alone (RFC 0026)."""
+    return path.startswith(("rule.", "platform."))
+
+
+def _target_text(step: Step) -> str:
+    """The template of the parameter a step acts on; '' for a page or a timer."""
+    if not step.action or step.action.startswith("notify."):
+        return ""
+    required = get_action(step.action).required_params
+    text = step.params.get(required[0]) if required else None
+    return text if isinstance(text, str) else ""
+
+
+def plan(book: Playbook, context: dict[str, Any]) -> list[dict[str, Any]]:
+    """A run's steps: one per playbook step, and one per value of a rule's or a
+    platform's target that has several, so the second account or key those
+    findings name is acted on too (RFC 0026). `step` is the playbook's step,
+    `bind` the value it acts on."""
+    out: list[dict[str, Any]] = []
+    for index, step in enumerate(book.steps):
+        path = next(
+            (
+                p
+                for p in PLACEHOLDER.findall(_target_text(step))
+                if _fans(p) and len(_each(context, p)) > 1
+            ),
+            "",
+        )
+        values = _each(context, path) if path else []
+        if len(values) > FAN_OUT_AT_MOST:
+            out.append({"step": index, "ambiguous": f"{path} has {len(values)} values"})
+        elif values:
+            out += [{"step": index, "bind": {path: v}} for v in values]
+        else:
+            out.append({"step": index})
+    return out
+
+
+def targets(book: Playbook, context: dict[str, Any]) -> str:
+    """A hash of what a playbook's steps act on in this context. A case whose new
+    findings change it is answered by a run of its own (RSP-2)."""
+    named: set[str] = set()
+    for step in book.steps:
+        for path in PLACEHOLDER.findall(_target_text(step)):
+            values = (_each(context, path) if _fans(path) else []) or [_at(context, path)]
+            named |= {f"{path}={v}" for v in values}
+    return hashlib.sha256("\n".join(sorted(named)).encode()).hexdigest()[:16]
+
+
+def job_key(book: Playbook, context: dict[str, Any], config: Any) -> str:
+    """The worker's key for starting a playbook on a case. It changes with what the
+    steps act on, so a key or account that joins the case later gets a run, and
+    with SHOC_DRY_RUN, so the run that acts follows the plan (RSP-2, RSP-7)."""
+    mode = "dry" if getattr(config, "dry_run", None) is True else "live"
+    return f"playbook:{book.id}:{context['case']['case_uid']}:{targets(book, context)}:{mode}"
+
+
 # -- runs -------------------------------------------------------------------
 def run_uid(tenant_id: str, playbook_id: str, case_uid: str) -> str:
-    blob = f"{tenant_id}|{playbook_id}|{case_uid}"
-    return "RUN-" + hashlib.sha256(blob.encode()).hexdigest()[:20]
+    return make_id("RUN-", tenant_id, playbook_id, case_uid)
 
 
 def match(conn: Conn, tenant_id: str, case: dict[str, Any], config: Any = None) -> list[Playbook]:
@@ -654,45 +782,72 @@ def start(
     config: Any = None,
     dry_run: bool | None = None,
 ) -> dict[str, Any]:
-    """Create a run and its steps. Starting the same playbook twice is a no-op."""
+    """Create a run and its steps. Starting the same playbook twice is a no-op,
+    unless what its steps act on has changed since (a second key joined the
+    case), or one start is a preview and the other is not: each of those is a
+    run of its own, so a plan never stands in for the run that acts (RSP-2, RSP-7).
+    A run's context is rendered once, so an approved step acts on what it was
+    approved for.
+
+    `dry_run` asks for a preview: each step the policy would run for real is
+    recorded as its plan instead (`actions.propose`). Otherwise each action's own
+    dry-run setting decides, and the run is recorded as dry while SHOC_DRY_RUN is.
+    """
     from shoc.config import Config
 
     cfg = config or Config.load()
     book = get(playbook_id, cfg, conn, tenant_id)
     case = engine.require(conn, tenant_id, case_uid)
-    uid = run_uid(tenant_id, playbook_id, case_uid)
-    existing = fetch_one(conn, "SELECT * FROM shoc.playbook_runs WHERE run_uid=%s", (uid,))
-    if existing:
-        return existing
+    preview = bool(dry_run)
+    dry = preview or cfg.dry_run is True
+    mode = _mode(preview, dry)
     context = context_for(conn, tenant_id, case, cfg)
+    aims = targets(book, context)
+    runs = fetch_all(
+        conn,
+        """SELECT * FROM shoc.playbook_runs
+           WHERE tenant_id=%s AND playbook_id=%s AND case_uid=%s ORDER BY started_at""",
+        (tenant_id, playbook_id, case_uid),
+    )
+    for run in runs:
+        held = dict(run["context"] or {})
+        was = run["targets"] or targets(book, held)
+        if _mode(bool(held.get("preview")), bool(run["dry_run"])) == mode and was == aims:
+            return run
+    # The first run keeps the id it always had.
+    uid = run_uid(tenant_id, playbook_id, f"{case_uid}|{aims}|{mode}" if runs else case_uid)
+    context["preview"] = preview
+    context["plan"] = plan(book, context)
     row = fetch_one(
         conn,
-        """INSERT INTO shoc.playbook_runs (run_uid, tenant_id, case_uid, playbook_id, context, dry_run)
-           VALUES (%s,%s,%s,%s,%s,%s) RETURNING *""",
-        (
-            uid,
-            tenant_id,
-            case_uid,
-            playbook_id,
-            json.dumps(context, default=str),
-            cfg.dry_run if dry_run is None else dry_run,
-        ),
+        """INSERT INTO shoc.playbook_runs
+               (run_uid, tenant_id, case_uid, playbook_id, context, dry_run, targets)
+           VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (run_uid) DO NOTHING RETURNING *""",
+        (uid, tenant_id, case_uid, playbook_id, json.dumps(context, default=str), dry, aims),
     )
-    for index, step in enumerate(book.steps):
+    if not row:  # another worker started it a moment ago
+        return fetch_one(conn, "SELECT * FROM shoc.playbook_runs WHERE run_uid=%s", (uid,)) or {}
+    for index, entry in enumerate(context["plan"]):
+        step = book.steps[entry["step"]]
+        name = step.name + "".join(f" ({v})" for v in (entry.get("bind") or {}).values())
         execute(
             conn,
             """INSERT INTO shoc.playbook_steps (run_uid, tenant_id, step_index, name, action_type)
                VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
-            (uid, tenant_id, index, step.name, step.action),
+            (uid, tenant_id, index, name, step.action),
         )
     engine.publish(
         conn,
         tenant_id,
         "playbook.started",
         uid,
-        {"playbook_id": playbook_id, "case_uid": case_uid, "steps": len(book.steps)},
+        {"playbook_id": playbook_id, "case_uid": case_uid, "steps": len(context["plan"])},
     )
-    return row or {}
+    return row
+
+
+def _mode(preview: bool, dry: bool) -> str:
+    return "preview" if preview else "dry" if dry else "live"
 
 
 @dataclass
@@ -733,20 +888,37 @@ def advance(
         )
     book = get(row["playbook_id"], config, conn, tenant_id)
     context = dict(row["context"] or {})
-    report = RunReport(run_uid=run, state=row["state"], steps_total=len(book.steps))
+    # A run started before runs were planned has one step per playbook step.
+    steps: list[dict[str, Any]] = context.get("plan") or [
+        {"step": i} for i in range(len(book.steps))
+    ]
+    report = RunReport(run_uid=run, state=row["state"], steps_total=len(steps))
 
     index = int(row["step_index"])
-    # The trigger is read when a run is queued; the case can be ruled benign
-    # before the run starts, or while it waits for an approval.
-    verdict = row["case_uid"] and engine.require(conn, tenant_id, row["case_uid"])["verdict"]
-    if verdict in ("benign_expected", "false_positive"):
-        _set_run(conn, tenant_id, run, "cancelled", index, f"the case is {verdict}")
+    # The trigger is read when a run is queued; the case can be ruled benign or
+    # closed before the run starts, or while it waits for an approval or a retry.
+    case = engine.require(conn, tenant_id, row["case_uid"]) if row["case_uid"] else {}
+    stop = "closed" if case.get("state") == "closed" else case.get("verdict")
+    if stop in ("closed", "benign_expected", "false_positive"):
+        _set_run(conn, tenant_id, run, "cancelled", index, f"the case is {stop}")
         report.state, report.steps_done = "cancelled", index
-        report.detail.append(f"cancelled: the case is {verdict}")
+        report.detail.append(f"cancelled: the case is {stop}")
         return report
     scope: credentials.Scope | None = None
-    while index < len(book.steps):
-        step = book.steps[index]
+    while index < len(steps):
+        entry = steps[index]
+        step = book.steps[entry["step"]]
+        if why := entry.get("ambiguous"):
+            _finish_step(
+                conn, run, index, "skipped" if step.optional else "failed", {"ambiguous": why}
+            )
+            report.detail.append(f"{step.name}: not run, {why}; a person picks the target")
+            if step.optional:
+                index += 1
+                continue
+            _set_run(conn, tenant_id, run, "failed", index, f"step '{step.name}': {why}")
+            report.state, report.steps_done = "failed", index
+            return report
         if step.wait_minutes:
             timer = fetch_one(
                 conn,
@@ -775,7 +947,9 @@ def advance(
                 report.detail.append(f"{step.name}: skipped, {why}")
                 index += 1
                 continue
-        params = render(step.params, context)
+        params = render(
+            step.params, context, entry.get("bind"), joined=step.action.startswith("notify.")
+        )
         missing = [k for k, v in params.items() if v in ("", None)]
         if missing and step.optional:
             _finish_step(conn, run, index, "skipped", {"missing": missing})
@@ -824,6 +998,7 @@ def advance(
                         rationale=f"playbook {book.id}, step '{step.name}'",
                         case_uid=row["case_uid"],
                         run_uid=run,
+                        dry_run=bool(context.get("preview")),
                     ),
                     principal=principal,
                     principal_kind="service",
@@ -868,8 +1043,12 @@ def advance(
                 continue
             action = action_store.retry(conn, tenant_id, uid, principal, run)
         if action["state"] == "done":
-            _finish_step(conn, run, index, "done", dict(action["result"] or {}))
-            report.detail.append(f"{step.name}: already done")
+            said = dict(action["result"] or {})
+            _finish_step(conn, run, index, "done", said)
+            # A preview's step is settled as its plan when it is proposed.
+            report.detail.append(
+                f"{step.name}: {said['detail'] if said.get('dry_run') else 'already done'}"
+            )
             index += 1
             continue
         if action["state"] == "rolled_back":
@@ -969,7 +1148,7 @@ def advance(
             ).get("attempts")
             or 1
         )
-        _row, result = action_store.execute(
+        acted, result = action_store.execute(
             conn,
             tenant_id,
             uid,
@@ -977,7 +1156,22 @@ def advance(
             force_dry_run=row["dry_run"] or None,
             by=principal,
         )
+        if acted.get("state") == "running":  # another worker took it first
+            _set_run(conn, tenant_id, run, "running", index, None)
+            report.state, report.steps_done, report.waiting_on = "running", index, uid
+            report.detail.append(f"{step.name}: still running")
+            return report
         report.detail.append(f"{step.name}: {result.detail}")
+        if acted.get("state") == "rejected":
+            if result.detail.startswith(action_store.BY_CASE):
+                # The case was closed or ruled benign under it: nothing more runs.
+                _finish_step(conn, run, index, "rejected", {"reason": result.detail})
+                _set_run(conn, tenant_id, run, "cancelled", index, result.detail[:500])
+                report.state, report.steps_done = "cancelled", index
+                return report
+            # A person rejected it between its proposal and now: the step is read
+            # again and handled as any rejected one, so an optional step is skipped.
+            continue
         if result.ok:
             _finish_step(conn, run, index, "done", result.to_json())
             index += 1

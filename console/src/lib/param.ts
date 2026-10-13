@@ -28,11 +28,11 @@ export function useParam<T extends string = string>(
 }
 
 /** Edition two's tab ids that edition three renamed; read only where the new id is one of the screen's tabs. */
-const RENAMED: Record<string, string> = { history: "activity", policy: "autonomy" };
+const RENAMED: Record<string, string> = { history: "activity", policy: "autonomy", contained: "responding" };
 
 /**
  * The screen's tab, in `?tab=`, with edition two's `?pane=` read as an alias
- * and its renamed ids (`history`, `policy`) as their successors. Each change
+ * and its renamed ids (`history`, `policy`, `contained`) as their successors. Each change
  * is a history step, so Back returns to the previous tab; an unknown id falls
  * back to the first tab.
  */

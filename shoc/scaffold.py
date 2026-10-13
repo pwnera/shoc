@@ -2,11 +2,12 @@
 
 A new source should be one Python module plus one mapping file plus a fixture,
 and a new rule should be one YAML plus two fixtures. These templates write
-exactly those files, already wired into the tests that will judge them.
+exactly those files, and say what else CI checks and which tests judge them.
 """
 
 from __future__ import annotations
 
+import datetime
 import json
 import re
 from dataclasses import dataclass
@@ -20,9 +21,20 @@ SLUG = re.compile(r"^[a-z][a-z0-9_]{2,40}$")
 @dataclass
 class Written:
     paths: list[Path]
+    steps: str = ""
 
     def describe(self) -> str:
         return "\n".join(f"  {p}" for p in self.paths)
+
+
+def _platform_steps(name: str) -> str:
+    """What a platform shoc reads must also ship: a way to act on it (D56)."""
+    return (
+        f"- In shoc/actions/base.py add {name} to RESPONDS, and its provider to NEEDS.\n"
+        f"- Write shoc/actions/{name}.py with an action whose platforms include "
+        f'"{name}", to contain what it reports (D56).\n'
+        f'- In the same module, a lookup whose platforms include "{name}" (D56).\n'
+    )
 
 
 def _check(name: str) -> str:
@@ -54,7 +66,7 @@ from __future__ import annotations
 from typing import Any
 
 from shoc.errors import ConfigError
-from shoc.ingest.connectors.base import FetchResult, client, since_default
+from shoc.ingest.connectors.base import FetchResult, client, reached, since_default
 
 API = "https://api.{name}.example/v1"
 
@@ -68,7 +80,7 @@ class {klass}Connector:
         token = secret.get("api_token")
         if not token:
             raise ConfigError("{name}: the secret needs api_token")
-        since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        since = since_default(cursor, settings)
         params: dict[str, Any] = {{"since": since, "limit": min(int(limit), 1000)}}
         if cursor.get("page"):
             params["page"] = cursor["page"]
@@ -79,16 +91,17 @@ class {klass}Connector:
             payload = resp.json()
 
         records = payload.get("items", [])
-        newest = max(
-            [str(r.get("timestamp", "")) for r in records] + [str(cursor.get("newest") or since)]
-        )
+        newest = max([str(r.get("timestamp", "")) for r in records] + [reached(cursor, since)])
+        # A record older than the last poll's newest arrived late (D164).
+        late = str(cursor.get("since") or "")
         page = payload.get("next_page")
         if page and records:
-            # A page token belongs to the filter it came from: hold `since` until
-            # the pages run out. The next poll starts at the newest event read.
-            held = {{"since": since, "newest": newest, "page": page}}
-            return FetchResult(records=records, cursor=held, more=True)
-        return FetchResult(records=records, cursor={{"since": newest}}, more=False)
+            # A page token belongs to the filter it came from: hold the walk's
+            # `start` until the pages run out. The next poll starts at the newest
+            # event read, less the overlap that catches late events.
+            held = {{**cursor, "start": since, "newest": newest, "page": page}}
+            return FetchResult(records=records, cursor=held, more=True, since=late)
+        return FetchResult(records=records, cursor={{"since": newest}}, more=False, since=late)
 
 
 CONNECTOR = {klass}Connector()
@@ -141,12 +154,15 @@ MAPPING_FIXTURE = [
     }
 ]
 
-RULE_TEMPLATE = """id: {name}
+RULE_TEMPLATE = """# Every rule is answered by exactly one playbook: add {name} to the
+# `rules:` of {playbook} in content/playbooks/.
+id: {name}
 title: {title}
 description: >
   What this detects, and why someone should care. Write the sentence you would
   want to read at 3am.
 status: experimental
+date: {today}
 severity: medium
 confidence: 0.6
 attack: [T1078]
@@ -184,7 +200,16 @@ def new_connector(name: str, root: Path = Path("."), force: bool = False) -> Wri
             force,
         ),
     ]
-    return Written(paths)
+    return Written(
+        paths,
+        "- Fill in fetch(), and the mapping's paths to read its fixture.\n"
+        f"- In shoc/ingest/connectors/base.py add {name} to FIELDS, WHERE and "
+        "PERMISSION_HINTS.\n"
+        + _platform_steps(name)
+        + f"- Add {name}: <provider> to CONNECTOR_PROVIDERS in tests/unit/test_actions.py.\n"
+        "- Run: pytest tests/unit/test_mappings_all.py tests/unit/test_credential_routing.py "
+        "tests/unit/test_actions.py tests/conformance/test_integrator.py",
+    )
 
 
 def new_mapping(name: str, root: Path = Path("."), force: bool = False) -> Written:
@@ -202,8 +227,26 @@ def new_mapping(name: str, root: Path = Path("."), force: bool = False) -> Writt
                 json.dumps(MAPPING_FIXTURE, indent=2) + "\n",
                 force,
             ),
-        ]
+        ],
+        "- Edit the mapping and its fixture.\n"
+        f"- In shoc/ingest/connectors/base.py add {name} to FIELDS, PUSH_WHERE and "
+        "PERMISSION_HINTS.\n"
+        + _platform_steps(name)
+        + "- Run: pytest tests/unit/test_mappings_all.py tests/unit/test_credential_routing.py "
+        "tests/unit/test_actions.py tests/conformance/test_integrator.py",
     )
+
+
+def _playbooks_for(product: str, root: Path) -> list[str]:
+    """The playbooks that answer this product's rules: one of them takes the new rule."""
+    from shoc.cases import playbooks
+    from shoc.config import Config
+    from shoc.detect import rules as ruleset
+
+    cfg = Config()
+    cfg.content_dir = root / "content"
+    ids = {r.id for r in ruleset.load(cfg) if r.logsource.get("product") == product}
+    return sorted(b.id for b in playbooks.load(cfg) if ids & set(b.rules))
 
 
 def new_rule(
@@ -216,13 +259,18 @@ def new_rule(
     _check(name)
     title = name.replace("_", " ").capitalize()
     fixture = [{"eventName": "ChangeMe", "_repeat": 1}]
+    books = _playbooks_for(product, root)
+    rule = RULE_TEMPLATE.format(
+        name=name,
+        title=title,
+        product=product,
+        service=service,
+        today=datetime.date.today().isoformat(),
+        playbook=f"one of {', '.join(books)}" if books else "one playbook",
+    )
     return Written(
         [
-            _write(
-                root / "content" / "rules" / f"{name}.yaml",
-                RULE_TEMPLATE.format(name=name, title=title, product=product, service=service),
-                force,
-            ),
+            _write(root / "content" / "rules" / f"{name}.yaml", rule, force),
             _write(
                 root / "tests" / "fixtures" / "rules" / name / "positive.json",
                 json.dumps(fixture, indent=2) + "\n",
@@ -233,5 +281,8 @@ def new_rule(
                 json.dumps([{"eventName": "SomethingHarmless"}], indent=2) + "\n",
                 force,
             ),
-        ]
+        ],
+        "- Write the detection and both fixtures, and add the rule to a playbook.\n"
+        "- Run: pytest tests/unit/test_rules_content.py tests/conformance/test_rules.py "
+        f"-k {name}",
     )

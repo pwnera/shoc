@@ -33,7 +33,7 @@ import hashlib
 import json
 import re
 import statistics
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -41,6 +41,7 @@ from typing import Any
 from shoc.agents import ops
 from shoc.db.pool import Conn, execute, fetch_all, fetch_one
 from shoc.errors import ConfigError, GateRefused, NotFound, ValidationError
+from shoc.ids import make_id
 
 NOISY_FINDINGS_7D = 25
 SILENT_DAYS = 30
@@ -67,22 +68,11 @@ class BacklogItem:
     case_uid: str = ""
 
     def to_json(self) -> dict[str, Any]:
-        return {
-            "item_uid": self.item_uid,
-            "kind": self.kind,
-            "intake": self.intake,
-            "rule_id": self.rule_id,
-            "title": self.title,
-            "reason": self.reason,
-            "priority": self.priority,
-            "observability": self.observability,
-            "evidence": self.evidence,
-            "case_uid": self.case_uid,
-        }
+        return asdict(self)
 
 
 def item_uid(tenant_id: str, *parts: str) -> str:
-    return "DBL-" + hashlib.sha256("|".join((tenant_id, *parts)).encode()).hexdigest()[:20]
+    return make_id("DBL-", tenant_id, *parts)
 
 
 def add(conn: Conn, tenant_id: str, item: BacklogItem) -> str:
@@ -145,16 +135,27 @@ def _from_intel(
     can show is left off rather than worked to `source_gap` by the model; the
     sweep runs nightly over 90 days of reports, so it arrives once a source
     that can see it connects.
+
+    A rule covers only the techniques it names, and only when a product it
+    reads delivers here: a rule tagged with a parent, such as a pass-through
+    of a vendor's alerts, does not look for each sub-technique.
+
+    A report read before ids were checked may still carry one that is not an
+    ATT&CK technique, or one ATT&CK no longer lists; no rule could close it.
     """
+    from shoc.agents.hunter import TECHNIQUE
+    from shoc.detect import context as near
     from shoc.detect import rules as ruleset
     from shoc.store import ocsf as layout
 
+    delivering = _delivering(conn, tenant_id) if delivering is None else delivering
     covered: set[str] = set()
     with contextlib.suppress(Exception):
-        for rule in ruleset.load(config, conn, tenant_id):
-            covered |= {str(t).upper() for t in (rule.attack or [])}
+        for rule in map(near._near, ruleset.load(config, conn, tenant_id)):
+            if rule.products & delivering:
+                covered |= rule.techniques
     known = _technique_platforms(config)
-    seen = layout.platforms(_delivering(conn, tenant_id) if delivering is None else delivering)
+    seen = layout.platforms(delivering)
     rows = fetch_all(
         conn,
         """SELECT report_uid, title, techniques, procedures FROM shoc.intel_reports
@@ -169,10 +170,10 @@ def _from_intel(
         # behaviour to detect and not the id alone (D132).
         said = {str(p.get("id", "")).upper(): p for p in row["procedures"] or []}
         for technique in (row["techniques"] or [])[:limit]:
-            code = str(technique).upper()
-            if code in covered or code.split(".", 1)[0] in covered:
+            code = str(technique).strip().upper()
+            if code in covered or not TECHNIQUE.match(code) or (known and code not in known):
                 continue
-            on = known.get(code) or known.get(code.split(".", 1)[0])
+            on = known.get(code)
             if on is not None and not set(on) & seen:
                 continue
             uid = item_uid(tenant_id, "cti", code)
@@ -190,7 +191,10 @@ def _from_intel(
                     kind="coverage",
                     intake="cti",
                     title=f"no rule maps to {code}",
-                    reason=f"'{row['title']}' describes {code} and no rule we ship maps to it",
+                    reason=(
+                        f"'{row['title']}' describes {code} and no rule on a source we "
+                        "receive maps to it"
+                    ),
                     priority=PRIORITY["coverage"],
                     evidence={k: v for k, v in evidence.items() if v},
                 ),
@@ -208,7 +212,8 @@ def _platforms_file(path: Path) -> dict[str, list[str]]:
 
 def _technique_platforms(config: Any = None) -> dict[str, list[str]]:
     """ATT&CK technique -> its platforms, from content/attack_platforms.json
-    (scripts/attack_platforms.py writes it). A technique it lacks is kept."""
+    (scripts/attack_platforms.py writes it). With the map present, _from_intel
+    drops a technique the map lacks; with the map missing, it keeps them all."""
     from shoc.config import Config
 
     return _platforms_file((config or Config.load()).content_dir / "attack_platforms.json")
@@ -289,6 +294,34 @@ def _products_of(config: Any, conn: Conn, tenant_id: str, rule_id: str) -> list[
             str(rule.logsource.get("product", "")), str(rule.logsource.get("service", ""))
         )
     )
+
+
+def _technique_gap(
+    conn: Conn, tenant_id: str, config: Any, evidence: dict[str, Any]
+) -> tuple[list[str], str]:
+    """A coverage gap's products to wait for, those that carry the logs the
+    reports said show its technique and that we do not receive, and the digest
+    line that names the technique and the sources to connect."""
+    from shoc.detect import context as near
+
+    code = str(evidence["technique"])
+    about = near.about(
+        near.here(conn, tenant_id, config), [code], report_uid=str(evidence.get("report_uid", ""))
+    )
+    # The report's name for it came from a model reading untrusted text.
+    name = " ".join(str(evidence.get("name") or about["techniques"][0]["name"] or "").split())
+    name = name if len(name) <= 80 else name[:79] + "…"
+    waiting: list[str] = []
+    needs: list[str] = []
+    for kind in about["seen_in"]:
+        missing = [p for p in kind["products"] if p["product"] not in kind["received"]]
+        if missing:
+            waiting += [p["product"] for p in missing]
+            sources = sorted({p["source"] for p in missing})
+            shown = ", ".join(sources[:4]) + (", …" if len(sources) > 4 else "")
+            needs.append(f"{kind['label']} ({shown})")
+    named = f"{code} ({name})" if name else code
+    return sorted(set(waiting)), f"{named}: connect a source that sends {'; '.join(needs)}."
 
 
 def score_observability(
@@ -397,8 +430,13 @@ def _lapse(conn: Conn, tenant_id: str) -> int:
 
 
 def backlog(
-    conn: Conn, tenant_id: str, state: str = "open", limit: int = 100
+    conn: Conn,
+    tenant_id: str,
+    state: str = "open",
+    limit: int = 100,
+    table: str = "shoc.detection_backlog",
 ) -> list[dict[str, Any]]:
+    """A backlog's items, most pressing first; the Hunter's reads `shoc.hunt_backlog`."""
     where = ["tenant_id = %(tenant_id)s"]
     params: dict[str, Any] = {"tenant_id": tenant_id, "limit": limit}
     if state:
@@ -406,26 +444,33 @@ def backlog(
         params["state"] = state
     return fetch_all(
         conn,
-        f"SELECT * FROM shoc.detection_backlog WHERE {' AND '.join(where)} "
+        f"SELECT * FROM {table} WHERE {' AND '.join(where)} "
         "ORDER BY priority, created_at DESC LIMIT %(limit)s",
         params,
     )
+
+
+def decision_note(state: str, who: str, reason: str) -> dict[str, str]:
+    """What a person's decision on a backlog item records (DET-8, D132).
+
+    Ending an item needs a reason, kept as its `because`; a reopen notes who.
+    Both backlogs, detection and hunt, take their decisions through this.
+    """
+    if state not in ("rejected", "done", "open"):
+        raise ValidationError(f"unknown backlog state '{state}'")
+    reason = reason.strip()[:500]
+    if state != "open" and not reason:
+        raise ValidationError(f"say why it is {state}: the item shows the reason once it is closed")
+    if state == "open":
+        return {"reopened": reason or f"reopened by {who}"}
+    return {"decision": state, "because": reason}
 
 
 def decide_item(
     conn: Conn, tenant_id: str, item_uid: str, state: str, who: str, reason: str = ""
 ) -> dict[str, Any]:
     """A person reopens, rejects or marks an item done, and says why."""
-    if state not in ("rejected", "done", "open"):
-        raise ValidationError(f"unknown backlog state '{state}'")
-    reason = reason.strip()[:500]
-    if state != "open" and not reason:
-        raise ValidationError(f"say why it is {state}: the item shows the reason once it is closed")
-    note = (
-        {"reopened": reason or f"reopened by {who}"}
-        if state == "open"
-        else {"decision": state, "because": reason}
-    )
+    note = decision_note(state, who, reason)
     # What the crew put off is stale once a person decided.
     row = fetch_one(
         conn,
@@ -474,7 +519,7 @@ EXAMPLE_RULE = {
     "id": "aws_access_key_created",
     "title": "New IAM access key created",
     "description": "A long-lived access key was created.",
-    "severity": "high",
+    "severity": "medium",
     "confidence": 0.6,
     "attack": ["T1098.001"],
     "logsource": {"product": "aws", "service": "cloudtrail"},
@@ -491,12 +536,23 @@ EXAMPLE_EXCLUDE = [
 ]
 
 
-def backtest(store: Any, tenant_id: str, rule: Any, days: int = BACKTEST_DAYS) -> list[Any]:
-    """What a rule would have raised over our own history. Writes nothing."""
-    from shoc.detect.engine import run_rule
+def backtest(
+    store: Any, tenant_id: str, rule: Any, days: int = BACKTEST_DAYS, whole: bool = False
+) -> list[Any]:
+    """What a rule would have raised over our own history. Writes nothing.
+
+    `rule.backtest` reads the ad hoc row cap. The merge gate reads `whole`, so a
+    rule whose first 200 rows fall in a few buckets cannot pass under the
+    volume ceiling (AGT-13); it stops at the ceiling, since past it the answer
+    is known, so a dry run of a noisy rule does not read the whole window.
+    """
+    from shoc.detect.engine import ADHOC_LIMIT, run_rule
 
     now = datetime.now(UTC)
-    return run_rule(store, tenant_id, rule, now - timedelta(days=days), now)
+    start = now - timedelta(days=days)
+    if whole:
+        return run_rule(store, tenant_id, rule, start, now, 0, stop_at=volume_ceiling(days))
+    return run_rule(store, tenant_id, rule, start, now, ADHOC_LIMIT)
 
 
 def volume_ceiling(days: int) -> int:
@@ -508,7 +564,9 @@ def _scratch(config: Any, tenant_id: str, name: str = "gate") -> Any:
     from shoc.store import open_store
 
     scratch = open_store(config, f"{tenant_id}_{name}")
-    scratch.create_tenant()
+    # Not in shoc.tenants, so `shoc migrate` never reaches it: a column a release
+    # added would otherwise be missing here and every fixture load would fail.
+    scratch.migrate()
     scratch.reset()
     return scratch
 
@@ -541,7 +599,11 @@ def fixtures_fail(
                 return f"there is no {kind} fixture"
             scratch.reset()
             now = datetime.now(UTC)
-            rows = [mapping.map_record(r, scratch.tenant_id) for r in expand(records, source, now)]
+            rows = [
+                row
+                for r in expand(records, source, now)
+                for row in mapping.map_records(r, scratch.tenant_id)
+            ]
             for i, row in enumerate(rows):
                 row["time"] = (now - timedelta(seconds=5 + i % 120)).isoformat()
             batch.load(scratch, rows)
@@ -712,7 +774,7 @@ def _narrow(
 def _lint(alternatives: list[Any]) -> list[str]:
     """What an exclusion may say (D77, Summiting the Pyramid): exact values the
     attacker cannot set, never a pattern, a list, a null or a raw path."""
-    from shoc.cases.own import routable
+    from shoc.detect.osint import is_public_address
 
     if not alternatives:
         return ["an exclusion needs at least one alternative"]
@@ -732,7 +794,7 @@ def _lint(alternatives: list[Any]) -> list[str]:
             if value is None or isinstance(value, (list, dict)) or str(value).strip() == "":
                 refused.append(f"alternative {n}: '{name}' must be one exact value")
         address = alt.get(EXCLUDE_ADDRESS)
-        if not address or not routable(str(address)):
+        if not address or not is_public_address(str(address)):
             refused.append(
                 f"alternative {n} must hold one exact internet address ({EXCLUDE_ADDRESS}); "
                 "an exclusion without one would hide a stolen copy of the same credential"
@@ -919,22 +981,16 @@ def _replay(
     The stored raw record is mapped again, so a mapping fixed since the event
     arrived is the one judged, and nothing the author typed is in the test.
     Returns (matched, not matched); events no longer in the store are in neither.
+    Every event is read, in as many statements as the store's bind limit takes:
+    one left out would be a true positive the gate never checked (D250).
     """
+    from shoc.capabilities.events import by_uid
     from shoc.detect.compiler import EVENTS, compile_rule
     from shoc.ingest import batch, ocsf
-    from shoc.store import ocsf as layout
 
     if not uids:
         return set(), set()
-    marks = ", ".join(f":u{i}" for i in range(len(uids[:500])))
-    params: dict[str, Any] = {f"u{i}": u for i, u in enumerate(uids[:500])}
-    params["tenant_id"] = tenant_id
-    stored = store.query(
-        f"SELECT event_uid, metadata_product, raw FROM {layout.EVENTS_TABLE} "
-        f"WHERE tenant_id = :tenant_id AND event_uid IN ({marks})",
-        params,
-        len(uids) * 2,
-    ).rows
+    stored = by_uid(store, tenant_id, uids, include_raw=True).rows
     sources = _sources_by_product()
     scratch = _scratch(config, tenant_id)
     try:
@@ -942,11 +998,9 @@ def _replay(
         for event in stored:
             source = sources.get(str(event.get("metadata_product") or "").lower())
             raw = event.get("raw")
-            if isinstance(raw, str):
-                raw = json.loads(raw)
             if not source or not isinstance(raw, dict):
                 continue
-            row = ocsf.for_tenant(conn, tenant_id, source).map_record(raw, scratch.tenant_id)
+            row = ocsf.for_tenant(conn, tenant_id, source).map_records(raw, scratch.tenant_id)[0]
             row["event_uid"] = str(event["event_uid"])
             rows[row["event_uid"]] = row
         if not rows:
@@ -1048,11 +1102,11 @@ def _new_rule(
     if why := fixtures_fail(config, tenant_id, rule, fixtures):
         raise GateRefused([why], "fixtures")
     days = min(30, max(1, int(spec.get("backtest_days") or BACKTEST_DAYS)))
-    found = backtest(store, tenant_id, rule, days)
+    found = backtest(store, tenant_id, rule, days, whole=True)
     if len(found) >= volume_ceiling(days):
         raise GateRefused(
             [
-                f"it would have raised {len(found)} findings in {days} days; "
+                f"it would have raised at least {len(found)} findings in {days} days; "
                 f"the ceiling is {volume_ceiling(days) - 1}"
             ],
             "volume",
@@ -1120,8 +1174,12 @@ def _new_rule(
     return checked
 
 
-def revert(conn: Conn, tenant_id: str, rule_id: str, reason: str, who: str = WHO) -> dict[str, Any]:
+def revert(
+    conn: Conn, tenant_id: str, rule_id: str, reason: str, who: str = WHO, config: Any = None
+) -> dict[str, Any]:
     """Take back a merge. Only a merge: a rule a human wrote is not in reach."""
+    from shoc.detect import rules as ruleset
+
     row = fetch_one(
         conn,
         """UPDATE shoc.merged_rules SET state = 'reverted', reverted_at = now(), reason = %s
@@ -1133,6 +1191,17 @@ def revert(conn: Conn, tenant_id: str, rule_id: str, reason: str, who: str = WHO
         raise NotFound(
             f"'{rule_id}' is not a merged rule; a rule shipped in content/ stays a human's to change"
         )
+    # Its state, a load error the cycle wrote included, would outlive it in
+    # rule health; a shipped rule of that id, narrowed or shadowing it, keeps
+    # its watermark and runs again from a clean slate.
+    shipped = rule_id in {r.id for r in ruleset.load(config)}
+    execute(
+        conn,
+        "UPDATE shoc.rule_state SET last_error = NULL WHERE tenant_id = %s AND rule_id = %s"
+        if shipped
+        else "DELETE FROM shoc.rule_state WHERE tenant_id = %s AND rule_id = %s",
+        (tenant_id, rule_id),
+    )
     # The item that merged it says so, and why, rather than offering it again.
     execute(
         conn,
@@ -1300,7 +1369,8 @@ def _code_first(conn: Conn, tenant_id: str, config: Any) -> dict[str, int]:
                     ),
                 )
             continue
-        revert(conn, tenant_id, str(row["rule_id"]), f"{h.findings_7d} findings in 7 days")
+        why = f"{h.findings_7d} findings in 7 days"
+        revert(conn, tenant_id, str(row["rule_id"]), why, config=config)
         done["reverted"] = done.get("reverted", 0) + 1
 
     for item in fetch_all(
@@ -1503,10 +1573,16 @@ def _work_one(
         note["gate"] = said[-1][:800] if said else "detection.merge was never called"
     if kind in ("no_rule", "source_gap"):
         decided: dict[str, Any] = {"decision": kind, "because": because}
+        waiting: list[str] = []
+        line = ""
         if kind == "source_gap":
-            decided["waiting_for"] = _products_of(
-                config, conn, tenant_id, str(item["rule_id"])
-            ) or [p for p in [str((item["evidence"] or {}).get("product") or "")] if p]
+            waiting = _products_of(config, conn, tenant_id, str(item["rule_id"])) or [
+                p for p in [str(evidence.get("product") or "")] if p
+            ]
+            line = f"No detection for {item['title']} until we ingest {', '.join(waiting)}."
+            if not waiting and evidence.get("technique"):
+                waiting, line = _technique_gap(conn, tenant_id, config, evidence)
+            decided["waiting_for"] = waiting
         _close(conn, tenant_id, uid, "rejected", decided)
         if kind == "source_gap":
             execute(
@@ -1514,12 +1590,9 @@ def _work_one(
                 "UPDATE shoc.detection_backlog SET observability = 'none' WHERE tenant_id = %s AND item_uid = %s",
                 (tenant_id, uid),
             )
-            _digest(
-                conn,
-                tenant_id,
-                f"No detection for {item['title']} until we ingest "
-                f"{', '.join(decided['waiting_for']) or 'the data it needs'}.",
-            )
+            # A gap that names nothing to connect is nothing the operator can act on.
+            if waiting:
+                _digest(conn, tenant_id, line)
     elif kind == "later":
         note["later"] = because
     execute(

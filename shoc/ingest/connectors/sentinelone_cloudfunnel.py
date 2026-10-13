@@ -76,26 +76,33 @@ class SentinelOneCloudFunnelConnector:
         mine = state.get(base) or {"after": day(base, start), "seen": []}
         after, seen = str(mine["after"]), set(mine["seen"])
         records: list[dict[str, Any]] = []
-        newest, listed, more = after, after, False
+        # A walk still going resumes where its listing stopped, so it lists the
+        # day once; the next walk lists it again from `after`.
+        listed = str(mine.get("listed") or after) if mine.get("more") else after
+        newest, more = after, False
         with client() as http:
             while True:
                 keys, _, truncated = bucket.list(http, base, listed)
                 for key in keys:
+                    if key not in seen and not key.endswith("/"):
+                        if len(records) >= limit:
+                            more = True
+                            break
+                        records += read(bucket.get(http, key), wanted)
+                        seen.add(key)
+                        newest = max(newest, key)
                     listed = key
-                    if key in seen or key.endswith("/"):
-                        continue
-                    if len(records) >= limit:
-                        more = True
-                        break
-                    records += read(bucket.get(http, key), wanted)
-                    seen.add(key)
-                    newest = max(newest, key)
                 if more or not truncated or not keys:
                     break
         read_day = day_of(base, newest)
         if read_day:
             after = max(after, min(day(base, read_day), day(base, now - OVERLAP)))
-        state[base] = {"after": after, "seen": sorted(k for k in seen if k > after), "more": more}
+        state[base] = {
+            "after": after,
+            "seen": sorted(k for k in seen if k > after),
+            "more": more,
+            "listed": listed,
+        }
         return FetchResult(
             records=records,
             cursor={"prefixes": state, "bucket_region": bucket.region},

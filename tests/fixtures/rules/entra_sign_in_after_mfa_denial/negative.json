@@ -1,0 +1,162 @@
+[
+  {
+    "id": "en-ok-3",
+    "userPrincipalName": "mia@example.com",
+    "userId": "u-3",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "198.51.100.7",
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "status": {
+      "errorCode": 0
+    },
+    "correlationId": "c-en-ok-3",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-missed-3",
+    "userPrincipalName": "mia@example.com",
+    "userId": "u-3",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "198.51.100.7",
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "status": {
+      "errorCode": 500121,
+      "failureReason": "Authentication failed during strong authentication request.",
+      "additionalDetails": "MFA denied; user did not respond to mobile app notification"
+    },
+    "correlationId": "c-en-missed-3",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-refresh-4",
+    "userPrincipalName": "adam@example.com",
+    "userId": "u-4",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "198.51.100.8",
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "status": {
+      "errorCode": 0
+    },
+    "correlationId": "c-en-refresh-4",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "nonInteractiveUser"
+    ],
+    "_stream": "nonInteractiveSignIns"
+  },
+  {
+    "id": "en-declined-4",
+    "userPrincipalName": "adam@example.com",
+    "userId": "u-4",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "203.0.113.143",
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "status": {
+      "errorCode": 500121,
+      "failureReason": "Authentication failed during strong authentication request.",
+      "additionalDetails": "MFA denied; user declined the authentication"
+    },
+    "correlationId": "c-en-declined-4",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-ok-6",
+    "userPrincipalName": "eve@example.com",
+    "userId": "u-6",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "198.51.100.9",
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "status": {
+      "errorCode": 0
+    },
+    "correlationId": "c-en-ok-6",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-declined-5",
+    "userPrincipalName": "liam@example.com",
+    "userId": "u-5",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "203.0.113.144",
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "status": {
+      "errorCode": 500121,
+      "failureReason": "Authentication failed during strong authentication request.",
+      "additionalDetails": "MFA denied; user declined the authentication"
+    },
+    "correlationId": "c-en-declined-5",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-declined-7",
+    "userPrincipalName": "noah@example.com",
+    "userId": "u-7",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "203.0.113.145",
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "status": {
+      "errorCode": 500121,
+      "failureReason": "Authentication failed during strong authentication request.",
+      "additionalDetails": "MFA denied; user declined the authentication"
+    },
+    "correlationId": "c-en-declined-7",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-ok-7",
+    "userPrincipalName": "noah@example.com",
+    "userId": "u-7",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "198.51.100.10",
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "status": {
+      "errorCode": 0
+    },
+    "correlationId": "c-en-ok-7",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  }
+]

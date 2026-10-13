@@ -1,19 +1,18 @@
 """CrowdStrike Falcon connector (ING-1): the Alerts API.
 
-Falcon answers in two steps — query the ids created after the cursor, then ask
+Falcon answers in two steps — query the ids updated after the cursor, then ask
 for those entities — and its OAuth token is minted per region, so the cloud goes
-in the settings. Records can also be pushed to `/ingest/crowdstrike` (ING-2).
+in the settings. An alert that changes is read again as a row of its own,
+marked `_update` as `updates` says (ING-3).
 """
 
 from __future__ import annotations
 
-import time
 from typing import Any
 
-import httpx
-
 from shoc.errors import ConfigError
-from shoc.ingest.connectors.base import FetchResult, client, since_default
+from shoc.ingest.connectors import updates
+from shoc.ingest.connectors.base import FetchResult, client, client_token, reached, since_default
 
 CLOUDS = {
     "us-1": "https://api.crowdstrike.com",
@@ -21,7 +20,6 @@ CLOUDS = {
     "eu-1": "https://api.eu-1.crowdstrike.com",
     "us-gov-1": "https://api.laggar.gcw.crowdstrike.com",
 }
-_TOKENS: dict[str, tuple[str, float]] = {}
 
 
 def base_url(settings: dict[str, Any]) -> str:
@@ -32,25 +30,13 @@ def base_url(settings: dict[str, Any]) -> str:
 
 
 def access_token(base: str, secret: dict[str, Any]) -> str:
-    """Falcon OAuth2 token, cached until a minute before it expires."""
+    """Falcon OAuth2 token, cached as `client_token` says."""
     client_id = secret.get("client_id")
     client_secret = secret.get("client_secret")
     if not (client_id and client_secret):
         raise ConfigError("crowdstrike: secret needs client_id and client_secret")
-    key = f"{base}|{client_id}"
-    cached = _TOKENS.get(key)
-    if cached and cached[1] > time.time():
-        return cached[0]
-    with httpx.Client(timeout=30.0) as http:
-        resp = http.post(
-            f"{base}/oauth2/token",
-            data={"client_id": client_id, "client_secret": client_secret},
-        )
-        resp.raise_for_status()
-        payload = resp.json()
-    token = payload["access_token"]
-    _TOKENS[key] = (token, time.time() + int(payload.get("expires_in", 1800)) - 60)
-    return token
+    data = {"client_id": client_id, "client_secret": client_secret}
+    return client_token(f"{base}/oauth2/token", data, default_ttl=1800)
 
 
 class CrowdStrikeConnector:
@@ -61,36 +47,54 @@ class CrowdStrikeConnector:
     ) -> FetchResult:
         base = base_url(settings)
         token = access_token(base, secret)
-        since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        cursor = updates.upgrade(cursor)
+        since = since_default(cursor, settings)
         page = min(int(limit), 1000)
+        offset = int(cursor.get("offset", 0))
+        # An alert already read that changes mid-walk moves to the end of the
+        # sort, and every id after it moves back one place. A later page starts
+        # a tenth of a page early, so a moved id is read twice (the second copy
+        # is dropped as stored, D150) instead of skipped.
+        start = max(0, offset - page // 10)
+        held = reached(cursor, since)
         headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+        records: list[dict[str, Any]] = []
         with client(headers) as http:
             listed = http.get(
                 f"{base}/alerts/queries/alerts/v2",
                 params={
-                    "filter": f"created_timestamp:>'{since}'",
-                    "sort": "created_timestamp|asc",
+                    "filter": f"updated_timestamp:>'{since}'",
+                    "sort": "updated_timestamp|asc",
                     "limit": page,
-                    "offset": int(cursor.get("offset", 0)),
+                    "offset": start,
                 },
             )
             listed.raise_for_status()
             ids = listed.json().get("resources") or []
-            if not ids:
-                return FetchResult(records=[], cursor={"since": since}, more=False)
-            detail = http.post(f"{base}/alerts/entities/alerts/v2", json={"composite_ids": ids})
-            detail.raise_for_status()
-            records = detail.json().get("resources") or []
-        newest = max([str(r.get("created_timestamp", "")) for r in records] + [since])
+            if ids:
+                detail = http.post(f"{base}/alerts/entities/alerts/v2", json={"composite_ids": ids})
+                detail.raise_for_status()
+                records = detail.json().get("resources") or []
+        marks = updates.mark(records, [r.get("created_timestamp") for r in records], cursor, since)
+        newest = max([str(r.get("updated_timestamp", "")) for r in records] + [held])
+        late = str(cursor.get("since") or "")
         # A full page means more to read; offset walks it, and the window only
-        # moves once the pages run out.
+        # moves once the pages run out, on to what the walk read.
         if len(ids) >= page:
             return FetchResult(
                 records=records,
-                cursor={"since": since, "offset": int(cursor.get("offset", 0)) + len(ids)},
+                cursor={
+                    **cursor,
+                    "start": since,
+                    "offset": start + len(ids),
+                    "newest": newest,
+                    **marks,
+                },
                 more=True,
+                since=late,
             )
-        return FetchResult(records=records, cursor={"since": newest}, more=False)
+        done = {"since": newest, "created": marks["created_newest"]}
+        return FetchResult(records=records, cursor=done, more=False, since=late)
 
 
 CONNECTOR = CrowdStrikeConnector()

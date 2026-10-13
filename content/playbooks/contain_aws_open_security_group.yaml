@@ -38,9 +38,9 @@ steps:
     action: aws.disable_access_key
     optional: true
     params:
-      access_key_id: "{{ entity.key }}"
+      access_key_id: "{{ rule.aws_security_group_admin_port_opened.key }}"
   - name: revoke the sessions minted from the actor's key
     action: aws.revoke_sessions
     optional: true
     params:
-      access_key_id: "{{ entity.key }}"
+      access_key_id: "{{ rule.aws_security_group_admin_port_opened.key }}"

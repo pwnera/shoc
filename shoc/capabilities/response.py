@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -38,12 +39,59 @@ class ActionPage:
 def list_actions(ctx: Context, inp: ActionFilter) -> Result:
     rows = action_store.listing(ctx.db, ctx.tenant_id, inp.state, inp.case_uid, inp.limit)
     waiting = sum(1 for r in rows if r["state"] == "proposed")
+    # People keep whole rows: the console's dialogs read these fields from the
+    # list. So does the crew, whose roles are given action.list but not
+    # action.get; an assistant over MCP gets cut rows and action.get.
+    whole = ctx.caller.kind in ("human", "agent")
     return Result(
         data=ActionPage(
-            rows=[to_json(r) for r in rows], count=len(rows), waiting_for_approval=waiting
+            rows=[to_json(r) if whole else _listed(r) for r in rows],
+            count=len(rows),
+            waiting_for_approval=waiting,
         ),
         summary=f"{len(rows)} action(s); {waiting} waiting for a human.",
         citations=[r["action_uid"] for r in rows],
+    )
+
+
+# Past this, a field in an assistant's list is cut: 50 rows with a platform's
+# whole answer in `result` overflow what an MCP client reads in one result.
+LISTED_CHARS = 500
+
+
+def _listed(row: dict[str, Any]) -> dict[str, Any]:
+    out = to_json(row)
+    for name in ("params", "result", "blast_radius"):
+        text = json.dumps(out.get(name))
+        if out.get(name) is not None and len(text) > LISTED_CHARS:
+            out[name] = text[:LISTED_CHARS] + "… (action.get has the rest)"
+    return out
+
+
+@dataclass
+class ActionRef:
+    action_uid: str = f(doc="The action identifier, e.g. ACT-1a2b…")
+
+
+@dataclass
+class ActionDetail:
+    action: dict[str, Any] = field(default_factory=dict)
+
+
+@capability(
+    name="action.get",
+    summary="Get one response action in full: its parameters, result and blast radius",
+    input=ActionRef,
+    output=ActionDetail,
+    scope="actions:read",
+    tags=("response", "read"),
+)
+def get_action(ctx: Context, inp: ActionRef) -> Result:
+    row = action_store.require(ctx.db, ctx.tenant_id, inp.action_uid)
+    return Result(
+        data=ActionDetail(action=to_json(row)),
+        summary=f"{row['type']} on {row['target']}: {row['state']}.",
+        citations=[row["action_uid"]],
     )
 
 
@@ -105,6 +153,10 @@ def _record(row: dict[str, Any], plan: str = "") -> ActionRecord:
 def propose(ctx: Context, inp: ProposeInput) -> Result:
     from shoc.actions import get as get_action
 
+    # An agent proposes in its answer, where the loop grounds the target and
+    # counts the blast radius. One that calls this instead skipped both, so it
+    # never runs without a person (RFC 0020, D45).
+    agent = ctx.caller.kind == "agent"
     row = action_store.propose(
         ctx.db,
         ctx.tenant_id,
@@ -114,6 +166,8 @@ def propose(ctx: Context, inp: ProposeInput) -> Result:
             rationale=inp.rationale,
             case_uid=inp.case_uid or None,
             credential=inp.credential,
+            grounded=not agent,
+            blast_radius={} if agent else None,
         ),
         principal=f"{ctx.caller.kind}:{ctx.caller.id}",
         principal_kind=ctx.caller.kind,
@@ -552,6 +606,9 @@ class PolicyView:
     # build the form from this instead of asking a person to write the JSON an
     # action happens to expect.
     action_params: dict[str, Any] = field(default_factory=dict)
+    # Where `defaults.dry_run` comes from: SHOC_DRY_RUN ("env") when it is set,
+    # either way, else the policy file ("policy").
+    dry_run_from: str = ""
 
 
 @capability(
@@ -577,15 +634,19 @@ def show_policy(ctx: Context, inp: Empty) -> Result:
         for name, action in load().items()
     }
     automatic = [a for a, r in policy.actions.items() if r.get("autonomy") == "L1"]
+    # The dry run in force, which SHOC_DRY_RUN decides over the file (RSP-7):
+    # the file's value alone said "dry run" while SHOC_DRY_RUN=0 acted.
+    env = getattr(ctx.config, "dry_run", None)
     return Result(
         data=PolicyView(
             version=policy.version,
-            defaults=policy.defaults,
+            defaults={**policy.defaults, "dry_run": policy.dry_run_for(env=env)},
             principals=policy.principals,
             actions=policy.actions,
             guards=policy.guards,
             available_actions=available(),
             action_params=described,
+            dry_run_from="policy" if env is None else "env",
         ),
         summary=(
             f"{len(policy.actions)} action(s) in policy; {len(automatic)} may run automatically "

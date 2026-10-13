@@ -49,10 +49,11 @@ def scratch(config: Config) -> Iterator[str]:
     from shoc.db.migrate import migrate
 
     database = f"shoc_keys_{uuid.uuid4().hex[:8]}"
-    admin = _connect(config.dsn)
+    owner = config.migrate_dsn or config.dsn
+    admin = _connect(owner)
     with admin.cursor() as cur:
         cur.execute(q(f'CREATE DATABASE "{database}"'))
-    dsn = _dsn(config.dsn, database)
+    dsn = _dsn(owner, database)
     try:
         db = _connect(dsn)
         migrate(db)
@@ -91,7 +92,9 @@ def test_migrate_reseals_a_secret_from_before_binding(conn, config):
 def test_rotating_the_master_key_keeps_secrets_and_every_audit_row(scratch, config, monkeypatch):
     from shoc.cli import cmd_rotate_key
 
-    first, second, third = config.master_key, "second-master-key", "third-master-key"
+    # rotate-key refuses a new key shorter than 32 characters.
+    first = config.master_key
+    second, third = "second-master-key-for-the-rotation", "third-master-key-for-the-rotation"
     db = _connect(scratch, TENANT)
     where = (TENANT, "action_credentials", "aws")
     execute(

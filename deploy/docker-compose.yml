@@ -9,11 +9,26 @@ x-shoc-build: &shoc-build
   args:
     SHOC_EXTRAS: ${SHOC_EXTRAS:-}
 
+# Docker's json-file driver keeps every line unless told otherwise, and serve
+# logs each request the console makes. Uncapped, the logs fill the disk and
+# Postgres stops with it.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
+
+# The variables docs/deploy.md lists, so setting one in .env is enough. Each
+# default matches shoc's own except SHOC_DRY_RUN, which Compose turns on, and
+# SHOC_BIND, which serve would otherwise take from --host.
+# SHOC_SECRET_* go in secrets.env (see the shoc service).
 x-shoc-env: &shoc-env
   # serve and worker connect as shoc_app, which does not own the schema, so
   # they cannot disable the audit log's triggers or delete its rows. Only the
-  # migrate service holds the owner's DSN (RFC 0024).
-  SHOC_DSN: ${SHOC_DSN:-postgresql://shoc_app:${SHOC_APP_DB_PASSWORD:-shoc_app}@postgres:5432/shoc}
+  # migrate service holds the owner's DSN (RFC 0024), and the empty value here
+  # beats one put in secrets.env.
+  SHOC_DSN: ${SHOC_DSN:-postgresql://shoc_app:${SHOC_APP_DB_PASSWORD}@postgres:5432/shoc}
+  SHOC_MIGRATE_DSN: ""
   SHOC_TENANT: ${SHOC_TENANT:-default}
   # Where events live: postgres, or a warehouse with SHOC_EXTRAS set to match
   # for databricks and snowflake. Everything else stays in Postgres.
@@ -23,15 +38,44 @@ x-shoc-env: &shoc-env
   SHOC_DATABRICKS_TOKEN: ${SHOC_DATABRICKS_TOKEN:-}
   SHOC_DATABRICKS_READONLY_TOKEN: ${SHOC_DATABRICKS_READONLY_TOKEN:-}
   SHOC_DATABRICKS_READONLY_PRINCIPAL: ${SHOC_DATABRICKS_READONLY_PRINCIPAL:-}
+  SHOC_SNOWFLAKE_ACCOUNT: ${SHOC_SNOWFLAKE_ACCOUNT:-}
+  SHOC_SNOWFLAKE_USER: ${SHOC_SNOWFLAKE_USER:-}
+  SHOC_SNOWFLAKE_PASSWORD: ${SHOC_SNOWFLAKE_PASSWORD:-}
+  SHOC_SNOWFLAKE_PRIVATE_KEY: ${SHOC_SNOWFLAKE_PRIVATE_KEY:-}
+  SHOC_SNOWFLAKE_WAREHOUSE: ${SHOC_SNOWFLAKE_WAREHOUSE:-}
+  SHOC_SNOWFLAKE_ROLE: ${SHOC_SNOWFLAKE_ROLE:-}
+  SHOC_SNOWFLAKE_READONLY_ROLE: ${SHOC_SNOWFLAKE_READONLY_ROLE:-}
+  SHOC_REDSHIFT_DSN: ${SHOC_REDSHIFT_DSN:-}
+  SHOC_REDSHIFT_READONLY_DSN: ${SHOC_REDSHIFT_READONLY_DSN:-}
+  SHOC_REDSHIFT_STAGE: ${SHOC_REDSHIFT_STAGE:-}
+  SHOC_REDSHIFT_REGION: ${SHOC_REDSHIFT_REGION:-}
+  SHOC_REDSHIFT_AWS_ACCESS_KEY_ID: ${SHOC_REDSHIFT_AWS_ACCESS_KEY_ID:-}
+  SHOC_REDSHIFT_AWS_SECRET_ACCESS_KEY: ${SHOC_REDSHIFT_AWS_SECRET_ACCESS_KEY:-}
+  SHOC_REDSHIFT_IAM_ROLE: ${SHOC_REDSHIFT_IAM_ROLE:-}
+  SHOC_BIGQUERY_PROJECT: ${SHOC_BIGQUERY_PROJECT:-}
+  SHOC_BIGQUERY_LOCATION: ${SHOC_BIGQUERY_LOCATION:-}
+  SHOC_BIGQUERY_CREDENTIALS: ${SHOC_BIGQUERY_CREDENTIALS:-}
+  SHOC_BIGQUERY_READONLY_CREDENTIALS: ${SHOC_BIGQUERY_READONLY_CREDENTIALS:-}
+  SHOC_BIGQUERY_MAX_BYTES_BILLED: ${SHOC_BIGQUERY_MAX_BYTES_BILLED:-}
   SHOC_MASTER_KEY: ${SHOC_MASTER_KEY:?run "shoc keygen" and put the value in .env}
   SHOC_DRY_RUN: ${SHOC_DRY_RUN:-1}
   # How long events are kept. The nightly job drops whole monthly partitions
   # older than this, so an instance replaying a historical dataset has to raise
   # it or lose what it just loaded.
   SHOC_RETENTION_DAYS: ${SHOC_RETENTION_DAYS:-90}
+  # `off` contacts no feed host on its own (docs/deploy.md).
+  SHOC_INTEL_FEEDS: ${SHOC_INTEL_FEEDS:-default}
+  # A dead-man URL the worker GETs after each hourly ops.check, and the disk
+  # Postgres may fill in GB (80% alerts, 90% pages). Unset, neither runs.
+  SHOC_HEARTBEAT_URL: ${SHOC_HEARTBEAT_URL:-}
+  SHOC_DISK_BUDGET_GB: ${SHOC_DISK_BUDGET_GB:-}
+  SHOC_CYCLE_SECONDS: ${SHOC_CYCLE_SECONDS:-}
+  SHOC_STATEMENT_TIMEOUT: ${SHOC_STATEMENT_TIMEOUT:-120}
+  SHOC_MAX_REQUEST_BYTES: ${SHOC_MAX_REQUEST_BYTES:-33554432}
+  SHOC_MAX_INGEST_RECORDS: ${SHOC_MAX_INGEST_RECORDS:-50000}
   # Agents read through a role that only holds SELECT (SEC-1). Create it with
   # `shoc grant-readonly` and put the DSN it prints in .env.
-  SHOC_READONLY_DSN: ${SHOC_READONLY_DSN:-postgresql://shoc_agent:${SHOC_AGENT_DB_PASSWORD:-shoc_agent}@postgres:5432/shoc}
+  SHOC_READONLY_DSN: ${SHOC_READONLY_DSN:-postgresql://shoc_agent:${SHOC_AGENT_DB_PASSWORD}@postgres:5432/shoc}
   # Bearer tokens: {"<token>": {"role": "operator", "id": "alice"}} for a person,
   # {"<token>": {"kind": "service", "id": "ci", "scopes": [...]}} for a machine.
   # With none set and no account, shoc is in single-user mode, which is only
@@ -59,6 +103,12 @@ x-shoc-env: &shoc-env
   SHOC_LLM_BASE_URL: ${SHOC_LLM_BASE_URL:-}
   SHOC_LLM_MODEL: ${SHOC_LLM_MODEL:-}
   SHOC_LLM_API_KEY: ${SHOC_LLM_API_KEY:-}
+  SHOC_LLM_MODEL_CHEAP: ${SHOC_LLM_MODEL_CHEAP:-}
+  SHOC_LLM_BASE_URL_ALLOWLIST: ${SHOC_LLM_BASE_URL_ALLOWLIST:-}
+  SHOC_LLM_MAX_TOKENS: ${SHOC_LLM_MAX_TOKENS:-16000}
+  SHOC_LLM_PRICE_IN: ${SHOC_LLM_PRICE_IN:-}
+  SHOC_LLM_PRICE_OUT: ${SHOC_LLM_PRICE_OUT:-}
+  SHOC_CREW_SAMPLES: ${SHOC_CREW_SAMPLES:-2}
 
 services:
   postgres:
@@ -66,13 +116,15 @@ services:
     environment:
       # The superuser stays `postgres`; the init script below creates an
       # ordinary `shoc` role that owns the shoc database. shoc connects as that
-      # role, because a superuser would bypass row-level security.
+      # role, because a superuser would bypass row-level security. Postgres
+      # reads the passwords only when its volume is first created.
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set the database passwords in .env}
       POSTGRES_DB: postgres
-      SHOC_DB_PASSWORD: ${SHOC_DB_PASSWORD:-shoc}
-      SHOC_APP_DB_PASSWORD: ${SHOC_APP_DB_PASSWORD:-shoc_app}
-      SHOC_AGENT_DB_PASSWORD: ${SHOC_AGENT_DB_PASSWORD:-shoc_agent}
+      SHOC_DB_PASSWORD: ${SHOC_DB_PASSWORD:?set the database passwords in .env}
+      SHOC_APP_DB_PASSWORD: ${SHOC_APP_DB_PASSWORD:?set the database passwords in .env}
+      SHOC_AGENT_DB_PASSWORD: ${SHOC_AGENT_DB_PASSWORD:?set the database passwords in .env}
+    logging: *logging
     volumes:
       - shoc-pg:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d:ro
@@ -95,7 +147,8 @@ services:
     #   docker compose run --rm migrate rotate-key
     environment:
       <<: *shoc-env
-      SHOC_MIGRATE_DSN: ${SHOC_MIGRATE_DSN:-postgresql://shoc:${SHOC_DB_PASSWORD:-shoc}@postgres:5432/shoc}
+      SHOC_MIGRATE_DSN: ${SHOC_MIGRATE_DSN:-postgresql://shoc:${SHOC_DB_PASSWORD}@postgres:5432/shoc}
+    logging: *logging
     depends_on:
       postgres:
         condition: service_healthy
@@ -106,6 +159,22 @@ services:
     build: *shoc-build
     command: ["serve", "--host", "0.0.0.0", "--port", "8080"]
     environment: *shoc-env
+    # The SHOC_SECRET_* variables a config file names (docs/deploy.md), kept
+    # out of .env so neither the owner's DSN nor the database passwords reach
+    # this container. Optional; a variable listed above wins over this file.
+    env_file: &secrets-env
+      - path: secrets.env
+        required: false
+    # Nothing but /tmp is written, and the process never needs a capability.
+    # The memory limits match the Helm chart's. /tmp holds ingest batches and
+    # warehouse staging files in memory, counted against mem_limit, so it is
+    # capped below it: a backlog fills /tmp before it gets the process killed.
+    read_only: true
+    tmpfs: ["/tmp:size=512m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    logging: *logging
     ports:
       # Bound to one address, not 0.0.0.0: Docker's port publishing bypasses
       # ufw, so 0.0.0.0 on this kind of host means the public internet. Set
@@ -118,21 +187,39 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
-  worker:
+  worker: &worker
     image: ghcr.io/pwnera/shoc:${SHOC_VERSION:-edge}
     build: *shoc-build
     command: ["worker"]
     environment: *shoc-env
+    env_file: *secrets-env
+    read_only: true
+    tmpfs: ["/tmp:size=512m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 2g
+    logging: *logging
     # The image's check probes /healthz, which only `serve` answers, so an
     # otherwise healthy worker reports unhealthy forever. A worker has no port
     # to probe: it exits when its loop dies and `restart` brings it back, so
     # the check is disabled rather than replaced with one that always passes.
     healthcheck:
       test: ["NONE"]
+    # On SIGTERM the worker finishes the job in hand and takes no other. Docker's
+    # default 10 s cut a vendor action off between its start and its result.
+    # A model job that outlasts this is killed, put back, and run again.
+    stop_grace_period: 90s
     depends_on:
       migrate:
         condition: service_completed_successfully
     restart: unless-stopped
+
+  worker-urgent:
+    # The fast lane: pages, actions, detection, syncs and the crew's runs on
+    # high and critical cases. A model job the worker above is running for ten
+    # minutes no longer holds them up.
+    <<: *worker
+    command: ["worker", "--urgent"]
 
 volumes:
   shoc-pg:

@@ -1,11 +1,12 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { groupJobs, problemsOf, roleRows, spendBuckets } from "@/routes/health/model";
 import { jobWord } from "@/lib/labels";
 import { Measurement } from "@/routes/Measurement";
 import { Health } from "@/routes/Health";
+import { StoreDialog } from "@/routes/health/Problems";
 import { Connections } from "@/routes/Connections";
 import { runCommand } from "@/lib/commands";
 import type { SystemHealth } from "@/types";
@@ -14,7 +15,7 @@ const health = (over: Partial<SystemHealth> = {}): SystemHealth => ({
   ok: true,
   store: { dialect: "postgres", ok: true, event_count: 10, latest_event: null },
   sources: [],
-  rules: { tracked: 1, failing: 0, fires: 0 },
+  rules: { tracked: 1, failing: 0, firings: 0 },
   jobs: { pending: 0, running: 0, failed: 0, failed_recently: 0, overdue_schedules: [] },
   findings: { total: 0, open: 0, high: 0 },
   ...over,
@@ -42,6 +43,50 @@ describe("Health's rows", () => {
       "spend model-x no price",
     ]);
     expect(rows.map((r) => r.to)).toEqual([undefined, "/health/jobs", "/health/crew", "/health/spend"]);
+  });
+
+  it("gives reaching a person and the disk a row each, opening where each is fixed", () => {
+    const rows = problemsOf(
+      [
+        { kind: "notify.unreachable", subject: "notify", detail: "prose", severity: "high" },
+        { kind: "page.failed", subject: "manager", detail: "prose", severity: "high" },
+        { kind: "store.size", subject: "postgres", detail: "prose", severity: "medium" },
+      ],
+      health(),
+    );
+    expect(rows.map((r) => `${r.tone} ${r.component} ${r.subject} ${r.word}`)).toEqual([
+      "bad notify notify nobody reachable",
+      "bad notify manager pages not sent",
+      "warn disk postgres filling",
+    ]);
+    expect(rows.map((r) => r.to)).toEqual(["/connections?tab=services", "/response?tab=pages", undefined]);
+  });
+
+  it("calls a database migrated by a newer release a store problem", () => {
+    const rows = problemsOf([], health({ schema_ahead: ["063_audit_checkpoint"] }));
+    expect(rows.map((r) => `${r.tone} ${r.component} ${r.subject} ${r.word}`)).toEqual([
+      "bad store 063_audit_checkpoint schema ahead",
+    ]);
+    expect(problemsOf([], health({ schema_ahead: [] }))).toEqual([]);
+  });
+
+  it("shows the disk the store.size row is about in the store's facts", () => {
+    const disk = (over: Partial<SystemHealth>) => {
+      const { unmount } = render(
+        <MemoryRouter>
+          <StoreDialog health={health(over)} onClose={() => {}} />
+        </MemoryRouter>,
+      );
+      const dt = screen.queryByText("Disk", { selector: "dt" });
+      const value = dt?.nextElementSibling?.textContent ?? null;
+      unmount();
+      return value;
+    };
+    expect(disk({ disk: { bytes: 8_500_000_000, budget_gb: 10, used: 0.85 } })).toBe(
+      "8.5 GB of 10.0 GB · 85%",
+    );
+    expect(disk({ disk: { bytes: 2_000_000_000, budget_gb: 0, used: 0 } })).toBe("2.0 GB");
+    expect(disk({})).toBeNull();
   });
 
   it("groups failed jobs by kind and error class, overdue schedules first", () => {
@@ -166,6 +211,7 @@ const ANSWERS: Record<string, unknown> = {
 };
 
 let calls: string[] = [];
+let sent: Record<string, unknown> = {};
 /* Paths that answer 500, and alerts in place of the default ones, per test. */
 let failing: string[] = [];
 let answers: Record<string, unknown> = {};
@@ -183,13 +229,15 @@ function show(element: React.ReactNode, path: string) {
 describe("the platform screens", () => {
   beforeEach(() => {
     calls = [];
+    sent = {};
     failing = [];
     answers = {};
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const path = String(input).replace(/^.*\/v1\//, "");
         calls.push(path);
+        sent[path] = JSON.parse(String(init?.body ?? "{}"));
         if (failing.includes(path)) return new Response(JSON.stringify({ error: "boom" }), { status: 500 });
         const data = answers[path] ?? ANSWERS[path] ?? {};
         return new Response(JSON.stringify({ data, summary: "", citations: [] }), { status: 200 });
@@ -233,11 +281,30 @@ describe("the platform screens", () => {
     expect(word.closest(".sh-strip__state")).toHaveAttribute("data-tone", "bad");
   });
 
-  it("names a failed page as the state, not only failing", async () => {
+  it("names a page not sent as the state, not only failing", async () => {
     const page = { action_uid: "ACT-1", type: "notify.page", state: "failed", created_at: new Date().toISOString() };
     answers = { "action/list": { rows: [page], count: 1, waiting_for_approval: 0 } };
     show(<Health />, "/health");
-    const word = await screen.findByText("Page failed");
+    const word = await screen.findByText("Page not sent");
+    expect(word.closest(".sh-strip__state")).toHaveAttribute("data-tone", "bad");
+  });
+
+  it("says nobody can be paged when every way to reach a person is off", async () => {
+    answers = {
+      "health/status": health({ reachable: { pager: false, slack: false, mail: false, webhook: false } }),
+      "ops/alerts": { alerts: [{ kind: "notify.unreachable", subject: "notify", detail: "", severity: "high" }], count: 1 },
+    };
+    show(<Health />, "/health");
+    const word = await screen.findByText("Nobody can be paged");
+    expect(word.closest(".sh-strip__state")).toHaveAttribute("data-tone", "bad");
+  });
+
+  it("reads a full disk as the state, not as the store being down", async () => {
+    answers = {
+      "ops/alerts": { alerts: [{ kind: "store.size", subject: "postgres", detail: "", severity: "high" }], count: 1 },
+    };
+    show(<Health />, "/health");
+    const word = await screen.findByText("Disk filling");
     expect(word.closest(".sh-strip__state")).toHaveAttribute("data-tone", "bad");
   });
 
@@ -257,6 +324,11 @@ describe("the platform screens", () => {
     expect(await screen.findByText(/^as of /)).toBeInTheDocument();
     expect(screen.getByText("model-x")).toBeInTheDocument();
     expect(screen.queryByText("Can't tell")).not.toBeInTheDocument();
+  });
+
+  it("lists the crew's recent calls without walking the audit chain", async () => {
+    show(<Health />, "/health/crew");
+    await waitFor(() => expect(sent["health/audit"]).toEqual({ limit: 200, verify: false }));
   });
 
   it("goes back to Problems on Escape from the tab a row opened", async () => {

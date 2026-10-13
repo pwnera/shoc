@@ -31,8 +31,11 @@ fields:
   event_uid:
     paths: [detection_id, composite_id, id, event.CompositeId, event.DetectId, event.IncidentID,
             event.LeadId, event.IdentityProtectionIncidentId, event.id]
+  # The connector reads an alert again whenever it changes, so its last update
+  # is its time: each change is its own row. The creation time stays in `raw`.
   time:
-    paths: [created_timestamp, timestamp, metadata.eventCreationTime, event.timestamp]
+    paths: [updated_timestamp, created_timestamp, timestamp, metadata.eventCreationTime,
+            event.timestamp]
     transform: iso8601
   api_operation:
     paths: [tactic, "behaviors[*].tactic", behaviors_name, technique, event.Tactic, event.Tactics,
@@ -157,6 +160,10 @@ derive:
   - when: { metadata.eventType: DetectionSummaryEvent, event.AssociatedFile: { exists: false },
             event.QuarantineFiles: { exists: false } }
     set: { file_path: null }
+  # A change to an alert an earlier poll read (the connector marks it): an
+  # update of that finding, not a new one.
+  - when: { _update: true }
+    set: { activity_id: 2, activity_name: Update }
 
   # Event Streams records that are not findings.
   - when: { metadata.eventType: AuthActivityAuditEvent }

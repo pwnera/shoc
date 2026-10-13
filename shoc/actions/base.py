@@ -12,9 +12,9 @@ policy.py`), the runner asks it, and only the runner holds credentials.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, ClassVar, Protocol, runtime_checkable
 from urllib.parse import quote
 
 import httpx
@@ -49,13 +49,9 @@ class ActionResult:
     dry_run: bool = False
 
     def to_json(self) -> dict[str, Any]:
-        return {
-            "ok": self.ok,
-            "detail": self.detail,
-            "data": self.data,
-            "undo": self.undo,
-            "dry_run": self.dry_run,
-        }
+        # Every field is public: it reaches the API, the audit log and the crew.
+        # A credential never goes on this class.
+        return asdict(self)
 
 
 @runtime_checkable
@@ -65,6 +61,7 @@ class Action(Protocol):
     target_kind: str
     platforms: tuple[str, ...]
     linked_from: tuple[str, ...]
+    granted_at: ClassVar[tuple[str, ...]]
     summary: str
     reversible: bool
     required_params: tuple[str, ...]
@@ -131,6 +128,9 @@ class BaseAction(_Plumbing):
     # Platforms whose cases this action may answer for the login the case's user
     # is linked to, never for the name the case holds (RFC 0027).
     linked_from: tuple[str, ...] = ()
+    # Where the case's events say what was granted, for an action whose lookup
+    # narrows to that grant (okta, entra). Empty for every other action.
+    granted_at: ClassVar[tuple[str, ...]] = ()
 
     def target_of(self, params: dict[str, Any]) -> str:
         return str(params.get(self.required_params[0], "")) if self.required_params else ""
@@ -169,16 +169,34 @@ def section(client: httpx.Client, url: str, vendor: str, **kw: Any) -> Any:
         return {"unavailable": str(exc)[:200]}
 
 
+def _created(item: dict[str, Any]) -> datetime:
+    return datetime.fromisoformat(str(item["created"]).replace("Z", "+00:00"))
+
+
+def recent(items: list[dict[str, Any]], days: int = 7) -> list[dict[str, Any]]:
+    """The items `created` in the last `days`."""
+    since = datetime.now(UTC) - timedelta(days=days)
+    return [i for i in items if i.get("created") and _created(i) >= since]
+
+
 def newest(items: list[dict[str, Any]], days: int = 7) -> dict[str, Any]:
     """The most recently `created` item, if it is younger than `days`."""
-    since = datetime.now(UTC) - timedelta(days=days)
-    dated = [
-        (datetime.fromisoformat(str(i["created"]).replace("Z", "+00:00")), i)
-        for i in items
-        if i.get("created")
-    ]
-    young = [(at, i) for at, i in dated if at >= since]
-    return max(young, key=lambda pair: pair[0])[1] if young else {}
+    young = recent(items, days)
+    return max(young, key=_created) if young else {}
+
+
+def only_recent(items: list[dict[str, Any]], days: int = 7) -> dict[str, Any]:
+    """The one item `created` in the last `days`; {} for none or several, which a
+    lookup that fills an action's target must not choose between (ir-7)."""
+    young = recent(items, days)
+    return young[0] if len(young) == 1 else {}
+
+
+def holders(params: dict[str, Any], others: str) -> str:
+    """How many others hold the role a plan takes away, as its lookup counted them
+    when it was proposed (`holders_left`), so an approver sees a last admin (ir-9)."""
+    left = str(params.get("holders_left", ""))
+    return f"; {others} left: {left}" if left.isdigit() else ""
 
 
 def digest(params: dict[str, Any], vendor: str, lengths: tuple[int, ...] = (40, 64)) -> str:
@@ -262,8 +280,12 @@ NEEDS: dict[str, Need] = {
         "s3:PutBucketPublicAccessBlock, kms:CancelKeyDeletion, kms:EnableKey, "
         "ec2:ModifySnapshotAttribute and ec2:ModifyImageAttribute, ec2:CreateSecurityGroup, "
         "ec2:RevokeSecurityGroupEgress and ec2:ModifyNetworkInterfaceAttribute, with the "
-        "matching reads (ec2:DescribeInstances, ec2:DescribeSecurityGroups)",
-        optional=("regions",),
+        "matching reads (iam:ListAccessKeys, iam:ListAttachedUserPolicies, iam:GetUserPolicy, "
+        "iam:GetRolePolicy, ec2:DescribeInstances, ec2:DescribeSecurityGroups), which undo "
+        "needs to put back only what shoc changed",
+        # A role in each account the key may assume, and the external id its
+        # trust policy asks for, instead of a key per account (po-15).
+        optional=("regions", "role_arn", "external_id"),
         where="IAM → Users → Create user, no console access → Attach policies directly → a "
         "policy allowing the actions above → Security credentials → Create access key "
         "(third-party service)",
@@ -278,12 +300,13 @@ NEEDS: dict[str, Need] = {
     "entra": Need(
         secret=_MICROSOFT,
         grant="Graph User.ReadWrite.All, User.RevokeSessions.All, "
-        "RoleManagement.ReadWrite.Directory, UserAuthenticationMethod.ReadWrite.All and "
-        "User-PasswordProfile.ReadWrite.All; resetting a password also needs the app to "
-        "hold the User Administrator role (Privileged Authentication Administrator for an "
-        "administrator's)",
+        "RoleManagement.ReadWrite.Directory, UserAuthenticationMethod.ReadWrite.All, "
+        "User-PasswordProfile.ReadWrite.All and AuditLog.Read.All, which dates a phone or "
+        "email method and a role assignment from the audit; resetting a password also needs "
+        "the app to hold the User Administrator role (Privileged Authentication Administrator "
+        "for an administrator's)",
         where="Entra admin center → App registrations → New registration → API permissions "
-        "→ Microsoft Graph → Application permissions: the five above → Grant admin consent "
+        "→ Microsoft Graph → Application permissions: the six above → Grant admin consent "
         "→ Certificates & secrets → New client secret → Roles and administrators → User "
         "Administrator → Add assignments → the app",
     ),
@@ -360,6 +383,7 @@ NEEDS: dict[str, Need] = {
         settings=("api_url",),
         secret=("username", "password"),
         grant="a server API user with active-response:command, agent:read and syscheck:read",
+        optional=("ca_cert", "verify_tls", "block_command"),
         where="Wazuh dashboard → Server management → Security → Roles: one with the three "
         "actions above → Users → Create user → map it to that role; the API answers on port "
         "55000",
@@ -401,6 +425,8 @@ NEEDS: dict[str, Need] = {
         grant="a PagerDuty Events v2 integration key",
         where="PagerDuty → Services → the on-call service → Integrations → Add an "
         "integration → Events API V2 → copy the integration key",
+        # The account's service region: us, or eu for events.eu.pagerduty.com.
+        optional=("region",),
     ),
 }
 

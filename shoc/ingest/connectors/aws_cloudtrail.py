@@ -15,8 +15,9 @@ from shoc.ingest.connectors.base import FetchResult, client, settled, since_defa
 SERVICE = "cloudtrail"
 TARGET = "com.amazonaws.cloudtrail.v20131101.CloudTrail_20131101.LookupEvents"
 # AWS: CloudTrail "typically delivers logs within an average of about 5 minutes"
-# of the call. A poll reads no closer to now than that (D154).
-LAG = dt.timedelta(minutes=5)
+# of the call. That is an average, not a bound, so a poll reads no closer to now
+# than three times it, and starts at the newest event the last one read (D164).
+LAG = dt.timedelta(minutes=15)
 
 
 def sigv4_headers(
@@ -57,7 +58,7 @@ class AwsCloudTrailConnector:
         if settings.get("bucket"):
             return cloudtrail_s3.fetch(settings, secret, cursor, limit)
         region = settings.get("region") or "us-east-1"
-        start = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        start = since_default(cursor, settings, dt.timedelta(0))
         until = settled(cursor, LAG)
         if utc(start) >= utc(until):
             return FetchResult(cursor={"since": start})

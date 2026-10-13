@@ -15,7 +15,7 @@ from urllib.parse import quote, urlsplit
 import httpx
 
 from shoc.errors import ConfigError
-from shoc.ingest.connectors.base import FetchResult, Streams, client, since_default
+from shoc.ingest.connectors.base import FetchResult, Streams, client, reached, since_default
 
 DEFAULT_URL = "https://gitlab.com"
 
@@ -69,7 +69,7 @@ class GitLabConnector:
                 {**settings, "scope": scopes}, secret, cursor, limit
             )
         path = f"/api/v4/{scope}/audit_events" if scope else "/api/v4/audit_events"
-        since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        since = since_default(cursor, settings)
         # Keyset pagination, the only kind GitLab keeps after 19.0, and only in
         # this order: newest first, then the `next` link exactly as given (D158).
         params: dict[str, Any] = {
@@ -92,13 +92,12 @@ class GitLabConnector:
             origin = "{0.scheme}://{0.netloc}".format(urlsplit(link))
             raise ConfigError(f"gitlab: GitLab pages from {origin}; set base_url to it")
         # The first page holds the newest events, so the walk carries them.
-        newest = max(
-            [str(r.get("created_at", "")) for r in records] + [str(cursor.get("newest") or since)]
-        )
+        newest = max([str(r.get("created_at", "")) for r in records] + [reached(cursor, since)])
+        late = str(cursor.get("since") or "")
         if link and records:
-            held = {"since": since, "newest": newest, "next": link}
-            return FetchResult(records=records, cursor=held, more=True)
-        return FetchResult(records=records, cursor={"since": newest}, more=False)
+            held = {**cursor, "start": since, "newest": newest, "next": link}
+            return FetchResult(records=records, cursor=held, more=True, since=late)
+        return FetchResult(records=records, cursor={"since": newest}, more=False, since=late)
 
 
 CONNECTOR = GitLabConnector()

@@ -32,6 +32,11 @@ from shoc.agents.llm import Completion, LLMClient, complete_typed, for_hint
 ATTACK = ("malicious", "suspicious")
 log = logging.getLogger("shoc.checks")
 
+# A benign close quiets its rule and entity for a week (D77), so the crew may only
+# close on one at this measured confidence or more, with most reads agreeing. Below
+# it the case goes to a person and nothing is suppressed.
+BENIGN_CLOSE_FLOOR = 0.5
+
 # What one check call may carry: enough claims to cover a verdict, and every
 # event a claim counts. Five events per claim made "twenty reads in two minutes"
 # unshowable whatever the reads said; near-identical events are quoted once with
@@ -100,6 +105,16 @@ class Confidence:
 
     def _cited(self, i: int) -> list[str]:
         return self.struck_cited[i] if i < len(self.struck_cited) else []
+
+    def unsettled(self) -> str:
+        """Why this measure cannot close a case as benign, or "" when it can."""
+        if self.check_failed or not self.checked:
+            return "no claim could be checked against the events it cites"
+        if self.agree * 2 <= self.reads:
+            return f"only {self.agree} of {self.reads} read(s) reach the benign side"
+        if self.value < BENIGN_CLOSE_FLOOR:
+            return f"its measured confidence {self.value:.2f} is under {BENIGN_CLOSE_FLOOR:.2f}"
+        return ""
 
 
 def reads(

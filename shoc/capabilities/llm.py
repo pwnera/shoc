@@ -7,6 +7,7 @@ The crew's budgets live in the same row (`agents.llm.BUDGETS`).
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
 from dataclasses import dataclass, field
@@ -71,6 +72,17 @@ def allowed_hosts() -> set[str]:
     return hosts or {*DEFAULT_HOSTS, *([env] if env else [])}
 
 
+def _local(host: str) -> bool:
+    """A loopback or private address, where plain http never crosses the internet."""
+    if host == "localhost":
+        return True
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return ip.is_loopback or ip.is_private
+
+
 def _state(ctx: Context) -> LLMState:
     from shoc.agents.llm import BUDGETS, STORED_FIELDS, budget, stored
     from shoc.db.pool import fetch_one
@@ -131,7 +143,7 @@ def show(ctx: Context, inp: Empty) -> Result:
     tags=("llm", "write", "security"),
 )
 def configure(ctx: Context, inp: LLMConfig) -> Result:
-    from shoc.agents.llm import STORED_FIELDS
+    from shoc.agents.llm import STORED_FIELDS, stored
     from shoc.db.pool import execute, fetch_one
     from shoc.db.secrets import open_secret, seal
 
@@ -153,6 +165,20 @@ def configure(ctx: Context, inp: LLMConfig) -> Result:
             f"{host or inp.base_url} is not in SHOC_LLM_BASE_URL_ALLOWLIST "
             f"({', '.join(sorted(allowed_hosts()))})"
         )
+    if inp.base_url and urlparse(inp.base_url).scheme != "https" and not _local(host):
+        # The first request carries the key and a case's evidence.
+        raise ConfigError(f"{inp.base_url} must be https unless it is on this machine or network")
+    current = stored(ctx.config, ctx.db, ctx.tenant_id)
+    # Where the key goes today: the base URL's host, or the provider's own
+    # endpoint when none is set, as the clients in agents/llm.py default.
+    was = (urlparse(current.llm_base_url).hostname or "").lower() or (
+        "api.anthropic.com" if current.llm_provider.lower() == "anthropic" else "api.openai.com"
+    )
+    provider = inp.provider.lower()
+    moved = provider not in ("", current.llm_provider.lower()) or (inp.base_url and host != was)
+    if moved and current.llm_api_key and not inp.api_key and provider != "none":
+        # The key in use was issued for the old endpoint; the new one must not receive it.
+        raise ConfigError("give the key for the new endpoint (api_key)")
     row = fetch_one(
         ctx.db,
         "SELECT settings, secret FROM shoc.connector_config WHERE tenant_id=%s AND source='llm'",

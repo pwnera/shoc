@@ -48,4 +48,11 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 - name: SHOC_LLM_BASE_URL
   value: {{ .Values.llm.baseUrl | quote }}
 {{- end }}
+{{- /* An empty value is left out, so one set in the secret still applies. */ -}}
+{{- range $name, $value := .Values.env }}
+{{- if ne (toString $value) "" }}
+- name: {{ $name }}
+  value: {{ toString $value | quote }}
+{{- end }}
+{{- end }}
 {{- end -}}

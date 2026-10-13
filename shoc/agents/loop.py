@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from shoc.agents import checks, observables, roles, safety, tools
@@ -60,7 +60,7 @@ from shoc.agents.openspace import (
     validate_citations,
 )
 from shoc.cases import credentials, engine
-from shoc.db.pool import Conn, fetch_all
+from shoc.db.pool import Conn, execute, fetch_all, fetch_one
 from shoc.errors import ShocError
 from shoc.store.base import EventStore
 
@@ -75,6 +75,18 @@ CTI_BY_EVIDENCE = (
     "The observables and reports in this case's dossier: what is known about them? "
     "Look up the ones worth looking up."
 )
+
+# A case's lifetime ceiling, in runs of its severity's budget. A campaign files a
+# finding per rule window, and each one bought a full run: one case spent 3.7M
+# tokens. Past it, a person reads what the crew already gathered.
+LIFETIME_RUNS = 3
+# Within this long of a run, a sweep run for more findings of rules the case
+# already holds, or for repeated injects from no person, waits: the crew has just
+# read the same thing. A person who asks for a run gets one.
+RERUN_AFTER = timedelta(hours=1)
+# Below these severities a case goes to a person without a model call once the
+# day's model spend reaches `spend_usd_per_day` (0, the default, is no cap).
+CAPPED_SEVERITIES = ("informational", "low")
 
 
 class BudgetExhausted(Exception):
@@ -113,6 +125,9 @@ class RunReport:
     errors: list[str] = field(default_factory=list)
     routed: list[dict[str, Any]] = field(default_factory=list)
     actions: list[dict[str, Any]] = field(default_factory=list)
+    # When the run began: a turn stops looking things up once the run's time
+    # budget is spent, not only between turns (`_turn`).
+    started: datetime | None = None
 
 
 @dataclass
@@ -142,6 +157,9 @@ class _Peers:
     # Whose request this work answers, when it answers one (`ask`): every peer
     # is offered only what that caller may call itself (AGT-10, AGT-14).
     on_behalf: Any = None
+    # What the run may cite. A peer's answer cites from it and from its own
+    # lookups, never from the rest of the tenant (SEC-2).
+    evidence: Evidence | None = None
 
     def ask_for(self, caller: str) -> Any:
         """A callable the caller's tool loop uses to put a question to a peer."""
@@ -240,7 +258,9 @@ class _Peers:
                 kind="answer",
                 to=caller,
                 body=_said(body, usage),
-                citations=validate_citations(self.store, self.tenant_id, cites),
+                citations=validate_citations(
+                    self.store, self.tenant_id, cites, _seen_by(self.evidence, usage)
+                ),
                 confidence=confidence,
                 tokens=usage.tokens,
                 model=usage.model,
@@ -350,11 +370,32 @@ def run_case(
             confidence=float(case["confidence"]),
             stopped_because="the case is closed",
         )
+    if _too_soon(conn, tenant_id, case):
+        # The sweep counted this run as an attempt. A skip is not a failure: left
+        # counted, it backed the case off for up to an hour, and a person's
+        # message in that hour waited for it. Uncounted, the next sweep comes back.
+        execute(
+            conn,
+            """UPDATE shoc.cases SET crew_attempts = greatest(crew_attempts - 1, 0)
+               WHERE tenant_id = %s AND case_uid = %s""",
+            (tenant_id, case_uid),
+        )
+        return RunReport(
+            case_uid=case_uid,
+            state=str(case["state"]),
+            verdict=str(case["verdict"]),
+            confidence=float(case["confidence"] or 0.0),
+            stopped_because="the crew worked this case within the hour, and only more "
+            "of the same has arrived since",
+        )
     client = client or from_config(config, conn, tenant_id)
     budget = budget or Budget.for_severity(case["severity"])
     started = datetime.now(UTC)
     report = RunReport(
-        case_uid=case_uid, state=case["state"], model=getattr(client, "model", "none")
+        case_uid=case_uid,
+        state=case["state"],
+        model=getattr(client, "model", "none"),
+        started=started,
     )
     findings = case_findings(conn, tenant_id, case, MAX_DOSSIER_FINDINGS)
     if not findings:
@@ -400,20 +441,38 @@ def run_case(
         ),
     )
 
-    cap = case.get("token_cap")
-    if cap and int(case.get("tokens_used") or 0) >= int(cap):
-        # A case only a hunt opened has a lifetime ceiling: past it, a person
-        # reads what the crew already gathered rather than the crew reading again.
+    # Every case has a lifetime ceiling; one only a hunt opened has a lower one.
+    # Past it, a person reads what the crew already gathered rather than the
+    # crew reading again.
+    cap = LIFETIME_RUNS * Budget.for_severity(str(case.get("severity") or "")).max_tokens
+    cap = min(cap, int(case.get("token_cap") or cap))
+    if int(case.get("tokens_used") or 0) >= cap:
         engine.set_verdict(
             conn,
             tenant_id,
             case_uid,
             "needs_human",
             0.0,
-            f"This hunt case has used its {cap} tokens; what the crew found is attached.",
+            f"This case has used its {cap} tokens; what the crew found is attached.",
             cited,
         )
         report.verdict, report.stopped_because = "needs_human", "the case's token ceiling"
+        report.routed = _route(conn, tenant_id, case, "needs_human", report)
+        return report
+
+    if _over_spend(conn, tenant_id, case):
+        engine.set_verdict(
+            conn,
+            tenant_id,
+            case_uid,
+            "needs_human",
+            0.0,
+            "Today's model spend has reached its daily cap, so the crew did not run on "
+            f"this {case['severity']} case. The detections and their evidence are attached "
+            "for a human.",
+            cited,
+        )
+        report.verdict, report.stopped_because = "needs_human", "the daily model spend cap"
         report.routed = _route(conn, tenant_id, case, "needs_human", report)
         return report
 
@@ -434,6 +493,10 @@ def run_case(
         return report
 
     dossier = build_dossier(conn, store, tenant_id, case)
+    # What the independent reads see: the case, and none of what the crew, people
+    # or CTI said about it. Shown an earlier "Closing as malicious", they copied
+    # it, and agreement measured that (RFC 0020).
+    base = dossier.text
     # Every role reads the earlier discussion and what brought the crew back,
     # not only the Investigator (AGT-12).
     resumed = _so_far(prior) + (
@@ -447,6 +510,7 @@ def run_case(
     challenge: Any = None
     broke = False
     exhausted = ""
+    held = ""
     round_no = opening
     peers = _Peers(
         conn,
@@ -460,6 +524,7 @@ def run_case(
         budget,
         started,
         round_no,
+        evidence=evidence,
     )
 
     try:
@@ -569,7 +634,9 @@ def run_case(
                     f"[arguing {challenge.arguing}, grounded in {challenge.grounded_in}] {body}",
                     usage,
                 ),
-                citations=validate_citations(store, tenant_id, challenge.citations),
+                citations=validate_citations(
+                    store, tenant_id, challenge.citations, _seen_by(evidence, usage)
+                ),
                 tokens=usage.tokens,
                 model=usage.model,
                 round=round_no,
@@ -649,9 +716,7 @@ def run_case(
 
         # The confidence the policy reads is measured, not asked for (RFC 0020):
         # independent reads agreeing, and each claim shown by its own events.
-        measured = checks.derive(
-            client, store, tenant_id, dossier.text, investigation, earlier, config
-        )
+        measured = checks.derive(client, store, tenant_id, base, investigation, earlier, config)
         _charge(conn, tenant_id, measured.usage)
         report.tokens += measured.usage.tokens
         confidence = measured.value
@@ -756,11 +821,11 @@ def run_case(
                     tenant_id,
                     case_uid,
                     report,
+                    # The Commander's turn is counted once, on its decision below.
                     Message(
                         agent="IR Commander",
                         kind="proposal",
                         body=json.dumps(_proposal_json(proposal, taken)),
-                        tokens=usage.tokens,
                         model=usage.model,
                         round=round_no,
                     ),
@@ -803,6 +868,29 @@ def run_case(
                     )
                 else:
                     next_state = "closed"
+        elif benign and (unsettled := measured.unsettled()):
+            # A benign close quiets its rule and entity for a week, so it stands
+            # on the measured number, not on the Investigator's word or a line in
+            # the logs that talked it round (D77): a person decides, and nothing
+            # is suppressed.
+            held = f"Not closing as {verdict}: {unsettled}. A person decides."
+            report.stopped_because = f"{verdict}, not closed: {unsettled}"
+            verdict, next_state = "needs_human", ""
+            _post(
+                conn,
+                store,
+                tenant_id,
+                case_uid,
+                report,
+                Message(
+                    agent="shoc",
+                    kind="decision",
+                    body=held,
+                    citations=citations or cited,
+                    round=round_no,
+                ),
+                fallback_kind="observation",
+            )
         else:
             # Nothing to respond to, so the Investigator closes its own case. There
             # is no shift lead to adjourn a meeting that is not happening.
@@ -885,6 +973,8 @@ def run_case(
     reasoning = getattr(investigation, "reasoning", "") or ""
     if exhausted:
         reasoning = f"The crew stopped at its budget ({exhausted}). {reasoning}".strip()
+    elif held:
+        reasoning = f"{held} {reasoning}".strip()
     case_row = engine.set_verdict(
         conn,
         tenant_id,
@@ -963,6 +1053,75 @@ def _cited(investigation: Any) -> list[str]:
         if str(uid).strip():
             seen.setdefault(str(uid).strip(), None)
     return list(seen)
+
+
+def _seen_by(evidence: Evidence | None, usage: Completion) -> Evidence | None:
+    """What one agent's turn may cite: the run's evidence and its own lookups (SEC-2)."""
+    return Evidence(evidence.uids, evidence.seen + usage.seen) if evidence is not None else None
+
+
+def _too_soon(conn: Conn, tenant_id: str, case: dict[str, Any]) -> bool:
+    """Whether the sweep sent the crew back within RERUN_AFTER of a run with
+    nothing new since. A run the sweep did not queue (a person asking) runs.
+
+    New is a person's message, a rule the case did not hold, an action that
+    ended, or the first inject from no person in an hour. More findings of the
+    same rules and repeated injects are not: each one bought a full run.
+    """
+    since = case.get("worked_at")
+    if not since or datetime.now(UTC) - since >= RERUN_AFTER:
+        return False
+    row = fetch_one(
+        conn,
+        """SELECT
+             EXISTS (SELECT 1 FROM shoc.jobs j
+                     WHERE j.tenant_id = %(t)s AND j.kind = 'case.investigate'
+                       AND j.state = 'running' AND j.idempotency_key LIKE %(k)s) AS swept,
+             EXISTS (SELECT 1 FROM shoc.findings f
+                     WHERE f.tenant_id = %(t)s AND f.case_uid = %(c)s AND f.created_at > %(s)s
+                       AND NOT EXISTS (
+                           SELECT 1 FROM shoc.findings o
+                           WHERE o.tenant_id = f.tenant_id AND o.case_uid = f.case_uid
+                             AND o.rule_id = f.rule_id AND o.created_at <= %(s)s))
+             OR EXISTS (SELECT 1 FROM shoc.openspace_messages m
+                        WHERE m.tenant_id = %(t)s AND m.case_uid = %(c)s AND m.created_at > %(s)s
+                          AND (m.principal = 'human' OR (m.kind = 'inject' AND NOT EXISTS (
+                              SELECT 1 FROM shoc.openspace_messages p
+                              WHERE p.tenant_id = m.tenant_id AND p.case_uid = m.case_uid
+                                AND p.kind = 'inject' AND p.principal <> 'human'
+                                AND p.msg_id < m.msg_id
+                                AND p.created_at > m.created_at - interval '1 hour'))))
+             OR EXISTS (SELECT 1 FROM shoc.actions a
+                        WHERE a.tenant_id = %(t)s AND a.case_uid = %(c)s AND a.updated_at > %(s)s
+                          AND (a.state IN ('done', 'failed', 'rolled_back')
+                               OR (a.state = 'rejected' AND a.approved_by LIKE 'human:%%'))
+                          AND a.type NOT LIKE 'notify.%%') AS news,
+             EXISTS (SELECT 1 FROM shoc.findings f
+                     WHERE f.tenant_id = %(t)s AND f.case_uid = %(c)s AND f.created_at > %(s)s)
+             OR EXISTS (SELECT 1 FROM shoc.openspace_messages m
+                        WHERE m.tenant_id = %(t)s AND m.case_uid = %(c)s AND m.kind = 'inject'
+                          AND greatest(m.created_at, coalesce(m.last_repeat_at, m.created_at))
+                              > %(s)s) AS more""",
+        {
+            "t": tenant_id,
+            "c": case["case_uid"],
+            "s": since,
+            "k": f"investigate:{case['case_uid']}:sweep@%",
+        },
+    )
+    # With nothing new at all, somebody asked for this run directly: it runs.
+    return bool(row and row["swept"] and row["more"] and not row["news"])
+
+
+def _over_spend(conn: Conn, tenant_id: str, case: dict[str, Any]) -> bool:
+    """Whether today's model spend has reached its cap and this case can wait (OPS-1)."""
+    from shoc.agents.llm import budget
+    from shoc.agents.ops import spend
+
+    if str(case.get("severity") or "") not in CAPPED_SEVERITIES:
+        return False
+    cap = budget(conn, tenant_id, "spend_usd_per_day")
+    return bool(cap) and spend(conn, tenant_id, days=1)["usd_today"] >= cap
 
 
 def _ordered(proposals: list[Any]) -> list[Any]:
@@ -1144,8 +1303,6 @@ def _worked(conn: Conn, tenant_id: str, case_uid: str, started: datetime) -> Non
     the mark stops just before the first of them and the sweep comes back.
     """
     import contextlib
-
-    from shoc.db.pool import execute
 
     with contextlib.suppress(Exception):
         execute(
@@ -1608,7 +1765,7 @@ def _ask(
     store: EventStore | None = None,
     ask: Any = None,
     on_behalf: Any = None,
-    budget: tuple[int, Any] = (0, None),
+    budget: tuple[int, Any, float] = (0, None, 0.0),
     max_steps: int = MAX_TOOL_STEPS,
     max_calls: int = MAX_TOOL_CALLS,
 ) -> tuple[Any, Completion]:
@@ -1658,20 +1815,23 @@ def _ask(
         token_budget=budget[0],
         outside=budget[1],
         max_calls=max_calls,
+        deadline=budget[2],
     )
 
 
-def _turn(report: RunReport, budget: Budget, share: float) -> tuple[int, Any]:
-    """What one turn may spend, its peers included: a share of the run's budget,
-    and never more than is left of it.
+def _turn(report: RunReport, budget: Budget, share: float) -> tuple[int, Any, float]:
+    """What one turn may spend, its peers included: a share of the run's tokens,
+    never more than is left of them, and no time past the run's own.
 
-    A turn that reaches it stops looking things up and answers. Without it the
-    first turn of a busy case spent the whole run and the case went to a person
-    with the Investigator's conclusion thrown away.
+    A turn that reaches either stops looking things up and answers. Without the
+    tokens the first turn of a busy case spent the whole run and the case went
+    to a person with the Investigator's conclusion thrown away; without the time,
+    one slow turn outlasted the worker's watchdog.
     """
     start = report.tokens
     allowed = min(int(budget.max_tokens * share), budget.max_tokens - start)
-    return max(1, allowed), lambda: report.tokens - start
+    deadline = report.started.timestamp() + budget.max_seconds if report.started else 0.0
+    return max(1, allowed), lambda: report.tokens - start, deadline
 
 
 def _charge(conn: Conn, tenant_id: str, usage: Completion) -> None:

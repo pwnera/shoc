@@ -8,6 +8,7 @@ for the management console (RFC 0031).
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 import httpx
@@ -21,7 +22,7 @@ from shoc.actions.base import (
     digest,
     send,
 )
-from shoc.errors import ConfigError, ValidationError
+from shoc.errors import ConfigError, StoreError, ValidationError
 
 
 def _send(client: httpx.Client, method: str, url: str, **kw: Any) -> httpx.Response:
@@ -102,6 +103,20 @@ class IsolateHost(BaseAction):
         return ActionResult(ok=True, detail=f"{undo['device_id']} back on the network")
 
 
+# The OS types a SentinelOne blocklist entry is made for.
+OS_TYPES = ("windows", "macos", "linux")
+
+
+def _duplicate(exc: StoreError) -> bool:
+    """Whether the console refused an entry because the hash is on its blocklist
+    for that OS already."""
+    cause = exc.__cause__
+    if not isinstance(cause, httpx.HTTPStatusError):
+        return False
+    said = cause.response.text.lower()
+    return cause.response.status_code == 409 or "already exist" in said or "duplicate" in said
+
+
 class BlockHash(BaseAction):
     type = "sentinelone.block_hash"
     provider = "sentinelone"
@@ -120,41 +135,67 @@ class BlockHash(BaseAction):
         self.check(params)
         value = digest(params, "sentinelone")
         base, client = _console(self, creds, http)
-        body = _send(
-            client,
-            "POST",
-            f"{base}/web/api/v2.1/restrictions",
-            json={
-                "data": {
-                    "type": "black_hash",
-                    "value": value,
-                    "osType": params.get("os", "windows"),
-                    "description": str(params.get("note") or "blocked by shoc"),
-                },
-                "filter": {"tenant": True},
-            },
-        ).json()
-        data = body.get("data") or {}
-        if isinstance(data, list):
-            data = data[0] if data else {}
-        rule_id = data.get("id", "")
+        # A blocklist entry holds for one OS: a file convicted on a Mac runs on
+        # every other Mac unless the macOS entry exists too.
+        ids: list[str] = []
+        already: list[str] = []
+        for os_type in [params["os"]] if params.get("os") else OS_TYPES:
+            try:
+                body = _send(
+                    client,
+                    "POST",
+                    f"{base}/web/api/v2.1/restrictions",
+                    json={
+                        "data": {
+                            "type": "black_hash",
+                            "value": value,
+                            "osType": os_type,
+                            "description": str(params.get("note") or "blocked by shoc"),
+                        },
+                        "filter": {"tenant": True},
+                    },
+                ).json()
+            except StoreError as exc:
+                if _duplicate(exc):
+                    # Blocked there already, by a person or an earlier block: covered,
+                    # and not shoc's entry to take away on undo.
+                    already.append(os_type)
+                    continue
+                # Entries made before the failure go, so a retry starts clean.
+                if ids:
+                    with contextlib.suppress(StoreError):
+                        self._delete(base, client, ids)
+                raise
+            data = body.get("data") or {}
+            if isinstance(data, list):
+                data = data[0] if data else {}
+            ids.append(str(data.get("id", "")))
+        detail = f"{value} blocked (sentinelone indicators {', '.join(ids) or 'none new'})"
+        if already:
+            detail += f"; already blocked on {', '.join(already)}"
         return ActionResult(
             ok=True,
-            detail=f"{value} blocked (sentinelone indicator {rule_id})",
-            data={"hash": value, "indicator_id": rule_id},
-            undo={"hash": value, "indicator_id": rule_id},
+            detail=detail,
+            data={"hash": value, "indicator_ids": ids, "already": already},
+            undo={"hash": value, "indicator_ids": ids},
+        )
+
+    def _delete(self, base: str, client: httpx.Client, ids: list[str]) -> None:
+        _send(
+            client,
+            "DELETE",
+            f"{base}/web/api/v2.1/restrictions",
+            json={"data": {"type": "black_hash", "ids": ids}},
         )
 
     def undo(
         self, creds: Credentials, undo: dict[str, Any], http: httpx.Client | None = None
     ) -> ActionResult:
         base, client = _console(self, creds, http)
-        _send(
-            client,
-            "DELETE",
-            f"{base}/web/api/v2.1/restrictions",
-            json={"data": {"type": "black_hash", "ids": [undo["indicator_id"]]}},
-        )
+        # An action recorded before one entry per OS kept a single id.
+        ids = undo["indicator_ids"] if "indicator_ids" in undo else [undo["indicator_id"]]
+        if ids:  # none when every OS was blocked before shoc's action
+            self._delete(base, client, ids)
         return ActionResult(ok=True, detail=f"{undo['hash']} unblocked")
 
 

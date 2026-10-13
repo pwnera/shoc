@@ -98,6 +98,14 @@ python -m evals.run --investigate --repeat 3 --alpha 0.1
 note, and records the measured number. The Challenger's prompt carries the
 dossier and the verdict, not the Investigator's reasoning.
 
+> Amended on 2026-10-12 (D237). The measured number also gates a benign close.
+> The crew closes a case as `benign_expected` or `false_positive` only with a
+> measured confidence of at least 0.5 (`checks.BENIGN_CLOSE_FLOOR`), more than
+> half of the reads on the benign side and at least one claim checked;
+> otherwise the verdict is `needs_human` and nothing is suppressed, remembered
+> or drafted. `routing.route` writes no suppression and no memory for a crew
+> close whose case confidence is under the floor.
+
 The IR Commander's prompt carries `_brief`: the case summary, its entities, its
 scope, the claims that passed the check and the observables. `events.query` and
 `timeline.extend` leave its tool list. `_grounded` checks each proposal's target

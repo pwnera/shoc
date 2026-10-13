@@ -54,6 +54,7 @@ const PARAMS: Partial<Record<EntityKind, string[]>> = {
   user: ["user", "username", "login", "email", "upn"],
   email: ["email", "user", "mailbox", "upn"],
   key: ["key", "access_key", "access_key_id", "key_id"],
+  session: ["session", "session_id"],
   ip: ["ip", "address", "ip_address"],
   host: ["host", "hostname", "device", "device_id"],
   account: ["account", "account_id"],
@@ -64,7 +65,7 @@ const PARAMS: Partial<Record<EntityKind, string[]>> = {
 /** Intel verdicts on the status scale (`shoc/detect/osint.py`): known-bad is bad, never a severity hue. */
 const INTEL: Record<string, StatusTone> = { malicious: "bad", suspicious: "warn", benign: "good" };
 
-const IDENTITY: EntityKind[] = ["user", "key", "email"];
+const IDENTITY: EntityKind[] = ["user", "key", "session", "email"];
 const ASSET: EntityKind[] = ["ip", "host", "user", "domain", "resource"];
 
 function fit(def: PlatformLookupDef, kind: EntityKind): string | null {

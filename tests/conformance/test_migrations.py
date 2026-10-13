@@ -55,14 +55,15 @@ def _columns(conn: Conn, schema: str = "shoc") -> set[tuple[str, str, str]]:
 def test_a_fresh_database_ends_up_with_the_same_schema(config, conn):
     """An install today and an install that upgraded through every version must match."""
     database = f"shoc_migrate_{uuid.uuid4().hex[:8]}"
+    owner = config.migrate_dsn or config.dsn
     admin: psycopg.Connection[DictRow] = psycopg.Connection[DictRow].connect(
-        config.dsn, row_factory=dict_row, autocommit=True
+        owner, row_factory=dict_row, autocommit=True
     )
     try:
         with admin.cursor() as cur:
             cur.execute(q(f'CREATE DATABASE "{database}"'))
         fresh: psycopg.Connection[DictRow] = psycopg.Connection[DictRow].connect(
-            config.dsn.rsplit("/", 1)[0] + f"/{database}", row_factory=dict_row, autocommit=True
+            owner.rsplit("/", 1)[0] + f"/{database}", row_factory=dict_row, autocommit=True
         )
         try:
             applied = migrate(fresh)

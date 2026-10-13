@@ -110,7 +110,8 @@ export const COMMANDS: Command[] = [
     { id: "case.steer", label: "Steer the crew", keys: "s" },
     { id: "case.first-cite", label: "First evidence", keys: "e" },
     { id: "case.menu", label: "More", keys: "." },
-    { id: "case.investigate", label: "Re-investigate", level: "L1" },
+    // A crew pass spends model tokens: a `?do=` from a link or the palette asks first (AGT-12).
+    { id: "case.investigate", label: "Re-investigate", level: "L1", confirm: true },
     { id: "case.slack", label: "Post to Slack" },
     { id: "case.copy-id", label: "Copy id" },
     { id: "case.explore", label: "Events in Explore" },
@@ -856,6 +857,15 @@ export function recentRecords(): Recent[] {
     return Array.isArray(saved) ? saved.slice(0, 6) : [];
   } catch {
     return [];
+  }
+}
+
+/** Forget the list: on Log out, or when someone else signs in on this browser (`lib/chat.ts`). */
+export function forgetRecentRecords(): void {
+  try {
+    localStorage.removeItem(RECENT);
+  } catch {
+    /* storage off: nothing was kept */
   }
 }
 

@@ -1,0 +1,45 @@
+id: endpoint_defender_exclusion_registry_first_seen
+title: Defender records an exclusion a machine never had
+hypothesis: >
+  Before running their tools, intruders tell Defender to skip a folder, a
+  process or an extension, through PowerShell, a policy or the registry.
+  Defender keeps each exclusion as a value under its Exclusions keys, named by
+  what it skips, and Defender itself writes most of them, so the command that
+  wrote one says nothing. The value is the exclusion: a path this machine never
+  excluded before is new, whoever wrote it. Developers add build folders too,
+  which is why this is a first-seen hunt per machine and not a rule.
+attack: [T1562.001]
+sources:
+  - name: Sigma
+    title: "Windows Defender Exclusions Added - Registry"
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_set/registry_set_defender_exclusions.yml
+    author: "Christian Burkard (Nextron Systems)"
+    license: DRL-1.1
+    relation: adapted
+logsource:
+  product: edr
+  service: telemetry
+window: 1d
+cadence_days: 1
+detection:
+  selection:
+    raw.category: AdvancedHunting-DeviceRegistryEvents
+    raw.properties.ActionType: RegistryValueSet
+    raw.properties.RegistryKey|contains: Windows Defender
+  # One block per condition on RegistryKey: a map holds a key once.
+  sel_exclusions:
+    raw.properties.RegistryKey|contains: Exclusions
+  condition: selection and sel_exclusions
+baseline:
+  first_seen: [device.uid, raw.properties.RegistryValueName]
+  lookback: 30d
+pivot: [device.hostname, device.uid, raw.properties.RegistryValueName, raw.properties.RegistryKey,
+        process.name, process.cmd_line, actor.user.name]
+triage: >
+  Is the excluded path a build or cache folder on a developer's machine, set by
+  the developer or by Intune? A user profile, Temp, Public or a whole drive,
+  on any machine, is the case.
+follow_up:
+  - What ran from the excluded path afterwards?
+  - Did a PowerShell command, a policy change or a script add it, and who ran it?
+sensitive: true

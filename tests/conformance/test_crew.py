@@ -567,6 +567,181 @@ def test_a_closure_the_weekly_recheck_disagrees_with_is_reopened(ctx, store, con
     assert "read 0" in recheck.run(ctx.db, store, tenant, config, client=client), "read once"
 
 
+def test_the_independent_reads_see_the_case_not_what_was_said_about_it(
+    ctx, store, config, case, uids
+):
+    """Shown the last run's verdict and people's messages, the reads copied them (RFC 0020)."""
+    from shoc.agents.openspace import Message, post
+
+    tenant, case_uid = config.tenant_id, case["case_uid"]
+    run_case(ctx.db, store, tenant, case_uid, client=crew(uids), config=config)
+    post(
+        ctx.db,
+        store,
+        tenant,
+        case_uid,
+        Message(
+            agent="human:ana", kind="inject", body="It was me, from the hotel.", principal="human"
+        ),
+    )
+    client = crew(uids)
+    run_case(ctx.db, store, tenant, case_uid, client=client, config=config)
+    reads = [c for c in client.calls if "Read this case on your own" in c]
+    assert reads, "a person's message within the hour still brings the crew back"
+    for prompt in reads:
+        assert "This case has been worked before" not in prompt
+        assert "It was me, from the hotel" not in prompt
+    first = next(c for c in client.calls if "Build the timeline" in c)
+    assert "This case has been worked before" in first and "It was me, from the hotel" in first
+
+
+def test_the_commanders_turn_is_counted_once(ctx, store, config, case, uids):
+    """Not once per proposal and again on the decision (OPS-1)."""
+    run_case(ctx.db, store, config.tenant_id, case["case_uid"], client=crew(uids), config=config)
+    said = transcript(ctx.db, config.tenant_id, case["case_uid"])
+    proposals = [m for m in said if m["kind"] == "proposal"]
+    decided = [m for m in said if m["agent"] == "IR Commander" and m["kind"] == "decision"]
+    assert proposals and all(m["tokens"] == 0 for m in proposals)
+    assert decided and decided[0]["tokens"] > 0
+
+
+def test_a_challenger_cites_only_what_the_case_showed_it(ctx, store, config, case, uids):
+    """An event elsewhere in the tenant would become citable on every later run (SEC-2)."""
+    from datetime import UTC, datetime
+
+    from shoc.ingest import batch, ocsf
+
+    row = ocsf.load_mapping("aws_cloudtrail").map_record(
+        {
+            "eventID": "elsewhere",
+            "eventTime": datetime.now(UTC).isoformat(),
+            "eventName": "ListBuckets",
+            "eventSource": "s3.amazonaws.com",
+            "sourceIPAddress": "198.51.100.21",
+            "userIdentity": {"type": "IAMUser", "userName": "someone-else"},
+        },
+        config.tenant_id,
+    )
+    batch.load(store, [row])
+    client = crew(uids, concede=False)
+    challenger = json.loads(client.replies["You are Challenger"])
+    client.replies["You are Challenger"] = json.dumps(
+        {**challenger, "citations": [*uids, row["event_uid"]]}
+    )
+    run_case(ctx.db, store, config.tenant_id, case["case_uid"], client=client, config=config)
+    argued = [
+        m
+        for m in transcript(ctx.db, config.tenant_id, case["case_uid"])
+        if m["agent"] == "Challenger"
+    ]
+    assert argued and set(argued[0]["cited_event_uids"]) <= set(uids)
+
+
+def test_a_case_past_its_lifetime_ceiling_goes_to_a_person(ctx, store, config, case, uids):
+    """One finding cost 3.7M tokens over four runs; a detection case has a ceiling too."""
+    from shoc.agents.loop import LIFETIME_RUNS
+    from shoc.agents.openspace import Budget
+
+    cap = LIFETIME_RUNS * Budget.for_severity(case["severity"]).max_tokens
+    ctx.db.execute(
+        "UPDATE shoc.cases SET tokens_used = %s WHERE tenant_id = %s AND case_uid = %s",
+        (cap, config.tenant_id, case["case_uid"]),
+    )
+    client = crew(uids)
+    report = run_case(
+        ctx.db, store, config.tenant_id, case["case_uid"], client=client, config=config
+    )
+    assert report.verdict == "needs_human"
+    assert report.stopped_because == "the case's token ceiling"
+    assert not client.calls, "no model is paid past it"
+
+
+def test_more_of_the_same_within_the_hour_waits_for_the_hour(ctx, store, config, case, uids):
+    """A campaign files a finding per rule window, and each one bought a full run.
+
+    The wait holds only for a run the sweep queued, and it does not count as a
+    failed attempt: a person's message in that hour is queued on the next sweep.
+    """
+    from shoc import worker
+    from shoc.agents.openspace import Message, post
+    from shoc.db.pool import execute
+
+    tenant, case_uid = config.tenant_id, case["case_uid"]
+    run_case(ctx.db, store, tenant, case_uid, client=crew(uids), config=config)
+    # The same rule and entity in a later window: a copy in the same window is the same finding.
+    ctx.db.execute(
+        """INSERT INTO shoc.findings
+               (finding_uid, tenant_id, rule_id, title, severity, entity_key, case_uid,
+                window_start, window_end, first_seen, last_seen, event_count, event_uids)
+           SELECT 'F-again', tenant_id, rule_id, title, severity, entity_key, case_uid,
+                  later, later + (window_end - window_start), first_seen, last_seen,
+                  event_count, event_uids
+           FROM (SELECT f.*, (SELECT max(o.window_end) + interval '1 minute'
+                              FROM shoc.findings o
+                              WHERE o.tenant_id = f.tenant_id AND o.rule_id = f.rule_id
+                                AND o.entity_key = f.entity_key) AS later
+                 FROM shoc.findings f WHERE f.tenant_id = %s AND f.case_uid = %s LIMIT 1) f""",
+        (tenant, case_uid),
+    )
+    jobs = "UPDATE shoc.jobs SET state = %s WHERE tenant_id = %s AND kind = 'case.investigate'"
+    provider = config.llm_provider
+    config.llm_provider = "openai"  # a crew to send; the sweep is a no-op without one
+    try:
+        execute(ctx.db, "DELETE FROM shoc.jobs WHERE tenant_id = %s", (tenant,))
+        assert "queued 1" in worker._sweep_cases(ctx)
+        execute(ctx.db, jobs, ("running", tenant))
+        client = crew(uids)
+        report = run_case(ctx.db, store, tenant, case_uid, client=client, config=config)
+        assert "within the hour" in report.stopped_because and not client.calls
+        execute(ctx.db, jobs, ("done", tenant))
+
+        post(
+            ctx.db,
+            store,
+            tenant,
+            case_uid,
+            Message(agent="human:ana", kind="inject", body="That was me.", principal="human"),
+        )
+        assert "queued 1" in worker._sweep_cases(ctx), "the skip backed nothing off"
+        execute(ctx.db, jobs, ("done", tenant))
+    finally:
+        config.llm_provider = provider
+
+    client = crew(uids)
+    run_case(ctx.db, store, tenant, case_uid, client=client, config=config)
+    assert client.calls, "a person who asks gets a run"
+    ctx.db.execute(
+        "UPDATE shoc.cases SET worked_at = now() - interval '2 hours' WHERE case_uid = %s",
+        (case_uid,),
+    )
+    execute(ctx.db, "DELETE FROM shoc.jobs WHERE tenant_id = %s", (tenant,))
+    client = crew(uids)
+    run_case(ctx.db, store, tenant, case_uid, client=client, config=config)
+    assert client.calls, "once the hour has passed, the crew reads it"
+
+
+def test_past_the_daily_spend_cap_a_low_case_goes_to_a_person(ctx, store, config, case, uids):
+    """Over `spend_usd_per_day` a low case is routed without a model call; medium runs."""
+    from shoc.agents import ops
+    from shoc.capabilities.registry import call
+
+    tenant, case_uid = config.tenant_id, case["case_uid"]
+    call("llm.configure", ctx, {"spend_usd_per_day": 1.0})
+    ops.record_spend(ctx.db, tenant, "claude-sonnet-5", 1_000_000, 0)
+    severity = "UPDATE shoc.cases SET severity = %s WHERE tenant_id = %s AND case_uid = %s"
+    ctx.db.execute(severity, ("low", tenant, case_uid))
+    client = crew(uids)
+    report = run_case(ctx.db, store, tenant, case_uid, client=client, config=config)
+    assert report.verdict == "needs_human"
+    assert report.stopped_because == "the daily model spend cap"
+    assert not client.calls, "no model is paid past the cap"
+
+    ctx.db.execute(severity, ("medium", tenant, case_uid))
+    client = crew(uids)
+    run_case(ctx.db, store, tenant, case_uid, client=client, config=config)
+    assert client.calls, "a medium case still runs"
+
+
 # -- budgets (AGT-1), the rebuttal (AGT-2), resuming a case (AGT-12) ---------
 @pytest.mark.parametrize(
     "budget, reason",
@@ -768,7 +943,10 @@ def test_cti_reading_a_report_asks_no_peer_and_is_told_what_the_company_runs(
     """The Surveyor call spent a report's budget; the profile is computed instead (RFC 0029)."""
     from shoc.agents import llm
     from shoc.capabilities.registry import call
+    from shoc.detect import osint
 
+    # Reading starts loading the warninglists; a test downloads nothing.
+    monkeypatch.setattr(osint, "load_soon", lambda key, wait=0.0: key in osint._LISTS)
     inner = _with_peers([])
     inner.replies["You are CTI"] = "{}"  # an empty reading is still a reading
     client = Curious(inner, {"CTI": "Surveyor"})

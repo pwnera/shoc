@@ -40,8 +40,10 @@ from shoc.agents.llm import ToolCall, ToolSpec
 # CTI writes nothing when it answers: a URL in a case's logs is the attacker's
 # to choose, and reading it from the case stored its values as indicators. A
 # report reaches CTI's reading through a feed, a person, or `queue_read` (DET-7).
+# The Commander proposes in its answer, never as a tool: the loop grounds each
+# target and carries its blast radius to the policy, and a tool call skipped both
+# (RFC 0020, D45).
 WRITES: dict[str, tuple[str, ...]] = {
-    "IR Commander": ("action.propose",),
     "Surveyor": ("graph.refresh",),
     "Detection Engineer": ("detection.merge", "detection.revert"),
     # Only on its backlog turn's list; triage is offered reads alone (RFC 0032).

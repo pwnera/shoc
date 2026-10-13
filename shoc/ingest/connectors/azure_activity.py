@@ -32,7 +32,7 @@ class AzureActivityConnector:
         if not subscription:
             raise ConfigError("azure_activity: settings need subscription_id")
         token = access_token(secret, SCOPE)
-        since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        since = since_default(cursor, settings, timedelta(0))
         until = settled(cursor, LAG)
         if utc(since) >= utc(until):
             return FetchResult(cursor={"since": since})

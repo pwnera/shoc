@@ -5,6 +5,9 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import uuid
+from datetime import UTC, datetime
+from types import SimpleNamespace
 from typing import Any
 from urllib.parse import urlencode
 
@@ -13,10 +16,13 @@ import pytest
 from shoc.api import ingest
 from shoc.errors import Denied, ValidationError
 from shoc.ingest import ocsf
+from shoc.ingest.connectors import github
 from shoc.ingest.connectors.github import from_webhook
 
-# A version-1 UUID, as GitHub hands out: made at 2014-04-24T01:47:52Z.
-DELIVERY = "72d3162e-cb52-11e3-8bc7-4c9367dc0958"
+# A version-1 UUID, as GitHub hands out, made now.
+DELIVERY = str(uuid.uuid1())
+# One made at 2014-04-24T01:47:52Z, long past GitHub's redelivery window.
+OLD = "72d3162e-cb52-11e3-8bc7-4c9367dc0958"
 
 
 def headers(event: str, **more: str) -> dict[str, str]:
@@ -44,13 +50,32 @@ def test_a_webhook_reads_as_the_audit_log_event_the_rules_know():
     assert row["actor_user_name"] == "mallory" and row["actor_user_uid"] == "4242"
     assert row["resource_uid"] == "acme/payments" and row["cloud_account_uid"] == "acme"
     assert row["event_uid"] == f"github-webhook-{DELIVERY}"
-    assert row["time"].startswith("2014-04-24T01:47:52")
+    received = datetime.fromisoformat(row["time"])
+    assert abs((datetime.now(UTC) - received).total_seconds()) < 60, "the time it arrived"
+    delivered_at = (uuid.UUID(DELIVERY).time - 0x01B21DD213814000) // 10_000
     assert record["webhook"] == {
         "event": "repository",
         "action": "publicized",
         "delivery": DELIVERY,
+        "delivered_at": delivered_at,
     }
     assert record["repository"]["private"] is False, "the whole payload is kept"
+
+
+def test_a_delivery_id_dated_outside_the_redelivery_window_is_refused(monkeypatch):
+    """The signature covers the body only: a captured body sent again under a
+    made-up id cannot choose its own time (ING-2)."""
+    body = json.dumps(publicized()).encode()
+    with pytest.raises(ValidationError, match="redelivery window"):
+        from_webhook({**headers("repository"), "x-github-delivery": OLD}, body)
+    ahead = str(uuid.uuid1())
+    hour_ago = datetime.now(UTC).timestamp() - 3600
+    monkeypatch.setattr(github, "time", SimpleNamespace(time=lambda: hour_ago))
+    with pytest.raises(ValidationError, match="redelivery window"):
+        from_webhook({**headers("repository"), "x-github-delivery": ahead}, body)
+    # An id of another form carries no time to check.
+    (record,) = from_webhook({**headers("repository"), "x-github-delivery": "d-1"}, body)
+    assert "delivered_at" not in record["webhook"]
 
 
 @pytest.mark.parametrize(
@@ -122,6 +147,16 @@ def test_a_field_the_payload_lacks_is_left_out_not_null():
     body = {"ref": "refs/heads/main", "base_ref": None, "sender": {"login": "a"}}
     (record,) = from_webhook(headers("push"), json.dumps(body).encode())
     assert "base_ref" not in record and None not in record.values()
+
+
+def test_a_push_names_its_default_branch_as_a_full_ref():
+    """github_force_push_to_default_branch compares the pushed ref to it (DET-2)."""
+    repo = {"full_name": "acme/payments", "default_branch": "trunk"}
+    body = {"ref": "refs/heads/trunk", "forced": True, "repository": repo}
+    (record,) = from_webhook(headers("push"), json.dumps(body).encode())
+    assert record["default_ref"] == "refs/heads/trunk"
+    (record,) = from_webhook(headers("repository"), json.dumps(publicized()).encode())
+    assert "default_ref" not in record
 
 
 def test_the_form_encoded_default_is_read_too():

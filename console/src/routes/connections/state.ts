@@ -26,6 +26,7 @@ export type View = (typeof VIEWS)[number];
  */
 const TONE: Record<string, StatusTone> = {
   failing: "bad",
+  partial: "warn",
   late: "warn",
   "no credential": "warn",
   waiting: "idle",
@@ -45,12 +46,15 @@ export function useSourceState() {
   );
   // Ops' `source.failing` alert, by configured source: the row reads failing and its dialog shows the detail.
   const alerts = useAlerts();
-  const failing = new Map(
-    (alerts.data?.alerts ?? [])
-      .filter((a) => a.kind === "source.failing")
-      .map((a) => [a.subject, a.detail]),
-  );
-  const state = (row: ConfiguredSource) => deliveryState(row, push, late, failing.has(row.source));
+  const of = (kind: string) =>
+    new Map((alerts.data?.alerts ?? []).filter((a) => a.kind === kind).map((a) => [a.subject, a.detail]));
+  const failing = of("source.failing");
+  // `source.partial`: some streams refused, the rest still read. Neither failing nor delivering; the detail names the setting.
+  const partial = of("source.partial");
+  const state = (row: ConfiguredSource) =>
+    row.enabled && partial.has(row.source) && !failing.has(row.source)
+      ? "partial"
+      : deliveryState(row, push, late, failing.has(row.source));
   const stale = [list, health].filter((q) => q.isRefetchError);
   const configured = [...(list.data?.configured ?? [])].sort(
     (a, b) => ORDER.indexOf(state(a)) - ORDER.indexOf(state(b)) || a.source.localeCompare(b.source),
@@ -61,7 +65,7 @@ export function useSourceState() {
     push,
     state,
     mode: (row: ConfiguredSource) => modeOf(row, push),
-    alert: (row: ConfiguredSource) => failing.get(row.source),
+    alert: (row: ConfiguredSource) => failing.get(row.source) ?? partial.get(row.source),
     configured,
     // The words wait for Ops too: a source.failing alert still on its way must not read as delivering.
     pending: list.isPending || health.isPending || alerts.isPending,

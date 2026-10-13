@@ -317,4 +317,56 @@ describe("the Connections screen", () => {
     show("/connections?credential=aws%3Aprod");
     expect(await screen.findByRole("dialog", { hidden: true })).toHaveTextContent("AWS");
   });
+
+  describe("with Ops alerts", () => {
+    const quiet = DATA["ops/alerts"];
+    const raise = (...alerts: { kind: string; subject: string; detail: string }[]) => {
+      DATA["ops/alerts"] = { alerts: alerts.map((a) => ({ ...a, severity: "medium" })), count: alerts.length };
+    };
+    afterEach(() => {
+      DATA["ops/alerts"] = quiet;
+    });
+
+    it("calls a source with some streams refused partial, neither failing nor delivering, and shows why", async () => {
+      raise({ kind: "source.partial", subject: "okta", detail: "some streams failed: system log 403; set streams to drop it" });
+      show("/connections?source=okta");
+      expect(await screen.findByText(/set streams to drop it/)).toBeInTheDocument();
+      const okta = [...document.querySelectorAll("tbody tr[data-row-key]")].find((r) => r.textContent?.includes("Okta"))!;
+      expect(okta.querySelector(".sh-status")).toHaveTextContent("partial");
+      expect(okta).not.toHaveTextContent("failing");
+      expect(okta).not.toHaveTextContent("delivering");
+      // A warning, in the dialog and in the strip, which counts it with late and failing.
+      expect(screen.getByText(/set streams to drop it/)).toHaveClass("text-warn");
+      expect(document.querySelector(".sh-strip__state")).toHaveTextContent("Partial");
+      const fact = [...document.querySelectorAll(".sh-strip__fact")].find((f) =>
+        f.textContent?.includes("partial"),
+      );
+      expect(fact?.querySelector(".sh-strip__value")).toHaveTextContent("1");
+      expect(fact?.querySelector(".sh-strip__value")).toHaveAttribute("data-tone", "warn");
+    });
+
+    it("marks a feed Ops says keeps nothing, and lists a built-in list that did not load", async () => {
+      const feeds = DATA["intel/list"];
+      DATA["intel/list"] = {
+        ...(feeds as object),
+        feeds: [{ feed: "threatfox", enabled: true, last_ok_at: at(2), last_error: null, indicators: 0 }],
+      };
+      raise(
+        { kind: "intel.feed_failing", subject: "threatfox", detail: "its pulls succeed and keep no indicator" },
+        { kind: "intel.list_failing", subject: "cloud:aws", detail: "not loaded: ConnectError: refused" },
+      );
+      try {
+        show("/connections?tab=intel");
+        const feed = await screen.findByText("ThreatFox");
+        expect(feed.closest("tr")).toHaveTextContent("failing");
+        const list = screen.getByText("cloud:aws");
+        expect(list.closest("tr")).toHaveTextContent("failing");
+        await userEvent.click(list);
+        expect(screen.getByTestId("here").textContent).toContain("list=cloud%3Aaws");
+        expect(await screen.findByLabelText("Detail")).toHaveTextContent("not loaded: ConnectError: refused");
+      } finally {
+        DATA["intel/list"] = feeds;
+      }
+    });
+  });
 });

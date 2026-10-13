@@ -154,6 +154,22 @@ the same story waiting together the better-scored one is read and the other is
 linked. After the fetch, the existing `raw_sha256` check still catches the same
 text under another URL.
 
+> Amended on 2026-10-12 (D225). Before either the three-word rule or the
+> two-CVE rule links two titles, they must share at least one word that names
+> something: a kit, a malware family, an actor or a CVE id. Product and
+> threat-class words from intake's `PRODUCTS` and `THREATS` tables, every word
+> inside those phrases, and common news words (exploited, zero-days, flaw,
+> patch, hits, phishing, 2FA, Microsoft, Windows and the like) do not count.
+> "account(s)" and "user(s)" are stop words.
+>
+> Also on 2026-10-12 (D219): in a digest, a domain or address the report names
+> only as the host of a URL or email is held back as derived from that host.
+> The model's list of values found holds at most 100 per type, from the
+> standalone extraction; the lines holding further values stay in the prose,
+> and `truncated` is set when the list exceeds a data block. Technique ids are
+> checked against `content/attack_platforms.json`, and those dropped are
+> listed under `extracted.unknown_techniques`.
+
 ### Triage, small model call
 
 For an item in the middle band, the cheap model (`llm_model_cheap`) is given the

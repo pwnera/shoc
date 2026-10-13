@@ -2,8 +2,8 @@
  * Connections: is every product delivering good data and can shoc act on it,
  * and what else should I connect? Everything shoc reaches out to has its one
  * home here (D124). The strip answers the first, per product as the list
- * counts them (delivering, late or failing, silent, the lowest quality, the
- * products shoc cannot act on); the tabs split the products (logs and
+ * counts them (delivering, late, partial or failing, silent, the lowest
+ * quality, the products shoc cannot act on); the tabs split the products (logs and
  * response side by side), the intel sources, the services shoc runs on, data
  * quality per product, and what shoc treats as its own. Every dialog lives in
  * the URL: `?vendor=&source=&credential=&view=` a product (`?source=` or
@@ -149,6 +149,8 @@ export function Connections() {
 
   const failing = n("failing");
   const late = n("late");
+  // Some streams refused: a warn word, as the row reads it.
+  const partial = n("partial");
   // A quiet push product and a low-volume one are not silent (`shownVolume`), so the strip agrees with the rows.
   const silenced = volume.data ? scored.filter((q) => volume.of(q.product)?.mark === "silent") : null;
   const silent = silenced ? silenced.length : null;
@@ -156,15 +158,17 @@ export function Connections() {
   const word =
     failing > 0
       ? { tone: "bad" as const, word: "Failing" }
-      : late > 0
-        ? { tone: "warn" as const, word: "Late" }
-        : silent
-          ? { tone: "warn" as const, word: "Silent" }
-          : configured.length
-            ? { tone: "good" as const, word: "Delivering" }
-            : all.length
-              ? { tone: "idle" as const, word: "No logs" }
-              : { tone: "idle" as const, word: "Nothing connected" };
+      : partial > 0
+        ? { tone: "warn" as const, word: "Partial" }
+        : late > 0
+          ? { tone: "warn" as const, word: "Late" }
+          : silent
+            ? { tone: "warn" as const, word: "Silent" }
+            : configured.length
+              ? { tone: "good" as const, word: "Delivering" }
+              : all.length
+                ? { tone: "idle" as const, word: "No logs" }
+                : { tone: "idle" as const, word: "Nothing connected" };
   const filterTo = (state: string) => ({
     onClick: () => {
       setOnly(only === state ? "" : state);
@@ -174,12 +178,12 @@ export function Connections() {
   });
   const facts: StripFact[] = [
     { label: "delivering", value: `${n("delivering")} of ${read.length}`, ...filterTo("delivering") },
-    // One fact for both, so the strip's five keep room for what shoc cannot act on.
+    // One fact for the three, so the strip's five keep room for what shoc cannot act on.
     {
-      label: "late or failing",
-      value: late + failing,
-      tone: failing ? "bad" : late ? "warn" : undefined,
-      ...filterTo("failing,late"),
+      label: "late, partial or failing",
+      value: late + partial + failing,
+      tone: failing ? "bad" : late || partial ? "warn" : undefined,
+      ...filterTo("failing,partial,late"),
     },
     {
       label: "silent",

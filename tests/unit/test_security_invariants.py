@@ -124,6 +124,17 @@ def test_every_action_capability_that_changes_something_is_audited():
     assert not by_name["action.list"].audit, "reading the list is not an event worth auditing"
 
 
+def test_no_crew_role_is_offered_a_response_capability():
+    """A role proposes in its answer, where the loop grounds the target and counts
+    the blast radius; a tool would skip both (RFC 0020, D45)."""
+    from shoc.agents import roles, tools
+
+    for role in roles.ALL.values():
+        offered = tools.allowed(role.tools, role.name)
+        writes = [c for c in offered if c.scope.startswith("actions:") and not tools.is_read(c)]
+        assert not [c.name for c in writes], role.name
+
+
 def test_the_registry_has_no_duplicate_surfaces():
     assert len({c.rest_path for c in CAPABILITIES}) == len(CAPABILITIES)
     assert len({c.mcp_name for c in CAPABILITIES}) == len(CAPABILITIES)

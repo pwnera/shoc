@@ -1,0 +1,82 @@
+[
+  {
+    "id": "en-ok-1",
+    "userPrincipalName": "jane@example.com",
+    "userId": "u-1",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "203.0.113.141",
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "status": {
+      "errorCode": 0
+    },
+    "correlationId": "c-en-ok-1",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-declined-1",
+    "userPrincipalName": "jane@example.com",
+    "userId": "u-1",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "203.0.113.141",
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "status": {
+      "errorCode": 500121,
+      "failureReason": "Authentication failed during strong authentication request.",
+      "additionalDetails": "MFA denied; user declined the authentication"
+    },
+    "correlationId": "c-en-declined-1",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-ok-2",
+    "userPrincipalName": "bob@example.com",
+    "userId": "u-2",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "203.0.113.142",
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "status": {
+      "errorCode": 0
+    },
+    "correlationId": "c-en-ok-2",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  },
+  {
+    "id": "en-fraud-2",
+    "userPrincipalName": "bob@example.com",
+    "userId": "u-2",
+    "appDisplayName": "OfficeHome",
+    "ipAddress": "203.0.113.142",
+    "location": {
+      "countryOrRegion": "US"
+    },
+    "status": {
+      "errorCode": 500121,
+      "failureReason": "Authentication failed during strong authentication request.",
+      "additionalDetails": "MFA denied; Fraud code entered"
+    },
+    "correlationId": "c-en-fraud-2",
+    "tenantId": "tid-1",
+    "signInEventTypes": [
+      "interactiveUser"
+    ],
+    "_stream": "signIns"
+  }
+]

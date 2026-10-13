@@ -26,4 +26,16 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // No screen renders HTML: log content and kernel prose are untrusted data (SEC-1).
+    // Tests may still read innerHTML to assert what is not drawn.
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        { selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']", message: "Render text, never HTML." },
+        { selector: "MemberExpression[property.name=/^(innerHTML|outerHTML)$/]", message: "Render text, never HTML." },
+      ],
+    },
+  },
 );

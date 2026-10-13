@@ -18,7 +18,8 @@ class LoadStats:
     rows: int = 0
     bytes: int = 0
     duration_ms: int = 0
-    table: str = "ocsf_events"
+    # Rows the store refused and left out, so the rest loaded (health.sources).
+    skipped: int = 0
 
 
 @dataclass
@@ -34,7 +35,6 @@ class StoreHealth:
 @dataclass
 class RetentionPolicy:
     days: int = 90
-    table: str = "ocsf_events"
 
 
 @dataclass
@@ -54,11 +54,11 @@ class EventStore(Protocol):
         """Create the tenant's namespace and OCSF tables. Idempotent."""
         ...
 
-    def migrate(self, ocsf_version: str = "1.3.0") -> None:
+    def migrate(self) -> None:
         """Bring the tenant's tables up to the current OCSF layout."""
         ...
 
-    def load_batch(self, path: str, table: str = "ocsf_events") -> LoadStats:
+    def load_batch(self, path: str) -> LoadStats:
         """Load a gzipped NDJSON batch. Duplicate event_uids are ignored."""
         ...
 

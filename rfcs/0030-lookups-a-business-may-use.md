@@ -122,6 +122,22 @@ never matched by its host against a warninglist.
 Each list's host is named in `deploy/.env.example` and in the worker's log line
 on the first refresh (D57).
 
+> Amended on 2026-10-12 (D217, D222). When the default feeds are on, a report
+> read (`intel.digest`), `intel.add` and the worker's report queue start a
+> background load of the warninglists and IANA's RDAP bootstrap in the process
+> that serves them, which is how `shoc serve` gets them, and wait a few
+> seconds; the report queue waits up to 60 seconds. A load that failed is not
+> tried again for 15 minutes. Until the lists load, a non-human `intel.add`
+> refuses an address, domain or hash, and a non-human digest holds them back as
+> "warninglists not loaded"; a person's add or digest is never held for this.
+> With SHOC_INTEL_FEEDS=off nothing loads and
+> nothing is held back for want of a list, except that an indicator pull from
+> a feed configured explicitly (OTX, MISP, a list) starts the warninglist load,
+> one more outbound host. The known-benign check itself still never downloads.
+> Every polled feed holds a value that is the company's own or on a
+> warninglist the worker already holds, and a held value is deleted from that
+> feed's stored indicators on the next pull.
+
 ### Fixes
 
 - **abuse.ch.** ThreatFox and URLhaus lookups, and a new MalwareBazaar lookup
@@ -134,6 +150,17 @@ on the first refresh (D57).
 - **RDAP.** Only a `registration` event is a registration date. Lookups go to the
   registry named in the IANA bootstrap files instead of rdap.org, and a domain's
   answer is cached for 7 days.
+
+> Amended on 2026-10-12 (D218, D262). A URL is sent to third parties, and
+> cached, as scheme://host/path only, with no user, query or fragment. Values
+> `intel.ours()` holds (the company's operator and automation domains, shoc's
+> egress addresses) are answered from local sources only, like internal values.
+> `resolve` runs for domains only. `history` and `hunt.run` search every column
+> the matcher reads (source and destination address and domain, DNS query, HTTP
+> URL, file and process SHA-256), and an email as the actor. A lookup is cached
+> only when every source asked answered, so a source that failed is asked again
+> next time instead of being hidden for the 12-hour TTL. A value marked TLP
+> amber, amber+strict or red is never sent to a third-party lookup.
 
 ### Keyed sources
 
@@ -223,7 +250,13 @@ domain behind "known benign", and a poisoned DROP list could mark a benign
 address malicious. Each list is fetched over HTTPS from its publisher, and a
 list that halves or grows by half in one refresh, or fails to download, is kept
 at the previous copy; the worker logs it and the next intel job names it in its
-result.
+result. Since 2026-10-12 (D220), when every download for two of the list's
+TTLs stays within half and one and a half times the first refused size, that
+size is taken as the list's own, with a warning naming the old and new sizes;
+a download off that size, or an empty one, starts the count again. The cloud
+and CDN ranges are kept and checked per provider (`cloud:aws`, `cloud:azure`
+and the rest), so one provider failing keeps its last copy, and a provider
+missing from the first load is taken when it next answers.
 
 ## Unresolved questions
 

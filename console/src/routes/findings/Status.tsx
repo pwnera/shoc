@@ -1,5 +1,6 @@
 /**
- * A finding's status as a segmented control. New and triage apply at once;
+ * A finding's status as a segmented control: arrow keys move, Enter, Space or
+ * a click picks (an audited write). New and triage apply at once;
  * closed and "rule was wrong", and any change away from a status the console
  * cannot set back (shoc's own, suppressed), confirm first with an optional
  * note for the audit log. Those two lead the control as its checked segment,
@@ -79,6 +80,7 @@ export const FindingStatus = forwardRef<HTMLSpanElement, { uid: string; status: 
           Not disabled: a disabled checked segment would leave the group no tab stop. */}
       <Seg<string>
         label="Status"
+        manual
         value={value}
         options={settable(value) ? OPTIONS : [{ value, label: findingStatus(value) }, ...OPTIONS]}
         onChange={(v) => settable(v) && pick(v)}

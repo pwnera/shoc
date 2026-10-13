@@ -1,0 +1,39 @@
+[
+  {
+    "_source": "defender",
+    "id": "da-mdca-travel-1",
+    "severity": "medium",
+    "title": "Impossible travel activity",
+    "category": "InitialAccess",
+    "serviceSource": "microsoftDefenderForCloudApps",
+    "detectionSource": "microsoftDefenderForCloudApps",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "jane@example.com",
+          "azureAdUserId": "00000000-0000-0000-0000-00000000aa01"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.ipEvidence",
+        "ipAddress": "203.0.113.81"
+      }
+    ]
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "idp:alert-43",
+    "type": "idp-user-endpoint-app-access",
+    "product": "idp",
+    "severity": 50,
+    "tactic": "Discovery",
+    "description": "Account enumerated the domain's groups",
+    "device": {
+      "device_id": "5d40e8a1c7f2",
+      "hostname": "laptop-43"
+    },
+    "user_name": "mia"
+  }
+]

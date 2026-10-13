@@ -5,10 +5,10 @@ description: >
   Microsoft 365 administrator, was given an Exchange or Purview role, or a
   guest became a member. The account that
   received the role is what an attacker gains, so its sessions are revoked, and
-  the admin who granted it is signed out too: both are reversible. Suspending
-  the grantee waits for a human. The Commander can take the role back with
-  `okta.remove_admin_role` or `entra.remove_admin_role`, using the assignment
-  id `okta.get_user` or `entra.get_user` returns.
+  the admin who granted it is signed out too: both are reversible. The Okta or
+  Entra ID role is taken back when it is the only one the grantee was given
+  this week, and given back on undo; with several, the Commander picks one from
+  `okta.get_user` or `entra.get_user`. Suspending the grantee waits for a human.
 rules:
   - okta_admin_privilege_granted
   - entra_admin_role_assigned
@@ -34,27 +34,59 @@ trigger:
   severity_at_least: high
   min_confidence: 0.8
 steps:
-  # The grantee is the event's target, which the mappings put in `resource`.
+  # The grantee is the event's target, which the mappings put in `resource`. An
+  # Exchange role's target is the role group, so that rule names no grantee.
   - name: revoke the grantee's sessions in Okta
     action: okta.revoke_sessions
     optional: true
     params:
-      user: "{{ entity.resource }}"
+      user: "{{ rule.okta_admin_privilege_granted.resource }}"
   - name: revoke the grantee's sessions in Entra ID
     action: entra.revoke_sessions
     optional: true
     params:
-      user: "{{ entity.resource }}"
+      user: "{{ rule.entra_admin_role_assigned.resource }}"
+  - name: revoke the Microsoft 365 grantee's sessions in Entra ID
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ rule.m365_global_admin_assigned.resource }}"
+  - name: revoke the promoted guest's sessions in Entra ID
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ rule.entra_guest_promoted_to_member.resource }}"
   - name: revoke the granting admin's sessions in Okta
     action: okta.revoke_sessions
     optional: true
     params:
-      user: "{{ entity.user }}"
+      user: "{{ platform.okta.user }}"
   - name: revoke the granting admin's sessions in Entra ID
     action: entra.revoke_sessions
     optional: true
     params:
-      user: "{{ entity.user }}"
+      user: "{{ platform.entra.user }}"
+  - name: revoke the Microsoft 365 granting admin's sessions in Entra ID
+    action: entra.revoke_sessions
+    optional: true
+    params:
+      user: "{{ platform.m365.user }}"
+  # The role given this week, which the lookup names, or nothing (ir-7).
+  - name: take the role back in Okta
+    action: okta.remove_admin_role
+    optional: true
+    params:
+      user: "{{ rule.okta_admin_privilege_granted.resource }}"
+  - name: take the role back in Entra ID
+    action: entra.remove_admin_role
+    optional: true
+    params:
+      user: "{{ rule.entra_admin_role_assigned.resource }}"
+  - name: take the role back from the Microsoft 365 grantee in Entra ID
+    action: entra.remove_admin_role
+    optional: true
+    params:
+      user: "{{ rule.m365_global_admin_assigned.resource }}"
   - name: page the on-call engineer
     action: notify.page
     params:
@@ -65,9 +97,19 @@ steps:
     action: okta.suspend_user
     optional: true
     params:
-      user: "{{ entity.resource }}"
+      user: "{{ rule.okta_admin_privilege_granted.resource }}"
   - name: suspend the grantee in Entra ID
     action: entra.suspend_user
     optional: true
     params:
-      user: "{{ entity.resource }}"
+      user: "{{ rule.entra_admin_role_assigned.resource }}"
+  - name: suspend the Microsoft 365 grantee in Entra ID
+    action: entra.suspend_user
+    optional: true
+    params:
+      user: "{{ rule.m365_global_admin_assigned.resource }}"
+  - name: suspend the promoted guest in Entra ID
+    action: entra.suspend_user
+    optional: true
+    params:
+      user: "{{ rule.entra_guest_promoted_to_member.resource }}"

@@ -6,7 +6,7 @@ import { TokenGate } from "./components/TokenGate";
 import { NotFound } from "./components/ErrorBoundary";
 import { Announcer } from "./components/ui/misc";
 import { PageSkeleton } from "./components/ui/state";
-import { ApiError } from "./lib/api";
+import { retryable } from "./lib/api";
 import { lazyNamed } from "./lib/stale";
 
 /*
@@ -37,9 +37,7 @@ const client = new QueryClient({
     queries: {
       // The stream refreshes what changes, so a minute-old answer on focus or mount is still current.
       staleTime: 60_000,
-      retry: (failureCount, error) =>
-        // A refusal (signed out, a missing record, a bad field) will be refused again; anything else gets two tries.
-        error instanceof ApiError && (error.isAuth || (error.status >= 400 && error.status < 500)) ? false : failureCount < 2,
+      retry: retryable,
     },
   },
 });

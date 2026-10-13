@@ -70,6 +70,17 @@ export const ACTIONS: Record<string, string> = {
   "tailscale.deauthorize_device": "Remove Tailscale device",
   "tailscale.revoke_key": "Revoke Tailscale key",
   "tailscale.suspend_user": "Suspend Tailscale user",
+  "aws.revoke_sessions": "Revoke AWS sessions",
+  "aws.start_cloudtrail_logging": "Turn CloudTrail back on",
+  "aws.block_s3_public_access": "Block public S3 access",
+  "aws.cancel_key_deletion": "Cancel KMS key deletion",
+  "aws.enable_guardduty": "Turn GuardDuty back on",
+  "aws.start_config_recorder": "Turn AWS Config back on",
+  "aws.unshare_snapshot": "Unshare AWS snapshot",
+  "m365.revoke_sessions": "Sign M365 user out",
+  "google.disable_mail_forwarding": "Turn off Gmail forwarding",
+  "openai.limit_project": "Throttle OpenAI project",
+  "tailscale.enable_key_expiry": "Turn Tailscale key expiry on",
 };
 
 export function actionLabel(type: string): string {
@@ -139,7 +150,30 @@ export const CASE_STATES: CaseState[] = [
   "closed",
 ];
 
-export const caseStateLabel = (state: CaseState | string) => state.replace(/_/g, " ");
+/** Plain words for the NIST 800-61 phases (RSP-1); the API and docs keep the ids. */
+const CASE_STATE_LABELS: Record<CaseState, string> = {
+  triage: "sorting",
+  analysis: "investigating",
+  containment: "containing",
+  eradication: "removing",
+  recovery: "restoring",
+  post_incident: "lessons",
+  closed: "closed",
+};
+
+export const caseStateLabel = (state: CaseState | string) =>
+  CASE_STATE_LABELS[state as CaseState] ?? state.replace(/_/g, " ");
+
+/** What each phase is for, in the stepper's tips; a move only records the phase, nothing runs on it. */
+export const CASE_STATE_TIPS: Record<CaseState, string> = {
+  triage: "Is it real?",
+  analysis: "What happened, and how far",
+  containment: "Stop it spreading",
+  eradication: "Get the attacker out",
+  recovery: "Back to normal",
+  post_incident: "What to change",
+  closed: "Decided",
+};
 
 /** Plain words for the dispositions a person closes a case with. */
 export const DISPOSITIONS = {

@@ -7,8 +7,8 @@ description: >
   expected; one from the admin console is worth a look.
 status: stable
 date: 2026-10-02
-modified: 2026-10-02
-severity: medium
+modified: 2026-10-12
+severity: low
 confidence: 0.5
 attack: [T1562.007, T1098]
 logsource:

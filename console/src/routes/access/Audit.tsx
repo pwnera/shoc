@@ -202,7 +202,7 @@ export function Audit() {
     match: (r, text) => `${r.capability} ${r.principal_id} ${r.error ?? ""}`.toLowerCase().includes(text),
   });
   const kept = rows.filter(filters.keep);
-  const broken = audit.data && !audit.data.chain_ok;
+  const broken = audit.data?.checked && !audit.data.chain_ok;
   return (
     <>
       {broken ? (

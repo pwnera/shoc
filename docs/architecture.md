@@ -91,7 +91,7 @@ L5 Agents       openspace (record) · world graph · memory · 10 crew roles and
       │ proposal → policy → action
 L6 Cases        case engine (NIST 800-61 states) · playbook runner (step state machine on jobs table: timers, approvals, idempotency keys) · autonomy policy (YAML) · action connectors, one per vendor (AWS, Azure, GCP, GitHub, GitLab, Google, M365, Entra, Okta, CrowdStrike, Defender, SentinelOne, Wazuh, Cloudflare, Tailscale, Stripe, OpenAI, Anthropic, PagerDuty)
       │ notify / escalate / inject
-L7 Out          event stream · ask · openspace.post (inject) / memory.add_fact · Slack (subscriber + approval callback) · paging (PagerDuty Events API)
+L7 Out          event stream · ask · openspace.post (inject) / memory.add_fact · Slack (subscriber + approval callback) · paging (PagerDuty Events API, mail when the pager did not take it)
 ```
 
 **Postgres holds everything** except events in warehouse mode: tenants, users, config, connector secrets (encrypted with a master key; KMS in SaaS), cursors, jobs, schedules, locks, openspaces, cases, playbook runs, world graph and memory (full-text search), health metrics, the audit log, when the store last took a batch, and events in Postgres mode.
@@ -99,7 +99,13 @@ L7 Out          event stream · ask · openspace.post (inject) / memory.add_fact
 **Process roles, same image:**
 
 - `shoc serve`: REST, MCP, event stream, ingest endpoint, Slack callbacks
-- `shoc worker`: connectors, detections, agents, playbooks, MCO. Scale by running more workers; jobs are claimed with `SELECT … FOR UPDATE SKIP LOCKED`, wakeups via `LISTEN/NOTIFY`, cron leadership via advisory locks.
+- `shoc worker`: connectors, detections, agents, playbooks, MCO. Scale by running more workers; jobs are claimed with `SELECT … FOR UPDATE SKIP LOCKED`, urgent tiers first, wakeups via `LISTEN/NOTIFY`, cron leadership via advisory locks. `shoc worker --urgent` claims only pages, actions, deliveries, detection, syncs, playbooks and high or critical investigations, and `shoc worker --once` runs up to four due jobs and exits.
+
+A capability runs inside a `Context`, which opens the tenant's event store when
+first asked for it. The surface that created the `Context` closes that store at
+the end of each REST, MCP or Slack request and each worker job. `serve` and the
+worker both refuse to start when `SHOC_MASTER_KEY` does not match the
+fingerprint `shoc migrate` recorded for the audit log.
 
 **MCO built in:** source freshness and volume drift, rule health, backend cost, agent eval drift, LLM spend, exposed as `health.*` capabilities and events, plus a `/metrics` text endpoint.
 
@@ -138,7 +144,7 @@ Example (CASE-1042, leaked AWS key):
 
 **Memory (all Postgres rows, full-text search; no graph DB, no vector DB)**
 
-- World graph: users, groups, roles, assets, repos, SaaS apps and their edges; built at onboarding, refreshed nightly. Graph walks capped at 3–4 hops in SQL.
+- World graph: users, groups, roles, assets, repos, SaaS apps and their edges; built at onboarding, refreshed nightly. Graph walks capped at 3–4 hops in SQL. Each refresh replaces the tenant's graph in one transaction, so a node's or edge's `first_seen` and `last_seen` describe the last refresh's window, and nothing outside that window survives a refresh. An account is a node, never an edge (AGT-4).
 - Episodic: past cases, verdicts and human corrections.
 - Semantic: tenant facts with an expiry ("VPN pool is 10.8.0.0/16").
 
@@ -153,7 +159,7 @@ Example (CASE-1042, leaked AWS key):
 
 ## 5. The crew
 
-Ten roles and the Integrator. Every role uses a model, and the Integrator is code (D74); where an answer must be identical each time it is asked, that answer stays a query and the model sits above it (RFC 0012, superseding D29 and D32).
+Ten roles and the Integrator. Every role uses a model. The Integrator is code (D74) except its repair step, which sends the model up to five recent vendor records when a vendor's format breaks a mapping; where an answer must be identical each time it is asked, that answer stays a query and the model sits above it (RFC 0012, superseding D29 and D32).
 
 | Agent | Trigger | Posts / produces | Autonomy |
 | --- | --- | --- | --- |
@@ -166,7 +172,7 @@ Ten roles and the Integrator. Every role uses a model, and the Integrator is cod
 | Surveyor | Daily, and on every call about an address, host or identity | Posture, asset identity, resolved identities, coverage gaps | L0 |
 | Detection Engineer | Daily backlog run | Rules it authors, merges, narrows and reverts | merges into `shoc.merged_rules` (D55) |
 | Ops | Continuously | Retries, the exact fix, what the SOC cannot see, the budget | L0 |
-| Integrator (code, D74) | Daily per source, until that source produces a finding | Scopes and click paths, proof a source works, and field paths moved when a vendor changes shape | L0 (+ `mapping.write`) |
+| Integrator (code, D74; repair asks the model) | Daily per source, until that source produces a finding | Scopes and click paths, proof a source works, and field paths moved when a vendor changes shape | L0 (+ `mapping.write`) |
 | Manager | On every notice, on every `ask`, weekly, monthly | The only page and the only Slack message the operator gets, answers to `ask`, the weekly, the founder's page (RFC 0015) | L0 (+ `notify.page`) |
 
 L0 = reads and proposes · L1 = the playbook runner, the only thing that acts · L2 = a human approves in Slack or another client. Evidence preservation and forensic collection are the two L1 action classes an agent may cause without approval; both only read, and both are typed, catalogued and audited.
@@ -207,8 +213,8 @@ class EventStore(Protocol):
     tenant_id: str
 
     def create_tenant(self) -> None: ...
-    def migrate(self, ocsf_version) -> None: ...
-    def load_batch(self, path, table) -> LoadStats: ...
+    def migrate(self) -> None: ...
+    def load_batch(self, path) -> LoadStats: ...
     def query(self, canonical_sql, params, limit) -> QueryResult: ...
     def apply_retention(self, policy) -> int: ...
     def reset(self) -> None: ...
@@ -225,6 +231,24 @@ class EventStore(Protocol):
 | Snowflake | Customers already on Snowflake | Database per tenant | PUT to stage, COPY INTO a temporary table, insert-only MERGE |
 | Amazon Redshift | Customers already on Redshift | Schema per tenant | PUT to an S3 prefix, COPY into a temporary table, insert what the table lacks |
 | Google BigQuery | Customers already on BigQuery | Dataset per tenant | Load job into a staging table, insert-only MERGE |
+
+Every adapter's `load_batch` refuses a batch in which any row's `tenant_id` is
+not the store's (the conformance check `a_batch_for_another_tenant_is_refused`).
+The check that one tenant cannot read another's rows runs on Postgres only
+(`tests/conformance/test_store_isolation.py`); each warehouse keeps a tenant
+in its own catalog, database, schema or dataset. Snowflake's events table has no
+clustering key.
+
+On Postgres the events table is partitioned by month. Daily retention creates
+this month's and next month's partitions ahead of time and drops whole months
+past the cutoff, and partition DDL waits at most 5 seconds for its lock. A load
+that cannot make its month's partition, or that carries a month older than every
+kept month, writes those rows to the default partition, which retention deletes
+past the cutoff; a month that has rows there is never partitioned later. A batch
+in which more than half the rows are refused fails the load; fewer refused rows
+are left out and logged with their `event_uid`. The indexes are `ocsf_time`,
+`ocsf_actor`, `ocsf_src` and `ocsf_ingested`; `ocsf_api` is no longer created
+and is dropped on migrate.
 
 Only Postgres has passed the conformance suite; [deploy.md](deploy.md#backends) says how far each other backend has been run. Redshift and BigQuery need no extra: Redshift speaks the Postgres protocol, so `psycopg` connects to it and S3 is one SigV4-signed request; BigQuery is its REST API over `httpx`, signed in as a service account with `pyjwt` (D131).
 

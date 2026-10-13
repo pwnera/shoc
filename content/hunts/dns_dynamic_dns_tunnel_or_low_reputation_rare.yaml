@@ -45,6 +45,7 @@ baseline:
     by: [query.hostname]
     among: device.uid
     seen_by_fewer_than: 2
+    new_only: true
   lookback: 30d
 pivot: [query.hostname, device.hostname, device.uid, actor.user.name]
 triage: >

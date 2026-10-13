@@ -303,6 +303,17 @@
       "accountId": "123456789012",
       "userName": "deploy-ci",
       "accessKeyId": "AKIAIOSFODNN7EXAMPLE"
+    },
+    "requestParameters": {
+      "userName": "deploy-ci"
+    },
+    "responseElements": {
+      "accessKey": {
+        "accessKeyId": "AKIAI44QH8DHBEXAMPLE",
+        "userName": "deploy-ci",
+        "status": "Active",
+        "createDate": "Jan 1, 2026 2:14:00 AM"
+      }
     }
   },
   {

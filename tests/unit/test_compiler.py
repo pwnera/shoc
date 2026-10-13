@@ -7,7 +7,7 @@ import pytest
 
 from shoc.detect import rules as ruleset
 from shoc.detect.compiler import compile_rule, evidence_sql, page_sql
-from shoc.errors import ConfigError
+from shoc.errors import ConfigError, StoreError
 from shoc.store.sql import translate
 
 
@@ -83,7 +83,7 @@ def test_unknown_block_in_condition_is_rejected():
         compile_rule(make({"selection": {"status": "x"}, "condition": "selection and missing"}))
 
 
-@pytest.mark.parametrize("dialect", ["postgres", "databricks", "snowflake"])
+@pytest.mark.parametrize("dialect", ["postgres", "databricks", "snowflake", "redshift", "bigquery"])
 def test_every_shipped_rule_translates_to_every_dialect(dialect):
     for rule in ruleset.load():
         compiled = compile_rule(rule)
@@ -121,6 +121,8 @@ def test_a_cycle_finds_its_buckets_by_ingestion_time():
         ("postgres", "DATE_PART('epoch', time)"),
         ("databricks", "UNIX_TIMESTAMP(time)"),
         ("snowflake", "EXTRACT(epoch_second FROM time)"),
+        ("redshift", "DATE_PART('epoch', time)"),
+        ("bigquery", "UNIX_SECONDS(time)"),
     ):
         assert epoch in translate(c.buckets_sql, dialect)
 
@@ -333,7 +335,9 @@ def test_a_path_that_could_escape_the_literal_is_not_a_field():
 
 
 # -- RFC 0023: the format additions -----------------------------------------
-DIALECTS = ("postgres", "databricks", "snowflake")
+# Each assert on one dialect's text pins what SQLGlot writes for it: a new major
+# can change it, and only Postgres runs the rule fixtures in CI (STO-1).
+DIALECTS = ("postgres", "databricks", "snowflake", "redshift", "bigquery")
 
 
 def _everywhere(compiled) -> dict[str, str]:
@@ -362,8 +366,13 @@ def test_like_values_are_matched_literally_with_one_escape_on_every_dialect():
     assert c.params["p1"] == "%c:\\users\\public\\x!_1!%!!.exe%"
     assert c.params["p2"] == "a!_b%" and c.params["p3"] == "%!%"
     assert c.where.count("ESCAPE '!'") == 3
-    for sql in _everywhere(c).values():
-        assert sql.count("ESCAPE '!'") >= 3
+    out = _everywhere(c)
+    for d, sql in out.items():
+        if d != "bigquery":
+            assert sql.count("ESCAPE '!'") >= 3, d
+    # BigQuery's LIKE has no ESCAPE: the pattern's escapes are rewritten to backslashes.
+    assert "ESCAPE" not in out["bigquery"]
+    assert r"REPLACE(@p1, '\\', '\\\\')" in out["bigquery"]
 
 
 def test_a_boolean_on_a_source_path_is_compared_as_json_text():
@@ -431,8 +440,10 @@ def test_a_sequence_is_an_exists_over_an_earlier_event_with_the_same_key():
     # A `first` delivered late lists the bucket of the `then` it pairs with.
     assert "UNION SELECT DISTINCT FLOOR(TIME_TO_UNIX(e.time) / 900) AS bucket" in c.buckets_sql
     assert "f.ingested_at >= :ingested_from" in c.buckets_sql
-    for d, sql in _everywhere(c).items():
+    out = _everywhere(c)
+    for d, sql in out.items():
         assert "EXISTS" in sql and "UNION" in sql, d
+    assert "f.time >= e.time - INTERVAL 3600 SECOND" in out["bigquery"]
 
 
 @pytest.mark.parametrize(
@@ -537,6 +548,8 @@ def test_cidr_compiles_to_an_anchored_regex_on_every_dialect():
     out = _everywhere(c)
     assert "LOWER(src_endpoint_ip) ~ %(p1)s" in out["postgres"]
     assert "REGEXP_INSTR(LOWER(src_endpoint_ip), :p1) > 0" in out["snowflake"]
+    assert "LOWER(src_endpoint_ip) ~ %(p1)s" in out["redshift"]
+    assert "REGEXP_CONTAINS(LOWER(src_endpoint_ip), @p1)" in out["bigquery"]
 
 
 def test_snowflake_searches_with_re_like_the_other_dialects():
@@ -695,6 +708,30 @@ def test_a_json_list_or_object_is_read_as_its_json_text_on_every_dialect():
     assert "JSONB_EXTRACT_PATH_TEXT(raw, 'rule', 'groups')" in out["postgres"]
     assert "raw:rule.groups" in out["databricks"]
     assert "JSON_EXTRACT_PATH_TEXT(raw, 'rule.groups')" in out["snowflake"]
+    # RAW is a reserved word on Redshift: unquoted, the statement does not parse there.
+    assert """JSON_EXTRACT_PATH_TEXT("raw", 'rule', 'groups', TRUE)""" in out["redshift"]
+    # BigQuery's JSON_EXTRACT_SCALAR alone reads an object or array as NULL.
+    groups = (
+        "CASE WHEN JSON_TYPE(JSON_EXTRACT(raw, '$.rule.groups')) IN ('object', 'array') "
+        "THEN TO_JSON_STRING(JSON_EXTRACT(raw, '$.rule.groups')) "
+        "ELSE JSON_EXTRACT_SCALAR(raw, '$.rule.groups') END"
+    )
+    assert groups in out["bigquery"]
+    assert "LOWER(" + groups + ") LIKE" in out["bigquery"]
+    assert "CASE WHEN JSON_TYPE(JSON_EXTRACT(raw, '$.rule'))" in out["bigquery"]
+    assert out["bigquery"].count("JSON_EXTRACT_SCALAR") == out["bigquery"].count("JSON_TYPE(")
+
+
+def test_an_array_element_path_translates_or_fails_cleanly_on_every_dialect():
+    """`raw.Records.0.x` passes the path guard today: each dialect either indexes
+    element 0 or refuses it with a clean error, never a silently different path."""
+    c = compile_rule(make({"s": {"raw.Records.0.x": "y"}, "condition": "s"}))
+    for d in DIALECTS:
+        try:
+            sql = translate(c.select_sql, d)
+        except (ConfigError, StoreError):
+            continue
+        assert re.search(r"\[0\]|'0'|\.0\b", sql), (d, sql)
 
 
 def test_a_source_path_with_a_hyphen_is_quoted_on_every_dialect():
@@ -711,6 +748,24 @@ def test_a_source_path_with_a_hyphen_is_quoted_on_every_dialect():
     assert "JSONB_EXTRACT_PATH_TEXT(raw, 'requestParameters', 'x-amz-acl')" in out["postgres"]
     assert 'raw:requestParameters["x-amz-acl"]' in out["databricks"]
     assert """JSON_EXTRACT_PATH_TEXT(raw, 'requestParameters["x-amz-acl"]')""" in out["snowflake"]
+    assert (
+        """JSON_EXTRACT_PATH_TEXT("raw", 'requestParameters', 'x-amz-acl', TRUE)"""
+        in out["redshift"]
+    )
+    assert r"JSON_EXTRACT_SCALAR(raw, '$.requestParameters[\'x-amz-acl\']')" in out["bigquery"]
+    assert r"JSON_EXTRACT(raw, '$.requestParameters[\'x-amz-acl\']'))" in out["bigquery"]
+    # The WHERE clause's LIKE, not only the SELECT list, reads the rewritten path.
+    like = r"LOWER(CASE WHEN JSON_TYPE(JSON_EXTRACT(raw, '$.requestParameters[\'x-amz-acl\']'))"
+    assert like in out["bigquery"]
+    assert out["bigquery"].count("JSON_EXTRACT_SCALAR") == out["bigquery"].count("JSON_TYPE(")
+
+
+def test_contains_on_a_json_list_reads_its_json_text_on_bigquery():
+    """A LIKE is rebuilt for BigQuery's escapes; the path inside it is rewritten too (wh-3)."""
+    c = compile_rule(make({"a": {"raw.rule.groups|contains": "admins"}, "condition": "a"}))
+    out = _everywhere(c)
+    assert "LOWER(CASE WHEN JSON_TYPE(JSON_EXTRACT(raw, '$.rule.groups'))" in out["bigquery"]
+    assert out["bigquery"].count("JSON_EXTRACT_SCALAR") == out["bigquery"].count("JSON_TYPE(")
 
 
 def test_a_databricks_json_path_is_not_read_as_a_parameter():
@@ -722,6 +777,17 @@ def test_a_databricks_json_path_is_not_read_as_a_parameter():
     assert "raw:rule.groups" in sql and len(args) == sql.count("?")
     pg, _ = prepare("SELECT x::text FROM ocsf_events WHERE a = :tenant_id", params, "postgres")
     assert "%(tenant_id)s" in pg
+
+
+@pytest.mark.parametrize("dialect", DIALECTS)
+def test_a_missing_parameter_is_refused_before_the_store_on_every_dialect(dialect):
+    from shoc.store.sql import prepare
+
+    sql = "SELECT 1 FROM ocsf_events WHERE tenant_id = :tenant_id AND a LIKE '%@example.com'"
+    with pytest.raises(StoreError, match="missing query parameter"):
+        prepare(sql, {}, dialect)
+    _, args = prepare(sql, {"tenant_id": "t", "unused": 1}, dialect)
+    assert "t" in (args.values() if isinstance(args, dict) else args)
 
 
 def test_hunt_rare_takes_a_floor_as_well_as_a_ceiling():
@@ -747,3 +813,40 @@ def test_hunt_rare_takes_a_floor_as_well_as_a_ceiling():
     )
     sql = compile_pack(pack).select_sql
     assert "HAVING COUNT(DISTINCT src_endpoint_ip) >= 2 AND MAX(ingested_at)" in sql
+
+
+def test_hunt_rare_reads_new_groupings_rarest_first_with_their_pivots():
+    """DET-8: a rare row carries the pivots it does not group on, cites an event
+    from the window, and with `new_only` comes back only the window it appears."""
+    from shoc.detect import hunts
+    from shoc.detect.compiler import compile_pack
+
+    def sql(new_only: bool) -> str:
+        pack = hunts.from_dict(
+            {
+                "id": "h",
+                "title": "t",
+                "hypothesis": "x",
+                "triage": "y",
+                "pivot": ["device.hostname", "process.name"],
+                "detection": {"s": {"status": "Success"}, "condition": "s"},
+                "baseline": {
+                    "rare": {
+                        "by": ["process.name"],
+                        "among": "device.uid",
+                        "seen_by_fewer_than": 2,
+                        "new_only": new_only,
+                    }
+                },
+            }
+        )
+        return compile_pack(pack).select_sql
+
+    rare = sql(True)
+    assert "MIN(device_hostname) AS device_hostname, MAX(device_hostname) AS dev" in rare
+    assert "AS device_hostname_max" in rare and "MIN(device_uid) AS device_uid" in rare
+    assert "MIN(process_name)" not in rare, "a grouping column is selected as it is"
+    assert "MAX(CASE WHEN ingested_at >= :ingested_from THEN event_uid END) AS event_uid" in rare
+    assert "MIN(ingested_at) >= :ingested_from" in rare
+    assert rare.endswith("ORDER BY COUNT(*), MIN(time) LIMIT 500")
+    assert "MIN(ingested_at)" not in sql(False)

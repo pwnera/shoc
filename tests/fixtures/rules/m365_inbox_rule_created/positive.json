@@ -214,5 +214,269 @@
       }
     ],
     "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-New-InboxRule-junk-0",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:63072",
+    "AppPoolName": "MSExchangeOWAAppPool",
+    "ObjectId": "EXAMPLE01.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/example.onmicrosoft.com/jane\\Receipts",
+    "Parameters": [
+      {
+        "Name": "Name",
+        "Value": "Invoices"
+      },
+      {
+        "Name": "SubjectOrBodyContainsWords",
+        "Value": "invoice;payment;bank details"
+      },
+      {
+        "Name": "MoveToFolder",
+        "Value": "Junk Email"
+      },
+      {
+        "Name": "MarkAsRead",
+        "Value": "True"
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-New-InboxRule-junk-1",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:63072",
+    "AppPoolName": "MSExchangeOWAAppPool",
+    "ObjectId": "EXAMPLE01.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/example.onmicrosoft.com/jane\\Receipts",
+    "Parameters": [
+      {
+        "Name": "Name",
+        "Value": "Invoices"
+      },
+      {
+        "Name": "SubjectOrBodyContainsWords",
+        "Value": "invoice;payment;bank details"
+      },
+      {
+        "Name": "MoveToFolder",
+        "Value": "Junk E-mail"
+      },
+      {
+        "Name": "MarkAsRead",
+        "Value": "True"
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-New-InboxRule-junk-2",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:63072",
+    "AppPoolName": "MSExchangeOWAAppPool",
+    "ObjectId": "EXAMPLE01.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/example.onmicrosoft.com/jane\\Receipts",
+    "Parameters": [
+      {
+        "Name": "Name",
+        "Value": "Invoices"
+      },
+      {
+        "Name": "SubjectOrBodyContainsWords",
+        "Value": "invoice;payment;bank details"
+      },
+      {
+        "Name": "MoveToFolder",
+        "Value": "Courrier indésirable"
+      },
+      {
+        "Name": "MarkAsRead",
+        "Value": "True"
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-New-InboxRule-junk-3",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:63072",
+    "AppPoolName": "MSExchangeOWAAppPool",
+    "ObjectId": "EXAMPLE01.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/example.onmicrosoft.com/jane\\Receipts",
+    "Parameters": [
+      {
+        "Name": "Name",
+        "Value": "Invoices"
+      },
+      {
+        "Name": "SubjectOrBodyContainsWords",
+        "Value": "invoice;payment;bank details"
+      },
+      {
+        "Name": "MoveToFolder",
+        "Value": "Junk-E-Mail"
+      },
+      {
+        "Name": "MarkAsRead",
+        "Value": "True"
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-New-InboxRule-junk-4",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:63072",
+    "AppPoolName": "MSExchangeOWAAppPool",
+    "ObjectId": "EXAMPLE01.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/example.onmicrosoft.com/jane\\Receipts",
+    "Parameters": [
+      {
+        "Name": "Name",
+        "Value": "Invoices"
+      },
+      {
+        "Name": "SubjectOrBodyContainsWords",
+        "Value": "invoice;payment;bank details"
+      },
+      {
+        "Name": "MoveToFolder",
+        "Value": "Correo no deseado"
+      },
+      {
+        "Name": "MarkAsRead",
+        "Value": "True"
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-New-InboxRule-junk-5",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:63072",
+    "AppPoolName": "MSExchangeOWAAppPool",
+    "ObjectId": "EXAMPLE01.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/example.onmicrosoft.com/jane\\Receipts",
+    "Parameters": [
+      {
+        "Name": "Name",
+        "Value": "Invoices"
+      },
+      {
+        "Name": "SubjectOrBodyContainsWords",
+        "Value": "invoice;payment;bank details"
+      },
+      {
+        "Name": "MoveToFolder",
+        "Value": "Posta indesiderata"
+      },
+      {
+        "Name": "MarkAsRead",
+        "Value": "True"
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-New-InboxRule-junk-6",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:63072",
+    "AppPoolName": "MSExchangeOWAAppPool",
+    "ObjectId": "EXAMPLE01.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/example.onmicrosoft.com/jane\\Receipts",
+    "Parameters": [
+      {
+        "Name": "Name",
+        "Value": "Invoices"
+      },
+      {
+        "Name": "SubjectOrBodyContainsWords",
+        "Value": "invoice;payment;bank details"
+      },
+      {
+        "Name": "MoveToFolder",
+        "Value": "Ongewenste e-mail"
+      },
+      {
+        "Name": "MarkAsRead",
+        "Value": "True"
+      }
+    ],
+    "SessionId": "s-1"
+  },
+  {
+    "Id": "m365-New-InboxRule-junk-7",
+    "Operation": "New-InboxRule",
+    "OrganizationId": "org-1",
+    "RecordType": 1,
+    "ResultStatus": "True",
+    "UserKey": "jane@example.com",
+    "UserType": 2,
+    "UserId": "jane@example.com",
+    "Workload": "Exchange",
+    "ClientIP": "198.51.100.11:63072",
+    "AppPoolName": "MSExchangeOWAAppPool",
+    "ObjectId": "EXAMPLE01.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/example.onmicrosoft.com/jane\\Receipts",
+    "Parameters": [
+      {
+        "Name": "Name",
+        "Value": "Invoices"
+      },
+      {
+        "Name": "SubjectOrBodyContainsWords",
+        "Value": "invoice;payment;bank details"
+      },
+      {
+        "Name": "MoveToFolder",
+        "Value": "Lixo Eletrônico"
+      },
+      {
+        "Name": "MarkAsRead",
+        "Value": "True"
+      }
+    ],
+    "SessionId": "s-1"
   }
 ]

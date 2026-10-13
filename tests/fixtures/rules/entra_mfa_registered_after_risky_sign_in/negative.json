@@ -1,11 +1,11 @@
 [
   {
-    "id": "en-calm-bob",
-    "userPrincipalName": "bob@example.com",
-    "userId": "u-bob",
+    "id": "en-risky-dave",
+    "userPrincipalName": "dave@example.com",
+    "userId": "u-dave",
     "userType": "Member",
     "appDisplayName": "OfficeHome",
-    "ipAddress": "198.51.100.5",
+    "ipAddress": "203.0.113.130",
     "location": {
       "countryOrRegion": "NG"
     },
@@ -13,13 +13,13 @@
       "errorCode": 0
     },
     "riskDetail": "none",
-    "riskLevelAggregated": "none",
-    "riskLevelDuringSignIn": "none",
-    "riskState": "none",
+    "riskLevelAggregated": "high",
+    "riskLevelDuringSignIn": "high",
+    "riskState": "atRisk",
     "riskEventTypes_v2": [
       "unfamiliarFeatures"
     ],
-    "correlationId": "c-en-calm-bob",
+    "correlationId": "c-en-risky-dave",
     "tenantId": "tid-1",
     "signInEventTypes": [
       "interactiveUser"
@@ -27,7 +27,7 @@
     "_stream": "signIns"
   },
   {
-    "id": "en-mfa-bob",
+    "id": "en-mfa-dave",
     "activityDisplayName": "User registered security info",
     "category": "UserManagement",
     "loggedByService": "Authentication Methods",
@@ -35,16 +35,40 @@
     "resultReason": "User registered Authenticator App with Notification and Code",
     "initiatedBy": {
       "user": {
-        "userPrincipalName": "bob@example.com",
-        "id": "u-bob",
-        "ipAddress": "198.51.100.5"
+        "userPrincipalName": "dave@example.com",
+        "id": "u-dave",
+        "ipAddress": "203.0.113.130"
       }
     },
     "targetResources": [
       {
         "type": "User",
-        "userPrincipalName": "bob@example.com",
-        "id": "u-bob"
+        "userPrincipalName": "dave@example.com",
+        "id": "u-dave"
+      }
+    ],
+    "tenantId": "tid-1",
+    "_stream": "directoryAudits"
+  },
+  {
+    "id": "en-mfa-carol",
+    "activityDisplayName": "User registered security info",
+    "category": "UserManagement",
+    "loggedByService": "Authentication Methods",
+    "result": "success",
+    "resultReason": "User registered Authenticator App with Notification and Code",
+    "initiatedBy": {
+      "user": {
+        "userPrincipalName": "carol@example.com",
+        "id": "u-carol",
+        "ipAddress": "203.0.113.130"
+      }
+    },
+    "targetResources": [
+      {
+        "type": "User",
+        "userPrincipalName": "carol@example.com",
+        "id": "u-carol"
       }
     ],
     "tenantId": "tid-1",
@@ -78,7 +102,7 @@
     "_stream": "signIns"
   },
   {
-    "id": "en-mfa-carol",
+    "id": "en-mfa-bob",
     "activityDisplayName": "User registered security info",
     "category": "UserManagement",
     "loggedByService": "Authentication Methods",
@@ -86,52 +110,28 @@
     "resultReason": "User registered Authenticator App with Notification and Code",
     "initiatedBy": {
       "user": {
-        "userPrincipalName": "carol@example.com",
-        "id": "u-carol",
-        "ipAddress": "203.0.113.130"
+        "userPrincipalName": "bob@example.com",
+        "id": "u-bob",
+        "ipAddress": "198.51.100.5"
       }
     },
     "targetResources": [
       {
         "type": "User",
-        "userPrincipalName": "carol@example.com",
-        "id": "u-carol"
+        "userPrincipalName": "bob@example.com",
+        "id": "u-bob"
       }
     ],
     "tenantId": "tid-1",
     "_stream": "directoryAudits"
   },
   {
-    "id": "en-mfa-dave",
-    "activityDisplayName": "User registered security info",
-    "category": "UserManagement",
-    "loggedByService": "Authentication Methods",
-    "result": "success",
-    "resultReason": "User registered Authenticator App with Notification and Code",
-    "initiatedBy": {
-      "user": {
-        "userPrincipalName": "dave@example.com",
-        "id": "u-dave",
-        "ipAddress": "203.0.113.130"
-      }
-    },
-    "targetResources": [
-      {
-        "type": "User",
-        "userPrincipalName": "dave@example.com",
-        "id": "u-dave"
-      }
-    ],
-    "tenantId": "tid-1",
-    "_stream": "directoryAudits"
-  },
-  {
-    "id": "en-risky-dave",
-    "userPrincipalName": "dave@example.com",
-    "userId": "u-dave",
+    "id": "en-calm-bob",
+    "userPrincipalName": "bob@example.com",
+    "userId": "u-bob",
     "userType": "Member",
     "appDisplayName": "OfficeHome",
-    "ipAddress": "203.0.113.130",
+    "ipAddress": "198.51.100.5",
     "location": {
       "countryOrRegion": "NG"
     },
@@ -139,13 +139,13 @@
       "errorCode": 0
     },
     "riskDetail": "none",
-    "riskLevelAggregated": "high",
-    "riskLevelDuringSignIn": "high",
-    "riskState": "atRisk",
+    "riskLevelAggregated": "none",
+    "riskLevelDuringSignIn": "none",
+    "riskState": "none",
     "riskEventTypes_v2": [
       "unfamiliarFeatures"
     ],
-    "correlationId": "c-en-risky-dave",
+    "correlationId": "c-en-calm-bob",
     "tenantId": "tid-1",
     "signInEventTypes": [
       "interactiveUser"

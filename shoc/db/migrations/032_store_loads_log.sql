@@ -1,4 +1,4 @@
--- 033 every load the event store committed, with the oldest event it carried (DET-3)
+-- 032 every load the event store committed, with the oldest event it carried (DET-3)
 --
 -- A cycle reads by `ingested_at`, which is stamped when an event is mapped, and
 -- goes back only 10 minutes behind its watermark. A load that commits later

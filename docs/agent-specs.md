@@ -376,10 +376,15 @@ took effect** (the key really is disabled, the sessions really are gone) and tha
 they come back clean for a stated period. Either one failing reopens the response
 and it proposes the next thing.
 
-**Tools.** `action.propose`, `action.list` (its case's actions and how each
-ended), `posture.exposure`, `graph.neighbours`, `platform.lookups`,
-`platform.lookup`; no raw-log reads (RFC 0020). Roles: the **Surveyor**, for
-blast radius.
+**Tools.** `action.list` (its case's actions and how each ended),
+`posture.exposure`, `graph.neighbours`, `platform.lookups`, `platform.lookup`;
+no raw-log reads (RFC 0020). The crew and people get whole `action.list` rows.
+An external agent or a service token gets `params`, `result` and
+`blast_radius` cut at 500 characters, ending `(action.get has the rest)`, and
+reads one action in full with `action.get`. Roles: the **Surveyor**, for blast radius. It
+proposes only in its `CommanderOutput`, and the loop grounds each target and
+carries its blast radius (D45). An agent that calls `action.propose` directly is
+held at L2.
 
 **Writes.** `CommanderOutput`: ordered proposals with fallbacks and windows,
 blast radius per proposal, the page decision and the condition it met, and one
@@ -443,6 +448,57 @@ stored, so the indicator store stays small enough that a match means something.
 | **False-positive defence** | It refuses to store what will burn us (CDN edges, shared hosting, popular services, sinkholes, our own infrastructure) and keeps a permanent do-not-match list with the reason for each entry |
 | **Enrichment** | Indicators are linked to the actor, malware, campaign and technique they came from, so a match answers "what is this" rather than only "this is bad" |
 
+**What the code holds the store to (DET-4, DET-6, DET-7).**
+
+- *Extraction.* A domain counts when its last label is a real TLD (a bundled
+  list, plus IANA's RDAP bootstrap once loaded; the reserved `test` and
+  `example` count for fixtures). A name whose TLD is also a file extension or
+  a library suffix (`zip`, `mov`, `py`, `sh`, `pl`, `ps`, `rs`, `md`, `one`,
+  `so`, `cc`, `app`), or that is written like code (`objShell.Run`,
+  `ADODB.Stream`), counts only when defanged, when it is a URL or email host,
+  or when it stands alone on a line. IPv6 addresses are extracted, global
+  unicast (2000::/3) only.
+- *Who owns a row.* A source that lists a value already stored with more
+  confidence, or that verifies a value a report named unverified, takes the row
+  over: source, report, tags and description. The row keeps the most restrictive
+  TLP marking of every source that listed it. A value held as prevalent stays
+  held. So `intel.remove` with a `report_uid` no longer removes a value a feed or
+  a person has since confirmed. `intel.add` and a report read retro-hunt only the
+  values they stored, the 6-hourly refresh drains the rest, and an expired
+  indicator is never retro-hunted. `do_not_match` keeps a value out of that
+  report's indicators only; another report or a feed still matches it until
+  `indicator.exclude` (AGT-13) exists.
+- *TLP.* Each indicator stores its source's marking in `iocs.tlp` (migration
+  064). MISP pulls send `tags: ["!tlp:red"]` unless the `tags` setting (one tag
+  or a list) names `tlp:red` itself; OTX pulses marked red are skipped.
+  `intel.digest` stores a report's values under the `TLP:<colour>` its text
+  carries and warns on RED or AMBER+STRICT; a person's paste is never refused. A
+  value marked amber, amber+strict or red, or whose host is, goes to no third
+  party: only downloaded lists answer, a `disclosure_guard` observation says so,
+  and the answer is not cached. Re-adding it with `intel.add` does not lift the
+  marking.
+- *Prevalence hold (D166).* A matched value that touched more than three
+  accounts on its first match is held when it is a lead (below 0.6 confidence)
+  or was matched only in an inbound or sign-in column. A value at 0.6 or above
+  matched outbound, links in a Microsoft 365 message included, opens one finding
+  at the indicator's severity that lists every account. A held value is an
+  exception-report item, `intel:held:<type>:<value>`, while its hold notice is
+  under 7 days old: it names the listing source and the account count, and says
+  that a person's `intel.add` releases it. The hold's digest notice in the
+  weekly uses the same key as its group.
+- *OTX and MISP.* Both take `pages` (OTX 20 pages of 50 pulses, MISP 10 pages
+  of `limit` attributes). A pull cut short by the cap keeps what it read and
+  shows the feed as failing with a `truncated: …` last error. MISP pulls only
+  published `to_ids` attributes that are on no MISP warninglist, at confidence
+  0.7, and takes `days` (indicator lifetime, 30) and `severity`
+  (informational to critical, any case; anything else reads as `high`, the
+  default). Neither follows a redirect, which is reported as a feed error so
+  the API key never reaches another host, and OTX follows its next page only on
+  the configured host and path. A feed value that becomes held (the company's
+  own, or on a warninglist once the lists load) is deleted from that feed's
+  indicators on the next pull. When the warninglists are missing, an indicator
+  pull starts loading them in the background, even with `SHOC_INTEL_FEEDS=off`.
+
 **It hands work over rather than doing it.** A technique the report describes that
 no rule of ours covers becomes a **Detection Engineer** backlog item with the
 report as justification. Checking our own data for what the report describes is a
@@ -450,7 +506,10 @@ report as justification. Checking our own data for what the report describes is 
 
 **Default egress is announced, and can be turned off** (D57). A new install
 polls the two abuse.ch feeds; the quick start and the worker's first refresh
-name the hosts they reach, and `SHOC_INTEL_FEEDS=off` stops them. Any other feed
+name the hosts they reach, and `SHOC_INTEL_FEEDS=off` stops them, along with
+the warninglist load that `intel.digest`, `intel.add` and the report queue
+start. An indicator pull from a feed a person configured (OTX, MISP, a list)
+still starts that load, which is one more outbound host. Any other feed
 is added by a human with `intel.configure` (RFC 0016). CTI works from whatever is
 enabled and **says in the brief what it is blind to**.
 
@@ -477,6 +536,16 @@ needs an answer rather than because a message happened to contain one of its wor
    a person set a key, each under a daily quota (RFC 0030). It sends the
    observable alone, never the case context, and never an internal value;
 4. **the model's own knowledge** of a malware family or technique.
+
+In a lookup's score, a value on our own indicators that is unverified or held
+as prevalent weighs nothing and reads "listed but unverified or held as
+prevalent"; a lead below 0.6 weighs 1.0 and alone stays `unknown`; only a
+verified indicator that is not held, at 0.6 or more, counts as "on N feed(s) we
+already pull", at 4 times its confidence. The history half searches an email as
+the actor and by its host in `src_endpoint_domain`, `dst_endpoint_domain` and
+`dns_query_hostname`, and canonicalises an address, so a long IPv6 form finds
+the stored short one. `hunt.run` with `field: auto` still searches an email as
+the actor only.
 
 It may also **queue a reading job** for the scheduled half rather than answering
 thinly: the answer arrives late but it is real, and the gap is recorded.
@@ -526,7 +595,12 @@ rest to the crew as findings.
 **Packs ask the questions.** A pack is YAML in `content/hunts/` with a
 hypothesis, a baseline, a triage question, follow-up questions and whether it is
 `sensitive`. Triage never writes a query. The Hunter may write a pack for an
-item on its backlog, which the gate runs before keeping (RFC 0032, below).
+item on its backlog, which the gate runs before keeping (RFC 0032, below). A
+pack's `window` is at most 7 days and its `lookback` at most 90, and
+`hunt.merge` also refuses a lookback that reaches past what this deployment
+keeps (`SHOC_RETENTION_DAYS`). A `seen_by_at_least` pack counts over one
+lookback ending with the window, so "two countries in a day" spans 24 hours,
+not 48.
 
 **Readiness, before anything runs (code).**
 
@@ -536,6 +610,15 @@ item on its backlog, which the gate runs before keeping (RFC 0032, below).
 | `learning` | The source's data started less than the pack's lookback ago | Listed with the date it is ready, no run |
 | `stale` | No data from the source within the pack's window | A `gap` with the reason |
 | `ready` | The data can answer it | Runs, over the accounts those sources speak for |
+
+An account added later, such as one joining an organisation trail, learns from
+its own first event (`account_starts` in `shoc.source_history`, migration 065).
+A ready pack whose newer accounts still learn lists them in
+`learning_accounts`, each with the date it is ready. Each readiness row also
+carries `learning_on`: `selection` means the sources are ready and only the
+pack's own matches are still within the lookback (`baseline.learns_from:
+selection`); the merge gate still runs and caps such a pack, and the weekly
+learning digest leaves its source out.
 
 **Windows follow ingestion.** A pack reads what was ingested since its last
 completed window, capped at its lookback, so a late delivery or a lost day is
@@ -553,17 +636,27 @@ grouped with all its events and event types.
 | `suspicious` | It cites events | A low finding with actor entities, or a note on the open rule case that covers the same actor |
 | `gap` | The pack could not run, no model triaged it, or today's triage ceiling had no room | A `hunt.gap` Ops alert with source health; the window is read again |
 
+An `older_event` basis counts only when a lookup in the same turn returned the
+event, and the event is a success (not a failure) from before the pack's
+lookback, from the pack's products and accounts, carrying the tuple's own
+values. A count over several addresses (`seen_by_at_least`) and a retry never
+take one: neither has an older self to compare with.
+
 A pack whose findings were twice confirmed attacks, by a malicious close or a
 person's suspicious close, becomes a Detection Engineer item.
 
 **Agenda.** Every due pack runs. The packs merged for, or named as covering, a
-hypothesis a configured feed's report raised this week come first, then the packs
-sharing a technique with that intel or with this week's rule cases (D132). The day's budget is the triage turn's token
-ceiling, `llm.configure hunt_tokens_per_day` (200,000 by default): packs are read
-in agenda order while their tuples fit in half of what is left, and the turn
-stops looking things up once it has spent the rest. A ready pack that falls
-back because its source stopped sending pages the operator with that source's
-coverage page.
+hypothesis a configured feed's report raised this week come first, then the
+packs sharing a technique with that intel or with this week's rule cases (D132).
+Within a rank, a pack never run, or read through the oldest ingestion, comes
+first, then a `sensitive` one, then by pack id. A pack the ceiling skipped or
+whose triage failed did not advance, so it leads the next day and reads one
+slice: the same window comes back until it is triaged (D229). The day's budget
+is the triage turn's token ceiling, `llm.configure hunt_tokens_per_day` (200,000
+by default): packs are read in agenda order while their tuples fit in half of
+what is left, and the turn stops looking things up once it has spent the rest. A
+ready pack that falls back because its source stopped sending pages the operator
+with that source's coverage page.
 
 **The backlog (RFC 0032).** Before the packs run, nightly and within a minute of
 an item being added, one turn per item on the top three open items not worked
@@ -681,7 +774,10 @@ exactly what an attacker wants, and nothing reported it before.
 `posture.*`, `asset.identify`, `identity.resolve`, `detection.backlog`,
 `platform.lookups`, `platform.lookup`. When another role calls it, it answers
 in `AssetAnswer`: what the target is, whether it is ours, where that is known
-from, how many principals are behind it, and the events behind that.
+from, how many principals are behind it, and the events behind that. When it, or
+any caller that is not a person, calls `graph.refresh`, the window is at least
+the scheduled 30 days and at most 90, so an in-case refresh never narrows the
+counts the daily rebuild wrote.
 
 **Model: required for the agent; the five queries never use one.**
 
@@ -714,6 +810,10 @@ backlog asks for, and take back what turns out wrong.
 - The nightly sweep adds an aggregate rule over its volume (the dominant entity
   as evidence only), techniques intel named that no rule covers, reopens a
   source gap whose product now delivers, and lapses narrowings past 90 days.
+  A rule covers an intel technique only when it reads a product the tenant
+  receives and tags that exact technique; a parent tag does not cover its
+  sub-techniques. A source-gap digest names the technique, its ATT&CK name and
+  the sources to connect, and a gap with nothing to connect gets no digest.
 
 **Code first, no model.** A new rule of its own that turned noisy is reverted;
 a noisy narrowing reopens its item instead, because reverting it would restore
@@ -741,7 +841,9 @@ week-long suppression is the answer.
 
 **The gate for a new rule:** fixtures that fire and stay quiet, stamped inside
 the test window; a backtest under 25 findings a week; the ADS form; a playbook
-with a step that can act on the rule's platform.
+with a step that can act on the rule's platform. The backtest stops once it
+holds the volume ceiling's worth of findings, so a refusal reads "at least N
+findings".
 
 **Undo.** A case that reopens or turns malicious reverts the merges its items
 produced, revokes its suppressions and reopens its items. Every merge, revert,
@@ -803,6 +905,19 @@ fidelity** (are the entity and group-by fields that source's rules correlate on
 populated, or null in 40% of rows). Each source is held to its own rules, so an EDR
 feed is scored on the host and an audit log on the user. A rule keyed on a field
 that is null half the time is not a detection.
+
+Retention is measured from the source's history start (`shoc.source_history`)
+when there is one; the oldest event in the scoring window says nothing about
+it. A run of
+empty working days (Monday to Friday) inside the window, at least 2 and longer
+than twice the source's usual gap, gets the note `no events on N working day(s)
+between X and Y`, which becomes a `source.quality` alert; a weekly audit log's
+empty week is its rhythm and is not a hole. A pushed source (`pushed` in
+`health.sources`) is held to the same rule. Its silence over 24 hours is not an
+outage note while it is `quiet`, but it turns stale after 7 days without a
+delivery, or when a push refused by its signature check since the last delivery
+that loaded is older than the source's staleness window
+(`connector_state.push_refused_at`, migration 060).
 
 **It owns the budget, and cost is a signal.** Nothing else in the design limits
 what a case or a hunt may spend once roles can call roles and the Hunter plans its
@@ -917,11 +1032,15 @@ trains the reader to ignore the ones they do.
 **Pages.** Every other role, `unattended.py` and every playbook page step hand it
 a notice. A query groups the notices by incident and decides whether one page
 goes out: a critical case, activity that cannot be contained, coverage dark for
-a day, or a deadline that expired twice, at most once a day per incident. The
-model writes the message; the template goes out when it cannot.
+a day, or a deadline that expired twice, at most once a day per incident, read on
+the worse of the case's severity and its worst finding's (D165). The model
+writes the message; the template goes out when it cannot. A page the pager did
+not take is emailed when mail is configured (D167).
 
 **Answers.** `ask` comes to it. It calls the colleague who knows and cites the
-events behind the answer.
+events behind the answer. Its turn and the colleagues it consults stop looking
+things up after 45 seconds (`ASK_SECONDS`) and share half the medium budget's
+tokens, so `ask` answers within about a minute.
 
 **Reports.** Three artifacts, and the first one is usually not sent.
 
@@ -933,6 +1052,11 @@ credential stored, because while either holds no case is contained and only the
 operator can change it. A case the crew closed after its containment expired
 unapproved stays an item until a person acknowledges it (D152): an hour of quiet
 logs does not revoke a key.
+A value the prevalence hold kept in the last 7 days is an item
+(`intel:held:<type>:<value>`). An exception report counts as told only when a
+Slack channel or a webhook carrying `report.ready` existed when it was sent.
+One that reached nobody is not told, and its items go out again once a channel
+exists (amends D52).
 **Silence when there is nothing is the product working.** Actions the system took
 on its own, coverage it lost, and everything that expired unanswered are worth
 knowing and are **not** exceptions; they go in the weekly.
@@ -940,7 +1064,13 @@ knowing and are **not** exceptions; they go in the weekly.
 **The weekly.** Hunts and their outcomes, detections created, merged and reverted,
 gaps identified and closed, noisy and silent rules,
 source quality, reversible actions taken without asking, suppressions written and
-lapsed, and everything that hit a deadline.
+lapsed, and everything that hit a deadline. Its body carries `intel`
+(`reports_read`, `reports`, `ioc_match`, `ioc_retrohunt`), and `held` grouped by
+source, kind and group key, each row with its count and a body cut to 300
+characters. `top_rules` leaves out `self` and suppressed findings, a case closed
+with no findings left (moved to another case) is in neither the rows nor the
+counts, and `posture.indicators_known` counts only indicators the matcher would
+use.
 
 **The monthly, for a founder.** What we protected, what it cost, what changed, and
 the two numbers somebody paying for this actually asks about: what is exposed, and
@@ -1177,7 +1307,7 @@ own principal and its own list, never the caller's.
 | Sentinel | `finding.list`, `case.list`, `graph.neighbours`, `intel.lookup`, `intel.reports`, `events.query`, `memory.search`, `suppression.list` | none |
 | Investigator | `timeline.build`, `timeline.extend`, `events.query`, `finding.list`, `case.history`, `graph.neighbours`, `posture.exposure`, `identity.resolve`, `memory.search`, `suppression.list`, `intel.lookup`, `intel.reports`, `evidence.preserve` (L1), `platform.lookups`, `platform.lookup` | CTI, Surveyor |
 | Challenger | `events.query`, `memory.search`, `suppression.list`, `finding.list`, `case.history`, `graph.neighbours` | none |
-| IR Commander | `action.propose`, `action.list`, `posture.exposure`, `graph.neighbours`, `platform.lookups`, `platform.lookup` (no raw-log reads, RFC 0020) | Surveyor |
+| IR Commander | `action.list`, `posture.exposure`, `graph.neighbours`, `platform.lookups`, `platform.lookup` (no raw-log reads, RFC 0020) | Surveyor |
 | CTI | `intel.lookup`, `intel.list`, `intel.reports`, `indicator.exclude`, `events.query`, `posture.get`, `detection.backlog` | Surveyor |
 | Hunter | `events.query`, `events.summarize`, `memory.search`, `finding.list`, `case.list`, `graph.neighbours`; on its backlog turn `hunt.merge`, `hunt.results`, `rule.list` | none |
 | Surveyor | `graph.refresh`, `graph.neighbours`, `events.query`, `snapshot.list`, `posture.*`, `asset.identify`, `identity.resolve`, `detection.backlog`, `platform.lookups`, `platform.lookup` | none |

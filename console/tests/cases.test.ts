@@ -49,8 +49,9 @@ describe("the case tabs", () => {
   it("keep the phases apart", () => {
     expect(caseTab("triage")).toBe("investigating");
     expect(caseTab("analysis")).toBe("investigating");
-    expect(caseTab("containment")).toBe("contained");
-    expect(caseTab("post_incident")).toBe("contained");
+    // A case the IR Commander answered is responding, whether or not any action ran.
+    expect(caseTab("containment")).toBe("responding");
+    expect(caseTab("post_incident")).toBe("responding");
     expect(caseTab("closed")).toBe("closed");
   });
 });

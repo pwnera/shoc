@@ -5,8 +5,8 @@ description: >
   a second factor, and it outlives the session that made it.
 status: stable
 date: 2026-09-30
-modified: 2026-09-30
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.55
 attack: [T1098.001]
 logsource:

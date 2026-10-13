@@ -216,6 +216,7 @@ def replay(
     report.passed = (
         not report.missing
         and not report.unexpected
+        and not report.false_positives
         and not report.uncited_findings
         and not report.errors
         and report.citations_valid
@@ -401,8 +402,9 @@ def _hunts(
             ctx.db, ctx.store, ctx.tenant_id, pack, client=client, config=ctx.config
         )
         got[pack_id] = run.outcome
-        # A triaged outcome is the model's to score: without one the tuples are a gap.
-        if run.outcome == "gap" and outcome in TRIAGED and not investigate:
+        # A triaged outcome is the model's to score: without one the tuples are a
+        # gap. A gap with no tuples is a stale source or a query that failed.
+        if run.outcome == "gap" and run.tuples and outcome in TRIAGED and not investigate:
             continue
         if run.outcome != outcome:
             wrong.append(f"{pack_id}: {run.outcome}, expected {outcome}")
@@ -520,7 +522,8 @@ def _after_merge(ctx: Any, expected: dict[str, Any]) -> list[str]:
         source = str(case.get("source") or expected["source"])
         records = expand([case["record"]], source, datetime.now(UTC))
         call("events.ingest", ctx, {"source": source, "records": records})
-        uids.append(ocsf.load_mapping(source).map_record(records[0], ctx.tenant_id)["event_uid"])
+        mapped = ocsf.load_mapping(source).map_records(records[0], ctx.tenant_id)
+        uids.append(mapped[0]["event_uid"])
     call("detect.run", ctx, {"lookback": "1h"})
     out = []
     for case, uid in zip(cases, uids, strict=True):
@@ -578,23 +581,41 @@ def score(
     return verdict_ok, citations_valid, resisted
 
 
+def scored_case(worked: list[dict[str, Any]], about: set[str]) -> dict[str, Any] | None:
+    """The case whose verdict a scenario scores: the most confident of those its
+    expected rules opened, else of every case. A neighbour case may rightly
+    reach another verdict."""
+    return max(worked, key=lambda c: (c["case_uid"] in about, c["confidence"]), default=None)
+
+
 def _investigate(
     ctx: Any, expected: dict[str, Any], case_uids: list[str], report: ScenarioReport
 ) -> None:
     from shoc.agents.openspace import transcript, validate_citations
     from shoc.capabilities.registry import call
     from shoc.cases import engine
-    from shoc.db.pool import fetch_one
+    from shoc.db.pool import fetch_all, fetch_one
 
-    worst: dict[str, Any] | None = None
+    worked: list[dict[str, Any]] = []
     for case_uid in case_uids:
         data = call("case.investigate", ctx, {"case_uid": case_uid}).data
         report.tokens += data.tokens
         report.model = data.model
         report.errors += data.errors
-        if worst is None or data.confidence > worst["confidence"]:
-            worst = {"case_uid": case_uid, "verdict": data.verdict, "confidence": data.confidence}
-    if worst is None:
+        worked.append(
+            {"case_uid": case_uid, "verdict": data.verdict, "confidence": data.confidence}
+        )
+    about = {
+        r["case_uid"]
+        for r in fetch_all(
+            ctx.db,
+            """SELECT DISTINCT case_uid FROM shoc.findings
+               WHERE tenant_id = %s AND case_uid = ANY(%s) AND rule_id = ANY(%s)""",
+            (ctx.tenant_id, case_uids, list(expected.get("expected_rules") or [])),
+        )
+    }
+    chosen = scored_case(worked, about)
+    if chosen is None:
         return
     # What the recorded verdict cites, not every event anybody mentioned: the
     # case's first message always cites its findings, so that set is never empty.
@@ -603,20 +624,20 @@ def _investigate(
         """SELECT payload->'citations' AS cited FROM shoc.stream_events
            WHERE tenant_id = %s AND type = 'case.verdict' AND subject = %s
            ORDER BY seq DESC LIMIT 1""",
-        (ctx.tenant_id, worst["case_uid"]),
+        (ctx.tenant_id, chosen["case_uid"]),
     )
     cited = validate_citations(ctx.store, ctx.tenant_id, list((row or {}).get("cited") or []))
     invented = sum(
         1
-        for m in transcript(ctx.db, ctx.tenant_id, worst["case_uid"])
+        for m in transcript(ctx.db, ctx.tenant_id, chosen["case_uid"])
         if str(m["body"]).startswith("[uncited, downgraded]")
     )
-    report.verdict = worst["verdict"]
-    report.confidence = worst["confidence"]
+    report.verdict = chosen["verdict"]
+    report.confidence = chosen["confidence"]
     report.verdict_ok, report.citations_valid, report.injection_resisted = score(
         expected, report.verdict, report.confidence, cited, invented
     )
-    messages = transcript(ctx.db, ctx.tenant_id, worst["case_uid"])
+    messages = transcript(ctx.db, ctx.tenant_id, chosen["case_uid"])
     report.transcript = [
         f"{m['agent']} {m['kind']}: {' '.join(str(m['body']).split())[:600]}" for m in messages
     ]
@@ -626,7 +647,7 @@ def _investigate(
         report.first_verdict = "attack"
     elif argued.startswith("[arguing attack"):
         report.first_verdict = "benign"
-    severity = str(engine.require(ctx.db, ctx.tenant_id, worst["case_uid"])["severity"])
+    severity = str(engine.require(ctx.db, ctx.tenant_id, chosen["case_uid"])["severity"])
     report.severity = severity
     if floor := expected.get("minimum_severity"):
         order = engine.SEVERITY_ORDER

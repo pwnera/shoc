@@ -115,12 +115,14 @@ def coerce(tp: Any, value: Any, path: str = "$", strict: bool = True) -> Any:
     extra field is noise, not for a caller's input.
     """
     optional, tp = _is_optional(tp)
+    # `Any` is schema `{}`, which takes null: a raw record's own nulls
+    # (CloudTrail's `responseElements: null`) are data, not a bad call.
+    if tp is Any:
+        return value
     if value is None:
         if optional:
             return None
         raise ValidationError(f"{path}: must not be null")
-    if tp is Any:
-        return value
     origin = get_origin(tp)
     if tp is datetime:
         if isinstance(value, datetime):

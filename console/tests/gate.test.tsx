@@ -77,6 +77,14 @@ describe("the gate", () => {
     expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute("href", "/login");
   });
 
+  it("signs the front page with the licence and no version that a release would leave stale", async () => {
+    serve({ "/v1/user/me": () => OUT });
+    gate();
+    const footer = await screen.findByRole("contentinfo");
+    expect(footer).toHaveTextContent("Apache 2.0");
+    expect(footer.textContent).not.toMatch(/\bv\d+\.\d+/);
+  });
+
   it("asks for the email first on the login page", async () => {
     serve({ "/v1/user/me": () => OUT });
     await logIn();

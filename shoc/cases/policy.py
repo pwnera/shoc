@@ -32,8 +32,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from shoc.errors import ConfigError
 
 LEVELS = ("L0", "L1", "L2")
@@ -131,7 +129,9 @@ class Policy:
 
     @classmethod
     def from_file(cls, path: Path) -> Policy:
-        data = yaml.safe_load(path.read_text()) or {}
+        from shoc.detect.rules import load_yaml
+
+        data = load_yaml(path.read_text()) or {}
         policy = cls(
             version=int(data.get("version", 1)),
             defaults=data.get("defaults", {}) or {},
@@ -175,6 +175,17 @@ class Policy:
         rule = dict(self.defaults)
         rule.update(self.actions.get(action_type, {}))
         return rule
+
+    def dry_run_for(self, action_type: str = "", env: bool | None = None) -> bool:
+        """Whether an action is only planned (RSP-7): SHOC_DRY_RUN when it is set,
+        either way, else the action's rule. No action type asks the defaults.
+        A page is never a plan: it changes nothing, and one that went out must
+        not be listed as planned only."""
+        if action_type.startswith("notify."):
+            return False
+        if env is not None:
+            return bool(env)
+        return bool(self.rule_for(action_type).get("dry_run", True))
 
     def ceiling(self, principal_kind: str) -> str:
         return self.principals.get(principal_kind, "L0")
@@ -227,9 +238,7 @@ class Policy:
         rule = self.rule_for(action_type)
         level = str(rule.get("autonomy", "L2"))
         reversible = bool(rule.get("reversible", False))
-        dry_run = bool(
-            dry_run_default if dry_run_default is not None else rule.get("dry_run", True)
-        )
+        dry_run = self.dry_run_for(action_type, dry_run_default)
 
         # L0 takes no action: not automatically, and not after an approval either.
         # A principal whose ceiling is L0 may notify, so its proposal is refused

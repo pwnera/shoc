@@ -16,6 +16,9 @@ import type { StreamEvent } from "./stream";
 /** How long a message keeps its role "working". */
 export const WINDOW = 120_000;
 
+/** How many cases, newest first, a tab left open for days remembers (AGT-1). */
+export const KEPT_CASES = 300;
+
 export type Active = {
   who: Who;
   caseUid: string;
@@ -62,8 +65,19 @@ function update(change: (draft: State) => void) {
     budget: new Set(state.budget),
   };
   change(draft);
+  forgetOldCases(draft);
   state = draft;
   for (const l of listeners) l();
+}
+
+/** Keep the newest KEPT_CASES cases by their newest message, and only their rounds. */
+function forgetOldCases(draft: State) {
+  const newest = new Map<string, number>();
+  for (const m of draft.messages.values()) newest.set(m.caseUid, Math.max(newest.get(m.caseUid) ?? 0, m.at));
+  if (newest.size <= KEPT_CASES) return;
+  const kept = new Set([...newest].sort((a, b) => b[1] - a[1]).slice(0, KEPT_CASES).map(([caseUid]) => caseUid));
+  for (const [key, m] of draft.messages) if (!kept.has(m.caseUid)) draft.messages.delete(key);
+  for (const key of draft.rounds.keys()) if (!kept.has(key.slice(0, key.lastIndexOf("#")))) draft.rounds.delete(key);
 }
 
 function message(draft: State, event: StreamEvent, at: number) {

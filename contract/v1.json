@@ -215,6 +215,64 @@
       "rest": "/v1/action/expire",
       "scope": "actions:run"
     },
+    "action.get": {
+      "audit": false,
+      "autonomy": "L0",
+      "cli": "shoc action get",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "action_uid": {
+            "description": "The action identifier, e.g. ACT-1a2b\u2026",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action_uid"
+        ],
+        "title": "ActionRef",
+        "type": "object"
+      },
+      "mcp_tool": "action_get",
+      "output_schema": {
+        "properties": {
+          "citations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "data": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "additionalProperties": {},
+                "type": "object"
+              }
+            },
+            "title": "ActionDetail",
+            "type": "object"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data",
+          "summary",
+          "citations"
+        ],
+        "type": "object"
+      },
+      "principals": [
+        "human",
+        "agent",
+        "external_agent",
+        "service"
+      ],
+      "rest": "/v1/action/get",
+      "scope": "actions:read"
+    },
     "action.list": {
       "audit": false,
       "autonomy": "L0",
@@ -1031,6 +1089,12 @@
                 },
                 "type": "array"
               },
+              "held": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
               "nudged": {
                 "items": {
                   "type": "string"
@@ -1131,6 +1195,13 @@
               },
               "state": {
                 "type": "string"
+              },
+              "still_in_force": {
+                "items": {
+                  "additionalProperties": {},
+                  "type": "object"
+                },
+                "type": "array"
               },
               "verdict": {
                 "type": "string"
@@ -1423,6 +1494,10 @@
           "limit": {
             "description": "Maximum rows, capped at 200",
             "type": "integer"
+          },
+          "open": {
+            "description": "Only cases not closed",
+            "type": "boolean"
           },
           "state": {
             "description": "triage, analysis, containment, eradication, recovery, post_incident or closed",
@@ -2657,6 +2732,10 @@
           "source": {
             "description": "Connector/mapping name, e.g. aws_cloudtrail, okta, github",
             "type": "string"
+          },
+          "spool": {
+            "description": "Keep the records in Postgres for the worker to load with the next detection cycle, as GitHub's push is kept on a warehouse. Only GitHub's signed webhook may set it",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2688,6 +2767,9 @@
               },
               "source": {
                 "type": "string"
+              },
+              "spooled": {
+                "type": "integer"
               }
             },
             "title": "IngestResult",
@@ -2845,7 +2927,7 @@
         "additionalProperties": false,
         "properties": {
           "days": {
-            "description": "Keep this many days of events; older whole months are dropped",
+            "description": "Keep this many days of events, at least the configured retention (0 = the configured retention). Postgres drops whole months older than that; a warehouse deletes the older rows",
             "type": "integer"
           }
         },
@@ -2866,6 +2948,9 @@
             "properties": {
               "dropped": {
                 "type": "integer"
+              },
+              "unit": {
+                "type": "string"
               }
             },
             "title": "Retained",
@@ -3122,7 +3207,7 @@
             "type": "string"
           },
           "status": {
-            "description": "new, triage, closed or false_positive",
+            "description": "new, triage, closed, false_positive, suppressed or self (shoc's own credentials at work); every status when empty",
             "type": "string"
           }
         },
@@ -3311,6 +3396,12 @@
               },
               "root": {
                 "type": "string"
+              },
+              "since": {
+                "type": "string"
+              },
+              "until": {
+                "type": "string"
               }
             },
             "title": "GraphView",
@@ -3344,7 +3435,7 @@
         "additionalProperties": false,
         "properties": {
           "days": {
-            "description": "How much history to rebuild the graph from",
+            "description": "How much history to rebuild the graph from, 1 to 90 days",
             "type": "integer"
           }
         },
@@ -3411,6 +3502,14 @@
       "input_schema": {
         "additionalProperties": false,
         "properties": {
+          "before": {
+            "description": "Only rows before this seq: the last row of the previous page",
+            "type": "integer"
+          },
+          "capability": {
+            "description": "Only calls of this capability",
+            "type": "string"
+          },
           "head": {
             "description": "A seq:hash kept outside the database, e.g. from a webhook delivery; the chain must still hold that row",
             "type": "string"
@@ -3418,6 +3517,22 @@
           "limit": {
             "description": "How many recent audit rows to return",
             "type": "integer"
+          },
+          "principal": {
+            "description": "Only this caller, as kind:id (human:<id>, agent:worker)",
+            "type": "string"
+          },
+          "since": {
+            "description": "Only rows from this time: ISO-8601 or relative like -7d",
+            "type": "string"
+          },
+          "until": {
+            "description": "Only rows before this ISO-8601 time",
+            "type": "string"
+          },
+          "verify": {
+            "description": "Check the chain from where the last check that found it whole ended; false only lists rows",
+            "type": "boolean"
           }
         },
         "title": "AuditQuery",
@@ -3436,6 +3551,9 @@
             "additionalProperties": false,
             "properties": {
               "chain_ok": {
+                "type": "boolean"
+              },
+              "checked": {
                 "type": "boolean"
               },
               "detail": {
@@ -3826,9 +3944,16 @@
           "data": {
             "additionalProperties": false,
             "properties": {
+              "disk": {
+                "additionalProperties": {},
+                "type": "object"
+              },
               "findings": {
                 "additionalProperties": {},
                 "type": "object"
+              },
+              "heartbeat": {
+                "type": "boolean"
               },
               "jobs": {
                 "additionalProperties": {},
@@ -3837,9 +3962,21 @@
               "ok": {
                 "type": "boolean"
               },
+              "reachable": {
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "type": "object"
+              },
               "rules": {
                 "additionalProperties": {},
                 "type": "object"
+              },
+              "schema_ahead": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
               },
               "sources": {
                 "items": {
@@ -4113,7 +4250,7 @@
           },
           "pack": {
             "additionalProperties": {},
-            "description": "The pack: id, title, hypothesis, attack, logsource.product, detection, baseline (first_seen: [fields] or rare: {by, among, seen_by_fewer_than}, and lookback), window, pivot and triage, as in content/hunts; hunt.results shows each pack's logic. A shipped id is refused, and an id merged here is refused until hunt.revert takes it back",
+            "description": "The pack: id, title, hypothesis, attack, logsource.product, detection, baseline (first_seen: [fields] or rare: {by, among, seen_by_fewer_than | seen_by_at_least, new_only}, and lookback), window, pivot and triage, as in content/hunts; hunt.results shows each pack's logic. A window is at most 7d, and a lookback at most 90d and within what this deployment keeps. A shipped id is refused, and an id merged here is refused until hunt.revert takes it back",
             "type": "object"
           },
           "reason": {
@@ -4504,11 +4641,11 @@
             "type": "integer"
           },
           "field": {
-            "description": "auto, src_ip, domain or actor",
+            "description": "auto (from the value), ip, domain, url or sha256 (every column the indicator matcher reads for that type), src_ip (the source address only) or actor",
             "type": "string"
           },
           "value": {
-            "description": "What to hunt for: an IP, a domain or a user name",
+            "description": "What to hunt for: an IP, a domain, a URL, a SHA-256 or a user name",
             "type": "string"
           }
         },
@@ -5815,6 +5952,12 @@
                 "type": "integer"
               },
               "paged": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "retrying": {
                 "items": {
                   "type": "string"
                 },
@@ -7392,6 +7535,9 @@
                 "additionalProperties": {},
                 "type": "object"
               },
+              "dry_run_from": {
+                "type": "string"
+              },
               "guards": {
                 "additionalProperties": {},
                 "type": "object"
@@ -7755,6 +7901,9 @@
                 "type": "string"
               },
               "slack_error": {
+                "type": "string"
+              },
+              "undelivered": {
                 "type": "string"
               }
             },
@@ -8129,8 +8278,26 @@
             "description": "Channel id to post into, e.g. C0123456789",
             "type": "string"
           },
+          "readers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Slack user id -> the person's name, for everyone else allowed to use /shoc; replaces the list ({} empties it), left out keeps it"
+          },
           "signing_secret": {
             "description": "The app's signing secret; stored encrypted",
+            "type": "string"
+          },
+          "team_id": {
+            "description": "The workspace id, e.g. T0123456789; requests from others are refused",
             "type": "string"
           }
         },
@@ -8160,6 +8327,12 @@
               },
               "configured": {
                 "type": "boolean"
+              },
+              "readers": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
               }
             },
             "title": "SlackState",
@@ -8277,6 +8450,15 @@
               },
               "has_bot_token": {
                 "type": "boolean"
+              },
+              "readers": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              "team_id": {
+                "type": "string"
               },
               "verifies_requests": {
                 "type": "boolean"
@@ -9575,7 +9757,7 @@
             "type": "integer"
           },
           "value": {
-            "description": "An identity or an indicator: user:\u2026, key:\u2026, ip:\u2026, resource:\u2026, host:\u2026, or a bare value matched against all of them",
+            "description": "An identity or an indicator: user:\u2026, key:\u2026, session:\u2026, ip:\u2026, resource:\u2026, host:\u2026, or a bare value matched against all of them",
             "type": "string"
           }
         },
@@ -10279,15 +10461,22 @@
     "health.case.stalled",
     "health.cost.over_budget",
     "health.cost.unpriced",
+    "health.hunt.backlog_stale",
     "health.hunt.gap",
     "health.intel.budget_short",
+    "health.intel.feed_failing",
+    "health.intel.list_failing",
     "health.jobs.failed",
     "health.llm.failing",
+    "health.notify.unreachable",
+    "health.page.failed",
     "health.rule.failing",
     "health.rule.noisy",
     "health.source.failing",
+    "health.source.partial",
     "health.source.quality",
     "health.source.stale",
+    "health.store.size",
     "hunt.item",
     "intel.report",
     "openspace.message",

@@ -18,6 +18,8 @@ detection:
 baseline:
   first_seen: [resource.uid]
   lookback: 30d
+  # A source that adds the token log later has a day of grants, not 30.
+  learns_from: selection
 pivot: [resource.uid, actor.user.name, src_endpoint.ip]
 triage: >
   Which application is this client, who granted it, and with which scopes? A tool

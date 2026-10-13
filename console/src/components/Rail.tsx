@@ -3,7 +3,8 @@
  * inbox count on Overview in crew ink; two dots without numbers, Cases while an
  * open case is critical and Health while the store or the crew is down. Each
  * mirrors a fact its screen owns, from the same selectors. Collapsed (⌘\) it
- * is a 56px column of icons, each with its label and G chord in a tip.
+ * is a 56px column of icons, each with its label and G chord in a tip, and the
+ * inbox count a crew dot named "3 need you".
  *
  * Capabilities used (through `lib/needs.ts`): action.list, case.list,
  * source.list, ops.alerts, health.status.
@@ -39,15 +40,23 @@ export function Rail({
   const healthDown = health.data?.store.ok === false || crew.down;
 
   const item = (screen: Screen) => {
+    const needs = screen.to === "/" && count > 0;
+    // Overview's heading words, so the rail and the page say the same thing.
+    const waiting = count === 1 ? "1 needs you" : `${count} need you`;
+    // Collapsed, the inbox count is a crew dot that names it, in the tip and to a screen reader.
     const dot =
-      screen.to === "/cases" && critical
-        ? "Critical case open"
-        : screen.to === "/health" && healthDown
-          ? health.data?.store.ok === false
-            ? "Event store down"
-            : "Crew down"
-          : "";
-    const to = screen.to === "/cases" && critical ? "/cases?severity=critical" : screen.to;
+      needs && collapsed
+        ? waiting
+        : screen.to === "/cases" && critical
+          ? "Critical case open"
+          : screen.to === "/health" && healthDown
+            ? health.data?.store.ok === false
+              ? "Event store down"
+              : "Crew down"
+            : "";
+    const tone = screen.to === "/" ? "crew" : screen.to === "/health" ? "bad" : "critical";
+    // The same slice as the Cases strip's "critical" fact, which then shows pressed.
+    const to = screen.to === "/cases" && critical ? "/cases?severity=critical&state=open" : screen.to;
     const link = (
       <NavLink
         to={to}
@@ -59,15 +68,13 @@ export function Rail({
       >
         <screen.icon aria-hidden />
         <span className="sh-nav__label">{screen.label}</span>
-        {screen.to === "/" && count > 0 ? (
+        {needs && !collapsed ? (
           <span className="sh-nav__count">
             <span aria-hidden>{count}</span>
-            <span className="sr-only">{count} need you</span>
+            <span className="sr-only">{waiting}</span>
           </span>
         ) : null}
-        {dot ? (
-          <span className="sh-nav__dot" data-tone={screen.to === "/health" ? "bad" : "critical"} role="img" aria-label={dot} />
-        ) : null}
+        {dot ? <span className="sh-nav__dot" data-tone={tone} role="img" aria-label={dot} /> : null}
       </NavLink>
     );
     return collapsed ? (

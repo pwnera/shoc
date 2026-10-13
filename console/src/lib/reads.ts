@@ -40,10 +40,10 @@ export const FOLLOWED = {
   refetchOnWindowFocus: () => streamState() !== "live",
 } as const;
 
-/** Polled every 30s on the screens that show it live (Sources, Health), else only while the stream is down. */
-const ON_SOURCES = {
+/** Polled every 30s on the screens that show it live (Connections, Health), else only while the stream is down. */
+export const ON_SOURCES = {
   refetchInterval: () =>
-    /^\/(sources|health)(\/|$)/.test(window.location.pathname) || streamState() !== "live" ? 30_000 : false,
+    /^\/(connections|health)(\/|$)/.test(window.location.pathname) || streamState() !== "live" ? 30_000 : false,
 } as const;
 
 /** Actions, 500 at most: the kernel's cap, so counts read "500+" there (section 7 item 15). */
@@ -187,7 +187,7 @@ export function usePlaybooks(caseUid = "", enabled = true) {
   });
 }
 
-/** `source.list`, refetched every 30s with `health.sources` while Sources or Health shows it. */
+/** `source.list`, refetched every 30s with `health.sources` while Connections or Health shows it. */
 export function useSourceList() {
   return useQuery({
     queryKey: ["source.list"],

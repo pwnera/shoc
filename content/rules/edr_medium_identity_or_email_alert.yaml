@@ -1,0 +1,54 @@
+id: edr_medium_identity_or_email_alert
+title: Medium Defender or Falcon alert about an account or a mailbox
+description: >
+  Defender XDR raised a medium alert from Defender for Office 365, Defender for
+  Identity, Defender for Cloud Apps, Entra ID Protection, App Governance or
+  Purview DLP, or Falcon Identity Protection raised one: impossible travel, a
+  suspicious inbox rule, an account enumerating the domain. The vendor rates
+  these below its own high, so they stay medium here and sit next to a sign-in
+  finding on the same person. High and critical ones are
+  edr_identity_or_email_alert's.
+status: experimental
+date: 2026-10-12
+severity: medium
+confidence: 0.5
+attack: [T1078, T1566, T1114]
+sources:
+  - name: Elastic
+    title: "Microsoft Defender XDR Alert External Alerts"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/promotions/m365_defender_alert_external_alerts.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Elastic
+    title: "CrowdStrike External Alerts"
+    url: https://github.com/elastic/detection-rules/blob/main/rules/promotions/crowdstrike_external_alerts.toml
+    license: Elastic-2.0
+    relation: inspired
+  - name: Microsoft
+    title: "Microsoft Graph security enum values (serviceSource)"
+    url: https://learn.microsoft.com/en-us/graph/api/resources/enums-security?view=graph-rest-1.0
+    relation: inspired
+logsource:
+  product: edr
+  service: alerts
+detection:
+  selection:
+    class_uid: 2004
+    severity_id: 3
+  # Defender for Cloud and unknownFutureValue are azure_vendor_alert's.
+  account_service:
+    - api.service.name: [microsoftDefenderForOffice365, microsoftDefenderForIdentity,
+                         microsoftDefenderForCloudApps, azureAdIdentityProtection,
+                         microsoftAppGovernance, dataLossPrevention]
+    - api.service.name|startswith: idp
+  # A later change to an alert an earlier poll read (the connector marks it):
+  # the finding that alert opened stands, and a new bucket must not open another.
+  filter_update:
+    activity_id: 2
+  condition: selection and account_service and not filter_update
+  timeframe: 1h
+# The account first: these alerts seldom name a device, and a Falcon Identity
+# alert names the host the account signed in to.
+entity: [actor.user.name, actor.user.uid, resource.uid]
+fields: [actor.user.name, api.service.name, api.operation, message, src_endpoint.ip,
+         http_request.url.url_string]

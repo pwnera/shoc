@@ -1,0 +1,58 @@
+[
+  {
+    "Id": "m365-mfa-few",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-jane",
+    "UserType": 0,
+    "UserId": "jane@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.7",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "500121",
+    "LogonError": "AuthenticationFailedDuringStrongAuthRequest",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory",
+    "_repeat": 4
+  },
+  {
+    "Id": "m365-mfa-interrupt",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-bob",
+    "UserType": 0,
+    "UserId": "bob@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.8",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50074",
+    "LogonError": "UserStrongAuthClientAuthNRequiredInterrupt",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory",
+    "_repeat": 8
+  }
+]

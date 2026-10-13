@@ -1,4 +1,4 @@
--- 032 each webhook remembers the last event it was sent (API-2)
+-- 031 each webhook remembers the last event it was sent (API-2)
 --
 -- Delivery read from sequence 0 on every run and so resent the first batch
 -- forever. A subscriber now starts at the stream's head when it subscribes and

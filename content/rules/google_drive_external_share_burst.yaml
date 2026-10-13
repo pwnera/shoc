@@ -9,6 +9,7 @@ description: >
   holds, and shares with colleagues are left out.
 status: experimental
 date: 2026-10-09
+modified: 2026-10-12
 severity: medium
 confidence: 0.5
 attack: [T1537, T1530]
@@ -17,16 +18,14 @@ logsource:
   service: reports
 detection:
   # Drive often logs an edit and the sharing change as one activity, edit
-  # first, and only the first event is keyed, so the sharing event and its
-  # visibility_change are read from the activity's whole event list. A
-  # parameter's "name" comes before its "value" in Google's order and in
-  # Postgres jsonb order (shorter key first).
+  # first; each event is a row of its own, so the share and its
+  # visibility_change come from the same event.
   selection:
     api.service.name: drive
-    raw.events|re: '"name":\s*"(change_user_access|change_document_visibility|change_document_access_scope|change_acl_editors)"'
-  external:
-    raw.events|re: '"visibility_change",\s*"value":\s*"external"'
-  condition: selection and external
+    api.operation: [change_user_access, change_document_visibility, change_document_access_scope,
+                    change_acl_editors]
+    unmapped.params.visibility_change: external
+  condition: selection
   timeframe: 1h
   group_by: [actor.user.name]
   count_distinct: resource.uid

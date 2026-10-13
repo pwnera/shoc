@@ -7,8 +7,8 @@ description: >
   to a group that account is in.
 status: stable
 date: 2026-09-30
-modified: 2026-10-10
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.6
 attack: [T1098]
 logsource:

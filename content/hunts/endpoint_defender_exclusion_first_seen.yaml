@@ -3,19 +3,15 @@ title: A Defender exclusion is added on a machine for the first time
 hypothesis: >
   Before running their tools, intruders tell Defender to skip a folder, a
   process or an extension. Developers add build folders too, which is why
-  this is a first-seen hunt per machine and not a rule.
+  this is a first-seen hunt per machine and not a rule. This pack reads the
+  command that adds one; endpoint_defender_exclusion_registry_first_seen reads
+  the exclusion Defender wrote.
 attack: [T1562.001]
 sources:
   - name: Sigma
     title: "Powershell Defender Exclusion"
     url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_defender_exclusion.yml
     author: "Florian Roth (Nextron Systems)"
-    license: DRL-1.1
-    relation: adapted
-  - name: Sigma
-    title: "Windows Defender Exclusions Added - Registry"
-    url: https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_set/registry_set_defender_exclusions.yml
-    author: "Christian Burkard (Nextron Systems)"
     license: DRL-1.1
     relation: adapted
   - name: Elastic
@@ -35,18 +31,12 @@ detection:
   sel_excl:
     process.cmd_line|contains: [-ExclusionPath, -ExclusionProcess, -ExclusionExtension,
                                 -ExclusionIpAddress]
-  # One block per condition on RegistryKey: a map holds a key once.
-  sel_registry:
-    raw.category: AdvancedHunting-DeviceRegistryEvents
-    raw.properties.RegistryKey|contains: Windows Defender
-  sel_registry_excl:
-    raw.properties.RegistryKey|contains: Exclusions
-  condition: (sel_cmd and sel_excl) or (sel_registry and sel_registry_excl)
+  condition: sel_cmd and sel_excl
 baseline:
   first_seen: [device.uid, process.cmd_line]
   lookback: 30d
 pivot: [device.hostname, device.uid, process.cmd_line, actor.user.name,
-        process.parent_process.name, raw.properties.RegistryKey]
+        process.parent_process.name]
 triage: >
   Is the excluded path a build or cache folder on a developer's machine, set by
   the developer or by Intune? A user profile, Temp, Public or a whole drive,

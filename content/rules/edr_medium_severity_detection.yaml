@@ -6,7 +6,7 @@ description: >
   same person so triage can ask whether anything happened on their laptop.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
+modified: 2026-10-12
 severity: medium
 confidence: 0.5
 attack: [T1204]
@@ -49,15 +49,22 @@ detection:
     raw.metadata.eventType: [IncidentSummaryEvent, AutomatedLeadSummaryEvent]
   # Office 365, Identity, Cloud Apps, Entra ID Protection, App Governance and
   # Purview alerts from Defender, and Falcon Identity Protection: about an
-  # account, not a host. Defender for Cloud alerts are azure_vendor_alert's;
-  # Graph sends them and Sentinel's as unknownFutureValue unless asked not to.
+  # account, not a host: edr_medium_identity_or_email_alert's. Defender for
+  # Cloud alerts are azure_vendor_alert's; Graph sends them and Sentinel's as
+  # unknownFutureValue unless asked not to.
   filter_not_endpoint:
     - api.service.name: [microsoftDefenderForOffice365, microsoftDefenderForIdentity,
                          microsoftDefenderForCloudApps, azureAdIdentityProtection,
                          microsoftAppGovernance, dataLossPrevention, microsoftDefenderForCloud,
                          unknownFutureValue]
     - api.service.name|startswith: idp
-  condition: selection and not filter_wazuh and not filter_rollups and not filter_not_endpoint
+  # A later change to an alert an earlier poll read (the connector marks it):
+  # the finding that alert opened stands, and a new bucket must not open another.
+  filter_update:
+    activity_id: 2
+  condition: >-
+    selection and not filter_wazuh and not filter_rollups and not filter_not_endpoint
+    and not filter_update
   timeframe: 1h
 # An alert with no device id keys on the host name, then the user.
 entity: [resource.uid, device.hostname, actor.user.name]

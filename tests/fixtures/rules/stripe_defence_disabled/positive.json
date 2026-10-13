@@ -4,7 +4,7 @@
     "object": "v2.iam.activity_log",
     "type": "two_step_authentication_mandate_disabled",
     "livemode": true,
-    "context": "acct_1SdeybAiQNL8swvt",
+    "context": "acct_1PfakeLiveAcct01",
     "actor": {
       "type": "user",
       "user": {
@@ -20,7 +20,7 @@
     "object": "v2.iam.activity_log",
     "type": "sso_settings_updated",
     "livemode": true,
-    "context": "acct_1SdeybAiQNL8swvt",
+    "context": "acct_1PfakeLiveAcct01",
     "actor": {
       "type": "user",
       "user": {
@@ -39,7 +39,7 @@
     "object": "v2.iam.activity_log",
     "type": "sso_settings_deleted",
     "livemode": true,
-    "context": "acct_1SdeybAiQNL8swvt",
+    "context": "acct_1PfakeLiveAcct01",
     "actor": {
       "type": "user",
       "user": {
@@ -58,7 +58,7 @@
     "object": "v2.iam.activity_log",
     "type": "anomaly_detection_settings_updated",
     "livemode": true,
-    "context": "acct_1SdeybAiQNL8swvt",
+    "context": "acct_1PfakeLiveAcct01",
     "actor": {
       "type": "api_key",
       "api_key": {

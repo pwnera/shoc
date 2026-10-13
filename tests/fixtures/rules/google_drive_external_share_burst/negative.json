@@ -3287,5 +3287,106 @@
         ]
       }
     ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-share-split-119",
+      "applicationName": "drive",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "leaver@example.com",
+      "profileId": "100000000000000000099",
+      "callerType": "USER"
+    },
+    "ipAddress": "203.0.113.33",
+    "_application": "drive",
+    "events": [
+      {
+        "type": "access",
+        "name": "edit",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": false
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000119"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "visibility",
+            "value": "private"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          },
+          {
+            "name": "visibility_change",
+            "value": "external"
+          }
+        ]
+      },
+      {
+        "type": "acl_change",
+        "name": "change_user_access",
+        "parameters": [
+          {
+            "name": "primary_event",
+            "boolValue": true
+          },
+          {
+            "name": "visibility_change",
+            "value": "none"
+          },
+          {
+            "name": "target_user",
+            "value": "colleague@example.com"
+          },
+          {
+            "name": "old_value",
+            "multiValue": [
+              "none"
+            ]
+          },
+          {
+            "name": "new_value",
+            "multiValue": [
+              "can_view"
+            ]
+          },
+          {
+            "name": "old_visibility",
+            "value": "private"
+          },
+          {
+            "name": "visibility",
+            "value": "shared_internally"
+          },
+          {
+            "name": "doc_id",
+            "value": "1AbCdEfGhIjKlMnOpQrStUvWxYz000119"
+          },
+          {
+            "name": "doc_title",
+            "value": "customers-119.xlsx"
+          },
+          {
+            "name": "doc_type",
+            "value": "spreadsheet"
+          },
+          {
+            "name": "owner",
+            "value": "leaver@example.com"
+          }
+        ]
+      }
+    ]
   }
 ]

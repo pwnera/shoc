@@ -30,7 +30,7 @@ steps:
     action: entra.revoke_sessions
     optional: true
     params:
-      user: "{{ entity.user }}"
+      user: "{{ rule.azure_vm_run_command.user }}"
   - name: page the on-call engineer
     action: notify.page
     params:
@@ -41,4 +41,4 @@ steps:
     action: azure.stop_vm
     optional: true
     params:
-      vm_id: "{{ entity.resource }}"
+      vm_id: "{{ rule.azure_vm_run_command.resource }}"

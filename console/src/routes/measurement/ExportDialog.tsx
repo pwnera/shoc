@@ -25,10 +25,12 @@ import { useRules, useSendReport } from "@/lib/queries";
 import type { ReportBody, ReportEnvelope } from "@/types";
 import { KIND_LABEL, type Kind } from "./kinds";
 
-/** A count from the body: some fields arrive as the list itself (held notices, merges), though typed as a number. */
+/** A count from the body: some fields arrive as the list itself (merges), though typed as a number. */
 const count = (value: unknown): number | undefined =>
   Array.isArray(value) ? value.length : typeof value === "number" ? value : undefined;
 const sum = (values: number[]) => values.reduce((total, n) => total + n, 0);
+/** Held notices arrive grouped, each row standing for `count` of them; `report.send` says the number. */
+const held = (value: ReportBody["held"]) => (Array.isArray(value) ? sum(value.map((n) => n.count)) : value);
 const cap = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 
 /** The KPI tiles, one row per part of the report, so each row fills and a label stays on one line. */
@@ -57,7 +59,7 @@ function Tiles({ body, kind }: { body: ReportBody; kind: Kind }) {
       tiles: [
         ["Total", body.actions ? sum(body.actions.rows.map((r) => r.n)) : undefined],
         ["Waited on you", count(body.actions?.waiting_for_approval)],
-        ["Held, no page", count(body.held)],
+        ["Held, no page", held(body.held)],
       ],
     },
     {

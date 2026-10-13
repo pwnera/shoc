@@ -97,5 +97,58 @@
     "user_name": "jdoe",
     "filename": "net.exe",
     "cmdline": "net stop WinDefend"
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "ldt:5d40e8a1c7e1:9301",
+    "type": "ldt",
+    "product": "epp",
+    "severity": 90,
+    "tactic": "Impact",
+    "description": "A process encrypted many files in a short time",
+    "device": {
+      "device_id": "5d40e8a1c7e1",
+      "hostname": "laptop-61"
+    },
+    "user_name": "jdoe",
+    "_update": true,
+    "technique_id": "T1486"
+  },
+  {
+    "_source": "defender",
+    "id": "da-update-3",
+    "severity": "high",
+    "title": "Ransomware behavior detected in the file system",
+    "category": "Execution",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "status": "inProgress",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-62.example.org",
+        "mdeDeviceId": "4444444444444444444444444444444444444461"
+      }
+    ],
+    "_update": true,
+    "mitreTechniques": [
+      "T1486"
+    ]
+  },
+  {
+    "_source": "sentinelone",
+    "id": "1373834705420287301",
+    "threatInfo": {
+      "threatId": "1373834705420287301",
+      "threatName": "locker.exe",
+      "confidenceLevel": "malicious",
+      "mitigationStatus": "not_mitigated",
+      "classification": "Ransomware"
+    },
+    "agentRealtimeInfo": {
+      "agentComputerName": "host61.example.com",
+      "agentId": "1000000000000000061",
+      "agentUuid": "11112222333344445555666677776101"
+    },
+    "_update": true
   }
 ]

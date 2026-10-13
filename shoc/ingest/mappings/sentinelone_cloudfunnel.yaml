@@ -242,6 +242,7 @@ derive:
 observables:
   - { column: device_hostname, name: device.hostname, type: Hostname }
   - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: actor_session_uid, name: actor.session.uid, type: "Session UID" }
   - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
   - { column: dst_endpoint_ip, name: dst_endpoint.ip, type: "IP Address" }
   - { column: dns_query_hostname, name: query.hostname, type: "Domain Name" }

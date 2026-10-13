@@ -13,11 +13,20 @@ access to the organisation (its owner has to request it again).
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 
-from shoc.actions.base import READ, ActionResult, BaseAction, BaseLookup, Credentials, seg, send
+from shoc.actions.base import (
+    READ,
+    ActionResult,
+    BaseAction,
+    BaseLookup,
+    Credentials,
+    holders,
+    seg,
+    send,
+)
 from shoc.errors import ValidationError
 
 API = "https://api.github.com"
@@ -55,7 +64,9 @@ class MakeRepoPrivate(BaseAction):
     def plan(self, params: dict[str, Any]) -> str:
         return (
             f"Set {params.get('repo')} back to private. Anyone who already cloned it keeps "
-            "what they took, so rotate any secret that was in it."
+            "what they took, so rotate any secret that was in it. GitHub drops its stars and "
+            "watchers and detaches public forks; undo makes it public again but does not bring "
+            "those back."
         )
 
     def execute(
@@ -93,21 +104,38 @@ class DemoteOrgOwner(BaseAction):
     summary = "Turn an organization owner back into a member"
     reversible = True
     required_params = ("user", "org")
+    # How many owners the organisation keeps, for the approver (ir-9).
+    resolve: ClassVar = {"holders_left": (None, None, "github.org_owners")}
+    looked_up = ("holders_left",)
 
     def plan(self, params: dict[str, Any]) -> str:
         return (
             f"Make {params.get('user')} a plain member of {params.get('org')} instead of an owner"
+            + holders(params, "other owners")
         )
 
     def _url(self, params: dict[str, Any]) -> str:
         return f"{API}/orgs/{seg(params['org'])}/memberships/{seg(params['user'])}"
 
-    def execute(
+    def snapshot(
         self, creds: Credentials, params: dict[str, Any], http: httpx.Client | None = None
+    ) -> dict[str, Any]:
+        """The role to give back, read and kept before the change (RSP-4)."""
+        self.check(params)
+        client = self.client(_headers(creds), http)
+        return {"role": _send(client, "GET", self._url(params)).json().get("role", "")}
+
+    def execute(
+        self,
+        creds: Credentials,
+        params: dict[str, Any],
+        http: httpx.Client | None = None,
+        before: dict[str, Any] | None = None,
     ) -> ActionResult:
         self.check(params)
         client = self.client(_headers(creds), http)
-        was = _send(client, "GET", self._url(params)).json().get("role", "")
+        # On a retry, the role kept before the first try: it reads `member` now.
+        was = (before if before is not None else self.snapshot(creds, params, client))["role"]
         _send(client, "PUT", self._url(params), json={"role": "member"})
         kept = {"user": params["user"], "org": params["org"], "role": was}
         return ActionResult(
@@ -140,18 +168,28 @@ class RemoveCollaborator(BaseAction):
     def _url(self, params: dict[str, Any]) -> str:
         return f"{API}/repos/{_repo(params['repo'])}/collaborators/{seg(params['user'])}"
 
-    def execute(
+    def snapshot(
         self, creds: Credentials, params: dict[str, Any], http: httpx.Client | None = None
-    ) -> ActionResult:
+    ) -> dict[str, Any]:
+        """The permission to give back, read and kept before the change (RSP-4)."""
         self.check(params)
         client = self.client(_headers(creds), http)
         was = _send(client, "GET", f"{self._url(params)}/permission").json()
+        return {"permission": was.get("role_name") or was.get("permission", "read")}
+
+    def execute(
+        self,
+        creds: Credentials,
+        params: dict[str, Any],
+        http: httpx.Client | None = None,
+        before: dict[str, Any] | None = None,
+    ) -> ActionResult:
+        self.check(params)
+        client = self.client(_headers(creds), http)
+        # On a retry, the permission kept before the first try: it reads `none` now.
+        was = before if before is not None else self.snapshot(creds, params, client)
         _send(client, "DELETE", self._url(params))
-        kept = {
-            "user": params["user"],
-            "repo": params["repo"],
-            "permission": was.get("role_name") or was.get("permission", "read"),
-        }
+        kept = {"user": params["user"], "repo": params["repo"], "permission": was["permission"]}
         return ActionResult(
             ok=True, detail=f"{params['user']} removed from {params['repo']}", data=kept, undo=kept
         )
@@ -160,7 +198,9 @@ class RemoveCollaborator(BaseAction):
         self, creds: Credentials, undo: dict[str, Any], http: httpx.Client | None = None
     ) -> ActionResult:
         client = self.client(_headers(creds), http)
-        _send(client, "PUT", self._url(undo), json={"permission": undo["permission"]})
+        # The permission read names `read` and `write`; the invitation takes `pull` and `push`.
+        permission = {"read": "pull", "write": "push"}.get(undo["permission"], undo["permission"])
+        _send(client, "PUT", self._url(undo), json={"permission": permission})
         # An outside collaborator gets an invitation, not access, until they accept.
         return ActionResult(
             ok=True, detail=f"{undo['user']} re-invited to {undo['repo']} with {undo['permission']}"
@@ -175,6 +215,8 @@ class RemoveDeployKey(BaseAction):
     summary = "Remove a deploy key from a repository"
     reversible = True
     required_params = ("key_id", "repo")
+    # A deploy key's id is GitHub's own and names one key; the repo locates it.
+    identity_params = ("key_id",)
 
     def plan(self, params: dict[str, Any]) -> str:
         return (
@@ -290,6 +332,28 @@ class RepoAccess(BaseLookup):
         }
 
 
+class OrgOwners(BaseLookup):
+    type = "github.org_owners"
+    provider = "github"
+    platforms = ("github",)
+    summary = "An organization's owners, and how many stay besides a given user"
+    required_params = ("org",)
+
+    def run(
+        self, creds: Credentials, params: dict[str, Any], http: httpx.Client | None = None
+    ) -> dict[str, Any]:
+        self.check(params)
+        found = _send(
+            self.client(_headers(creds), http),
+            "GET",
+            f"{API}/orgs/{seg(params['org'])}/members",
+            params={"role": "admin", "per_page": 100},
+        ).json()
+        owners = [str(m.get("login", "")) for m in found]
+        others = [o for o in owners if o.lower() != str(params.get("user", "")).lower()]
+        return {"owners": owners, "holders_left": str(len(others))}
+
+
 ACTIONS = [
     MakeRepoPrivate(),
     DemoteOrgOwner(),
@@ -297,10 +361,10 @@ ACTIONS = [
     RemoveDeployKey(),
     EnableSecretScanning(),
 ]
-LOOKUPS = [RepoAccess()]
+LOOKUPS = [RepoAccess(), OrgOwners()]
 
 
 def probe(creds: Credentials, http: httpx.Client | None = None) -> str:
-    """The token's own user."""
+    """The token's own user, which `credentials.record_check` keeps as `acts_as`."""
     me = _send(READ.client(_headers(creds), http), "GET", f"{API}/user").json()
     return f"signed in as {me.get('login', '')}"

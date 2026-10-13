@@ -19,6 +19,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from jwt.algorithms import RSAAlgorithm
 
 from shoc.api import oidc
 from shoc.errors import SignInError, UpstreamError, ValidationError
@@ -178,6 +179,27 @@ def test_keys_are_one_client_per_jwks_uri(monkeypatch):
     assert oidc._keys("https://idp.example.com/other-keys") is not first
 
 
+def test_the_keys_are_fetched_like_every_other_provider_call(monkeypatch):
+    jwk = RSAAlgorithm.to_jwk(RSA_KEY.public_key(), as_dict=True)
+    fetched: list[str] = []
+
+    def get_json(url: str) -> dict[str, Any]:
+        fetched.append(url)
+        return {"keys": [{**jwk, "kid": "k1", "use": "sig"}]}
+
+    monkeypatch.setattr(oidc, "_jwks", {})
+    monkeypatch.setattr(oidc, "_get_json", get_json)
+    for _ in range(2):
+        assert oidc.claims(provider(), signed(payload()), NONCE)["sub"] == "subject-1"
+    assert fetched == ["https://idp.example.com/keys"], "fetched once, then kept"
+
+
+def test_keys_are_never_fetched_over_http(monkeypatch):
+    monkeypatch.setattr(oidc, "_jwks", {})
+    with pytest.raises(ValidationError, match="must be https"):
+        oidc._keys("http://idp.example.com/keys").get_signing_key_from_jwt(signed(payload()))
+
+
 # -- whose email it is ---------------------------------------------------------------
 def refused_code(found: dict[str, Any], issuer: str = ISSUER) -> str:
     with pytest.raises(SignInError) as refused:
@@ -245,8 +267,7 @@ def offline(monkeypatch):
     def no_network(*args, **kwargs):
         raise AssertionError("discovery reached the network")
 
-    monkeypatch.setattr(oidc.httpx, "get", no_network)
-    monkeypatch.setattr(oidc.httpx, "post", no_network)
+    monkeypatch.setattr(oidc.httpx.HTTPTransport, "handle_request", no_network)
 
 
 def serve(monkeypatch, found: dict[str, Any]) -> list[str]:
@@ -402,3 +423,19 @@ def test_the_network_helpers_refuse_plain_http_and_private_hosts(offline):
         oidc._post_form("http://idp.example.com/token", {})
     with pytest.raises(ValidationError):
         oidc._get_json("https://192.168.1.10/.well-known/openid-configuration")
+
+
+def test_a_provider_name_that_resolves_to_a_private_address_is_refused(offline, monkeypatch):
+    """The name is public; what it resolves to is not (SEC-1)."""
+    import socket
+
+    from shoc.detect import report
+
+    def getaddrinfo(host, port, *args, **kwargs):
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.5", port))]
+
+    monkeypatch.setattr(report.socket, "getaddrinfo", getaddrinfo)
+    with pytest.raises(ValidationError, match="internal host"):
+        oidc.discover(ISSUER)
+    with pytest.raises(ValidationError, match="internal host"):
+        oidc.exchange(provider(), "code", "verifier", "https://shoc.example.com/cb")

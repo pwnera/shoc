@@ -97,7 +97,12 @@ A pack differs from a rule in three ways, and the differences are the point:
   keeps rows whose grouping is unusual across the population. Both compile to
   plain `NOT EXISTS` / `HAVING` over the same canonical schema, with no window
   function a dialect might not have, nothing SQLGlot cannot translate, and the
-  conformance suite gets both.
+  conformance suite gets both. Amended on 2026-10-12 (D233): `rare` also takes
+  `new_only: true`, which reports a grouping only in the window its first event
+  was ingested, and the five `seen_by_fewer_than` packs set it. A rare row
+  carries each pivot it does not group on as its lowest value and
+  `<alias>_max`, so a finding names the host or user when only one did it, and
+  it cites an event ingested in the window.
 - **A hypothesis and a triage question in prose.** They are what makes the
   result readable by a person who is not a hunter, and they are what the Hunter
   is given when it triages.

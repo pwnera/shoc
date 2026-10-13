@@ -1,14 +1,15 @@
 id: github_force_push_to_default_branch
-title: Force push to main or master
+title: Force push to a default or protected branch
 description: >
-  The default branch's history was rewritten. It can hide a malicious commit
-  behind a clean-looking log or destroy work, and branch protection normally
-  forbids it. A webhook reports every forced push; the audit log only one that
-  overrode branch protection.
+  The history of a repository's default branch, or of a protected branch, was
+  rewritten. It can hide a malicious commit behind a clean-looking log or
+  destroy work, and branch protection normally forbids it. A webhook reports
+  every forced push and names the default branch; the audit log reports only one
+  that overrode branch protection, on whichever branch it protected.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-03
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.55
 attack: [T1565.001, T1195.002]
 logsource:
@@ -18,13 +19,17 @@ detection:
   selection:
     api.operation: push
     raw.forced: "true"
+  # The webhook connector writes the default branch as a full ref.
+  default_branch:
+    message|fieldref: raw.default_ref
+  # A record stored before it did.
+  main_or_master:
     message: [refs/heads/main, refs/heads/master]
   # An admin's force push past protection, with force_push among the reasons.
   selection_override:
     api.operation: protected_branch.policy_override
     raw.reasons|contains: force_push
-    raw.branch: [refs/heads/main, refs/heads/master]
-  condition: selection or selection_override
+  condition: (selection and (default_branch or main_or_master)) or selection_override
   timeframe: 15m
 entity: resource.uid
 fields: [actor.user.name, resource.uid, message, http_request.url.url_string, raw.branch]

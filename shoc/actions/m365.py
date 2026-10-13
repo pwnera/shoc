@@ -13,11 +13,12 @@ User.RevokeSessions.All.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 
 from shoc.actions.base import READ, ActionResult, BaseAction, BaseLookup, Credentials, seg, send
+from shoc.errors import StoreError
 
 GRAPH = "https://graph.microsoft.com/v1.0"
 # What Graph returns on a rule but refuses on create.
@@ -50,23 +51,45 @@ class DeleteInboxRule(BaseAction):
     summary = "Delete a mailbox rule that forwards, hides or deletes mail"
     reversible = True
     required_params = ("user", "rule_id")
+    # A playbook names the mailbox and, as `rule_name`, the rule the case's event
+    # made; the lookup finds its id (ir-7).
+    resolve: ClassVar = {"rule_id": (None, None, "m365.suspect_inbox_rule")}
 
     def plan(self, params: dict[str, Any]) -> str:
         return f"Delete inbox rule {params.get('rule_id')} from {params.get('user')}'s mailbox"
 
-    def execute(
+    def snapshot(
         self, creds: Credentials, params: dict[str, Any], http: httpx.Client | None = None
+    ) -> dict[str, Any]:
+        """The rule to recreate, read and kept before it is deleted (RSP-4)."""
+        self.check(params)
+        url = f"{_rules_url(params['user'])}/{seg(params['rule_id'])}"
+        rule = _send(_client(self, creds, http), "GET", url).json()
+        return {k: v for k, v in rule.items() if k not in RULE_READ_ONLY}
+
+    def execute(
+        self,
+        creds: Credentials,
+        params: dict[str, Any],
+        http: httpx.Client | None = None,
+        before: dict[str, Any] | None = None,
     ) -> ActionResult:
         self.check(params)
         user, rule_id = params["user"], params["rule_id"]
         client = _client(self, creds, http)
-        url = f"{_rules_url(user)}/{seg(rule_id)}"
-        rule = _send(client, "GET", url).json()
-        _send(client, "DELETE", url)
-        kept = {k: v for k, v in rule.items() if k not in RULE_READ_ONLY}
+        kept = before if before is not None else self.snapshot(creds, params, client)
+        try:
+            _send(client, "DELETE", f"{_rules_url(user)}/{seg(rule_id)}")
+        except StoreError as exc:
+            # Deleted already: the first try did it and its answer was lost (RSP-4).
+            cause = exc.__cause__
+            if before is None or not (
+                isinstance(cause, httpx.HTTPStatusError) and cause.response.status_code == 404
+            ):
+                raise
         return ActionResult(
             ok=True,
-            detail=f"inbox rule '{rule.get('displayName', rule_id)}' deleted from {user}",
+            detail=f"inbox rule '{kept.get('displayName', rule_id)}' deleted from {user}",
             data={"user": user, "rule": kept},
             undo={"user": user, "rule": kept},
         )
@@ -184,6 +207,54 @@ class ListInboxRules(BaseLookup):
         }
 
 
+def _sends_away(rule: dict[str, Any], domain: str) -> bool:
+    """Whether a rule forwards or redirects mail outside the mailbox's own domain
+    (anywhere, when the mailbox is named by id), deletes it, or moves it."""
+    acts = rule.get("actions") or {}
+    to = [
+        str((r.get("emailAddress") or {}).get("address", "")).lower()
+        for key in ("forwardTo", "forwardAsAttachmentTo", "redirectTo")
+        for r in acts.get(key) or []
+    ]
+    away = any(not domain or a.rpartition("@")[2] != domain for a in to)
+    hides = acts.get("delete") or acts.get("permanentDelete") or acts.get("moveToFolder")
+    return away or bool(hides)
+
+
+class SuspectInboxRule(BaseLookup):
+    """The rule a playbook deletes (ir-7): the one named `rule_name`, which is the
+    case's New-InboxRule or Set-InboxRule object, when exactly one rule has that
+    name; else the one enabled rule that sends mail away. Mailboxes often hold a
+    legitimate move rule too, so with several suspects and no name it names
+    nothing, the step is refused rather than guessed, and every suspect is
+    listed for the crew."""
+
+    type = "m365.suspect_inbox_rule"
+    provider = "m365"
+    platforms = ("m365",)
+    summary = "The one inbox rule that forwards mail outside the company, deletes or moves it"
+    required_params = ("user",)
+
+    def run(
+        self, creds: Credentials, params: dict[str, Any], http: httpx.Client | None = None
+    ) -> dict[str, Any]:
+        self.check(params)
+        user = str(params["user"])
+        domain = user.rpartition("@")[2].lower()
+        client = _client(self, creds, http)
+        rules = _send(client, "GET", _rules_url(user)).json().get("value", [])
+        suspects = [r for r in rules if r.get("isEnabled") and _sends_away(r, domain)]
+        # Exchange names a rule's object `<mailbox>\<rule name>`. The name is log
+        # content: it only ever picks among the mailbox's own rules.
+        name = str(params.get("rule_name") or "").rpartition("\\")[2].strip()
+        named = [r for r in rules if name and r.get("displayName") == name]
+        picked = named if len(named) == 1 else suspects
+        return {
+            "rule_id": str(picked[0].get("id", "")) if len(picked) == 1 else "",
+            "suspects": [{"rule_id": r.get("id"), "name": r.get("displayName")} for r in suspects],
+        }
+
+
 class ListAppConsents(BaseLookup):
     type = "m365.list_app_consents"
     provider = "m365"
@@ -226,7 +297,7 @@ class ListAppConsents(BaseLookup):
 
 
 ACTIONS = [DeleteInboxRule(), RevokeSessions(), RevokeAppConsent()]
-LOOKUPS = [ListInboxRules(), ListAppConsents()]
+LOOKUPS = [ListInboxRules(), SuspectInboxRule(), ListAppConsents()]
 
 
 def probe(creds: Credentials, http: httpx.Client | None = None) -> str:

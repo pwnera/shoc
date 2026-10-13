@@ -16,10 +16,12 @@ the cursor and not fetched twice.
 
 from __future__ import annotations
 
+import contextlib
 import gzip
 import hashlib
 import json
 import xml.etree.ElementTree as ET
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import quote
@@ -53,7 +55,25 @@ class Bucket:
         resp.raise_for_status()
         return resp.content
 
+    @contextlib.contextmanager
+    def stream(self, http: httpx.Client, key: str) -> Iterator[httpx.Response]:
+        """A GET whose body is read as it arrives, following the bucket to its region once."""
+        url, headers = self._signed(key, None)
+        with http.stream("GET", url, headers=headers) as resp:
+            moved = resp.headers.get("x-amz-bucket-region")
+            if not (resp.status_code in (301, 400) and moved and moved != self.region):
+                yield _checked(resp)
+                return
+        self.region = str(moved)
+        url, headers = self._signed(key, None)
+        with http.stream("GET", url, headers=headers) as resp:
+            yield _checked(resp)
+
     def _get(self, http: httpx.Client, key: str, query: dict[str, str] | None) -> httpx.Response:
+        url, headers = self._signed(key, query)
+        return http.get(url, headers=headers)
+
+    def _signed(self, key: str, query: dict[str, str] | None) -> tuple[str, dict[str, str]]:
         host = self.endpoint or f"{self.name}.s3.{self.region}.amazonaws.com"
         path = ("/" + self.name if self.endpoint else "") + "/" + quote(key, safe="/-_.~")
         headers = awssig.headers(
@@ -69,7 +89,7 @@ class Bucket:
             extra={"x-amz-content-sha256": EMPTY_SHA256},
         )
         qs = awssig.canonical_query(query)
-        return http.get(f"https://{host}{path}" + (f"?{qs}" if qs else ""), headers=headers)
+        return f"https://{host}{path}" + (f"?{qs}" if qs else ""), headers
 
     def list(
         self, http: httpx.Client, prefix: str, after: str = "", delimiter: str = ""
@@ -84,6 +104,13 @@ class Bucket:
         keys = [e.text or "" for e in root.findall(f"{NS}Contents/{NS}Key")]
         prefixes = [e.text or "" for e in root.findall(f"{NS}CommonPrefixes/{NS}Prefix")]
         return keys, prefixes, root.findtext(f"{NS}IsTruncated") == "true"
+
+
+def _checked(resp: httpx.Response) -> httpx.Response:
+    if resp.is_error:
+        resp.read()  # so the error names S3's <Code>, not only the status
+    resp.raise_for_status()
+    return resp
 
 
 def trails(bucket: Bucket, http: httpx.Client, base: str, region: str = "") -> list[str]:

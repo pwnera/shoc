@@ -48,4 +48,12 @@ describe("entity kinds", () => {
     expect(exploreQuery(parseEntity("key:AKIAIOSFODNN7EXAMPLE")!)).toBe("actor.session.uid=AKIAIOSFODNN7EXAMPLE");
     expect(exploreQuery(parseEntity("cdn.example.com")!)).toBe("cdn.example.com");
   });
+
+  it("knows an Okta or Entra sign-in session, the kernel's session: key, apart from an AWS key", () => {
+    const guid = "102d3b1c-5a4e-4f0b-9c1d-7e8f9a0b1c2d";
+    expect(parseEntity(`session:${guid}`)).toMatchObject({ kind: "session", type: "session", value: guid, key: `session:${guid}` });
+    expect(isAwsKey(`session:${guid}`)).toBe(false);
+    expect(intelType(parseEntity(`session:${guid}`)!)).toBe("");
+    expect(exploreQuery(parseEntity(`session:${guid}`)!)).toBe(`actor.session.uid=${guid}`);
+  });
 });

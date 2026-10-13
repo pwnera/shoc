@@ -50,9 +50,14 @@ fields:
   # Instance-role credentials name the instance they were issued to.
   device_uid: { path: userIdentity.inScopeOf.credentialsIssuedTo, transform: arn_name }
   resource_type: { path: "resources[0].type" }
-  # EC2 names no resources: a shared snapshot or AMI is in its request.
+  # EC2 names no resources: a shared snapshot or AMI is in its request. The key
+  # CreateAccessKey made is in its response, so a playbook can disable it (ir-6).
   resource_uid:
-    paths: ["resources[0].ARN", requestParameters.snapshotId, requestParameters.imageId]
+    paths:
+      - "resources[0].ARN"
+      - requestParameters.snapshotId
+      - requestParameters.imageId
+      - responseElements.accessKey.accessKeyId
 
 derive:
   # A call made by an AWS service from inside AWS has a service name, not an

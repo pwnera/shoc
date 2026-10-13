@@ -1,0 +1,12 @@
+-- 058 audit rows say what they were about (SEC-1)
+--
+-- A row held only hashes of the call's input and output, so the log could say
+-- who called user.update and when, not which account or which role. `subject`
+-- keeps a short, masked summary: identifiers such as an email, a role, a case
+-- id or an endpoint's host, the call's citations, and for a sign-in the client
+-- address. Never a secret and never free text, since a row is never deleted
+-- (shoc/db/audit.py, subject_of).
+--
+-- A row with a subject hashes it with the rest; a row without one hashes
+-- exactly as before, so every row written before this migration still verifies.
+ALTER TABLE shoc.audit_log ADD COLUMN IF NOT EXISTS subject text;

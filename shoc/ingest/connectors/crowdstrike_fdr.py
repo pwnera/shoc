@@ -9,8 +9,11 @@ id `aid` and an epoch-millisecond `timestamp`. Events are under `data/`; the
 skipped.
 
 A page's messages are deleted at the start of the next fetch, after the run loop
-has loaded their events, as gcp_audit acknowledges Pub/Sub. A message the queue
-hands out again in between loads again, and the store keeps one row per event id.
+has loaded their events; HOLD outlasts the cycle between two runs. A message
+the queue hands out again in between loads again, and the store keeps one row
+per event id.
+A page reads whole messages until it holds `limit` events, and each data file is
+unpacked line by line as it downloads: one file can be hundreds of MB unpacked.
 
 FDR carries every event the sensor records, which for a few hundred endpoints is
 more than all of a small company's other sources together. `event_names` keeps
@@ -19,8 +22,9 @@ the ones detections and questions read (DEFAULT_EVENTS); `["*"]` keeps all.
 
 from __future__ import annotations
 
-import gzip
 import json
+import zlib
+from collections.abc import Iterator
 from typing import Any
 from urllib.parse import urlparse
 
@@ -55,6 +59,9 @@ DEFAULT_EVENTS = (
 )
 BATCH = 10  # the most SQS hands out or deletes in one call
 HOLD = 1800  # seconds a received message stays hidden; longer than a poll interval
+# A short poll samples a few SQS servers and often answers empty while messages
+# wait; a long poll waits up to this many seconds for one.
+WAIT = 20
 
 
 def region_of(queue_url: str) -> str:
@@ -84,6 +91,26 @@ def _sqs(
     return http.post(f"https://{host}/", content=payload, headers=headers)
 
 
+def _lines(
+    http: httpx.Client, secret: dict[str, Any], region: str, bucket: str, key: str
+) -> Iterator[bytes]:
+    """The lines of one gzipped data file, unpacked as it downloads, so neither
+    the file nor what it unpacks to is held whole. CrowdStrike puts the bucket
+    in the queue's region; one elsewhere is followed there."""
+    unzip, rest = zlib.decompressobj(wbits=31), b""
+    with Bucket(bucket, region, secret).stream(http, key) as resp:
+        for chunk in resp.iter_bytes():
+            while chunk:
+                rest += unzip.decompress(chunk)
+                chunk = unzip.unused_data
+                if unzip.eof:
+                    # A file can be several gzip members, one after another.
+                    unzip = zlib.decompressobj(wbits=31)
+            *lines, rest = rest.split(b"\n")
+            yield from lines
+    yield rest
+
+
 class CrowdStrikeFDRConnector:
     source = "crowdstrike_fdr"
 
@@ -97,7 +124,6 @@ class CrowdStrikeFDRConnector:
             raise ConfigError("crowdstrike_fdr: secret needs access_key_id and secret_access_key")
         region = region_of(queue)
         keep = set(settings.get("event_names") or DEFAULT_EVENTS)
-        buckets: dict[str, Bucket] = {}
         records: list[dict[str, Any]] = []
         handles: list[str] = []
         more = True
@@ -122,20 +148,26 @@ class CrowdStrikeFDRConnector:
                     secret,
                     region,
                     "ReceiveMessage",
-                    {"QueueUrl": queue, "MaxNumberOfMessages": BATCH, "VisibilityTimeout": HOLD},
+                    {
+                        "QueueUrl": queue,
+                        "MaxNumberOfMessages": BATCH,
+                        "VisibilityTimeout": HOLD,
+                        "WaitTimeSeconds": WAIT,
+                    },
                 )
                 resp.raise_for_status()
                 messages = resp.json().get("Messages") or []
-                more = len(messages) == BATCH
+                more = bool(messages)
                 for message in messages:
+                    if len(records) >= limit:
+                        # Not deleted, so the queue hands it out again after HOLD.
+                        break
                     batch = json.loads(message["Body"])
-                    name = str(batch["bucket"])
-                    bucket = buckets.setdefault(name, Bucket(name, region, secret))
                     for item in batch.get("files") or []:
                         path = str(item.get("path") or "")
                         if not path.startswith("data/"):
                             continue
-                        for line in gzip.decompress(bucket.get(http, path)).splitlines():
+                        for line in _lines(http, secret, region, str(batch["bucket"]), path):
                             if not line.strip():
                                 continue
                             event = json.loads(line)

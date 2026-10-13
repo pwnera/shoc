@@ -106,9 +106,12 @@ def test_short_retention_is_reported_rather_than_assumed(ctx, store, config, cle
     _load(store, config.tenant_id, now, [_event()], conn=ctx.db)
     scored = ops.source_quality(ctx.db, ctx.store, config.tenant_id)
     assert scored[0].retention < 1.0
-    assert any("is a lie" in note for note in scored[0].notes), (
-        "a 30-day hunt over a week of data is a lie, and saying so is the job"
+    assert any(ops.LEARNING in note for note in scored[0].notes), (
+        "a 30-day hunt over a week of data is short of its baseline, and saying when it is not"
+        " is the job"
     )
+    raised = ops.alerts(ctx.db, config.tenant_id, store=ctx.store)
+    assert not any(ops.LEARNING in a.detail for a in raised), "learning is not a fault (live-12)"
 
 
 def test_a_source_with_a_long_history_is_not_short_of_retention(ctx, store, config, clean, now):
@@ -125,7 +128,45 @@ def test_a_source_with_a_long_history_is_not_short_of_retention(ctx, store, conf
     )
     scored = ops.source_quality(ctx.db, ctx.store, config.tenant_id)
     assert scored[0].retention_days > 79
-    assert not any("is a lie" in note for note in scored[0].notes)
+    assert not any(ops.LEARNING in note for note in scored[0].notes)
+
+
+def test_a_sparse_source_in_a_short_window_keeps_its_history(ctx, store, config, clean, now):
+    """Its oldest event in a 7-day window is where the window found it, not where
+    its history starts (OPS-1)."""
+    from shoc.db.pool import execute
+
+    _load(store, config.tenant_id, now - timedelta(hours=3), [_event()], conn=ctx.db)
+    execute(
+        ctx.db,
+        """INSERT INTO shoc.source_history (tenant_id, source, products, first_event_at)
+           VALUES (%s, 'aws_cloudtrail', '{AWS CloudTrail}', now() - interval '11 days')""",
+        (config.tenant_id,),
+    )
+    scored = ops.source_quality(ctx.db, ctx.store, config.tenant_id, days=7)
+    assert scored[0].retention_days > 10
+
+
+@pytest.mark.parametrize(("hole", "named"), [((3, 4), True), ((5, 6), False)])
+def test_a_hole_is_counted_in_working_days(ctx, store, config, clean, now, hole, named):
+    """A backend switch left a Thursday and a Friday nothing reads again, and a
+    lower score alone hid it; a daily source's empty weekend is no hole (OPS-1)."""
+    thursday = 7 + (now.weekday() - 3) % 7  # days back, a week ago or more
+    skip = {thursday - (weekday - 3) for weekday in hole}
+    noon = now.replace(hour=12, minute=0, second=0, microsecond=0)
+    records = [
+        {**_event(f"Get{back}"), "_day_offset": back} for back in range(1, 21) if back not in skip
+    ]
+    _load(store, config.tenant_id, noon, records, conn=ctx.db)
+    scored = ops.source_quality(ctx.db, ctx.store, config.tenant_id)
+    assert any("no events on 2 working day(s)" in n for n in scored[0].notes) is named
+
+
+def test_a_sparse_source_s_empty_days_are_its_rhythm(ctx, store, config, clean, now):
+    for back in (0, 7, 14, 21):
+        _load(store, config.tenant_id, now - timedelta(days=back), [_event(f"Get{back}")], ctx.db)
+    scored = ops.source_quality(ctx.db, ctx.store, config.tenant_id)
+    assert not any("no events on" in note for note in scored[0].notes)
 
 
 def test_a_gap_that_ended_today_still_counts_against_completeness(ctx, store, config, clean, now):

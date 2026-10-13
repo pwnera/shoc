@@ -93,7 +93,7 @@ describe("the Cases screen", () => {
     show();
     await screen.findByText("Leaked key in use");
     const tabs = screen.getAllByRole("tab");
-    expect(tabs.map((t) => t.textContent)).toEqual(["All5", "Investigating1", "Contained1", "Closed3"]);
+    expect(tabs.map((t) => t.textContent)).toEqual(["All5", "Investigating1", "Responding1", "Closed3"]);
     expect(tabs[0]).toHaveAttribute("aria-selected", "true");
     expect(rowKeys()).toEqual([
       "CASE-open-critical",
@@ -138,7 +138,7 @@ describe("the Cases screen", () => {
 
   it("lands on All with open cases only when a fact is pressed, so the list reproduces its number from any tab", async () => {
     serve(CASES);
-    for (const from of ["/cases?tab=closed&by=human", "/cases?tab=contained&q=third"]) {
+    for (const from of ["/cases?tab=closed&by=human", "/cases?tab=responding&q=third"]) {
       const view = show(from);
       await screen.findByRole("button", { name: /^1\s*critical$/ });
       await userEvent.click(screen.getByRole("button", { name: /^1\s*critical$/ }));
@@ -206,7 +206,7 @@ describe("the Cases screen", () => {
 
   it("names the text in the box when a filtered list comes up empty", async () => {
     serve(CASES);
-    show("/cases?tab=contained&severity=critical&q=nomatchxyz");
+    show("/cases?tab=responding&severity=critical&q=nomatchxyz");
     const empty = await screen.findByText("No case matches");
     expect(empty.closest(".sh-empty")).toHaveTextContent("“nomatchxyz”");
   });
@@ -222,7 +222,7 @@ describe("the Cases screen", () => {
     serve(new Error("the store did not answer"));
     show();
     expect(await screen.findByText("Can't tell")).toBeInTheDocument();
-    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["All—", "Investigating—", "Contained—", "Closed—"]);
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["All—", "Investigating—", "Responding—", "Closed—"]);
     expect(screen.getAllByRole("button", { name: "Retry" }).length).toBeGreaterThan(0);
     expect(screen.queryByText("No cases yet")).toBeNull();
   });
@@ -232,5 +232,12 @@ describe("the Cases screen", () => {
     show("/cases?tab=investigating");
     expect(await screen.findByText("No open investigations")).toBeInTheDocument();
     expect(screen.getByText("last closed 3h ago")).toBeInTheDocument();
+  });
+
+  it("names the response phase for what it is, never contained", async () => {
+    serve([kase("CASE-x", { state: "closed", closed_at: at(-3 * hour) })]);
+    show("/cases?tab=responding");
+    expect(await screen.findByText("No case in response")).toBeInTheDocument();
+    expect(screen.queryByText(/contained/i)).toBeNull();
   });
 });

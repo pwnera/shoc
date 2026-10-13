@@ -10,15 +10,46 @@ the cron leader through a Postgres advisory lock.
 ```bash
 cd deploy
 cp .env.example .env
+for v in SHOC_DB_PASSWORD SHOC_APP_DB_PASSWORD SHOC_AGENT_DB_PASSWORD POSTGRES_SUPERUSER_PASSWORD
+do
+  sed -i.bak "s/^$v=\$/$v=$(openssl rand -hex 24)/" .env
+done && rm .env.bak
 docker compose run --rm --no-deps shoc keygen   # put the value in .env as SHOC_MASTER_KEY
 docker compose up -d
 ```
 
+The loop fills the four database passwords, which have no default. Compose
+runs nothing while one is empty, `keygen` included. They are hex because they
+go into connection strings.
+
 That brings up Postgres, a one-shot `migrate` service, `shoc` (which runs
-`serve`) and `worker`; both start once `migrate` has finished, on every `up`. Postgres creates three ordinary roles: `shoc` owns the database and only
-`migrate` uses it, `shoc` and `worker` connect as `shoc_app`, and `shoc_agent`
-only reads. None is the superuser, because a superuser bypasses row-level
-security.
+`serve`), `worker` and `worker-urgent`; all three start once `migrate` has
+finished, on every `up`. `worker-urgent` runs `shoc worker --urgent`, the fast
+lane: it claims only pages, actions, webhook deliveries, detection, source
+pulls, playbooks and the crew's runs on high and critical cases, so a model job
+the other worker runs for ten minutes holds none of them up. Postgres creates
+three ordinary roles: `shoc` owns the database and only `migrate` uses it,
+`shoc` and the workers connect as `shoc_app`, and `shoc_agent` only reads. None
+is the superuser, because a superuser bypasses row-level security.
+
+`shoc keygen` prints a 44-character key. `serve`, `worker` and `migrate` refuse
+the `.env.example` placeholder `replace-me`, which is why `keygen` runs with
+`--no-deps`, and warn about any key shorter than 32 characters; move off one
+with `SHOC_NEW_MASTER_KEY=$(shoc keygen) shoc rotate-key`, or on Compose
+`docker compose run --rm -e SHOC_NEW_MASTER_KEY=<key from keygen> migrate rotate-key`
+([rotating the master key](#rotating-the-master-key)). `SHOC_ALLOW_WEAK_KEY=1`
+lifts the check for tests and local trials only.
+
+A worker stopped by `docker compose stop` or a rolling update finishes the job
+in hand and takes no other. Compose gives it 90 seconds (`stop_grace_period`);
+a model job that runs longer is put back on the queue and run again.
+
+`shoc` and the workers run as the Helm chart's pods do: a read-only root
+filesystem with a 512 MB tmpfs on `/tmp` (ingest batches and warehouse staging
+files), every capability dropped, `no-new-privileges`, and a memory limit of
+1 GB for `shoc` and 2 GB for each worker. Docker keeps at most five 10 MB log
+files per container. To raise a limit, put it in a `docker-compose.override.yml`
+next to the tracked file.
 
 ### Where it listens, and who may talk to it
 
@@ -37,15 +68,19 @@ port is a full human principal. This talks to Postgres directly, so it works
 before `serve` is reachable:
 
 ```bash
-docker compose run --rm shoc token create --who you@example.com --role admin
+docker compose run --rm -e SHOC_CLI_USER=you@example.com shoc token create --who you@example.com --role admin
 ```
+
+The audit log records the command as `cli:<SHOC_CLI_USER>`; left unset, it
+records `cli`. The name is whatever the person running the command declares,
+since whoever can run the CLI on the host also holds the DSN and the master key.
 
 The answer carries the token once. Everyone else gets theirs from you, from the
 CLI, from your assistant over MCP or from the console's Access screen:
 
 ```bash
-docker compose run --rm shoc token create --who alice@example.com --role operator
-docker compose run --rm shoc token create --who ci --kind service --scopes events:write
+docker compose run --rm -e SHOC_CLI_USER=you@example.com shoc token create --who alice@example.com --role operator
+docker compose run --rm -e SHOC_CLI_USER=you@example.com shoc token create --who ci --kind service --scopes events:write
 ```
 
 A person's token names a role (`admin`, `operator`, `deployer` or `reader`); a
@@ -58,13 +93,24 @@ tokens and a VPN address does not. Caddy, Traefik and the console's nginx add a
 forwarding header, which single-user mode refuses; issue a token before you put
 anything in front.
 
+The sign-in limits count attempts per client address, and believe
+`X-Forwarded-For` only from `SHOC_TRUSTED_PROXIES` (default loopback and
+`172.16.0.0/12`, the networks Docker usually assigns). Docker's default port
+publishing keeps a remote client's own address. Rootless Docker, Docker
+Desktop and the userland proxy do not: every client reaches shoc from the
+bridge gateway, a 172.x address inside the default, so a client that reaches
+the port directly can name any address in the header and step around the
+limits. On those runtimes, let only your TLS terminator reach the published
+port, and set `SHOC_TRUSTED_PROXIES` to that terminator's address as shoc sees
+it.
+
 People sign in to the console with an account. Set `SHOC_PUBLIC_URL` in `.env`
 to the address they open it at, recreate `shoc` and `worker` so they read it,
 then invite the first admin from the host:
 
 ```bash
 docker compose up -d
-docker compose run --rm shoc user invite you@example.com --role admin
+docker compose run --rm -e SHOC_CLI_USER=you@example.com shoc user invite you@example.com --role admin
 ```
 
 The answer carries a link once, or says it was emailed when `SHOC_SMTP_URL` is
@@ -75,6 +121,14 @@ from the People tab of the console's Access screen or from your assistant. Signi
 in through the company's identity provider, and the rules every sign-in
 follows, are in
 [`security-model.md`](security-model.md#people-sign-in).
+
+Serve the console through a TLS front that speaks HTTP/2 (Caddy, Traefik,
+`tailscale serve`). Over plain HTTP/1.1 a browser shares six connections per
+host across all its tabs, and every console tab keeps one open for its event
+stream. A tab hidden for 30 seconds closes its stream and picks up from the
+last event when it is in view again. The console is always served from the
+same origin as shoc, by its nginx in production and the Vite proxy in
+development.
 
 ## Kubernetes
 
@@ -95,7 +149,14 @@ The chart does not run Postgres for you: point it at one you manage and back up.
 `SHOC_TOKENS` is required when the chart creates the secret: `serve` listens
 on `0.0.0.0` in the pod and will not start until `SHOC_TOKENS` is set or a token
 or account exists. For people to sign in to the console, add
-`SHOC_PUBLIC_URL`, and `SHOC_SMTP_URL` for mail, to the same secret.
+`SHOC_PUBLIC_URL`, and `SHOC_SMTP_URL` for mail, to the same secret. So do
+`SHOC_HEARTBEAT_URL` and, on Snowflake, all seven `SHOC_SNOWFLAKE_*`
+variables, because the migrate hook that creates the warehouse tables reads
+only the secret and the chart's plain settings. The disk budget is the value
+`diskBudgetGb`. With `secrets.create=true` the chart's own secret is a hook
+kept on uninstall, so `helm uninstall` leaves it and you delete it with
+`kubectl`. `/tmp` is the only writable path, bounded by `tmpSizeLimit`
+(default `1Gi`).
 `shoc migrate` runs as a pre-install and pre-upgrade hook, because migrations are
 forward-only and safe to re-run. It connects with `SHOC_MIGRATE_DSN`, the role
 that owns the schema; `serve` and `worker` never see that DSN and run as
@@ -108,60 +169,114 @@ CREATE ROLE shoc_app LOGIN PASSWORD '…';
 GRANT shoc_app TO shoc;   -- so migrate can grant on the tenant schemas shoc_app creates
 ```
 
-Defaults worth knowing: `dryRun: true` (actions are planned, never executed) and
-`llm.provider: none` (cases are handed to a human with their evidence). Turn
-each on when you are ready.
+Defaults worth knowing: `dryRun: true` (actions are planned, never executed;
+pages still go out) and `llm.provider: none` (cases are handed to a human with
+their evidence). Turn each on when you are ready.
+
+The chart runs the fast lane as its own `-worker-urgent` Deployment
+(`worker.urgentReplicas`, 1 by default; 0 leaves its jobs to the other
+workers), and gives each worker `worker.terminationGracePeriodSeconds` (90) to
+finish the job in hand when a pod stops. `serve`'s readiness probe is
+`/readyz`, which opens a fresh Postgres connection (`SELECT 1`, 2-second connect
+timeout) and answers 503 when the database is unreachable, so a pod leaves the
+Service while Postgres is away. `/healthz` stays the liveness probe and the
+image's `HEALTHCHECK`, so a database blip never restarts a pod.
 
 ## Configuration
 
-Everything is environment variables, so one image works everywhere. Compose
-passes on only the variables in `x-shoc-env` at the top of `docker-compose.yml`,
-which covers Postgres and Databricks; add any other variable to that block, not
-only to `.env`.
+Everything is environment variables, so one image works everywhere. On
+Compose, set a variable from the table below in `.env`: the `x-shoc-env` block
+at the top of `docker-compose.yml` passes each one on. The exceptions are the
+settings of one command (`SHOC_NEW_MASTER_KEY`, `SHOC_ALLOW_WEAK_KEY`,
+`SHOC_CLI_USER`, `SHOC_MCP_ROLE`, `SHOC_MCP_USER`), which go to that command
+with `docker compose run -e`, and `SHOC_CONTENT_DIR`, which needs its directory
+mounted too, so set both in a `docker-compose.override.yml`. The
+`SHOC_SECRET_*` variables a [`shoc.yaml`](#config-as-code)
+names go in `deploy/secrets.env`, one per line, which Compose 2.24 or later
+passes to `shoc` and the workers only, and which may be absent. Keep them out of
+`.env`, which can hold the database passwords and which Compose uses only to
+fill in the file. Do not commit `secrets.env`: it sits in the git checkout and
+holds live provider secrets.
 
 | Variable | What it does |
 | --- | --- |
 | `SHOC_DSN` | Postgres connection string of the role shoc runs as. Required. It should not own the schema, so it cannot disable the audit log's triggers |
 | `SHOC_MIGRATE_DSN` | The role that owns the schema, used only by `shoc migrate`, `shoc grant-readonly` and `shoc rotate-key`. Unset, they use `SHOC_DSN`, and `migrate`, `serve` and `worker` warn that the runtime role owns the audit log |
-| `SHOC_MASTER_KEY` | Encrypts connector and action secrets and people's authenticator seeds, and keys the audit chain. Required, and the same in every process: `shoc migrate` records its fingerprint, and a process with an empty or different key cannot write the audit log. Keep it out of the database, and change it only with `shoc rotate-key`. |
+| `SHOC_MASTER_KEY` | Encrypts connector and action secrets and people's authenticator seeds, and keys the audit chain. Required, and the same in every process: `shoc migrate` records its fingerprint, `serve` refuses to start on a different key, and a process with an empty or different key cannot write the audit log. The placeholder `replace-me` is refused and a key under 32 characters is warned about; `shoc keygen` prints one. Keep it out of the database, and change it only with `shoc rotate-key`. |
+| `SHOC_NEW_MASTER_KEY` | The key `shoc rotate-key` moves to, 32 characters or more. Unset, it generates one. On Compose, pass it with `docker compose run --rm -e`, since it is not in `x-shoc-env` |
+| `SHOC_ALLOW_WEAK_KEY` | `1` lifts the master key checks, for tests and local trials only |
 | `SHOC_READONLY_DSN` | The SELECT-only role agents query through (`shoc grant-readonly` prints it) |
-| `SHOC_TENANT` | Tenant id, default `default` |
+| `SHOC_TENANT` | Tenant id, default `default`: 1 to 41 lowercase letters, digits or `_`, starting with a letter or digit and not ending in `_gate` or `_hunt_gate`, the suffixes of the merge gates' scratch tenants. It names the tenant's schema, catalog, dataset or database unchanged, and the warehouse write credential creates two scratch namespaces beside it (`<tenant>_gate`, `<tenant>_hunt_gate`) |
 | `SHOC_BACKEND` | `postgres`, `databricks`, `snowflake`, `redshift` or `bigquery` |
-| `SHOC_DRY_RUN` | `1` (default) plans actions without executing them |
+| `SHOC_DRY_RUN` | `1` plans every action without executing it, and `0` lets response act; either wins over the policy file's `dry_run` in both directions. Unset, the policy decides (`defaults.dry_run`, or an action's own `dry_run`). Compose and the chart set `1`. A page is never a dry run (D168, D180) |
 | `SHOC_TOKENS` | JSON map of API tokens to a role (people) or a kind and scopes (machines), an id and a tenant; checked by REST, ingest, the stream, `/metrics` and `/mcp` alongside the tokens `token.create` issues |
 | `SHOC_BIND` | The address the port is published on. Compose publishes on it; `serve` checks it before `--host` |
 | `SHOC_PUBLIC_URL` | The console's origin as people reach it, e.g. `https://shoc.example.com`. Required for any sign-in: emailed links and the SSO redirect URI are built from it, it is the only `Origin` a sign-in or a cookie request is accepted from, and `https` makes the session cookie `Secure` |
 | `SHOC_SMTP_URL` | The mail server for invitations, resets and lock notices: `smtps://user:pass@host:465` (TLS) or `smtp://user:pass@host:587` (STARTTLS, required). Certificates are verified. Unset, or when a mail cannot be sent, `user.invite` and `user.reset` return their link once |
 | `SHOC_MAIL_FROM` | The `From` address of that mail. Defaults to the SMTP user when that is an address |
-| `SHOC_TRUSTED_PROXIES` | Comma-separated networks whose `X-Forwarded-For` is believed when sign-in attempts are counted per client address; the client is the first entry, read from the right, outside them. Default `127.0.0.0/8,::1/128,172.16.0.0/12`: loopback and the networks Docker usually assigns. Add a TLS terminator that runs on another host, and have it append `X-Forwarded-For`, or everyone shares its address |
-| `SHOC_LLM_PROVIDER` | `none` (default), `anthropic`, `openai` (`/chat/completions`) or `openai-responses` (`/responses`) |
+| `SHOC_TRUSTED_PROXIES` | Comma-separated networks whose `X-Forwarded-For` is believed when sign-in attempts are counted per client address; the client is the first entry, read from the right, outside them. Default `127.0.0.0/8,::1/128,172.16.0.0/12`: loopback and the networks Docker usually assigns. Add a TLS terminator that runs on another host, and have it append `X-Forwarded-For`, or everyone shares its address. Under rootless Docker, Docker Desktop or the userland proxy, narrow it to your terminator's address ([why](#where-it-listens-and-who-may-talk-to-it)) |
+| `SHOC_LLM_PROVIDER` | `none` (default, or `off`), `anthropic`, `openai` (`/chat/completions`; `openai-compatible` and `compatible` are the same) or `openai-responses` (`/responses`). The worker stops at start on any other value |
 | `SHOC_LLM_API_KEY`, `SHOC_LLM_MODEL`, `SHOC_LLM_MODEL_CHEAP`, `SHOC_LLM_BASE_URL` | The crew's model at startup. `llm.configure` overrides any of them per tenant without a restart |
 | `SHOC_LLM_BASE_URL_ALLOWLIST` | Comma-separated hosts a base URL set through `llm.configure` may name. Default: the host of `SHOC_LLM_BASE_URL`, `api.anthropic.com` and `api.openai.com` |
 | `SHOC_LLM_MAX_TOKENS` | The most tokens one model reply may use |
 | `SHOC_LLM_PRICE_IN`, `SHOC_LLM_PRICE_OUT` | Override the price table used to record LLM spend |
 | `SHOC_CREW_SAMPLES` | Independent reads behind a confidence (default 2) |
 | `SHOC_CONTENT_DIR` | Where rules, hunts, playbooks and the policy are read from (default: the copy shipped with the package) |
-| `SHOC_DB_PASSWORD`, `SHOC_APP_DB_PASSWORD`, `SHOC_AGENT_DB_PASSWORD`, `POSTGRES_SUPERUSER_PASSWORD` | Compose only: the database passwords of the owner, the runtime role, the agents' role and the superuser, which default to `shoc`, `shoc_app`, `shoc_agent` and `postgres`. Set all four before Postgres first starts on anything but your own machine |
-| `SHOC_VERSION` | Compose only: the image tag (default `edge`) |
-| `SHOC_RETENTION_DAYS` | Days of events kept (default 90) |
-| `SHOC_INTEL_FEEDS` | `off` stops the two default abuse.ch feeds and the worker's daily download of the lookup lists, which then load on the first lookup |
+| `SHOC_DB_PASSWORD`, `SHOC_APP_DB_PASSWORD`, `SHOC_AGENT_DB_PASSWORD`, `POSTGRES_SUPERUSER_PASSWORD` | Compose only, and required: the database passwords of the owner, the runtime role, the agents' role and the superuser. Generate each with `openssl rand -hex 24`. Postgres reads them only when its volume is first created, so changing one later needs `ALTER ROLE … PASSWORD` in Postgres as well. An install created when they defaulted to `shoc`, `shoc_app`, `shoc_agent` and `postgres` sets those values in `.env` before upgrading |
+| `SHOC_VERSION` | Compose only: the image tag (default `edge`, main as of its last green CI run). Pin a build by its digest with `SHOC_VERSION=edge@sha256:…`, which Docker pulls by the digest alone. Release and edge images are signed keylessly; check one with `cosign verify ghcr.io/pwnera/shoc:edge --certificate-identity-regexp '^https://github.com/pwnera/shoc/.github/workflows/[a-z]+.yml@refs/heads/main$' --certificate-oidc-issuer https://token.actions.githubusercontent.com`. A release's CycloneDX SBOMs are attested to each platform's digest, so `cosign verify-attestation --type cyclonedx` runs against that digest |
+| `SHOC_RETENTION_DAYS` | Days of events kept (default 90), and of the copies derived from them; not of cases or the audit log ([what is kept](#retention)). Postgres keeps up to about 31 days more |
+| `SHOC_INTEL_FEEDS` | `off` stops the two default abuse.ch feeds, the worker's download of the lookup lists on its six-hourly intel refresh, and the load of the warninglists and IANA's RDAP bootstrap that `serve` and `shoc mcp` start at startup and on a report read or `intel.add`. The lists then load on the first lookup. A feed you configure yourself (OTX, MISP, a list) still loads the warninglists when it pulls ([what shoc contacts](quickstart.md#what-shoc-contacts-on-its-own)) |
+| `SHOC_HEARTBEAT_URL` | A URL the worker sends a `GET` after every successful hourly `ops.check`, once per tenant, for an outside dead-man monitor ([below](#an-outside-monitor)). Unset, nothing is sent and `health status` says so |
+| `SHOC_DISK_BUDGET_GB` | The disk Postgres may fill, in GB (10^9 bytes). At 80% Ops raises `store.size` (medium); at 90% it is high, the Manager pages once a day and `health status` is not ok. Unset, there is no check |
+| `SHOC_CLI_USER` | The name a CLI command is audited under, as `cli:<name>`; unset, `cli`. Declared by whoever runs the command, not authenticated |
 | `SHOC_MCP_ROLE` | The role of the person driving the `shoc mcp` stdio client: `admin`, `operator`, `deployer` or `reader`. Unset, the client is an external agent. An HTTP client is whoever its token names |
 | `SHOC_MCP_USER` | The id a stdio client with a role is audited under |
-| `SHOC_DATABRICKS_*`, `SHOC_SNOWFLAKE_*` | Warehouse backends |
+| `SHOC_DATABRICKS_HOST`, `SHOC_DATABRICKS_HTTP_PATH`, `SHOC_DATABRICKS_TOKEN` | The Databricks SQL warehouse and the token shoc loads and queries with |
 | `SHOC_DATABRICKS_READONLY_TOKEN`, `SHOC_DATABRICKS_READONLY_PRINCIPAL` | The token agents read Databricks with, and the principal or group it belongs to, which `shoc migrate` grants `USE` and `SELECT` on each tenant's catalog |
+| `SHOC_SNOWFLAKE_ACCOUNT` | The account identifier (`orgname-accountname`) |
+| `SHOC_SNOWFLAKE_USER` | The service user shoc signs in as |
+| `SHOC_SNOWFLAKE_PRIVATE_KEY` | Key-pair sign-in, the recommended way: an unencrypted PKCS#8 PEM. On one line of `.env`, write its newlines as `\n` |
+| `SHOC_SNOWFLAKE_PASSWORD` | Only when no private key is set |
+| `SHOC_SNOWFLAKE_WAREHOUSE` | The warehouse statements run on |
+| `SHOC_SNOWFLAKE_ROLE` | The role shoc assumes |
 | `SHOC_SNOWFLAKE_READONLY_ROLE` | The role agents read Snowflake with. The shoc user must hold it; `shoc migrate` grants it `USAGE` and `SELECT` on each tenant's database |
 | `SHOC_REDSHIFT_DSN` | The Redshift cluster or workgroup as a Postgres connection string, e.g. `postgresql://shoc:…@cluster.abc.eu-west-1.redshift.amazonaws.com:5439/dev?sslmode=require` |
-| `SHOC_REDSHIFT_STAGE`, `SHOC_REDSHIFT_REGION` | The S3 prefix batches are staged under (`s3://bucket/prefix`) and its region |
+| `SHOC_REDSHIFT_STAGE`, `SHOC_REDSHIFT_REGION` | The S3 prefix batches are staged under (`s3://bucket/prefix`) and its region. Give the prefix an S3 lifecycle rule that expires objects after one day: a worker killed mid-load leaves its batch there, and shoc lists no bucket |
 | `SHOC_REDSHIFT_AWS_ACCESS_KEY_ID`, `SHOC_REDSHIFT_AWS_SECRET_ACCESS_KEY` | The key shoc writes and deletes staged batches with: `s3:PutObject` and `s3:DeleteObject` on the prefix and nothing else |
 | `SHOC_REDSHIFT_IAM_ROLE` | The role `COPY` reads the prefix as: `default` (the cluster's default role, the default) or an ARN |
 | `SHOC_REDSHIFT_READONLY_DSN` | The DSN agents read Redshift with; `shoc migrate` grants its user `USAGE` and `SELECT` on each tenant's schema |
 | `SHOC_BIGQUERY_PROJECT`, `SHOC_BIGQUERY_LOCATION` | The Google Cloud project that holds the datasets, and their location (default `US`) |
 | `SHOC_BIGQUERY_CREDENTIALS` | A service-account key, as its JSON or the path of the file. The account needs BigQuery Data Editor and Job User on the project |
 | `SHOC_BIGQUERY_READONLY_CREDENTIALS` | The service account agents read BigQuery as. Give it Job User on the project; `shoc migrate` grants it Data Viewer on each tenant's dataset |
+| `SHOC_BIGQUERY_MAX_BYTES_BILLED` | The most one BigQuery read may bill, in bytes (default `0`, no cap). A read past it fails and bills nothing, and the error lands on the rule or read that ran it. Loads, retention and table changes never carry it. BigQuery checks it against an estimate from the clustering, so size it to the stored bytes of the columns a rule reads |
 | `SHOC_CYCLE_SECONDS` | How often detection runs, and the shortest interval a source polls at, the same on every backend (default 900) |
-| `SHOC_STATEMENT_TIMEOUT` | Seconds before a query is cancelled (default 120); on Databricks this includes queueing and warehouse start |
-| `SHOC_MAX_REQUEST_BYTES` | Largest accepted request body (default 32 MB) |
+| `SHOC_STATEMENT_TIMEOUT` | Seconds before a statement is cancelled (default 120, 0 for none). It bounds every `serve` and `worker` Postgres session as well as the event store; those sessions also give up a lock wait after 10 seconds and end a transaction left idle for 5 minutes. The limits are set after connecting, so `options` in the DSN and PgBouncer keep working. On Databricks, Snowflake and BigQuery it includes queueing, and the warehouse is asked to stop the statement too: `STATEMENT_TIMEOUT` on Databricks, `STATEMENT_TIMEOUT_IN_SECONDS` and `STATEMENT_QUEUED_TIMEOUT_IN_SECONDS` on Snowflake, `jobTimeoutMs` on BigQuery query and load jobs, which shoc also cancels once the deadline passes |
+| `SHOC_MAX_REQUEST_BYTES` | Largest accepted request body (default 32 MB), counted as it arrives, so a chunked body with no declared length is refused too. A body is read only after its caller has authenticated, and `/slack/*` bodies are capped at 64 KiB |
 | `SHOC_MAX_INGEST_RECORDS` | Records per ingest call (default 50,000) |
+
+An unexpected error answers 500 `internal_error` with the message
+`shoc failed; see the serve log (<id>)`, and the full error is in the serve log
+under that id.
+
+### An outside monitor
+
+shoc watches its sources, its detection and its pages, but a host, Postgres or
+both roles going down stop that watching with them. Set `SHOC_HEARTBEAT_URL` to
+a check at an outside dead-man monitor (healthchecks.io, Cronitor, Uptime Kuma)
+with a period of an hour and some grace. The worker sends it a `GET` after each
+hourly `ops.check` that ran to the end, and none when a step failed, so the
+monitor alerts you when the pings stop. It is the one thing to set up besides
+a way for pages to reach you: a PagerDuty routing key (with `region: eu` for an
+account in PagerDuty's EU region), Slack, or `SHOC_SMTP_URL`
+([quick start](quickstart.md#7-make-sure-shoc-can-reach-you)). Unset by
+default; when it is set, the worker logs its host name at startup, as it does
+for every outbound host nobody asked for (D57, D242), and while it is unset
+`health status` says so.
+
+Postgres cannot see how full its disk is. Set `SHOC_DISK_BUDGET_GB` to what it
+may fill, and the hourly check compares the database's size with it (D243):
+80% raises `store.size`, and 90% pages once a day and makes `health status`
+not ok. `health status` reports the database's size either way.
 
 ## Config as code
 
@@ -173,14 +288,22 @@ shoc plan -f shoc.yaml        # what would change
 shoc apply -f shoc.yaml -y    # make it so
 ```
 
-`SHOC_RETENTION_DAYS` (default 90) is how many days of events survive the
-nightly partition drop. A `retention_days` in the file overrides it once applied,
-and stays through restarts. An instance loaded with historical data, such as a
-replayed public dataset or a backfill older than 90 days, must raise one of them
-or lose that data at the next nightly run.
+On Docker there is no `shoc` on the host, and a container cannot see a file
+next to `docker-compose.yml` unless it is mounted. From `deploy/`:
+
+```bash
+docker compose run --rm -T --no-deps --entrypoint sh shoc \
+  -c 'shoc init-config -f /tmp/shoc.yaml >/dev/null && cat /tmp/shoc.yaml' > shoc.yaml
+docker compose run --rm -v "$PWD/shoc.yaml:/home/shoc/shoc.yaml:ro" shoc plan -f shoc.yaml
+docker compose run --rm -v "$PWD/shoc.yaml:/home/shoc/shoc.yaml:ro" shoc apply -f shoc.yaml -y
+```
+
+`plan` and `apply` read the `SHOC_SECRET_*` values in the process that runs
+them, here the `shoc` container, which takes them from `deploy/secrets.env`.
 
 ```yaml
 version: 1
+retention_days: 90
 sources:
   - source: okta
     settings: { org_url: https://acme.okta.com }
@@ -189,9 +312,11 @@ intel_feeds:
   - feed: abuse_ch_urlhaus
 slack:
   channel: C0123456789
+  team_id: T0123456789
   bot_token_env: SHOC_SECRET_SLACK_BOT_TOKEN
   signing_secret_env: SHOC_SECRET_SLACK_SIGNING_SECRET
   approvers: { U0123ALICE: alice }
+  readers: { U0789DEE: dee }   # everyone else who may use /shoc; leave out to keep the stored list
 ```
 
 The file may only name variables that start with `SHOC_SECRET_`, so a config
@@ -199,10 +324,21 @@ sent to `config.apply` over REST or MCP cannot read `SHOC_MASTER_KEY`, the DSN
 or any other server setting. The CLI reads the file and sends its content; the
 server reads no path a caller gives it.
 
+A key the file does not know, at the top level or in a source, intel feed or
+Slack entry, is refused with the list of allowed keys. Response dry run is not
+a `shoc.yaml` key; it is set in the policy file and `SHOC_DRY_RUN`. A source
+name that breaks the `connector:label` rule is invalid at plan time.
+
 Rules, playbooks and the autonomy policy are read from `SHOC_CONTENT_DIR` by
 every process, so deploying that directory is what applies them. `plan`
 validates all of them before it compares anything, and `apply` refuses to run
 if any of them is invalid or a named variable is missing. Both are idempotent.
+A changed `SHOC_SECRET_*` value is an update: `plan` shows the source, feed or
+Slack app as `credential differs` (or `stored credential cannot be opened` when
+the sealed one no longer opens) without printing either value, and `apply`
+seals the new one, so rotating a credential is changing its variable and
+running `apply`. A source keeps its push key through a new credential.
+Comparing needs `SHOC_MASTER_KEY` in the process that runs `plan`.
 Rules, hunt packs and playbooks merged at runtime (`detection.merge`,
 `hunt.merge`, `playbook.merge`) are kept per tenant in the database and loaded
 over the directory's. Each takes `dry_run`, which runs its gate (fixtures,
@@ -226,6 +362,39 @@ always answers an item, dry run included.
 holds all of them. A caller short of one is refused before anything changes,
 and the audit log names the caller for every step.
 
+## Retention
+
+`SHOC_RETENTION_DAYS` (default 90) is the fewest days of events the nightly
+retention run keeps. A `retention_days` in `shoc.yaml` overrides it once
+applied, and stays through restarts. The warehouse backends delete each event
+once it is older than that; on Databricks a deleted row leaves storage only
+once `VACUUM` runs, which predictive optimization does on Unity Catalog
+managed tables, so a workspace without it schedules `VACUUM` on the shoc
+catalogs or keeps the events past the promise. Postgres drops whole monthly
+partitions instead
+(RFC 0002), and only months that ended before the cutoff, so it keeps
+everything from the first day of the cutoff's month: between 90 and about 121
+days at the default. If a privacy notice promises at most N days, set N minus
+31 on Postgres. An instance loaded with historical data, such as a replayed
+public dataset or a backfill older than 90 days, must raise one of them or lose
+that data at the next nightly run.
+
+The same run prunes what was copied from events, in batches of 10,000 rows,
+and leaves the incident record alone (D193):
+
+| Store | Kept |
+| --- | --- |
+| Events (`ocsf_events`) | The retention window, as above |
+| `stream_events` | The retention window, and until every enabled webhook has sent them |
+| `hunt_observations` (by `seen_at`), `graph_nodes` and `graph_edges` (by `last_seen`), `intel_lookups` (by `looked_up_at`), pushes a warehouse kept (`push_spool`) | The retention window |
+| `memory` | Until its `expires_at` |
+| `jobs` | Done ones 7 days, failed ones 30, except a job whose key guards a one-time effect and a failed `playbook.resume` |
+| Cases, findings, openspace and room messages, notices, the audit log | Not expired |
+
+`SHOC_RETENTION_DAYS` therefore covers events and the copies derived from them,
+not the case record. If the prune fails, the event partitions are still dropped
+and the job is retried.
+
 ## Backends
 
 | Backend | Status | Tenancy | Load path | Good for |
@@ -234,7 +403,7 @@ and the audit log names the caller for every step.
 | Databricks SQL | in test | catalog per tenant | `PUT` to a UC volume, insert-only `MERGE` | volume and long retention |
 | Snowflake | untested | database per tenant | `PUT` to a stage, `COPY INTO` a temporary table, insert-only `MERGE` | teams already on Snowflake |
 | Amazon Redshift | untested | schema per tenant | `PUT` to an S3 prefix, `COPY` into a temporary table, insert what the table lacks | teams already on Redshift |
-| Google BigQuery | untested | dataset per tenant, partitioned by day | load job into a staging table, insert-only `MERGE` | teams already on BigQuery |
+| Google BigQuery | untested | dataset per tenant, partitioned by load day and clustered by event time | load job into a staging table, insert-only `MERGE` | teams already on BigQuery |
 
 Tested means the conformance suite and a running deployment. Databricks SQL has
 run a deployment but not the conformance suite. The untested adapters translate
@@ -247,18 +416,46 @@ Snowflake need the `shoc[databricks]` or `shoc[snowflake]` extra. The image
 installs it when built with `SHOC_EXTRAS=databricks` (or `snowflake`) in
 `.env`; Redshift and BigQuery need none (D131).
 
+Switching `SHOC_BACKEND` on a running install moves no events, and the
+connectors' cursors in `shoc.connector_state` stay where they were, so the new
+store starts with what arrives after the switch. Copy the events across first,
+or clear a source's row in `shoc.connector_state` so its next poll reads
+`backfill_hours` again.
+
+Each batch is written to a local NDJSON file and staged under a name of its own,
+`batch-<ms>-<random id>`, so loads from several threads and hosts never
+overwrite one another (D210). The local file is deleted whether its load
+succeeded or not; a connector's cursor or a push sender's retry fetches a
+failed batch again. A staged batch older than a day, left by a worker killed
+mid-load, is removed by the nightly retention run on Databricks and Snowflake.
+A BigQuery staging table expires an hour after it is made. Redshift relies on
+the lifecycle rule on `SHOC_REDSHIFT_STAGE` (D212).
+
 A warehouse bills for the minutes it is awake. Every schedule starts on a clock
 multiple of its interval, so the source polls and the detection cycle wake it
 together, once every `SHOC_CYCLE_SECONDS`. A cycle with nothing loaded since the
 last one skips the warehouse, and the console and the hourly Ops check read the
-store's count and the source scores from Postgres (D160, D161). Set the
+store's count and the source scores from Postgres (D160, D161). A GitHub
+webhook delivery waits in Postgres (`shoc.push_spool`) and loads with the next
+cycle's detection run, so on a warehouse it is read within `SHOC_CYCLE_SECONDS`
+where Postgres reads it within a minute. A delivery whose load fails is tried
+again each cycle, then once a day after five failures, with its error on the
+source's health, until it loads or ages past the retention window. Set the
 warehouse to stop after a minute or two of idle time. Left at Databricks'
 default of ten minutes, a load every 15 minutes keeps it up about two thirds of
 the day.
 
 BigQuery bills by bytes read instead, with a 10 MB minimum per query, so the
-cost follows the number of rules and cycles: each rule reads only the partitions
-of its window. A provisioned Redshift cluster bills by the hour whether shoc
+cost follows the number of rules and cycles. The events table is partitioned by
+the day each event was loaded (`DATE(ingested_at)`) and clustered by `time`,
+`metadata_product`, `api_operation` and `actor_user_name`. Detection selects by
+load time, so it reads only the partitions loaded since the last cycle; a read
+bounded by event time alone, the load's `MERGE` and retention prune only by
+clustering. `SHOC_BIGQUERY_MAX_BYTES_BILLED` caps each read. A table created
+before this layout keeps its `DATE(time)` partitioning, because shoc creates the
+table only when it is missing. Repartition it with
+`CREATE TABLE … PARTITION BY DATE(ingested_at) CLUSTER BY time, metadata_product, api_operation, actor_user_name AS SELECT * FROM …`,
+then swap the names. A provisioned Redshift cluster bills by the hour whether shoc
 uses it or not; Redshift Serverless bills by the second with a 60-second
 minimum and suits the 15-minute cycle better.
 
@@ -272,36 +469,128 @@ reach, so a rule behaves identically on all of them. Postgres handles roughly
 5,000 events a second and about 1.1 KB per event on modest hardware; see
 [what it can take](operations.md#what-it-can-take) for where the line is.
 
-## Upgrading
+## Backup and restore
+
+Compose keeps every case, finding, sealed credential and the audit log in the
+`shoc-pg` volume. Migrations are forward-only, so a dump is the only way back
+from a bad upgrade, and the only copy left when the disk is lost. Take one every
+night as the schema owner, with row security on and every tenant in view. A
+host crontab line (cron needs each `%` escaped), keeping 14 days:
+
+```
+0 3 * * * cd /opt/shoc/deploy && docker compose exec -T postgres sh -c "PGOPTIONS='-c shoc.tenant_id=shoc:all' pg_dump -U shoc -d shoc -Fc --enable-row-security" > /var/backups/shoc/shoc-$(date +\%F).dump.part && mv /var/backups/shoc/shoc-$(date +\%F).dump.part /var/backups/shoc/shoc-$(date +\%F).dump && find /var/backups/shoc -name 'shoc-*.dump' -mtime +14 -delete
+```
+
+A dump that fails partway stays a `.part` file, and the older dumps are not
+pruned that night. Copy the dumps off the host, because a lost disk takes local ones with it. On
+Kubernetes, run the same `pg_dump` as the role in `SHOC_MIGRATE_DSN` against
+the Postgres you manage.
+
+Keep `SHOC_MASTER_KEY` in a password manager, apart from the dumps. Every
+credential in a dump is sealed with it and the audit chain is keyed by it, so a
+dump without the key restores cases and findings but no credential, and the
+audit log can no longer be appended to or verified. A dump taken before a
+`shoc rotate-key` needs the key it replaced, so keep that key until those dumps
+have aged out. With a warehouse backend, events live in the warehouse and its
+own backup covers them; the dump holds everything else.
+
+To restore, on the same host or a new one with the same `.env` (on a new
+volume, `up -d postgres` first creates the roles and an empty database):
 
 ```bash
+docker compose stop shoc worker worker-urgent
+docker compose up -d postgres
+docker compose exec -T postgres psql -U postgres -v ON_ERROR_STOP=1 \
+  -c 'DROP DATABASE IF EXISTS shoc' \
+  -c 'CREATE DATABASE shoc OWNER shoc' \
+  -c 'REVOKE ALL ON DATABASE shoc FROM PUBLIC' \
+  -c 'GRANT CONNECT, CREATE ON DATABASE shoc TO shoc, shoc_app' \
+  -c 'GRANT CONNECT ON DATABASE shoc TO shoc_agent'
+docker compose exec -T postgres sh -c \
+  "PGOPTIONS='-c shoc.tenant_id=shoc:all' pg_restore -U shoc -d shoc --single-transaction" \
+  < shoc-2026-10-12.dump
+docker compose run --rm migrate
+docker compose up -d
+```
+
+`migrate` brings a dump from an older release up to the running image before
+`serve` and the workers start.
+
+## Upgrading
+
+Take a dump and keep the running image under its own tag first. Migrations are
+forward-only, and the default `edge` tag moves on every pull, so the dump and
+that tag together are the way back to the previous release.
+
+A Compose install created while the database passwords had defaults sets them
+in `.env` before its first upgrade past that, to the values it runs with:
+`shoc`, `shoc_app`, `shoc_agent` and `postgres` unless it changed them.
+Postgres reads them only when its volume is first created, and Compose runs
+nothing while one is empty.
+
+```bash
+docker compose exec -T postgres sh -c "PGOPTIONS='-c shoc.tenant_id=shoc:all' pg_dump -U shoc -d shoc -Fc --enable-row-security" > shoc-before-upgrade.dump
+docker image tag "$(docker compose images -q shoc)" ghcr.io/pwnera/shoc:before-upgrade
 docker compose pull && docker compose up -d    # migrate runs first
 # or: helm upgrade shoc deploy/helm/shoc
 ```
 
-Migrations are forward-only. The public contract (capability names and schemas,
+`shoc migrate` brings the event store of every tenant registered in
+`shoc.tenants` up to the current columns, `SHOC_TENANT` first. It names a
+tenant registered on another backend and leaves it for a run with that backend.
+A tenant that fails is named on stderr and does not fail the run, so an old lab
+tenant cannot hold up the upgrade.
+
+`serve` and the workers wait up to about a minute for every migration their
+release ships, logging `waiting for N migration(s) (…); run shoc migrate`, so
+new code never runs against an old schema. `serve` exits 1 if it gives up; a
+worker exits and its supervisor restarts it. Each migration waits at most 10
+seconds for a lock, and is tried 5 times, 5 seconds apart, before `migrate`
+fails, so an upgrade does not stall behind a long query.
+
+Each migration keeps working with the previous release's code: it adds first,
+and removes only in a later release. The chart's `migrate` Job is a
+pre-upgrade hook, so the old pods serve on the new schema until the rollout
+replaces them. A `helm rollback` or an older image leaves old code on a newer
+schema. `serve` and the workers then log an error, and `health status` is not
+ok and lists the versions it does not know under `schema_ahead`. Restoring the
+dump taken before the upgrade is the only way back.
+
+To roll back on Compose, set `SHOC_VERSION=before-upgrade` (or the previous
+release's tag) in `.env`, then run the restore sequence from
+[backup and restore](#backup-and-restore). Its `migrate` step then runs on the
+old image and finds nothing to apply. Set `SHOC_VERSION` back before the next
+upgrade. On Kubernetes, scale `serve` and the workers to zero, restore the dump
+into your Postgres, then `helm rollback shoc` to the revision with the old image
+tag. The chart's `migrate` Job runs only on install and upgrade, so the rollback
+does not migrate the restored dump forward again.
+
+The public contract (capability names and schemas,
 REST paths, MCP tool names, event types, the OCSF layout) does not break
 outside a major release; see [`contract.md`](contract.md).
 
 ### Upgrading to the runtime role
 
 A Compose install whose database was created before `shoc_app` existed has no
-such role, because Postgres runs its init script only once. Create it before
-pulling, then upgrade as usual; `shoc migrate` grants it what it needs and hands
-it the tenant event schemas it will load into:
+such role, because Postgres runs its init script only once. Set the four
+database passwords in `.env` first, as [above](#upgrading), and give
+`SHOC_APP_DB_PASSWORD` a new value of its own (`openssl rand -hex 24`). Create
+the role with that value before pulling, then upgrade as usual; `shoc migrate`
+grants it what it needs and hands it the tenant event schemas it will load into:
 
 ```bash
 docker compose exec postgres psql -U postgres -c \
-  "CREATE ROLE shoc_app LOGIN PASSWORD 'shoc_app'; GRANT shoc_app TO shoc;"
+  "CREATE ROLE shoc_app LOGIN PASSWORD '<SHOC_APP_DB_PASSWORD>'; GRANT shoc_app TO shoc;"
 docker compose pull && docker compose up -d
 ```
 
-Use the password you put in `SHOC_APP_DB_PASSWORD`, if you set one.
-
 ### Rotating the master key
 
+Take a dump first, as for an upgrade, and keep the old key in the password
+manager until that dump has aged out.
+
 ```bash
-docker compose stop shoc worker
+docker compose stop shoc worker worker-urgent
 docker compose run --rm migrate rotate-key     # prints the new key once
 # put the new key in .env as SHOC_MASTER_KEY, then
 docker compose up -d
@@ -311,6 +600,9 @@ docker compose up -d
 stored secret again under the new key, bound to its row as before, and moves the
 audit chain to the new key: the old chain key is kept in `shoc.audit_epochs`,
 sealed with the new master key, so every older row still verifies. Set
-`SHOC_NEW_MASTER_KEY` to choose the new key instead of having one generated.
+`SHOC_NEW_MASTER_KEY` to choose the new key instead of having one generated; it
+must be 32 characters or more. The current key is not checked, so an install
+still keyed with a short key, or with the `replace-me` placeholder that
+`serve`, the workers and `migrate` refuse, moves off it this way.
 `serve` and `worker` must be stopped first: once it commits, a process still
 holding the old key can neither open a secret nor append to the audit log.

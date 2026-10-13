@@ -23,7 +23,7 @@ import ipaddress
 import json
 import re
 from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -45,13 +45,21 @@ TRANSFORMS: dict[str, Any] = {
 
 
 _OVERLONG_FRACTION = re.compile(r"\.(\d{7,})")
-_INDEX = re.compile(r"\[[^\]]*\]")
 # Positions are dropped from a consumed path; a `[name=x]` selector is kept, so
 # reading one named parameter does not retire the value of every other one.
 _POSITION = re.compile(r"\[(?![^\]]*=)[^\]]*\]")
 _EPOCH = re.compile(r"^\d{9,19}(\.\d+)?$")
 # What a rule path can hold (`ocsf.JSON_FIELD`); anything else in a key becomes `_`.
 _KEY_TEXT = re.compile(r"[^A-Za-z0-9_-]")
+# Postgres refuses NUL in text and jsonb, and a lone UTF-16 surrogate (an NTFS
+# file name in EDR telemetry) in either. One such record failed its whole batch,
+# so the source's cursor never moved again (ING-1, STO-2).
+_UNSTORABLE = re.compile("[\x00\ud800-\udfff]")
+# An event time outside these bounds is a sentinel or a wrong clock: 9999-12-31
+# overflowed the partition arithmetic, a laptop clock years ahead hid its
+# product's outage note, 1970 made a partition retention never dropped (ING-3).
+EARLIEST = datetime(2000, 1, 1, tzinfo=UTC)
+AHEAD = timedelta(days=1)
 
 
 def _ip(value: Any) -> str | None:
@@ -92,6 +100,35 @@ def _to_iso(value: Any) -> str:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=UTC)
     return dt.astimezone(UTC).isoformat()
+
+
+def _event_time(value: Any, ingested: datetime) -> tuple[str, Any]:
+    """The event's time, or the ingest time and the vendor's value when that
+    value does not parse or falls outside [EARLIEST, ingested + AHEAD]."""
+    if value is None or value == "":
+        return ingested.isoformat(), None
+    try:
+        dt = datetime.fromisoformat(_to_iso(value))
+    except (TypeError, ValueError, OverflowError, OSError):
+        return ingested.isoformat(), value
+    if not EARLIEST <= dt <= ingested + AHEAD:
+        return ingested.isoformat(), value
+    return dt.isoformat(), None
+
+
+def _storable(value: Any) -> Any:
+    """`value` with NUL dropped and lone surrogates replaced, keys included."""
+    if isinstance(value, str):
+        return _UNSTORABLE.sub(lambda m: "" if m.group() == "\x00" else "\ufffd", value)
+    if isinstance(value, dict):
+        return {_storable(k): _storable(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_storable(v) for v in value]
+    return value
+
+
+def _paths(spec: dict[str, Any]) -> list[str]:
+    return spec.get("paths") or ([spec["path"]] if "path" in spec else [])
 
 
 def dig(record: Any, path: str) -> Any:
@@ -162,6 +199,9 @@ class Mapping:
     # `unmapped.<path>` or `raw.<path>`: where this source's events name the
     # identity-provider login their actor signed in with (RFC 0027).
     login: str = ""
+    # A top-level list whose items are each an event (a Workspace activity's
+    # `events`): `map_records` maps one row per item.
+    explode: str = ""
 
     @classmethod
     def from_file(cls, path: Path) -> Mapping:
@@ -183,6 +223,7 @@ class Mapping:
                 logsource=[str(k) for k in data.get("logsource") or []],
                 attack_platforms=[str(p) for p in data.get("attack_platforms") or []],
                 login=str(data.get("login") or ""),
+                explode=str(data.get("explode") or ""),
             )
         except KeyError as exc:
             raise ConfigError(f"{path}: mapping is missing {exc}") from exc
@@ -199,6 +240,17 @@ class Mapping:
             bad.append(f"login: {self.login}")
         return sorted(set(bad))
 
+    def paths(self, column: str) -> list[str]:
+        """The record paths a column is read from: its field's in the order they
+        are tried, then any a `derive` rule reads it from instead."""
+        spec = self.fields.get(column)
+        found = list(_paths({"path": spec} if isinstance(spec, str) else spec or {}))
+        for rule in self.derive:
+            value = (rule.get("set") or {}).get(column)
+            if isinstance(value, dict):
+                found += [p for p in _paths(value) if p not in found]
+        return found
+
     # -- mapping ---------------------------------------------------------
     def _value(self, record: dict[str, Any], spec: Any, used: set[str]) -> Any:
         if isinstance(spec, str):
@@ -207,9 +259,8 @@ class Mapping:
             raise ConfigError(f"{self.source}: field spec must be a path or an object")
         if "const" in spec:
             return spec["const"]
-        paths = spec.get("paths") or ([spec["path"]] if "path" in spec else [])
         value = None
-        for p in paths:
+        for p in _paths(spec):
             value = dig(record, p)
             if value is not None and value != "":
                 used.add(_POSITION.sub("", p))
@@ -222,7 +273,8 @@ class Mapping:
                 raise ConfigError(f"{self.source}: unknown transform '{name}'")
             try:
                 value = TRANSFORMS[name](value)
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, OverflowError):
+                # 9999-12-31T23:00:00-05:00 is a datetime, but not one in UTC.
                 return spec.get("default")
         return value
 
@@ -293,12 +345,21 @@ class Mapping:
             # `details.with`, for one. Keep it as JSON so the evidence survives,
             # and never hand a dict to a TEXT column.
             row[column] = json.dumps(value, sort_keys=True, default=str)
-        row["time"] = _to_iso(row["time"]) if row.get("time") else _to_iso(datetime.now(UTC))
-        row["ingested_at"] = _to_iso(datetime.now(UTC))
+        ingested = datetime.now(UTC)
+        if not row.get("time") and isinstance(timed := self.fields.get("time"), dict):
+            # A time its transform could not read fell back to the default; read
+            # it bare so the check below keeps it.
+            row["time"] = self._value(record, {**timed, "transform": None, "default": None}, set())
+        row["time"], vendor_time = _event_time(row.get("time"), ingested)
+        row["ingested_at"] = ingested.isoformat()
         if not row.get("event_uid"):
             row["event_uid"] = stable_uid(self.source, record)
         row["observables"] = self._build_observables(row)
         row["unmapped"] = _residue(record, used)
+        if vendor_time is not None and isinstance(row["unmapped"], dict):
+            # The event is placed at ingest time; what the vendor said stays here
+            # and in `raw`, and these rows can be counted per source.
+            row["unmapped"]["_time_original"] = str(vendor_time)
         for alias, spec in self.keyed.items():
             # A list of paths reads the first that holds the list, as Entra's
             # Event Hub envelope wraps the Graph record in `properties`.
@@ -310,7 +371,28 @@ class Mapping:
         row["raw"] = record
         # The OCSF schema version, never the vendor's own record version.
         row["metadata_version"] = self.ocsf_version
-        return row
+        return _storable(row)
+
+    def map_records(self, record: dict[str, Any], tenant_id: str) -> list[dict[str, Any]]:
+        """The rows one record holds: one per item of its `explode` list, else one.
+
+        A Workspace activity lists every setting one save changed, and only its
+        first event was mapped, so turning 2SV enforcement off next to another
+        change went unseen (ING-3). Each row keeps the activity's envelope with
+        the list narrowed to its own item. The first keeps the record's
+        event_uid, so rows stored before still deduplicate; the others add
+        `-<position>`.
+        """
+        items = record.get(self.explode) if self.explode else None
+        if not isinstance(items, list) or len(items) < 2:
+            return [self.map_record(record, tenant_id)]
+        rows = []
+        for position, item in enumerate(items):
+            row = self.map_record({**record, self.explode: [item]}, tenant_id)
+            if position:
+                row["event_uid"] = f"{row['event_uid']}-{position}"
+            rows.append(row)
+        return rows
 
     def _build_observables(self, row: dict[str, Any]) -> list[dict[str, Any]]:
         out = []

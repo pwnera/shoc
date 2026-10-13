@@ -9,13 +9,18 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
+import secrets
 from typing import Any
 
 from shoc import __version__
 from shoc.api.auth import ROLES, role_caller
-from shoc.capabilities.registry import Caller, Capability, Context, all_capabilities, get
+from shoc.capabilities.registry import Caller, Capability, Context, all_capabilities
 from shoc.config import Config
-from shoc.errors import Denied, ShocError
+from shoc.db.audit import SECRET_FIELDS
+from shoc.errors import Denied, NotFound, ShocError
+
+log = logging.getLogger("shoc.mcp")
 
 # External agents come in over MCP: read, ask and post to a case, never act.
 EXTERNAL_AGENT = Caller(
@@ -87,32 +92,73 @@ def _error(code: str, message: str) -> str:
     return json.dumps({"error": {"code": code, "message": message}}, indent=2)
 
 
-# Input fields that hold a secret, and any `*_secret`: kept out of the prompt.
-# Exact names, so a budget such as intel_tokens_per_day still shows.
-SECRET_FIELDS = frozenset({"secret", "api_key", "password", "token", "bot_token"})
+# The fields that say who or what an L2 call changes, shown first whatever
+# order the model sent them in; the rest follow by name.
+FIRST_FIELDS = (
+    "email",
+    "who",
+    "role",
+    "type",
+    "target",
+    "source",
+    "case_uid",
+    "token_id",
+    "name",
+    "kind",
+    "provider",
+    "issuer",
+    "domains",
+    "base_url",
+)
+# The longest prompt shown. A longer one is refused, never cut: what is past
+# the cut would be confirmed unseen. Only the crew's rationale for an action
+# may be left out whole, since the action itself is shown.
+PROMPT_LIMIT = 600
 
 
 def describe(
     cap: Any, arguments: dict[str, Any], config: Config, caller: Caller, tenant: str
-) -> str:
-    """What the person is asked to confirm, written by shoc rather than by the model."""
+) -> str | None:
+    """What the person is asked to confirm, written by shoc rather than by the model.
+
+    None when it does not fit in PROMPT_LIMIT, or a config does not parse: the
+    person is sent to the CLI instead.
+    """
+    from shoc import configcode
     from shoc.cases import actions as action_store
 
+    ctx = Context(tenant_id=tenant or config.tenant_id, caller=caller, config=config)
     uid = str(arguments.get("action_uid") or "")
     if uid:
-        ctx = Context(tenant_id=tenant or config.tenant_id, caller=caller, config=config)
         try:
             row = action_store.require(ctx.db, ctx.tenant_id, uid)
-            return f"{cap.summary}: {row['type']} on {row['target']} ({uid}). {row['rationale']}"[
-                :600
-            ]
         except ShocError:
-            return f"{cap.summary}: {uid}"
-    shown = {
-        k: "(hidden)" if k in SECRET_FIELDS or k.endswith("_secret") else v
-        for k, v in arguments.items()
-    }
-    return f"{cap.summary}: {json.dumps(shown, default=str)}"[:600]
+            said = f"{cap.summary}: {uid}"
+            return said if len(said) <= PROMPT_LIMIT else None
+        said = f"{cap.summary}: {row['type']} on {row['target']} ({uid})."
+        if len(said) > PROMPT_LIMIT:
+            return None
+        # The crew's words come last and labelled: they may echo log content.
+        # Too long to show whole, they are left out rather than cut.
+        rationale = f"{said} Crew rationale (unverified): {row['rationale']}"
+        return rationale if len(rationale) <= PROMPT_LIMIT else said
+    if cap.name == "config.apply":
+        # What would change, as `shoc plan` shows it, less the unchanged lines.
+        try:
+            desired = configcode.Desired.from_dict(arguments.get("config") or {})
+            plan = configcode.plan(ctx.db, ctx.tenant_id, desired, config).render()
+        except Exception:  # whatever is wrong with it, `shoc config apply` says so
+            return None
+        changes = [line for line in plan.splitlines() if not line.startswith("  ")]
+        said = "\n".join([f"{cap.summary}:", *changes])
+    else:
+        shown = {
+            k: "(hidden)" if k in SECRET_FIELDS or k.endswith("_secret") else v
+            for k, v in arguments.items()
+        }
+        ordered = {k: shown[k] for k in FIRST_FIELDS if k in shown} | dict(sorted(shown.items()))
+        said = f"{cap.summary}: {json.dumps(ordered, default=str)}"
+    return said if len(said) <= PROMPT_LIMIT else None
 
 
 async def confirmed(
@@ -140,6 +186,12 @@ async def confirmed(
             f"{where} `shoc {' '.join(cap.cli_words)}` in a terminal.",
         )
     message = await asyncio.to_thread(describe, cap, arguments, config, caller, tenant)
+    if message is None:
+        return _error(
+            "confirmation_required",
+            f"{cap.name} cannot be shown here in full for you to confirm. "
+            f"Run `shoc {' '.join(cap.cli_words)}` in a terminal.",
+        )
     answer = await session.elicit(
         message=message, requestedSchema=CONFIRM_SCHEMA, related_request_id=request_id
     )
@@ -175,9 +227,20 @@ in raw; a deployer pulls fresh ones with source_sample.
 - detection_revert, hunt_revert and playbook_revert take a merge back.
 """
 
-# Verbs that take something back or overwrite it. An L2 call, and a run that
-# acts on a vendor, may destroy too; any other write only adds (destructiveHint).
-DESTRUCTIVE = ("revert", "remove", "update", "undo", "reset", "revoke", "configure", "apply")
+# Verbs that take something back, overwrite it or delete it for good (events.retain).
+# An L2 call, and a run that acts on a vendor, may destroy too; any other write
+# only adds (destructiveHint).
+DESTRUCTIVE = (
+    "revert",
+    "remove",
+    "update",
+    "undo",
+    "reset",
+    "revoke",
+    "configure",
+    "apply",
+    "retain",
+)
 
 
 def tool_hints(cap: Capability) -> dict[str, bool]:
@@ -210,15 +273,27 @@ def tool_definitions(caller: Caller) -> list[dict[str, Any]]:
     return tools
 
 
+def tool(name: str) -> Capability:
+    """The capability a tool name stands for: `action_approve`, never `action.approve`.
+
+    One name per tool, so no second spelling of an L2 tool reaches it without
+    the confirmation (RFC 0018).
+    """
+    cap = {c.mcp_name: c for c in all_capabilities()}.get(name)
+    if cap is None:
+        raise NotFound(f"no tool named '{name}'", code="unknown_tool")
+    return cap
+
+
 def invoke(
-    name: str, arguments: dict[str, Any], config: Config, caller: Caller, tenant: str = ""
+    cap: Capability, arguments: dict[str, Any], config: Config, caller: Caller, tenant: str = ""
 ) -> str:
     """One tool call's answer as JSON text. A refusal raises, as ShocError."""
-    cap = next((c for c in all_capabilities() if c.mcp_name == name), None)
-    if cap is None:
-        cap = get(name)
     ctx = Context(tenant_id=tenant or config.tenant_id, caller=caller, config=config)
-    return json.dumps(cap.invoke(ctx, arguments or {}).to_json(), indent=2, default=str)
+    try:
+        return json.dumps(cap.invoke(ctx, arguments or {}).to_json(), indent=2, default=str)
+    finally:
+        ctx.close()  # the event store it opened (STO-4)
 
 
 def build_server(config: Config, caller: Caller | None) -> Any:
@@ -264,18 +339,30 @@ def build_server(config: Config, caller: Caller | None) -> Any:
         name: str, arguments: dict[str, Any] | None
     ) -> list[types.TextContent] | types.CallToolResult:
         caller_, tenant = who()
-        cap = next((c for c in all_capabilities() if c.mcp_name == name), None)
-        if cap is not None and cap.autonomy == "L2" and cap.permits(caller_):
-            request = server.request_context
-            refusal = await confirmed(
-                request.session, request.request_id, cap, arguments or {}, config, caller_, tenant
-            )
-            if refusal is not None:
-                return refused(refusal)
         try:
-            text = await asyncio.to_thread(invoke, name, arguments or {}, config, caller_, tenant)
+            cap = tool(name)
+            if cap.autonomy == "L2" and cap.permits(caller_):
+                request = server.request_context
+                refusal = await confirmed(
+                    request.session,
+                    request.request_id,
+                    cap,
+                    arguments or {},
+                    config,
+                    caller_,
+                    tenant,
+                )
+                if refusal is not None:
+                    return refused(refusal)
+            text = await asyncio.to_thread(invoke, cap, arguments or {}, config, caller_, tenant)
         except ShocError as exc:
             return refused(json.dumps({"error": exc.to_json()}, indent=2))
+        except Exception:
+            # Its message may name the database, a path or a vendor's answer.
+            request_id = secrets.token_hex(4)
+            log.exception("tool %s failed (%s)", name, request_id)
+            said = f"shoc failed; see the serve log ({request_id})"
+            return refused(_error("internal_error", said))
         return [types.TextContent(type="text", text=text)]
 
     return server

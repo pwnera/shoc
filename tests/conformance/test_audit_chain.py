@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import uuid
+
 import psycopg
 import pytest
 from psycopg.rows import DictRow, dict_row
@@ -9,7 +11,7 @@ from psycopg.rows import DictRow, dict_row
 from shoc import worker
 from shoc.agents import ops
 from shoc.capabilities.registry import Caller, Context, call
-from shoc.db.audit import append, hash_payload
+from shoc.db.audit import append, check, hash_payload
 from shoc.db.pool import fetch_all, fetch_one, set_tenant
 
 pytestmark = pytest.mark.postgres
@@ -99,3 +101,65 @@ def test_the_scheduled_check_leaves_an_intact_chain_alone(ctx, config, clean):
         "SELECT 1 FROM shoc.notices WHERE tenant_id = %s AND condition = 'audit_broken'",
         (config.tenant_id,),
     )
+
+
+@pytest.fixture
+def chain(config):
+    """A tenant of its own per test: the log is append-only, so nothing resets it."""
+    tenant = f"{config.tenant_id}_walk_{uuid.uuid4().hex[:8]}"
+    db = psycopg.Connection[DictRow].connect(config.dsn, row_factory=dict_row, autocommit=True)
+    set_tenant(db, tenant)
+    ctx = Context(tenant_id=tenant, caller=Caller(kind="human", id="test"), config=config)
+    ctx._db = db
+    yield ctx
+    db.close()
+
+
+def test_a_check_walks_only_the_rows_after_the_last_whole_walk(chain):
+    """The log is never pruned; a walk from the first row on every call grew with it (data-11)."""
+    db, tenant = chain.db, chain.tenant_id
+    for n in range(3):
+        append(db, tenant, "service", "worker", "events.ingest", hash_payload(n))
+    ok, count, _ = check(db, tenant)
+    assert ok and count == 3
+    append(db, tenant, "service", "worker", "events.ingest", hash_payload(3))
+    ok, count, detail = check(db, tenant)
+    assert ok and count == 1 and "which an earlier walk verified" in detail
+
+
+def test_the_daily_full_walk_finds_what_a_moved_checkpoint_hides(chain):
+    """The checkpoint is a row the runtime role can write, so it only saves work."""
+    db, tenant = chain.db, chain.tenant_id
+    append(db, tenant, "service", "worker", "events.ingest", hash_payload(1))
+    _forge(db, tenant)
+    append(db, tenant, "service", "worker", "events.ingest", hash_payload(2))
+    last = fetch_one(
+        db,
+        "SELECT seq, hash FROM shoc.audit_log WHERE tenant_id = %s ORDER BY seq DESC LIMIT 1",
+        (tenant,),
+    )
+    assert last
+    with db.cursor() as cur:
+        cur.execute(
+            """INSERT INTO shoc.audit_checkpoints (tenant_id, seq, hash) VALUES (%s, %s, %s)
+               ON CONFLICT (tenant_id) DO UPDATE SET seq = EXCLUDED.seq, hash = EXCLUDED.hash""",
+            (tenant, last["seq"], last["hash"]),
+        )
+    assert check(db, tenant)[0], "the hourly walk starts after the moved checkpoint"
+    assert not check(db, tenant, full=True)[0]
+    assert not check(db, tenant)[0], "a break before the checkpoint drops it"
+
+
+def test_a_listing_need_not_walk_the_chain_and_filters_by_who_and_what(chain):
+    db, tenant = chain.db, chain.tenant_id
+    append(db, tenant, "service", "worker", "events.ingest", hash_payload("a"))
+    append(db, tenant, "human", "jane", "action.approve", hash_payload("b"))
+    append(db, tenant, "service", "worker", "source.sync", hash_payload("c"))
+    listed = call("health.audit", chain, {"verify": False, "principal": "service:worker"})
+    assert listed.summary.endswith("the chain was not checked.")
+    assert [r["capability"] for r in listed.data.recent] == ["source.sync", "events.ingest"]
+    newest = listed.data.recent[0]["seq"]
+    older = call("health.audit", chain, {"verify": False, "before": newest, "limit": 1})
+    assert [r["capability"] for r in older.data.recent] == ["action.approve"]
+    approvals = call("health.audit", chain, {"verify": False, "capability": "action.approve"})
+    assert [r["principal_id"] for r in approvals.data.recent] == ["jane"]

@@ -115,7 +115,7 @@ def sample(conn: Conn, tenant_id: str, source: str, master_key: str, limit: int 
         mapping = ocsf.for_tenant(
             conn, tenant_id, str(settings.get("mapping") or connector_of(source))
         )
-        rows = [mapping.map_record(r, tenant_id) for r in page.records[:limit]]
+        rows = [row for r in page.records[:limit] for row in mapping.map_records(r, tenant_id)]
     except Exception as exc:
         return {
             "source": source,
@@ -238,13 +238,12 @@ def _recent(store: Any, tenant_id: str, product: str) -> list[dict[str, Any]]:
         {"tenant_id": tenant_id, "product": product},
         REPAIR_EVENTS,
     ).rows
-    raws = [json.loads(r["raw"]) if isinstance(r["raw"], str) else r["raw"] for r in rows]
-    return [r for r in raws if isinstance(r, dict) and r]
+    return [r["raw"] for r in rows if isinstance(r["raw"], dict) and r["raw"]]
 
 
 def _fill(mapping: Any, records: list[dict[str, Any]], tenant_id: str) -> dict[str, float]:
     """Per mapped column, the share of `records` it comes out non-empty for."""
-    rows = [mapping.map_record(r, tenant_id) for r in records]
+    rows = [row for r in records for row in mapping.map_records(r, tenant_id)]
     return {
         col: sum(r.get(col) not in (None, "") for r in rows) / len(rows) for col in mapping.fields
     }
@@ -375,7 +374,7 @@ def repair(
     empty = sorted(
         c for c in readers if c in current.fields and fill.get(c, 0.0) < ops.FIDELITY_FLOOR
     )
-    rows = [current.map_record(r, tenant_id) for r in records]
+    rows = [row for r in records for row in current.map_records(r, tenant_id)]
     unread = sorted(set().union(*(_leaves(r["unmapped"]) for r in rows)))
     if not empty or not unread:
         return ""

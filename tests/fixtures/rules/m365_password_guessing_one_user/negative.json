@@ -1,0 +1,407 @@
+[
+  {
+    "Id": "m365-seven-0",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.40",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-seven-1",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.41",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-seven-2",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.42",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-seven-3",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.43",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-seven-4",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.44",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-seven-5",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.45",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-seven-6",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.46",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-past-0",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-cfo",
+    "UserType": 0,
+    "UserId": "cfo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.60",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50074",
+    "LogonError": "UserStrongAuthClientAuthNRequiredInterrupt",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-past-1",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-cfo",
+    "UserType": 0,
+    "UserId": "cfo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.61",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "500121",
+    "LogonError": "AuthenticationFailedDuringStrongAuthRequest",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-past-2",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-cfo",
+    "UserType": 0,
+    "UserId": "cfo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.62",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50074",
+    "LogonError": "UserStrongAuthClientAuthNRequiredInterrupt",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-past-3",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-cfo",
+    "UserType": 0,
+    "UserId": "cfo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.63",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "500121",
+    "LogonError": "AuthenticationFailedDuringStrongAuthRequest",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-past-4",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-cfo",
+    "UserType": 0,
+    "UserId": "cfo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.64",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50074",
+    "LogonError": "UserStrongAuthClientAuthNRequiredInterrupt",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-past-5",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-cfo",
+    "UserType": 0,
+    "UserId": "cfo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.65",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "500121",
+    "LogonError": "AuthenticationFailedDuringStrongAuthRequest",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-past-6",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-cfo",
+    "UserType": 0,
+    "UserId": "cfo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.66",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50074",
+    "LogonError": "UserStrongAuthClientAuthNRequiredInterrupt",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-past-7",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-cfo",
+    "UserType": 0,
+    "UserId": "cfo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.67",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "500121",
+    "LogonError": "AuthenticationFailedDuringStrongAuthRequest",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  }
+]

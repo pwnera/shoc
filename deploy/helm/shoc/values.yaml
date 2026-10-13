@@ -21,6 +21,13 @@ worker:
   # Scale by adding workers: jobs are claimed with SKIP LOCKED, so they never
   # collide, and exactly one worker becomes the cron leader by advisory lock.
   replicas: 2
+  # The fast lane (`shoc worker --urgent`, a Deployment of its own): pages,
+  # actions, detection, syncs and the crew's runs on high and critical cases
+  # never wait behind a routine model job. 0 leaves them to the workers above.
+  urgentReplicas: 1
+  # On SIGTERM a worker finishes the job in hand and takes no other. This covers
+  # a vendor action's call; a model job that outlasts it runs again elsewhere.
+  terminationGracePeriodSeconds: 90
   resources:
     requests: { cpu: 100m, memory: 512Mi }
     limits: { memory: 2Gi }
@@ -36,10 +43,45 @@ llm:
   model: ""
   baseUrl: ""
 
+# The other settings Compose passes, described in docs/deploy.md. Empty leaves
+# shoc's own default. Quote numbers: Helm reads 33554432 as 3.3554432e+07.
+env:
+  SHOC_LLM_MODEL_CHEAP: ""
+  SHOC_LLM_BASE_URL_ALLOWLIST: ""
+  SHOC_LLM_MAX_TOKENS: ""
+  # USD per million tokens, both or neither. Unset, a model missing from the
+  # price table is recorded as costing $0.
+  SHOC_LLM_PRICE_IN: ""
+  SHOC_LLM_PRICE_OUT: ""
+  SHOC_CREW_SAMPLES: ""
+  SHOC_CYCLE_SECONDS: ""
+  SHOC_RETENTION_DAYS: ""
+  SHOC_INTEL_FEEDS: ""          # off: no feed host is contacted on its own
+  SHOC_STATEMENT_TIMEOUT: ""
+  SHOC_MAX_REQUEST_BYTES: ""
+  SHOC_MAX_INGEST_RECORDS: ""
+  SHOC_PUBLIC_URL: ""           # e.g. https://shoc.example.com; sign-in is off without it
+  SHOC_MAIL_FROM: ""
+  SHOC_TRUSTED_PROXIES: ""
+  SHOC_DATABRICKS_HOST: ""
+  SHOC_DATABRICKS_HTTP_PATH: ""
+  SHOC_DATABRICKS_READONLY_PRINCIPAL: ""
+  SHOC_REDSHIFT_STAGE: ""
+  SHOC_REDSHIFT_REGION: ""
+  SHOC_REDSHIFT_IAM_ROLE: ""
+  SHOC_BIGQUERY_PROJECT: ""
+  SHOC_BIGQUERY_LOCATION: ""
+  SHOC_BIGQUERY_MAX_BYTES_BILLED: ""
+
+# The disk Postgres may fill, in GB: 80% is an alert, 90% a page. Empty, no check.
+diskBudgetGb: ""
+
 # Secrets. Create the secret yourself, or let the chart create one from
 # `values.secrets` (not recommended outside a test cluster). SHOC_TOKENS is
 # required: serve listens on 0.0.0.0 in the pod and refuses to start without
 # tokens, because anyone who reached it would be a human with every scope.
+# The chart's secret is a Helm hook, so `helm uninstall` leaves it behind:
+# delete it with kubectl.
 secrets:
   existingSecret: ""     # must contain SHOC_DSN, SHOC_MASTER_KEY, SHOC_TOKENS and any others
   create: false
@@ -56,6 +98,30 @@ secrets:
     SHOC_READONLY_DSN: ""
     SHOC_LLM_API_KEY: ""
     SHOC_TOKENS: ""
+    # An outside monitor's URL, pinged after each hourly health check. It often
+    # carries a token, so it lives here; the worker logs only its host.
+    SHOC_HEARTBEAT_URL: ""
+    # backend: snowflake. All seven live here because the migrate job, which
+    # creates the warehouse tables, reads the secret too. The private key is an
+    # unencrypted PKCS#8 PEM, newlines written \n; the password is the fallback.
+    SHOC_SNOWFLAKE_ACCOUNT: ""
+    SHOC_SNOWFLAKE_USER: ""
+    SHOC_SNOWFLAKE_PRIVATE_KEY: ""
+    SHOC_SNOWFLAKE_PASSWORD: ""
+    SHOC_SNOWFLAKE_WAREHOUSE: ""
+    SHOC_SNOWFLAKE_ROLE: ""
+    SHOC_SNOWFLAKE_READONLY_ROLE: ""
+    # The mail server's URL carries its password.
+    SHOC_SMTP_URL: ""
+    # The other warehouses' keys and DSNs; `env` holds the rest of their settings.
+    SHOC_DATABRICKS_TOKEN: ""
+    SHOC_DATABRICKS_READONLY_TOKEN: ""
+    SHOC_REDSHIFT_DSN: ""
+    SHOC_REDSHIFT_READONLY_DSN: ""
+    SHOC_REDSHIFT_AWS_ACCESS_KEY_ID: ""
+    SHOC_REDSHIFT_AWS_SECRET_ACCESS_KEY: ""
+    SHOC_BIGQUERY_CREDENTIALS: ""
+    SHOC_BIGQUERY_READONLY_CREDENTIALS: ""
 
 migrate:
   # Runs `shoc migrate` as a pre-install/pre-upgrade hook. Migrations are
@@ -81,6 +147,11 @@ podSecurityContext:
   runAsNonRoot: true
   runAsUser: 10001
   fsGroup: 10001
+  seccompProfile: { type: RuntimeDefault }
+
+# /tmp, the only writable path: ingest batches and warehouse staging files.
+# Past this the pod is evicted rather than filling the node's disk.
+tmpSizeLimit: 1Gi
 
 securityContext:
   allowPrivilegeEscalation: false

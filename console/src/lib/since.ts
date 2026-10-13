@@ -2,8 +2,10 @@
  * "Since you left": when this viewer's current visit began. The shell writes
  * `last` every minute while the tab is visible; a load more than 30 minutes
  * after `last` starts a new visit whose window opens at `last`, and a reload
- * inside a visit keeps its window. No record means the last 24 hours. Kept in
- * this browser only (`shoc.visit`), and nothing breaks without storage.
+ * inside a visit keeps its window. No record means the last 24 hours, marked
+ * `first` until a real visit starts. Kept in this browser only (`shoc.visit`),
+ * and nothing breaks without storage. A 24h or 7d window is this tab's choice
+ * only and lasts the visit, so the next visit opens on the visit again.
  *
  * Also the `?since=` a link carries to Cases, Findings or Response, relative
  * ("7d", "-24h", "90m") or an ISO time: its instant, its chip word, and the
@@ -18,40 +20,48 @@ const CHOICE = "shoc.since";
 const GAP = 30 * 60_000;
 const DAY = 24 * 3_600_000;
 
-export type Visit = { since: number; last: number };
+/** `first`: no earlier visit on record, so `since` is only the last 24 hours. */
+export type Visit = { since: number; last: number; first?: boolean };
 export type SinceChoice = "visit" | "24h" | "7d";
 
 /** The visit a load at `now` belongs to, given what the browser kept. */
 export function begin(stored: Partial<Visit> | null, now: number): Visit {
   const last = Number(stored?.last);
   const since = Number(stored?.since);
-  if (!Number.isFinite(last) || last <= 0) return { since: now - DAY, last: now };
+  if (!Number.isFinite(last) || last <= 0) return { since: now - DAY, last: now, first: true };
   if (now - last > GAP) return { since: last, last: now };
-  return { since: Number.isFinite(since) && since > 0 ? since : last, last: now };
+  return { since: Number.isFinite(since) && since > 0 ? since : last, last: now, first: stored?.first || undefined };
 }
 
-function read<T>(key: string): T | null {
+const session = () => sessionStorage;
+const local = () => localStorage;
+
+function read<T>(key: string, store = local): T | null {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = store().getItem(key);
     return raw ? (JSON.parse(raw) as T) : null;
   } catch {
     return null;
   }
 }
 
-function write(key: string, value: unknown) {
+function write(key: string, value: unknown, store = local) {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    store().setItem(key, JSON.stringify(value));
   } catch {
     /* private window: the visit lasts as long as the tab */
   }
 }
 
-let visit = begin(read<Visit>(KEY), Date.now());
+const loaded = Date.now();
+const kept = read<Visit>(KEY);
+let visit = begin(kept, loaded);
 write(KEY, visit);
 
 let choice: SinceChoice = (() => {
-  const stored = read<SinceChoice>(CHOICE);
+  // A new visit opens on the visit, in a tab left open or reloaded after the gap too.
+  if (!(loaded - Number(kept?.last) <= GAP)) return "visit";
+  const stored = read<SinceChoice>(CHOICE, session);
   return stored === "24h" || stored === "7d" ? stored : "visit";
 })();
 const listeners = new Set<() => void>();
@@ -77,8 +87,8 @@ export function useHeartbeat(): void {
 /** The window Overview reports on, as an ISO time, with the viewer's choice of window. */
 export function useSince(): {
   since: string;
-  /** When this visit began, for "Last visit · Tue 14:02". */
-  visit: string;
+  /** When this visit began, for "Last visit · Tue 14:02"; null with no visit on record. */
+  visit: string | null;
   choice: SinceChoice;
   setChoice: (next: SinceChoice) => void;
 } {
@@ -88,11 +98,11 @@ export function useSince(): {
   const from = current === "24h" ? now - DAY : current === "7d" ? now - 7 * DAY : visit.since;
   return {
     since: new Date(from).toISOString(),
-    visit: new Date(visit.since).toISOString(),
+    visit: visit.first ? null : new Date(visit.since).toISOString(),
     choice: current,
     setChoice: (next) => {
       choice = next;
-      write(CHOICE, next);
+      write(CHOICE, next, session);
       for (const l of listeners) l();
     },
   };

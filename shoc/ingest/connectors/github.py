@@ -14,10 +14,10 @@ import uuid
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlsplit
 
 from shoc.errors import ConfigError, ValidationError
-from shoc.ingest.connectors.base import FetchResult, client, since_default
+from shoc.ingest.connectors.base import FetchResult, client, reached, since_default
 
 API = "https://api.github.com"
 
@@ -97,19 +97,33 @@ SECURITY_FEATURES = {
 
 # 100-nanosecond steps from the UUID epoch (1582-10-15) to the Unix epoch.
 _UUID_EPOCH = 0x01B21DD213814000
+# GitHub redelivers a delivery for three days. A delivery id dated before that,
+# or ahead of the clock by more than a skew, is a signed body sent again under a
+# made-up id, since the signature covers the body alone (ING-2). One sent again
+# under a fresh id inside the window, or under an id that is not a version-1
+# UUID, still loads once, at the time shoc receives it (a known limit of D98).
+REDELIVERY_MS = 3 * 86_400_000
+SKEW_MS = 5 * 60_000
 
 
 def from_webhook(headers: Mapping[str, str], body: bytes) -> list[dict[str, Any]]:
     """One organisation webhook delivery as an audit-log record (ING-2).
 
     The whole payload is kept; the fields the mapping reads are added on top.
-    A webhook carries no source address and no event time, so the time is the
-    delivery's, and `ping` loads nothing.
+    A webhook carries no source address and no event time, so the time is when
+    shoc received it; the time in the delivery id, which the signature does not
+    cover, is kept as `webhook.delivered_at` and bounded. `ping` loads nothing.
     """
     event = headers.get("x-github-event", "")
     delivery = headers.get("x-github-delivery", "")
     if not event or not delivery:
         raise ValidationError("a GitHub webhook needs X-GitHub-Event and X-GitHub-Delivery")
+    received = int(time.time() * 1000)
+    sent = _delivered_at(delivery)
+    if sent is not None and not received - REDELIVERY_MS <= sent <= received + SKEW_MS:
+        raise ValidationError(
+            "the GitHub delivery id is dated outside GitHub's three-day redelivery window"
+        )
     if event == "ping":
         return []
     text = body.decode()
@@ -126,16 +140,26 @@ def from_webhook(headers: Mapping[str, str], body: bytes) -> list[dict[str, Any]
         "org": (payload.get("organization") or {}).get("login"),
         "repo": (payload.get("repository") or {}).get("full_name"),
     }
+    # A push names its full ref and the repository's default branch by bare
+    # name; the force-push rule compares the ref to this (DET-2).
+    default = (payload.get("repository") or {}).get("default_branch")
+    if event == "push" and default:
+        found["default_ref"] = f"refs/heads/{default}"
     return [
         {
             **payload,
             "_document_id": f"github-webhook-{delivery}",
-            "@timestamp": _delivered_at(delivery),
+            "@timestamp": received,
             "action": _security_change(payload)
             if event == "security_and_analysis"
             else WEBHOOK_ACTIONS.get((event, action), f"{event}.{action}".strip(".")),
             **{k: v for k, v in found.items() if v is not None},
-            "webhook": {"event": event, "action": action, "delivery": delivery},
+            "webhook": {
+                "event": event,
+                "action": action,
+                "delivery": delivery,
+                **({"delivered_at": sent} if sent is not None else {}),
+            },
         }
     ]
 
@@ -152,16 +176,14 @@ def _security_change(payload: dict[str, Any]) -> str:
     return "security_and_analysis"
 
 
-def _delivered_at(delivery: str) -> int:
+def _delivered_at(delivery: str) -> int | None:
     """Milliseconds since the epoch: the time a version-1 UUID delivery id was
-    made, else now. A replay is refused by its id, not by its time (ING-2)."""
+    made, or None for an id of another form."""
     try:
         uid = uuid.UUID(delivery)
     except ValueError:
-        uid = None
-    if uid is not None and uid.version == 1:
-        return (uid.time - _UUID_EPOCH) // 10_000
-    return int(time.time() * 1000)
+        return None
+    return (uid.time - _UUID_EPOCH) // 10_000 if uid.version == 1 else None
 
 
 class GitHubConnector:
@@ -174,7 +196,7 @@ class GitHubConnector:
         token = secret.get("token")
         if not org or not token:
             raise ConfigError("github: settings need org and the secret needs token")
-        since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        since = since_default(cursor, settings)
         params: dict[str, Any] = {
             "per_page": min(int(limit), 100),
             "order": "asc",
@@ -197,26 +219,21 @@ class GitHubConnector:
                 )
             resp.raise_for_status()
             records = resp.json() or []
-            after = _next_after(resp.headers.get_list("link"))
-        newest = str(cursor.get("newest") or since)
+            nxt = resp.links.get("next", {}).get("url", "")
+            after = parse_qs(urlsplit(nxt).query).get("after", [None])[0]
+        newest = reached(cursor, since)
         for r in records:
             ts = r.get("@timestamp") or r.get("created_at")
             if ts:
                 iso = datetime.fromtimestamp(float(ts) / 1000, tz=UTC).isoformat()
                 newest = max(newest, iso)
+        late = str(cursor.get("since") or "")
         if after and records:
             # `after` pages through the phrase it was issued for, so the
             # created:>= bound stays put until the walk is done.
-            held = {"since": since, "newest": newest, "after": after}
-            return FetchResult(records=records, cursor=held, more=True)
-        return FetchResult(records=records, cursor={"since": newest}, more=False)
-
-
-def _next_after(links: list[str]) -> str | None:
-    for link in links:
-        if 'rel="next"' in link and "after=" in link:
-            return link.split("after=", 1)[1].split("&", 1)[0].split(">", 1)[0]
-    return None
+            held = {**cursor, "start": since, "newest": newest, "after": after}
+            return FetchResult(records=records, cursor=held, more=True, since=late)
+        return FetchResult(records=records, cursor={"since": newest}, more=False, since=late)
 
 
 CONNECTOR = GitHubConnector()

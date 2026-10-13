@@ -5,8 +5,8 @@ description: >
   the origin unencrypted. Either one lets a network in between read logins.
 status: stable
 date: 2026-09-30
-modified: 2026-09-30
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.6
 attack: [T1562]
 logsource:

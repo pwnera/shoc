@@ -1,5 +1,10 @@
 # Google Workspace Admin SDK reports -> OCSF. ING-1, ING-3.
-# One record is one activity; its first event decides the class. Sign-ins
+# One record is one activity, and one save can list several events (2SV
+# enforcement and its allowed methods, a Drive edit and a share). Through
+# `Mapping.map_records`, `explode` maps each event as its own row, the
+# activity's envelope with `events` narrowed to that one, so `events[0]` below
+# is the row's event. Ingest paths that still call `map_record` map the first
+# event only, and the class and parameters come from it. Sign-ins
 # (login, saml, ChromeOS, context-aware access) are Authentication (3002);
 # account settings are Account Change (3001); admin roles and OAuth grants are
 # User Access Management (3005); groups are Group Management (3006); Drive is
@@ -7,7 +12,7 @@
 # Detection Finding (2004); every other application is API Activity (6003).
 #
 # Event parameters are a list of {name, value}, read by name with
-# `parameters[name=...]`. Every parameter of the first event is also written
+# `parameters[name=...]`. Every parameter of the row's event is also written
 # to `unmapped.params.<NAME>` (RFC 0023), so a rule reads the role, the setting,
 # the new value or the granted scopes without a column for each.
 source: google_workspace
@@ -16,6 +21,7 @@ ocsf_version: "1.3.0"
 logsource: [google]
 # The ATT&CK platforms whose techniques these events can show (DET-2).
 attack_platforms: [Identity Provider, Office Suite, SaaS]
+explode: events
 
 keyed:
   params:

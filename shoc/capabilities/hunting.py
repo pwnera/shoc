@@ -76,8 +76,8 @@ def _readiness_line(rows: list[dict[str, Any]]) -> str:
         counts[row["state"]] = counts.get(row["state"], 0) + 1
     learning = [r for r in rows if r["state"] == "learning"]
     line = ", ".join(f"{n} {state.replace('_', ' ')}" for state, n in sorted(counts.items()))
-    if learning:
-        soonest = min(str(r["ready_at"])[:10] for r in learning)
+    # A pack learning on its own selection has no date before its first run.
+    if soonest := min((str(r["ready_at"])[:10] for r in learning if r["ready_at"]), default=""):
         line += f"; the first learning pack is ready on {soonest}"
     return f"Packs: {line}." if line else ""
 
@@ -188,7 +188,10 @@ def results(ctx: Context, inp: ResultsInput) -> Result:
     measures = hunter.metrics(ctx.db, ctx.tenant_id, max(1, inp.days))
     # The logic rides here and not in hunt.daily's report: a reader opens one pack.
     ready = [
-        {**hunter.readiness(ctx.db, ctx.tenant_id, p).to_json(), "logic": p.logic()}
+        {
+            **hunter.readiness(ctx.db, ctx.tenant_id, p, store=ctx.store).to_json(),
+            "logic": p.logic(),
+        }
         for p in hunts.load(ctx.config, ctx.db, ctx.tenant_id)
         if not inp.pack_id or p.id == inp.pack_id
     ]
@@ -344,10 +347,11 @@ class HuntMergeInput:
     )
     pack: dict[str, Any] = f(
         doc="The pack: id, title, hypothesis, attack, logsource.product, detection, "
-        "baseline (first_seen: [fields] or rare: {by, among, seen_by_fewer_than}, and "
-        "lookback), window, pivot and triage, as in content/hunts; hunt.results shows each "
-        "pack's logic. A shipped id is refused, and an id merged here is refused until "
-        "hunt.revert takes it back",
+        "baseline (first_seen: [fields] or rare: {by, among, seen_by_fewer_than | "
+        "seen_by_at_least, new_only}, and lookback), window, pivot and triage, as in "
+        "content/hunts; hunt.results shows each pack's logic. A window is at most 7d, and a "
+        "lookback at most 90d and within what this deployment keeps. A shipped id is "
+        "refused, and an id merged here is refused until hunt.revert takes it back",
         factory=dict,
     )
     fixtures: dict[str, Any] = f(

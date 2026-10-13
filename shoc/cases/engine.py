@@ -12,7 +12,6 @@ five findings is one case, not five pages.
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -20,6 +19,7 @@ from typing import Any
 
 from shoc.db.pool import Conn, execute, fetch_all, fetch_one
 from shoc.errors import NotFound, ValidationError
+from shoc.ids import make_id
 
 STATES = (
     "triage",
@@ -85,8 +85,7 @@ class Case:
 
 
 def make_uid(tenant_id: str, entity_key: str, day: str) -> str:
-    blob = f"{tenant_id}|{entity_key}|{day}"
-    return "CASE-" + hashlib.sha256(blob.encode()).hexdigest()[:20]
+    return make_id("CASE-", tenant_id, entity_key, day)
 
 
 def max_severity(values: list[str]) -> str:
@@ -350,13 +349,20 @@ def move(conn: Conn, tenant_id: str, finding_uids: list[str], into: str = "") ->
         day = max(r["last_seen"] for r in rows).strftime("%Y-%m-%d")
         into = make_uid(tenant_id, label, f"{day}#{rows[0]['finding_uid']}")
         title = rows[0]["title"] if len(rows) == 1 else f"{len(rows)} findings for {label}"
+        severity = max_severity([r["severity"] for r in rows])
         execute(
             conn,
             """INSERT INTO shoc.cases (case_uid, tenant_id, title, severity, entity_key)
                VALUES (%s,%s,%s,%s,%s) ON CONFLICT (case_uid) DO NOTHING""",
-            (into, tenant_id, title, max_severity([r["severity"] for r in rows]), label),
+            (into, tenant_id, title, severity, label),
         )
-        publish(conn, tenant_id, "case.opened", into, {"entity": label, "findings": len(rows)})
+        publish(
+            conn,
+            tenant_id,
+            "case.opened",
+            into,
+            {"entity": label, "severity": severity, "findings": len(rows)},
+        )
     execute(
         conn,
         "UPDATE shoc.findings SET case_uid = %s WHERE tenant_id = %s AND finding_uid = ANY(%s)",
@@ -412,6 +418,30 @@ def refresh(conn: Conn, tenant_id: str, case_uid: str) -> None:
         )
 
 
+# The severity paging decisions read for case `c`: the higher of the case's and
+# its worst finding's, the floor `refresh` raises the case to (ai-3). The
+# Investigator may lower `c.severity` for display and budget; a model misled by
+# log content cannot lower the page gate, a deadline or the chase with it.
+FLOORED = """coalesce((
+    SELECT s FROM unnest(ARRAY['informational','low','medium','high','critical'])
+                  WITH ORDINALITY AS o(s, n)
+    WHERE s = c.severity
+       OR s IN (SELECT f.severity FROM shoc.findings f
+                WHERE f.tenant_id = c.tenant_id AND f.case_uid = c.case_uid)
+    ORDER BY n DESC LIMIT 1), c.severity)"""
+
+
+def floored(conn: Conn, tenant_id: str, case_uid: str) -> str:
+    """`FLOORED` for one case: the severity a page about it is sent and gated at."""
+    row = fetch_one(
+        conn,
+        f"""SELECT {FLOORED} AS severity FROM shoc.cases c
+            WHERE c.tenant_id = %s AND c.case_uid = %s""",
+        (tenant_id, case_uid),
+    )
+    return str(row["severity"] or "") if row else ""
+
+
 # Which entity kind names a case, most specific first: a stolen key is a better
 # title than the account it belongs to.
 LABEL_ORDER = (
@@ -437,19 +467,31 @@ def _label(entities: set[str], group: list[dict[str, Any]]) -> str:
     return group[0].get("entity_key") or "-"
 
 
+# An action on the case that ran for real. A page contains nothing, and a dry
+# run changed nothing: neither the action's row nor its result may say dry run.
+CONTAINED = """EXISTS (
+    SELECT 1 FROM shoc.actions a
+    WHERE a.tenant_id = c.tenant_id AND a.case_uid = c.case_uid AND a.state = 'done'
+      AND a.type NOT LIKE 'notify.%%' AND NOT a.dry_run
+      AND coalesce(a.result->>'dry_run', 'false') <> 'true')"""
+
 # A case closed without its containment: not by a person, not found benign, and
 # holding an action nobody approved in time since a person last acknowledged it.
 # Quiet logs do not revoke a key, so it stays in front of a person until one
-# says they have seen it (D152).
-UNACKNOWLEDGED = """(c.state = 'closed'
+# says they have seen it (D152). So is a malicious case nothing contained, until
+# a person acknowledges it, when no action was ever proposed: with no response
+# credential, which is every new install, the crew can propose nothing.
+UNACKNOWLEDGED = f"""(c.state = 'closed'
     AND c.closed_by IS DISTINCT FROM 'human'
     AND coalesce(c.verdict, '') NOT IN ('benign_expected', 'false_positive')
-    AND EXISTS (
-        SELECT 1 FROM shoc.actions a
-        WHERE a.tenant_id = c.tenant_id AND a.case_uid = c.case_uid
-          AND a.state = 'rejected' AND a.approved_by = 'unattended'
-          AND a.type NOT LIKE 'notify.%%'
-          AND a.updated_at > coalesce(c.acknowledged_at, '-infinity')))"""
+    AND (EXISTS (
+            SELECT 1 FROM shoc.actions a
+            WHERE a.tenant_id = c.tenant_id AND a.case_uid = c.case_uid
+              AND a.state = 'rejected' AND a.approved_by = 'unattended'
+              AND a.type NOT LIKE 'notify.%%'
+              AND a.updated_at > coalesce(c.acknowledged_at, '-infinity'))
+         OR (c.verdict = 'malicious' AND NOT {CONTAINED}
+             AND coalesce(c.acknowledged_at, '-infinity') < c.closed_at)))"""
 
 
 def get(conn: Conn, tenant_id: str, case_uid: str) -> dict[str, Any] | None:
@@ -527,7 +569,10 @@ def transition(
 
     `by` is who closed it: `human`, `crew` or `system`. A person's close is
     final for the crew (a queued run stops on it) and is not re-read by the
-    weekly recheck until a later case follows it.
+    weekly recheck until a later case follows it. A close by a person or by
+    shoc keeps its note as the reason when none is recorded, so a case whose
+    findings went elsewhere does not read as closed for nothing; the crew's
+    reason is its verdict's summary.
     """
     if state not in STATES:
         raise ValidationError(f"unknown case state '{state}'")
@@ -543,9 +588,12 @@ def transition(
         """UPDATE shoc.cases
            SET state = %s, updated_at = now(),
                closed_at = CASE WHEN %s = 'closed' THEN now() ELSE NULL END,
-               closed_by = CASE WHEN %s = 'closed' THEN %s ELSE NULL END
+               closed_by = CASE WHEN %s = 'closed' THEN %s ELSE NULL END,
+               disposition_reason = CASE WHEN %s = 'closed' AND %s <> 'crew'
+                                         THEN coalesce(nullif(disposition_reason, ''), %s)
+                                         ELSE disposition_reason END
            WHERE tenant_id = %s AND case_uid = %s RETURNING *""",
-        (state, state, state, by, tenant_id, case_uid),
+        (state, state, state, by, state, by, note[:2000], tenant_id, case_uid),
     )
     settle(conn, tenant_id, case_uid)
     publish(
@@ -646,7 +694,7 @@ def set_verdict(
         # playbook run stops at its next step (`playbooks.advance`).
         from shoc.cases import actions
 
-        actions.reject_pending(conn, tenant_id, case_uid, "system", f"case is {verdict}")
+        actions.reject_pending(conn, tenant_id, case_uid, "system", f"ruled {verdict}")
     publish(
         conn,
         tenant_id,
@@ -723,13 +771,26 @@ def wake(conn: Conn, tenant_id: str, type_: str, payload: dict[str, Any]) -> Non
 
 
 def recent(
-    conn: Conn, tenant_id: str, limit: int = 50, state: str = "", unacknowledged: bool = False
+    conn: Conn,
+    tenant_id: str,
+    limit: int = 50,
+    state: str = "",
+    unacknowledged: bool = False,
+    verdict: str = "",
+    open_only: bool = False,
 ) -> list[dict[str, Any]]:
+    """Cases, most recently updated first. Every filter applies before the limit,
+    so an old case waiting on a person is not lost behind newer ones (ux-6)."""
     where = ["c.tenant_id = %(tenant_id)s"]
     params: dict[str, Any] = {"tenant_id": tenant_id, "limit": limit}
     if state:
         where.append("c.state = %(state)s")
         params["state"] = state
+    if verdict:
+        where.append("c.verdict = %(verdict)s")
+        params["verdict"] = verdict
+    if open_only:
+        where.append("c.state <> 'closed'")
     if unacknowledged:
         where.append(UNACKNOWLEDGED)
     return fetch_all(

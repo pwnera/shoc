@@ -139,3 +139,20 @@ def test_the_automatic_action_budget_per_case_is_enforced():
 def test_an_unknown_action_is_refused():
     decision = SHIPPED.decide("rm.minus_rf", principal_kind="human")
     assert not decision.allowed and "not in the policy" in decision.reason
+
+
+def test_shoc_dry_run_set_either_way_wins_over_the_policy(monkeypatch):
+    """SHOC_DRY_RUN=0 read as unset, so the policy's `dry_run: true` held every
+    action back while the operator believed response was on (RSP-7)."""
+    from shoc.config import Config
+
+    for value, env in (("0", False), ("1", True), ("", None)):
+        monkeypatch.setenv("SHOC_DRY_RUN", value)
+        assert Config().dry_run is env
+    assert SHIPPED.dry_run_for("aws.disable_access_key", False) is False
+    assert SHIPPED.dry_run_for("aws.disable_access_key", None) is True
+    assert SHIPPED.dry_run_for("notify.page", None) is False, "the policy's own exception"
+    assert SHIPPED.dry_run_for("notify.page", True) is False, "a page is never a dry run"
+    assert not SHIPPED.decide("notify.page", dry_run_default=True).dry_run
+    assert SHIPPED.dry_run_for() is True, "no action asks the defaults"
+    assert not SHIPPED.decide("aws.disable_access_key", dry_run_default=False).dry_run

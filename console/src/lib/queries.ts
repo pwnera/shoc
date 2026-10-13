@@ -24,7 +24,7 @@ import { call, callData } from "./api";
 import { FOLLOWED, LIVE, ruleHealthQuery, type ActionPage } from "./reads";
 import { toast, toastError, go } from "./toast";
 import { clock, count, num, percent } from "./format";
-import { DISPOSITIONS, verdictLabel } from "./labels";
+import { actionLabel, DISPOSITIONS, verdictLabel } from "./labels";
 import type {
   CredentialList,
   CredentialState,
@@ -402,7 +402,7 @@ const decision = (input: Decision) => (typeof input === "string" ? { action_uid:
 /**
  * Approve or reject, optimistically: the action leaves every action list at
  * once and comes back, with a critical toast, if the call fails. ApprovalCard
- * is the only call site of both.
+ * calls both; CloseDialog calls useApprove for "Approve and close".
  */
 function useDecide(capability: "action.approve" | "action.reject", what: string) {
   const client = useQueryClient();
@@ -523,26 +523,41 @@ export function useAcknowledgeCase() {
 /**
  * Close as a person, with a disposition and a reason the crew learns from.
  * `remember_days` matters only for benign_expected and false_positive: the
- * kernel writes a memory for those two, and reads 0 as 90.
+ * kernel writes a memory for those two, and reads 0 as 90. Closed so, the
+ * kernel names what shoc did that is still in force (`still_in_force`): the
+ * toast names them and stays, leading to the case's Response tab to undo them.
  */
 export function useCloseCase() {
   return useRefreshing<
     { case_uid: string; disposition: Disposition; reason: string; remember_days?: number },
-    { case_uid: string; state: string; verdict: string; rejected_actions: number; memory_id?: string }
-  >("case.close", ["case.get", "case.list", "action.list", "memory.search"], (input) => ({ ...input }), (d, input) =>
+    {
+      case_uid: string;
+      state: string;
+      verdict: string;
+      rejected_actions: number;
+      memory_id?: string;
+      still_in_force?: { action_uid: string; type: string; target: string }[];
+    }
+  >("case.close", ["case.get", "case.list", "action.list", "memory.search"], (input) => ({ ...input }), (d, input) => {
+    const kept = d.still_in_force ?? [];
+    const named = kept.slice(0, 3).map((a) => [actionLabel(a.type), a.target].filter(Boolean).join(" "));
+    const response = `/cases/${encodeURIComponent(d.case_uid)}?tab=response`;
     toast({
       tone: "ok",
       text: [
         `Closed as ${DISPOSITIONS[input.disposition]}`,
         d.rejected_actions ? count(d.rejected_actions, "action rejected", "actions rejected") : "",
+        kept.length ? `still in force: ${named.join(", ")}${kept.length > 3 ? ` +${kept.length - 3}` : ""}` : "",
       ]
         .filter(Boolean)
         .join(" · "),
-      ...(d.memory_id
-        ? { action: { label: "Memory", to: "/memory?tab=corrections", run: () => go("/memory?tab=corrections") } }
-        : {}),
-    }),
-  );
+      ...(kept.length
+        ? { life: Infinity, action: { label: "Response", to: response, run: () => go(response) } }
+        : d.memory_id
+          ? { action: { label: "Memory", to: "/memory?tab=corrections", run: () => go("/memory?tab=corrections") } }
+          : {}),
+    });
+  });
 }
 
 /** Steer the crew: a person's message into the case, to the whole crew or one role. */
@@ -700,7 +715,7 @@ export function useConfigureLookup() {
       remove?: boolean;
     },
     { feed: string; enabled: boolean; removed: boolean }
-  >("intel.configure", ["intel.list"], (input) => ({ ...input }));
+  >("intel.configure", ["intel.list"], (input) => ({ ...input }), undefined, { gcTime: 0 });
 }
 
 /** Add indicators by value; the kernel types each one and says which it refused. */
@@ -1124,12 +1139,18 @@ export function useCredentials() {
   });
 }
 
-/** A blank secret field keeps the stored one; settings replace what is saved. Save makes one read with it. */
+/**
+ * A blank secret field keeps the stored one; settings replace what is saved. Save makes one read with it.
+ * `gcTime: 0` drops the typed secret from the mutation cache once the form closes (SEC-3), as for every
+ * write that takes or returns one: lookup and source keys, Slack, the model, push keys, tokens, SSO.
+ */
 export function useConfigureCredential() {
   return useRefreshing<
     { provider: string; settings: Record<string, unknown>; secret: Record<string, string> },
     CredentialState
-  >("credential.configure", ["credential.list", "source.list", "platform.lookups"], (input) => ({ ...input, verify: true }));
+  >("credential.configure", ["credential.list", "source.list", "platform.lookups"], (input) => ({ ...input, verify: true }), undefined, {
+    gcTime: 0,
+  });
 }
 
 /** One read with a stored credential, as Save makes; the Response review shows what came back. */
@@ -1158,7 +1179,7 @@ export function useConfigureSlack() {
   return useRefreshing<
     { bot_token?: string; signing_secret?: string; channel?: string; approvers?: Record<string, string> },
     { channel: string; approvers: string[]; configured: boolean }
-  >("slack.configure", ["slack.show"], (input) => ({ ...input }));
+  >("slack.configure", ["slack.show"], (input) => ({ ...input }), undefined, { gcTime: 0 });
 }
 
 /** Empty fields keep what is stored, the key included. */
@@ -1166,7 +1187,7 @@ export function useConfigureLlm() {
   return useRefreshing<
     { provider?: string; model?: string; model_cheap?: string; base_url?: string; api_key?: string },
     LlmConfig
-  >("llm.configure", ["llm.show", "health.status"], (input) => ({ ...input }));
+  >("llm.configure", ["llm.show", "health.status"], (input) => ({ ...input }), undefined, { gcTime: 0 });
 }
 
 /* -- sources -------------------------------------------------------------- */
@@ -1185,15 +1206,15 @@ export function useConnectSource() {
       verify?: boolean;
     },
     { source: string; verified: boolean | null; verify_error: string | null }
-  >("source.configure", ["source.list", "health.sources"], (input) => ({ ...input }));
+  >("source.configure", ["source.list", "health.sources"], (input) => ({ ...input }), undefined, { gcTime: 0 });
 }
 
-/** The key is returned when it is made or rotated, and never again. */
+/** The key is returned when it is made or rotated, and never again: like a token, `gcTime: 0` drops it once nothing shows it. */
 export function usePushKey() {
   return useRefreshing<
     { source: string; rotate?: boolean },
     { source: string; push_key: string; signature_header: string; timestamp_header: string }
-  >("source.push_key", ["source.list"], (input) => ({ ...input }));
+  >("source.push_key", ["source.list"], (input) => ({ ...input }), undefined, { gcTime: 0 });
 }
 
 export function useRemoveSource() {
@@ -1363,8 +1384,11 @@ export function useMetrics(days = 30) {
   });
 }
 
-/** The audit log, 200 rows by default; `head` verifies the chain from that hash. */
-export function useAudit(input: number | { limit?: number; head?: string } = {}) {
+/**
+ * The audit log, 200 rows by default; `head` verifies the chain from that hash.
+ * `verify: false` only lists rows: `checked` comes back false and `chain_ok` says nothing.
+ */
+export function useAudit(input: number | { limit?: number; head?: string; verify?: boolean } = {}) {
   const asked = typeof input === "number" ? { limit: input } : { limit: 200, ...input };
   return useQuery({
     queryKey: ["health.audit", asked],
@@ -1373,6 +1397,7 @@ export function useAudit(input: number | { limit?: number; head?: string } = {})
         chain_ok: boolean;
         rows_verified: number;
         detail: string;
+        checked: boolean;
         head: string;
         recent: AuditRow[];
       }>("health.audit", asked),
@@ -1484,5 +1509,5 @@ export function useConfigureSso() {
   return useRefreshing<
     { issuer?: string; client_id?: string; client_secret?: string; domains?: string[]; clear?: boolean },
     SsoSettings
-  >("sso.configure", ["sso.show", "user.list"], (input) => ({ ...input }));
+  >("sso.configure", ["sso.show", "user.list"], (input) => ({ ...input }), undefined, { gcTime: 0 });
 }

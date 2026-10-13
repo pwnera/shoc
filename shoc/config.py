@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -33,6 +34,19 @@ def rule_fixtures_dir() -> Path:
     return Path(__file__).parent.parent / "tests" / "fixtures" / "rules"
 
 
+# Every SHOC_LLM_PROVIDER `llm.from_config` builds a client for, aliases included;
+# empty is "none".
+LLM_PROVIDERS = frozenset(
+    {"none", "off", "anthropic", "openai", "openai-compatible", "compatible", "openai-responses"}
+)
+
+# The merge gates' scratch tenants are the tenant id with one of these added.
+SCRATCH_SUFFIXES = ("_gate", "_hunt_gate")
+# A tenant id names its schema, catalog, dataset or database as it is (D4),
+# and so does a scratch tenant's; `t_` and the longest suffix fit Postgres' 63.
+TENANT_ID = re.compile(r"[a-z0-9][a-z0-9_]{0,40}(?:_gate|_hunt_gate)?")
+
+
 @dataclass
 class Config:
     dsn: str = field(default_factory=lambda: os.environ.get("SHOC_DSN", ""))
@@ -50,8 +64,14 @@ class Config:
     retention_days: int = field(
         default_factory=lambda: int(os.environ.get("SHOC_RETENTION_DAYS", "90"))
     )
-    dry_run: bool = field(
-        default_factory=lambda: os.environ.get("SHOC_DRY_RUN", "1") not in ("0", "false", "no")
+    # SHOC_DRY_RUN, set either way, wins over the policy; unset (None), the
+    # policy's `dry_run` decides (RSP-7). `Policy.dry_run_for` reads both.
+    dry_run: bool | None = field(
+        default_factory=lambda: (
+            os.environ["SHOC_DRY_RUN"] not in ("0", "false", "no")
+            if os.environ.get("SHOC_DRY_RUN")
+            else None
+        )
     )
     # The crew. "none" keeps shoc fully deterministic: rules, findings and cases
     # still work, and agent turns are skipped instead of guessed at.
@@ -116,6 +136,19 @@ class Config:
     # hosts they reach are named in the quick start and logged the first time
     # they are pulled; `off` stops shoc contacting anything on its own.
     intel_feeds: str = field(default_factory=lambda: os.environ.get("SHOC_INTEL_FEEDS", "default"))
+    # A URL an outside monitor (healthchecks.io, Cronitor, Uptime Kuma) expects a
+    # GET on after every hourly `ops.check`, so a host, Postgres or both roles
+    # being down is noticed by something that is not shoc. Unset, nothing is
+    # sent; set, its host is logged when the worker starts (D57).
+    heartbeat_url: str = field(
+        default_factory=lambda: os.environ.get("SHOC_HEARTBEAT_URL", "").strip()
+    )
+    # The disk Postgres may fill, in GB. Postgres cannot see the filesystem, so
+    # only the operator can say; set, its size against this is an alert at 80%
+    # and a page at 90%. Unset (0), there is no check.
+    disk_budget_gb: float = field(
+        default_factory=lambda: float(os.environ.get("SHOC_DISK_BUDGET_GB") or 0)
+    )
     # Limits that keep one bad query or one huge request from taking the rest
     # of the deployment with it.
     statement_timeout_seconds: int = field(
@@ -186,10 +219,35 @@ class Config:
     bigquery_readonly_credentials: str = field(
         default_factory=lambda: os.environ.get("SHOC_BIGQUERY_READONLY_CREDENTIALS", "")
     )
+    # The most one BigQuery read (store.query) may bill, in bytes; past it the
+    # job fails and bills nothing, and the error lands on the rule or read that
+    # ran it. BigQuery checks the cap against its estimate, which for a read
+    # bounded only by `time` is an upper bound over every retained partition of
+    # the columns read, not the bytes the clustering prunes to. So it is sized
+    # to the retained bytes of the columns a rule reads, and stays off (0) until
+    # the first STO-6 run measures that (wh-6).
+    bigquery_max_bytes_billed: int = field(
+        default_factory=lambda: int(os.environ.get("SHOC_BIGQUERY_MAX_BYTES_BILLED") or 0)
+    )
 
     @classmethod
     def load(cls) -> Config:
         return cls()
+
+    def check_llm_provider(self) -> None:
+        """Refuse a SHOC_LLM_PROVIDER no model client speaks, as a worker starts.
+
+        Unchecked, a typo raised in the hourly `ops.check`, and only when a
+        source was down, which is when its page was due (sre-10). The names are
+        the ones `llm.from_config` takes; `llm.configure` checks a stored one.
+        """
+        from shoc.errors import ConfigError
+
+        if self.llm_provider and self.llm_provider not in LLM_PROVIDERS:
+            raise ConfigError(
+                f"unknown SHOC_LLM_PROVIDER '{self.llm_provider}' "
+                "(use anthropic, openai, openai-responses or none)"
+            )
 
     def readonly_configured(self) -> bool:
         """Whether agents have a credential of their own on this backend (SEC-1)."""
@@ -227,5 +285,21 @@ class Config:
         return f"SHOC_{self._safe(tenant_id).upper()}"
 
     def _safe(self, tenant_id: str | None = None) -> str:
+        """The tenant id as its namespace is named, unchanged (wh-13).
+
+        Folding other characters to `_` gave 'acme-co' and 'acme_co' one
+        namespace. A merge gate's scratch tenant is `<tenant>_gate` or
+        `<tenant>_hunt_gate`, and each gate empties it, so the tenant this
+        deployment runs and `shoc migrate` registers may not end that way.
+        """
+        from shoc.errors import ConfigError
+
         tid = tenant_id or self.tenant_id
-        return "".join(ch if (ch.isalnum() or ch == "_") else "_" for ch in tid.lower())
+        if not TENANT_ID.fullmatch(tid) or (
+            tid == self.tenant_id and tid.endswith(SCRATCH_SUFFIXES)
+        ):
+            raise ConfigError(
+                f"tenant id '{tid}' must be 1-41 lowercase letters, digits or '_', start with "
+                f"a letter or digit, and not end in {' or '.join(SCRATCH_SUFFIXES)}"
+            )
+        return tid

@@ -92,7 +92,7 @@ def mapped(mapping: Any, files: list[Path], tenant: str) -> Iterator[dict[str, A
                 if not isinstance(record, dict):
                     continue
                 try:
-                    yield mapping.map_record(record, tenant)
+                    yield from mapping.map_records(record, tenant)
                 except Exception:  # one bad record is not a bad dataset
                     continue
         except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:

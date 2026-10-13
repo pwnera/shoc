@@ -32,7 +32,7 @@ steps:
     action: stripe.block_charge_card
     optional: true
     params:
-      charge: "{{ entity.resource }}"
+      charge: "{{ rule.stripe_early_fraud_warning.resource }}"
   - name: page the on-call engineer
     action: notify.page
     optional: true

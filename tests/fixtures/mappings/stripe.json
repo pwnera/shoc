@@ -1,13 +1,13 @@
 [
   {
-    "id": "accact_1SdeybAiQNL8swvtMHyVtfCU",
+    "id": "accact_1PfakeKeyCreated01",
     "object": "v2.iam.activity_log",
     "created": "2026-09-20T00:00:00.000Z",
     "type": "api_key_created",
     "livemode": true,
-    "context": "acct_1SdeybAiQNL8swvt",
+    "context": "acct_1PfakeLiveAcct01",
     "actor": {"type": "user", "user": {"email": "user@example.com"}},
-    "details": {"type": "api_key", "api_key": {"id": "mk_1SdeybAiQNL8swvtMHyVtfCU", "created": "2026-09-20T00:00:00.000Z", "type": "secret_key", "name": "My API Key", "note": "", "expires_at": null, "ip_allowlist": [], "new_key": null, "managed_by": null}}
+    "details": {"type": "api_key", "api_key": {"id": "mk_1PfakeLiveKey0001", "created": "2026-09-20T00:00:00.000Z", "type": "secret_key", "name": "My API Key", "note": "", "expires_at": null, "ip_allowlist": [], "new_key": null, "managed_by": null}}
   },
   {
     "id": "evt_3PfakeCardTest0001",
@@ -29,12 +29,12 @@
     }}
   },
   {
-    "id": "accact_1SdeybAiQNL8swvtUserRole01",
+    "id": "accact_1PfakeUserRole01",
     "object": "v2.iam.activity_log",
     "created": "2026-09-20T00:10:00.000Z",
     "type": "user_roles_updated",
     "livemode": true,
-    "context": "acct_1SdeybAiQNL8swvt",
+    "context": "acct_1PfakeLiveAcct01",
     "actor": {"type": "api_key", "api_key": {"id": "rk_live_fakeRestricted01"}},
     "details": {"type": "user_roles", "user_roles": {"user_email": "new-admin@example.org", "old_roles": ["view_only"], "new_roles": ["administrator"]}}
   },
@@ -53,8 +53,8 @@
       "fraud_type": "made_with_stolen_card"
     }}
   },
-  {"id": "accact_1SdeybAiQNL8swvt2faReset01", "object": "v2.iam.activity_log", "created": "2026-10-06T09:00:00.000Z", "type": "user_two_step_authentication_reset_requested", "livemode": true, "context": "acct_1SdeybAiQNL8swvt", "actor": {"type": "user", "user": {"email": "admin@example.com"}}, "details": {"type": "authentication", "authentication": {"target_email": "finance@example.com", "surface": "dashboard", "challenge_type": null, "backup_email": null}}},
-  {"id": "accact_1SdeybAiQNL8swvtEmailChg01", "object": "v2.iam.activity_log", "created": "2026-10-06T09:05:00.000Z", "type": "user_email_changed", "livemode": true, "context": "acct_1SdeybAiQNL8swvt", "actor": {"type": "user", "user": {"email": "finance@example.net"}}, "details": {"type": "user_profile", "user_profile": {"old_email": "finance@example.com", "new_email": "finance@example.net", "old_redacted_phone_number": null, "new_redacted_phone_number": null}}},
+  {"id": "accact_1Pfake2faReset01", "object": "v2.iam.activity_log", "created": "2026-10-06T09:00:00.000Z", "type": "user_two_step_authentication_reset_requested", "livemode": true, "context": "acct_1PfakeLiveAcct01", "actor": {"type": "user", "user": {"email": "admin@example.com"}}, "details": {"type": "authentication", "authentication": {"target_email": "finance@example.com", "surface": "dashboard", "challenge_type": null, "backup_email": null}}},
+  {"id": "accact_1PfakeEmailChg01", "object": "v2.iam.activity_log", "created": "2026-10-06T09:05:00.000Z", "type": "user_email_changed", "livemode": true, "context": "acct_1PfakeLiveAcct01", "actor": {"type": "user", "user": {"email": "finance@example.net"}}, "details": {"type": "user_profile", "user_profile": {"old_email": "finance@example.com", "new_email": "finance@example.net", "old_redacted_phone_number": null, "new_redacted_phone_number": null}}},
   {"id": "evt_1PfakePayoutEvent01", "object": "event", "api_version": "2026-07-29", "created": 1790001200, "type": "payout.created", "livemode": true, "data": {"object": {"id": "po_1PfakePayout0001", "object": "payout", "amount": 2450000, "currency": "usd", "automatic": false, "destination": "card_1PfakeDebit00001", "method": "instant", "status": "pending", "type": "card", "created": 1790001199}}},
   {"id": "po_1PfakePayoutListed1", "type": "payout.created", "created": 1785000000, "data": {"object": {"id": "po_1PfakePayoutListed1", "object": "payout", "amount": 640000, "currency": "usd", "automatic": true, "destination": "ba_1PfakeUsualBank01", "method": "standard", "status": "paid", "type": "bank_account", "created": 1785000000}}}
 ]

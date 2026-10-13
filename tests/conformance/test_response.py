@@ -61,6 +61,28 @@ def agent_ctx(config, conn, store):
 
 
 def test_a_confident_reversible_proposal_is_born_approved(agent_ctx, case):
+    """The crew's proposal as the loop makes it, its target grounded in the case."""
+    from shoc.cases import actions as action_store
+
+    row = action_store.propose(
+        agent_ctx.db,
+        agent_ctx.tenant_id,
+        action_store.Proposal(
+            action_type="aws.disable_access_key",
+            params={"access_key_id": "AKIAIOSFODNN7EXAMPLE"},
+            case_uid=case,
+            rationale="stolen key",
+        ),
+        "IR Commander",
+        principal_kind="agent",
+        config=agent_ctx.config,
+    )
+    assert row["state"] == "approved" and row["autonomy"] == "L1"
+    assert row["dry_run"], "a new install plans, it does not act"
+
+
+def test_an_agent_that_calls_action_propose_never_acts_alone(agent_ctx, case):
+    """The call skips the loop's grounding and blast radius (RFC 0020, D45)."""
     result = call(
         "action.propose",
         agent_ctx,
@@ -71,8 +93,7 @@ def test_a_confident_reversible_proposal_is_born_approved(agent_ctx, case):
             "rationale": "stolen key",
         },
     )
-    assert result.data.state == "approved" and result.data.autonomy == "L1"
-    assert result.data.dry_run, "a new install plans, it does not act"
+    assert result.data.state == "proposed" and result.data.autonomy == "L2"
 
 
 def test_a_risky_proposal_waits_for_a_human(agent_ctx, case):
@@ -122,6 +143,7 @@ def test_running_the_same_action_twice_does_not_act_twice(ctx, agent_ctx, case):
             "case_uid": case,
         },
     )
+    call("action.approve", ctx, {"action_uid": proposed.data.action_uid})
     first = call("action.run", ctx, {"action_uid": proposed.data.action_uid, "dry_run": True})
     second = call("action.run", ctx, {"action_uid": proposed.data.action_uid, "dry_run": True})
     assert first.data.ok and second.data.detail == "already done"
@@ -353,6 +375,41 @@ def test_actions_are_listed_with_what_they_wait_for(ctx, agent_ctx, case):
     assert "waiting for a human" in listing.summary
 
 
+def test_an_assistants_list_is_cut_and_action_get_has_the_rest(ctx, agent_ctx, case):
+    """A platform's whole answer in each row overflows an MCP client (live-13)."""
+    import json
+
+    from shoc.capabilities.response import LISTED_CHARS
+
+    proposed = call(
+        "action.propose",
+        agent_ctx,
+        {"action": "aws.revoke_role_sessions", "params": {"role_name": "deploy"}, "case_uid": case},
+    ).data.action_uid
+    answer = {"sessions": [f"session-{i}" for i in range(200)]}
+    execute(
+        ctx.db,
+        "UPDATE shoc.actions SET result = %s WHERE tenant_id = %s AND action_uid = %s",
+        (json.dumps(answer), ctx.tenant_id, proposed),
+    )
+    assistant = Context(ctx.tenant_id, Caller(kind="external_agent", id="claude"), ctx.config)
+    assistant._db, assistant._store = agent_ctx.db, agent_ctx.store
+
+    def row(caller: Context) -> dict:
+        rows = call("action.list", caller, {"case_uid": case}).data.rows
+        [found] = [r for r in rows if r["action_uid"] == proposed]
+        return found
+
+    cut = row(assistant)
+    assert isinstance(cut["result"], str) and cut["result"].endswith("(action.get has the rest)")
+    assert len(cut["result"]) < LISTED_CHARS + 40
+    assert cut["params"]["role_name"] == "deploy", "a short field stays whole"
+    assert row(ctx)["result"] == answer, "a person's list keeps the row whole"
+    assert row(agent_ctx)["result"] == answer, "the crew has no action.get"
+    detail = call("action.get", assistant, {"action_uid": proposed})
+    assert detail.data.action["result"] == answer and detail.citations == [proposed]
+
+
 def test_every_action_is_audited(ctx, agent_ctx, case):
     """The call and the change of state it caused, each under its principal (SEC-1)."""
     from shoc.db.audit import verify
@@ -367,6 +424,7 @@ def test_every_action_is_audited(ctx, agent_ctx, case):
             "case_uid": case,
         },
     )
+    call("action.approve", ctx, {"action_uid": proposed.data.action_uid})
     call("action.run", ctx, {"action_uid": proposed.data.action_uid, "dry_run": True})
     call("action.undo", ctx, {"action_uid": proposed.data.action_uid})
     ok, _count, detail = verify(ctx.db, ctx.tenant_id)
@@ -374,6 +432,8 @@ def test_every_action_is_audited(ctx, agent_ctx, case):
     assert audit_trail(ctx.db, ctx.tenant_id, before) == [
         ("action.proposed", "agent:crew"),
         ("action.propose", "agent:crew"),
+        ("action.approved", "human:test"),
+        ("action.approve", "human:test"),
         ("action.started", "human:test"),
         ("action.executed", "human:test"),
         ("action.run", "human:test"),
@@ -397,6 +457,7 @@ def test_a_worker_that_dies_mid_action_leaves_it_on_record(ctx, agent_ctx, case,
         },
     )
     uid = proposed.data.action_uid
+    call("action.approve", ctx, {"action_uid": uid})
 
     def killed(*_args: object) -> None:
         raise SystemExit("worker killed")

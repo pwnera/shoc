@@ -52,6 +52,32 @@ def test_a_base_url_outside_the_allowlist_is_refused(env_model):
         call("llm.configure", env_model, {"base_url": "https://collector.example.net/v1"})
 
 
+def test_a_base_url_is_https_unless_it_is_local(env_model, monkeypatch):
+    monkeypatch.setenv("SHOC_LLM_BASE_URL_ALLOWLIST", "api.openai.com,127.0.0.1")
+    with pytest.raises(ConfigError, match="https"):
+        call("llm.configure", env_model, {"base_url": "http://api.openai.com/v1"})
+    local = {"base_url": "http://127.0.0.1:11434/v1", "api_key": "sk-local"}
+    assert call("llm.configure", env_model, local).data.base_url == local["base_url"]
+
+
+def test_the_key_does_not_follow_a_new_provider_or_host(env_model, monkeypatch):
+    monkeypatch.setenv("SHOC_LLM_BASE_URL_ALLOWLIST", "api.openai.com,api.anthropic.com")
+    for moved in ({"provider": "anthropic"}, {"base_url": "https://api.anthropic.com/v1"}):
+        with pytest.raises(ConfigError, match="give the key"):
+            call("llm.configure", env_model, moved)
+    # Another path on the same host, or the key given with the move, is fine.
+    call("llm.configure", env_model, {"base_url": "https://api.openai.com/v2"})
+    out = call("llm.configure", env_model, {"provider": "anthropic", "api_key": "sk-new"}).data
+    assert out.provider == "anthropic" and "api_key" in out.stored
+
+
+def test_naming_the_providers_own_endpoint_is_not_a_move(env_model, monkeypatch):
+    monkeypatch.setenv("SHOC_LLM_BASE_URL_ALLOWLIST", "api.anthropic.com")
+    env_model.config = replace(env_model.config, llm_provider="anthropic", llm_base_url="")
+    out = call("llm.configure", env_model, {"base_url": "https://api.anthropic.com/v1"}).data
+    assert out.base_url == "https://api.anthropic.com/v1"
+
+
 def test_an_agent_cannot_change_its_own_model(env_model):
     agent = Context(
         tenant_id=env_model.tenant_id,

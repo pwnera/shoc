@@ -3,7 +3,8 @@
  * and the ⋯ menu, the lifecycle stepper and the strip. The current step opens
  * a Move menu (M) of the moves the kernel allows; an allowed later step asks
  * for a note and moves there; closed opens the close dialog; other steps are
- * history or out of reach. A closed case locks the stepper and offers Reopen.
+ * history or out of reach; each step's tip says what its phase is for. A
+ * closed case locks the stepper and offers Reopen.
  * Under 768px the steps are dots with the current one named beside them;
  * where the stepper still scrolls sideways, it opens on the current step.
  *
@@ -23,7 +24,7 @@ import { Steps, type Step } from "@/components/ui/steps";
 import { Tip } from "@/components/ui/tip";
 import { copyAndSay } from "@/lib/copy";
 import { shortId, stamp } from "@/lib/format";
-import { CASE_STATES, caseStateLabel } from "@/lib/labels";
+import { CASE_STATE_TIPS, CASE_STATES, caseStateLabel } from "@/lib/labels";
 import { useInvestigate, useNotifySlack, useSetCaseState } from "@/lib/queries";
 import { toast, toastError } from "@/lib/toast";
 import { exploreOf } from "./links";
@@ -155,10 +156,11 @@ function Stepper({
     const state = step.key as CaseState;
     const i = CASE_STATES.indexOf(state);
     const label = caseStateLabel(state);
+    const tip = CASE_STATE_TIPS[state];
     // Past steps and a closed case's steps are history; a step the kernel refuses is out of reach.
     if (closed || i < at || (i > at && !NEXT[record.state].includes(state)))
       return (
-        <Tip label={step.time ? stamp(step.time) : undefined}>
+        <Tip label={step.time ? `${tip} · ${stamp(step.time)}` : tip}>
           <span {...props} />
         </Tip>
       );
@@ -169,7 +171,7 @@ function Stepper({
           open={moving}
           onOpenChange={onMoving}
           trigger={(trigger) => (
-            <Tip label="Move to…" kbd="M">
+            <Tip label={`${tip} · Move to…`} kbd="M">
               <button {...trigger} {...props} type="button" aria-keyshortcuts="M" />
             </Tip>
           )}
@@ -177,11 +179,20 @@ function Stepper({
           {(close) => <MenuList items={items} close={close} label="Move to" />}
         </Popover>
       );
-    if (state === "closed") return <button {...props} type="button" onClick={onClose} />;
+    if (state === "closed")
+      return (
+        <Tip label={tip}>
+          <button {...props} type="button" onClick={onClose} />
+        </Tip>
+      );
     return (
       <Popover
         label={`Move to ${label}`}
-        trigger={(trigger) => <button {...trigger} {...props} type="button" />}
+        trigger={(trigger) => (
+          <Tip label={tip}>
+            <button {...trigger} {...props} type="button" />
+          </Tip>
+        )}
       >
         {(close) => (
           <Confirm

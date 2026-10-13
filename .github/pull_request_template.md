@@ -21,6 +21,9 @@ Requirement: <!-- e.g. DET-2 --> · Closes #
 - [ ] New capability declared in `shoc/capabilities/` (no hand-written route or MCP tool)
 - [ ] Docs updated; `python scripts/generate_reference.py` re-run if capabilities changed
 - [ ] No real logs, customer data, credentials or private IOCs in this PR
+- [ ] Follows `docs/guidelines.md`, or links the decision or RFC that changes a guideline
+- [ ] A fix for a new class of defect adds its guideline and check
+- [ ] Names the line in `shoc/` whose revert makes each new test fail (TST-G3)
 
 ## Security-sensitive paths
 

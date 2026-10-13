@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 import pytest
 
 from shoc.config import Config
-from tests.support import dsn
+from tests.support import dsn, live_tenants
 
 
 @pytest.fixture(scope="session")
@@ -19,6 +19,12 @@ def config() -> Config:
     """
     if not dsn():
         pytest.skip("SHOC_DSN is not set; skipping the Postgres-backed tests")
+    if os.environ.get("SHOC_TEST_ALLOW_MODEL") != "1":
+        # Whatever the shell exported: no test spends model credit, and the
+        # policy decides dry runs, as in CI. Set in the environment, so a
+        # replay's own Config.load() reads it too (AGT-6).
+        os.environ["SHOC_LLM_PROVIDER"] = "none"
+        os.environ.pop("SHOC_DRY_RUN", None)
     cfg = Config()
     cfg.tenant_id = os.environ.get("SHOC_TEST_TENANT") or f"test{uuid.uuid4().hex[:8]}"
     cfg.master_key = cfg.master_key or "test-master-key"
@@ -33,11 +39,24 @@ def conn(config: Config):
     from shoc.db.migrate import migrate
     from shoc.db.pool import q
 
-    c = psycopg.Connection[DictRow].connect(config.dsn, row_factory=dict_row, autocommit=True)
+    # As the schema's owner, the way `shoc migrate` connects; capabilities and
+    # stores use SHOC_DSN, the role serve and worker run as (RFC 0024).
+    c = psycopg.Connection[DictRow].connect(
+        config.migrate_dsn or config.dsn, row_factory=dict_row, autocommit=True
+    )
     from shoc.db.pool import ALL_TENANTS, set_tenant
 
     set_tenant(c, ALL_TENANTS)  # fixtures set up and tear down across tenants
+    live = live_tenants(c)
+    if live and os.environ.get("SHOC_TEST_ALLOW_LIVE") != "1":
+        c.close()
+        pytest.exit(
+            f"SHOC_DSN's database is in use by tenant(s) {', '.join(live)}: the suite "
+            "migrates it and empties its job queue. Point SHOC_DSN at a scratch database, "
+            "or set SHOC_TEST_ALLOW_LIVE=1."
+        )
     migrate(c)
+    _grant_runtime_for_tests(c, config)
     with c.cursor() as cur:
         cur.execute(
             """INSERT INTO shoc.tenants (tenant_id, name, backend, schema_name)
@@ -83,10 +102,17 @@ def conn(config: Config):
             "intel_reports",
             "intel_lookups",
             "intel_queue",
+            "lookup_sources",
+            "lookup_usage",
             "hunt_runs",
             "hunt_observations",
             "hunt_packs",
             "hunt_backlog",
+            "notices",
+            "store_loads",
+            "store_reads",
+            "push_deliveries",
+            "push_spool",
             "api_tokens",
             "user_links",
             "users",
@@ -94,6 +120,9 @@ def conn(config: Config):
             "own_identities",
             "own_token_requests",
             "source_history",
+            "snapshots",
+            "schedules",
+            "rehearsals",
             "tenants",
         ):
             cur.execute(q(f"DELETE FROM shoc.{table} WHERE tenant_id = %s"), (config.tenant_id,))
@@ -132,6 +161,19 @@ def store(request, config: Config, conn):
     _grant_readonly_for_tests(conn, config)
     yield s
     s.close()
+
+
+def _grant_runtime_for_tests(conn, config: Config) -> None:
+    """What `shoc migrate` does after migrating as the owner: let SHOC_DSN's role
+    run shoc without owning the schema (RFC 0024)."""
+    from urllib.parse import urlsplit
+
+    from shoc.db.migrate import grant_runtime
+
+    runtime = urlsplit(config.dsn)
+    role = runtime.username or ""
+    if config.migrate_dsn and role and role != urlsplit(config.migrate_dsn).username:
+        grant_runtime(conn, role, (runtime.path or "/shoc").lstrip("/"))
 
 
 def _grant_readonly_for_tests(conn, config: Config) -> None:
@@ -219,10 +261,14 @@ def clean(conn, store, config: Config):
                 "notices",
                 "store_loads",
                 "store_reads",
+                "push_deliveries",
+                "push_spool",
                 "own_identities",
                 "own_token_requests",
                 "source_history",
                 "snapshots",
+                "schedules",
+                "rehearsals",
                 "user_links",
                 "users",
                 "sso_providers",
@@ -238,3 +284,34 @@ def clean(conn, store, config: Config):
 @pytest.fixture
 def now() -> datetime:
     return datetime.now(UTC)
+
+
+@pytest.fixture
+def pager(conn, config: Config, clean, monkeypatch):
+    """A PagerDuty routing key, with every post shoc makes landing in `.posts`
+    and answered with `.status`; never real PagerDuty (RSP-4)."""
+    import json
+    from functools import partial
+    from types import SimpleNamespace
+
+    import httpx
+
+    from shoc.cases import credentials
+
+    fake = SimpleNamespace(posts=[], urls=[], status=202)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        fake.posts.append(json.loads(request.content))
+        fake.urls.append(str(request.url))
+        return httpx.Response(fake.status, json={"status": "success", "dedup_key": "test"})
+
+    monkeypatch.setattr(
+        httpx, "Client", partial(httpx.Client, transport=httpx.MockTransport(handler))
+    )
+    credentials.store(
+        conn, config.tenant_id, "notify", {}, {"routing_key": "test-routing-key"}, config.master_key
+    )
+    yield fake
+    # Gone before the fake transport is: a later test that pages without
+    # `clean` must not reach real PagerDuty.
+    credentials.remove(conn, config.tenant_id, "notify")

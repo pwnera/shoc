@@ -26,11 +26,13 @@ rules:
   - google_suspended_user_reactivated
   - google_risky_session_action_blocked
   - google_second_factor_failure_burst
+  - google_sign_in_after_prompt_denial
   - google_third_party_app_access_loosened
   - google_drive_external_share_burst
   - hunt:gws_first_login_country
   - hunt:gws_user_two_countries_in_a_day
   - hunt:gws_admin_first_console_operation
+  - hunt:gws_sign_in_from_hosting_network
 questions:
   - id: origin
     ask: Did the account act from an address, country or device it has not used in the last 30 days?

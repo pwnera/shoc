@@ -1,0 +1,57 @@
+id: entra_sign_in_after_mfa_denial
+title: Entra sign-in succeeded minutes after the user declined an MFA prompt
+description: >
+  A user declined an MFA prompt, or reported it as fraud, and within ten
+  minutes an interactive sign-in on the same account succeeded. The decline
+  says the user did not start that sign-in; the success says somebody got
+  through anyway, usually by sending prompts until one was approved. Entra
+  writes the same error, 500121, for a prompt the user missed or a wrong code,
+  so only a decline or a fraud report counts. A token refreshed in the
+  background is not a sign-in.
+status: experimental
+date: 2026-10-12
+severity: high
+confidence: 0.7
+attack: [T1621, T1078.004]
+logsource:
+  product: entra
+  service: sign_ins
+detection:
+  # "MFA denied; user declined the authentication", or a fraud report.
+  declined:
+    status_code: "500121"
+  declined_reason:
+    - raw.status.additionalDetails|contains: [declined, fraud]
+    - raw.properties.status.additionalDetails|contains: [declined, fraud]
+  signed_in:
+    class_uid: 3002
+    status: Success
+  # Graph's beta sign-ins tag the kind, and the connector pulls interactive ones
+  # as its signIns stream; the Event Hub export names the kind in its category.
+  # The quotes keep "nonInteractiveUser" from matching: the array is JSON text.
+  interactive:
+    - raw.signInEventTypes|contains: '"interactiveUser"'
+    - raw._stream: signIns
+    - raw.category: SignInLogs
+  # Entra's object id: the same in the decline and the sign-in, whatever name
+  # the user typed.
+  sequence:
+    by: [actor.user.uid]
+    first: declined and declined_reason
+    then: signed_in and interactive
+    within: 10m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.location.country, http_request.user_agent,
+         api.operation]
+sources:
+  - name: Elastic
+    title: Potentially Successful Okta MFA Bombing via Push Notifications
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_potentially_successful_okta_bombing_via_push_notifications
+    license: Elastic-2.0
+    relation: inspired
+  - name: Sigma
+    title: Multifactor Authentication Denied
+    url: https://github.com/SigmaHQ/sigma/blob/master/rules/cloud/azure/signin_logs/azure_mfa_denies.yml
+    author: AlertIQ
+    license: DRL-1.1
+    relation: inspired

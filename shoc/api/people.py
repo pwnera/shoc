@@ -19,9 +19,9 @@ from shoc.api.auth import token_table
 from shoc.capabilities.tokens import PREFIX
 from shoc.config import Config
 from shoc.db import audit
-from shoc.db.pool import Conn, connect, execute, fetch_one, set_tenant
+from shoc.db.pool import ALL_TENANTS, Conn, connect, execute, fetch_one, set_tenant
 from shoc.db.secrets import open_secret, seal
-from shoc.errors import Conflict, SignInError, ValidationError
+from shoc.errors import Conflict, Denied, SignInError, ValidationError
 
 SESSION = timedelta(hours=12)
 INVITE = timedelta(days=7)
@@ -55,6 +55,8 @@ def domain_of(email: str) -> str:
 @contextmanager
 def pinned(config: Config, tenant: str) -> Iterator[Conn]:
     """This thread's connection pinned to `tenant`, then unpinned, as auth._stored does."""
+    if tenant == ALL_TENANTS:
+        raise Denied(f"'{ALL_TENANTS}' is not a tenant")
     conn = connect(config)
     set_tenant(conn, tenant)
     try:
@@ -91,8 +93,19 @@ def create(conn: Conn, tenant: str, email: str, role: str, by: str, **sso: str) 
 
 
 def audit_person(conn: Conn, tenant: str, email: str, what: str, detail: dict[str, Any]) -> None:
-    """One audit row under the person. Never the password or the code: only `detail`."""
-    audit.append(conn, tenant, "human", email, what, audit.hash_payload(detail))
+    """One audit row under the person. Never the password or the code: only `detail`.
+
+    `detail` is its subject too, so it holds identifiers: the method, the client address.
+    """
+    audit.append(
+        conn,
+        tenant,
+        "human",
+        email,
+        what,
+        audit.hash_payload(detail),
+        subject=audit.subject_of(detail),
+    )
 
 
 # -- the authenticator ---------------------------------------------------------
@@ -196,8 +209,19 @@ def end_session(conn: Conn, value: str, by: str) -> None:
 
 
 def revoke_person(conn: Conn, tenant: str, user: dict[str, Any], by: str) -> None:
-    """Everything a disabled person could still sign in with: sessions, role tokens, links."""
+    """Everything a disabled person could still sign in with: sessions, role tokens, links.
+
+    The password and the authenticator go too, so enabling the account again
+    does not bring them back: the person enrols anew through user.reset.
+    """
     end_sessions(conn, tenant, user["user_id"], by)
+    execute(
+        conn,
+        """UPDATE shoc.users SET password_hash = NULL, secret = NULL, totp_step = 0,
+               code_failures = 0, locked_until = NULL
+           WHERE tenant_id = %s AND user_id = %s""",
+        (tenant, user["user_id"]),
+    )
     execute(
         conn,
         """UPDATE shoc.api_tokens SET revoked_at = now(), revoked_by = %s
@@ -292,6 +316,7 @@ def accept_link(
     new_seed: bytes | None,
     step: int,
     master_key: str,
+    address: str = "",
 ) -> str | None:
     """Set the password, and the authenticator when `new_seed` is given, and sign in.
 
@@ -330,7 +355,8 @@ def accept_link(
         end_links(conn, tenant, user_id)
         end_sessions(conn, tenant, user_id, email)
         session = create_session(conn, tenant, {"user_id": user_id, "email": email})
-        audit_person(conn, tenant, email, "auth.link_accepted", {"enrol": bool(link["enrol"])})
+        detail = {"enrol": bool(link["enrol"]), "from": address}
+        audit_person(conn, tenant, email, "auth.link_accepted", detail)
     return session
 
 

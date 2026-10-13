@@ -23,10 +23,10 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from shoc.errors import ConfigError, StoreError
-from shoc.ingest.batch import read_unique
+from shoc.ingest.batch import batch_name, orphaned, read_unique
 from shoc.store import ocsf
 from shoc.store.base import LoadStats, QueryResult, RetentionPolicy, StoreHealth
-from shoc.store.sql import prepare, translate
+from shoc.store.sql import prepare
 
 log = logging.getLogger("shoc.store.databricks")
 
@@ -105,7 +105,12 @@ class DatabricksStore:
                 http_path=self.http_path,
                 access_token=self.access_token,
                 staging_allowed_local_path=self._staging_dir,
-                session_configuration={"timezone": "UTC"},
+                # The server stops a statement too, should this process die
+                # before its own deadline cancels it.
+                session_configuration={
+                    "timezone": "UTC",
+                    "STATEMENT_TIMEOUT": str(int(self.statement_timeout_seconds)),
+                },
             )
         return self._conn
 
@@ -166,7 +171,7 @@ class DatabricksStore:
                 f"TO `{self.reader}`"
             )
 
-    def migrate(self, ocsf_version: str = "1.3.0") -> None:
+    def migrate(self) -> None:
         self.create_tenant()
         have = {row["col_name"] for row in self._execute(f"DESCRIBE TABLE {self.table}")}
         missing = [(n, t) for n, t in ocsf.COLUMNS if n not in have]
@@ -183,7 +188,7 @@ class DatabricksStore:
         )
 
     # -- load -----------------------------------------------------------
-    def load_batch(self, path: str, table: str = ocsf.EVENTS_TABLE) -> LoadStats:
+    def load_batch(self, path: str) -> LoadStats:
         """Stage the batch in a UC volume and MERGE in the events the table lacks.
 
         Delta has no primary key. An insert-only MERGE on (event_uid, time)
@@ -194,11 +199,12 @@ class DatabricksStore:
         started = time.monotonic()
         rows = read_unique(path)
         if not rows:
-            return LoadStats(table=table)
+            return LoadStats()
 
         # JSON columns are stored as strings so the layout matches every other
         # backend; every field is read as a string and cast in the MERGE.
-        name = f"batch-{int(time.time() * 1000)}-{os.getpid()}-{threading.get_ident()}.ndjson"
+        # The volume is shared by every worker, so the name is unique to this load.
+        name = f"{batch_name()}.ndjson"
         local = os.path.join(self._staging_dir, name)
         nbytes = 0
         with open(local, "w") as out:
@@ -221,7 +227,7 @@ class DatabricksStore:
                 [min(times).isoformat(), max(times).isoformat()],
             )
             loaded = _affected(merged, "num_inserted_rows")
-        except Exception as exc:  # the batch file stays on disk for a replay
+        except Exception as exc:
             raise StoreError(f"databricks load failed: {exc}") from exc
         finally:
             os.unlink(local) if os.path.exists(local) else None
@@ -231,7 +237,6 @@ class DatabricksStore:
             rows=loaded,
             bytes=nbytes,
             duration_ms=int((time.monotonic() - started) * 1000),
-            table=table,
         )
 
     def _remove(self, remote: str) -> None:
@@ -253,7 +258,7 @@ class DatabricksStore:
             raise StoreError(f"query failed: {exc}") from exc
         truncated = len(rows) > limit
         return QueryResult(
-            rows=rows[:limit],
+            rows=ocsf.decoded(rows[:limit]),
             sql=sql,
             duration_ms=int((time.monotonic() - started) * 1000),
             truncated=truncated,
@@ -270,6 +275,7 @@ class DatabricksStore:
 
     # -- housekeeping ---------------------------------------------------
     def apply_retention(self, policy: RetentionPolicy) -> int:
+        self._sweep()
         cutoff = datetime.now(UTC) - timedelta(days=policy.days)
         return _affected(
             self._execute(
@@ -278,6 +284,16 @@ class DatabricksStore:
             ),
             "num_affected_rows",
         )
+
+    def _sweep(self) -> None:
+        """Remove the batches a killed load left in the volume, which retention never reads."""
+        try:
+            listed = self._execute(f"LIST '{self.volume_path}'")
+        except Exception as exc:
+            log.warning("could not list %s: %s", self.volume_path, exc)
+            return
+        for name in orphaned(str(r.get("name") or "") for r in listed):
+            self._remove(f"{self.volume_path}/{name}")
 
     def reset(self) -> None:
         self._execute(f"DELETE FROM {self.table} WHERE tenant_id = ?", [self.tenant_id])
@@ -323,8 +339,3 @@ WHEN NOT MATCHED THEN INSERT *"""
 def _affected(rows: list[dict[str, Any]], column: str) -> int:
     """The row count a DML statement reports in its one-row result."""
     return int((rows[0].get(column) if rows else 0) or 0)
-
-
-def translate_for_databricks(canonical_sql: str) -> str:
-    """Exposed for tests: what a rule's SQL becomes on this backend."""
-    return translate(canonical_sql, "databricks")

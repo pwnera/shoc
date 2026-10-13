@@ -50,6 +50,8 @@ export function invalidations(event: StreamEvent): { now: QueryKey[]; later: Lat
       ],
     };
   if (type === "source.needs_credentials") return { now: [["source.list"], ["health.status"]], later: [] };
+  if (type === "hunt.item") return { now: [["hunt.backlog"]], later: [] };
+  if (type === "intel.report") return { now: [["intel.reports"], ["intel.list"]], later: [] };
   if (area !== "health") return { now: [], later: [] };
 
   // health.<kind>.<what>
@@ -57,7 +59,7 @@ export function invalidations(event: StreamEvent): { now: QueryKey[]; later: Lat
     case "source":
       return type === "health.source.quality"
         ? { now: [["health.quality"], ["ops.alerts"]], later: [] }
-        : { now: [["health.sources"], ["ops.alerts"], ["health.status"]], later: [] };
+        : { now: [["health.sources"], ["source.list"], ["ops.alerts"], ["health.status"]], later: [] };
     case "rule":
       return { now: [["health.rules"], ["ops.alerts"], ["health.status"]], later: [] };
     case "jobs":
@@ -87,6 +89,8 @@ export function eventHref(event: StreamEvent): string {
   if (type.startsWith("action.")) return `?action=${S}`;
   if (type.startsWith("playbook.")) return C ? `/cases/${C}` : "/response?tab=playbooks";
   if (type === "finding.new") return `/findings/${S}`;
+  if (type === "hunt.item") return `/hunts?tab=backlog&item=${S}`;
+  if (type === "intel.report") return `/intel?tab=reports&report=${S}`;
   if (type === "source.needs_credentials")
     return `/connections?source=${encodeURIComponent(event.subject.split(",")[0] ?? "")}&view=settings`;
   if (type === "health.source.quality") return `/connections?tab=quality&product=${S}`;
@@ -251,18 +255,19 @@ const TICK = 300;
 
 /**
  * Apply one event: refresh what it changed on the next tick, the bursty ones
- * after a quiet spell. A burst of events asks for each query once per tick, and
- * a fetch already in flight is reused rather than cancelled and sent again.
+ * after a quiet spell, or at twice that spell after the first event when the
+ * burst does not let up. A burst of events asks for each query once per tick,
+ * and a fetch already in flight is reused rather than cancelled and sent again.
  */
-function useApply() {
+export function useApply() {
   const client = useQueryClient();
-  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const timers = useRef(new Map<string, { first: number; timer: ReturnType<typeof setTimeout> }>());
   const batch = useRef<{ keys: Map<string, QueryKey>; done: Promise<unknown>; timer: ReturnType<typeof setTimeout> } | null>(null);
   useEffect(() => {
     const pending = timers.current;
     const queued = batch;
     return () => {
-      for (const t of pending.values()) clearTimeout(t);
+      for (const t of pending.values()) clearTimeout(t.timer);
       pending.clear();
       if (queued.current) clearTimeout(queued.current.timer);
       queued.current = null;
@@ -272,17 +277,22 @@ function useApply() {
     const { now, later } = invalidations(event);
     for (const { key, ms, live } of later) {
       const id = JSON.stringify(key);
-      clearTimeout(timers.current.get(id));
-      timers.current.set(
-        id,
-        setTimeout(() => {
-          timers.current.delete(id);
-          void client.invalidateQueries(
-            { queryKey: key, ...(live ? { predicate: (query) => query.meta?.live === true } : {}) },
-            { cancelRefetch: false },
-          );
-        }, ms),
-      );
+      const pending = timers.current.get(id);
+      const first = pending?.first ?? Date.now();
+      clearTimeout(pending?.timer);
+      timers.current.set(id, {
+        first,
+        timer: setTimeout(
+          () => {
+            timers.current.delete(id);
+            void client.invalidateQueries(
+              { queryKey: key, ...(live ? { predicate: (query) => query.meta?.live === true } : {}) },
+              { cancelRefetch: false },
+            );
+          },
+          Math.max(0, Math.min(ms, first + 2 * ms - Date.now())),
+        ),
+      });
     }
     if (!batch.current) {
       const keys = new Map<string, QueryKey>();
@@ -299,8 +309,21 @@ function useApply() {
   };
 }
 
-/** An event from well before this connection opened is history being replayed, not news (clocks may differ by minutes). */
+/** An event older than this when it arrives is history being replayed, not news (clocks may differ by minutes). */
 const HISTORY = 5 * 60_000;
+
+/**
+ * Take in one event the stream delivered, once `refreshed` covers what it
+ * changed. History (a tab back from hiding replays what it missed) interrupts
+ * nobody, and a message counts for the crew pulse from when it was posted.
+ */
+export function receive(event: StreamEvent, client: QueryClient, refreshed: Promise<unknown>, now = Date.now()) {
+  const posted = Date.parse(event.created_at);
+  if (posted < now - HISTORY) return;
+  notePresence(event, Math.min(now, posted || now));
+  if (event.type === "finding.new") setFresh(fresh + 1);
+  announce(event, client, refreshed);
+}
 
 /** Follow the stream; true while it is connected and delivering. Mounted once, by the shell. */
 export function useLive(): boolean {
@@ -336,7 +359,6 @@ export function useLive(): boolean {
         }
       }
       const since = head;
-      const started = Date.now();
       resetPresence();
       void seedPresence(since);
       await subscribe({
@@ -344,12 +366,7 @@ export function useLive(): boolean {
         signal,
         onEvent: (event) => {
           if (event.seq <= since) return;
-          const refreshed = applyRef.current(event);
-          // History the server replayed refreshes what it changed but interrupts nobody.
-          if (Date.parse(event.created_at) < started - HISTORY) return;
-          notePresence(event);
-          if (event.type === "finding.new") setFresh(fresh + 1);
-          announce(event, client, refreshed);
+          receive(event, client, applyRef.current(event));
         },
       });
     }

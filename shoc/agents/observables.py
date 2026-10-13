@@ -23,12 +23,12 @@ tool call CTI makes for itself.
 
 from __future__ import annotations
 
-import ipaddress
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any
 
 from shoc.db.pool import Conn, fetch_all
+from shoc.detect import osint, report
 
 # Per kind, so one noisy event cannot fill a prompt with the same shape.
 MAX_PER_KIND = 12
@@ -40,12 +40,6 @@ _HASHES = (
 )
 _URL = re.compile(r"\bhttps?://[^\s\"'<>|\\]+", re.IGNORECASE)
 _IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
-_DOMAIN = re.compile(
-    r"\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+"
-    r"(?:com|net|org|io|co|dev|app|xyz|top|ru|cn|info|biz|online|site|shop|live|"
-    r"cloud|link|pw|cc|tk|su|me|sh|ai|gov|edu|uk|de|fr|nl|br|in|jp)\b",
-    re.IGNORECASE,
-)
 _CVE = re.compile(r"\bCVE-\d{4}-\d{4,7}\b", re.IGNORECASE)
 _TECHNIQUE = re.compile(r"\bT\d{4}(?:\.\d{3})?\b")
 
@@ -107,32 +101,7 @@ class Observable:
     where: str = ""  # the field it came out of, for a human reading the case
 
     def to_json(self) -> dict[str, str]:
-        return {"kind": self.kind, "value": self.value, "where": self.where}
-
-
-# The ranges this project's fixtures, rules and docs use for an attacker's
-# address (CLAUDE.md). Python counts all three as private, which would make every
-# test in the repo — and every example in the docs — silently contain nothing
-# worth researching, so they are readmitted here by name.
-_DOCUMENTATION = tuple(
-    ipaddress.ip_network(net)
-    for net in ("192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24", "2001:db8::/32")
-)
-
-
-def _external(value: str) -> bool:
-    """An address worth researching: routable, and not one of ours by construction."""
-    try:
-        address = ipaddress.ip_address(value)
-    except ValueError:
-        return False
-    if any(address.version == net.version and address in net for net in _DOCUMENTATION):
-        return True
-    # Carrier-grade NAT (100.64.0.0/10) is where a tailnet lives; it is not the
-    # internet, and shoc's own tailnet node was once treated as exposed to it.
-    from shoc.cases.own import routable
-
-    return routable(value)
+        return asdict(self)
 
 
 def _walk(value: Any, field: str = "") -> list[tuple[str, str]]:
@@ -157,8 +126,15 @@ def _from_text(field: str, text: str) -> list[Observable]:
         out.append(Observable("url", url.rstrip(".,);\"'"), field))
     for kind, pattern in _HASHES:
         out += [Observable(kind, h.lower(), field) for h in pattern.findall(text)]
-    out += [Observable("ip", ip, field) for ip in _IPV4.findall(text) if _external(ip)]
-    out += [Observable("domain", d.lower(), field) for d in _DOMAIN.findall(text)]
+    out += [
+        Observable("ip", ip, field) for ip in _IPV4.findall(text) if osint.is_public_address(ip)
+    ]
+    # The rule report extraction keeps a name by, so a newer gTLD counts here too.
+    out += [
+        Observable("domain", d.lower(), field)
+        for d in report._DOMAIN.findall(text)
+        if report.is_domain(d, alone=d == text.strip())
+    ]
     out += [Observable("cve", c.upper(), field) for c in _CVE.findall(text)]
     if any(hint in field.lower() for hint in _COMMAND_FIELDS) or len(text) > 60:
         out += [Observable("command", token, field) for token in _COMMANDS if token in lowered]
@@ -217,15 +193,18 @@ def known(conn: Conn, tenant_id: str, items: list[Observable]) -> list[dict[str,
            ORDER BY last_seen DESC LIMIT 50""",
         (tenant_id, values),
     )
+    # A URL's lookup is cached under what a third party was told: scheme, host
+    # and path (DET-6). Its answer is reported under the URL in the case.
+    told = {osint._shareable(o.value, "url").lower(): o.value for o in items if o.kind == "url"}
     cached = fetch_all(
         conn,
         """SELECT type, value, verdict, score, confidence, looked_up_at
            FROM shoc.intel_lookups WHERE tenant_id = %s AND value = ANY(%s)
            ORDER BY looked_up_at DESC LIMIT 50""",
-        (tenant_id, values),
+        (tenant_id, sorted({*values, *told})),
     )
     return [{"from": "feed", **dict(r)} for r in rows] + [
-        {"from": "lookup", **dict(r)} for r in cached
+        {"from": "lookup", **dict(r), "value": told.get(r["value"], r["value"])} for r in cached
     ]
 
 

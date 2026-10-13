@@ -7,8 +7,8 @@ description: >
   MFA, and a deleted blocked-countries list lets those countries in.
 status: stable
 date: 2026-09-24
-modified: 2026-10-09
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.75
 attack: [T1562.001, T1556.009]
 logsource:

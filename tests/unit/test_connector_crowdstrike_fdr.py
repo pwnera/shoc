@@ -11,6 +11,7 @@ import pytest
 
 from shoc.errors import ConfigError
 from shoc.ingest import connectors
+from shoc.ingest.connectors import base
 from shoc.ingest.connectors.crowdstrike_fdr import region_of
 
 QUEUE = "https://sqs.us-west-1.amazonaws.com/111111111111/cs-prod-fdr-queue"
@@ -97,10 +98,13 @@ def test_a_message_names_the_files_whose_events_are_loaded(monkeypatch):
     assert receive.headers["content-type"] == "application/x-amz-json-1.0"
     assert "/us-west-1/sqs/aws4_request" in receive.headers["authorization"]
     assert json.loads(receive.content)["QueueUrl"] == QUEUE
+    assert json.loads(receive.content)["WaitTimeSeconds"] == 20, "a short poll often answers empty"
     get = seen[1]
     assert get.url.host == "cs-prod-fdr-bucket.s3.us-west-1.amazonaws.com"
     assert get.url.path == "/data/a1b2/part-00000.gz"
-    assert len(seen) == 2, "the aidmaster inventory file is not fetched"
+    assert [target(r) for r in seen[2:]] == ["AmazonSQS.ReceiveMessage"], (
+        "the aidmaster inventory file is not fetched, and a short receive is followed by another"
+    )
     # The default filter drops the heartbeat.
     assert [r["event_simpleName"] for r in page.records] == ["ProcessRollup2", "DnsRequest"]
     assert page.cursor == {"delete": ["handle-0"]} and page.more is False
@@ -140,6 +144,80 @@ def test_a_full_receive_is_followed_by_another(monkeypatch):
     transport(monkeypatch, [full, {"json": {}}])
     page = connectors.get("crowdstrike_fdr").fetch({"queue_url": QUEUE}, AWS, {}, 1000)
     assert len(page.cursor["delete"]) == 10 and page.more is False
+
+
+def test_a_page_stops_taking_messages_once_it_holds_the_limit(monkeypatch):
+    """One receive can name ten batches of large files; a page reads whole
+    messages up to `limit` events and leaves the rest on the queue (ING-1)."""
+    seen = transport(
+        monkeypatch,
+        [
+            messages(("b1", ["data/x/part-0.gz"]), ("b2", ["data/y/part-0.gz"])),
+            ndjson("DnsRequest", "DnsRequest", "DnsRequest"),
+        ],
+    )
+    page = connectors.get("crowdstrike_fdr").fetch({"queue_url": QUEUE}, AWS, {}, 2)
+    assert len(page.records) == 3, "a message started is read to its end"
+    assert page.cursor == {"delete": ["handle-0"]}, "the second message is not deleted"
+    assert page.more is True
+    assert len(seen) == 2, "the second message's file is never fetched"
+
+
+def test_a_data_file_of_several_gzip_members_is_read_whole(monkeypatch):
+    events = [json.dumps({"event_simpleName": "DnsRequest", "id": f"e{n}"}) for n in range(3)]
+    first = gzip.compress(f"{events[0]}\n{events[1]}\n".encode())
+    members = first + gzip.compress(f"{events[2]}\n".encode())
+    transport(monkeypatch, [messages(("b1", ["data/x/part-0.gz"])), {"content": members}])
+    page = connectors.get("crowdstrike_fdr").fetch({"queue_url": QUEUE}, AWS, {}, 1000)
+    assert [r["id"] for r in page.records] == ["e0", "e1", "e2"]
+
+
+def test_a_data_file_split_across_small_chunks_is_read_line_by_line_whole(monkeypatch):
+    """S3 hands the file over in chunks that cut lines and gzip members anywhere."""
+    events = [json.dumps({"event_simpleName": "DnsRequest", "id": f"e{n}"}) for n in range(5)]
+    members = gzip.compress(f"{events[0]}\n{events[1]}\n".encode()) + gzip.compress(
+        ("\n".join(events[2:]) + "\n").encode()
+    )
+    replies = [messages(("b1", ["data/x/part-0.gz"]))["json"], None, {}]
+    real_client = httpx.Client
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        reply = replies.pop(0)
+        if reply is not None:
+            return httpx.Response(200, json=reply)
+        slices = (members[i : i + 7] for i in range(0, len(members), 7))
+        return httpx.Response(200, content=slices)
+
+    mock = httpx.MockTransport(handler)
+    monkeypatch.setattr(httpx, "Client", lambda **kw: real_client(**{**kw, "transport": mock}))
+    page = connectors.get("crowdstrike_fdr").fetch({"queue_url": QUEUE}, AWS, {}, 1000)
+    assert [r["id"] for r in page.records] == [f"e{n}" for n in range(5)]
+
+
+def test_an_s3_refusal_names_its_code(monkeypatch):
+    denied = b"<Error><Code>AccessDenied</Code><Message>Access Denied</Message></Error>"
+    transport(
+        monkeypatch,
+        [messages(("b1", ["data/x/part-0.gz"])), {"status": 403, "content": denied}],
+    )
+    with pytest.raises(httpx.HTTPStatusError) as caught:
+        connectors.get("crowdstrike_fdr").fetch({"queue_url": QUEUE}, AWS, {}, 1000)
+    assert "AccessDenied" in base.explain("crowdstrike_fdr", caught.value)
+
+
+def test_a_bucket_in_another_region_is_followed_there(monkeypatch):
+    moved = {"status": 301, "headers": {"x-amz-bucket-region": "eu-west-1"}, "content": b""}
+    seen = transport(
+        monkeypatch,
+        [messages(("b1", ["data/x/part-0.gz"])), moved, ndjson("DnsRequest")],
+    )
+    page = connectors.get("crowdstrike_fdr").fetch({"queue_url": QUEUE}, AWS, {}, 1000)
+    assert [r.url.host for r in seen[1:3]] == [
+        "cs-prod-fdr-bucket.s3.us-west-1.amazonaws.com",
+        "cs-prod-fdr-bucket.s3.eu-west-1.amazonaws.com",
+    ]
+    assert "/eu-west-1/s3/aws4_request" in seen[2].headers["authorization"]
+    assert [r["event_simpleName"] for r in page.records] == ["DnsRequest"]
 
 
 def test_region_comes_from_the_queue_url():

@@ -8,7 +8,7 @@ description: >
   look immediately at what that host could reach.
 status: stable
 date: 2026-09-24
-modified: 2026-10-09
+modified: 2026-10-12
 severity: critical
 confidence: 0.85
 attack: [T1486, T1490]
@@ -49,8 +49,9 @@ detection:
     - raw.mitreTechniques|contains: [T1486, T1490]
   # Office 365, Identity, Cloud Apps, Entra ID Protection, App Governance and
   # Purview alerts from Defender, and Falcon Identity Protection: about an
-  # account, not a host. Defender for Cloud alerts are azure_vendor_alert's;
-  # Graph sends them and Sentinel's as unknownFutureValue unless asked not to.
+  # account, not a host: edr_identity_or_email_alert's. Defender for Cloud alerts
+  # are azure_vendor_alert's; Graph sends them and Sentinel's as
+  # unknownFutureValue unless asked not to.
   filter_not_endpoint:
     - api.service.name: [microsoftDefenderForOffice365, microsoftDefenderForIdentity,
                          microsoftDefenderForCloudApps, azureAdIdentityProtection,
@@ -60,7 +61,13 @@ detection:
   # The vendor rated it informational, or an analyst already ruled it benign.
   filter_ruled_out:
     severity_id: 1
-  condition: selection and (selection_name or selection_message or selection_technique) and not filter_not_endpoint and not filter_ruled_out
+  # A later change to an alert an earlier poll read (the connector marks it):
+  # the finding that alert opened stands, and a new bucket must not open another.
+  filter_update:
+    activity_id: 2
+  condition: >-
+    selection and (selection_name or selection_message or selection_technique)
+    and not filter_not_endpoint and not filter_ruled_out and not filter_update
   timeframe: 15m
 # An alert with no device id keys on the host name, then the user.
 entity: [resource.uid, device.hostname, actor.user.name]

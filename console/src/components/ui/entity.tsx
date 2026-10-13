@@ -35,6 +35,7 @@ const ICON: Record<EntityKind, LucideIcon> = {
   email: AtSign,
   user: User,
   key: KeyRound,
+  session: KeyRound,
   account: Building2,
   resource: Database,
   repo: GitBranch,

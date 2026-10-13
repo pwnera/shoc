@@ -34,10 +34,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
-
-from shoc.detect.rules import Detection, parse_sources, parse_timeframe
+from shoc.detect.rules import Detection, load_yaml, parse_sources, parse_timeframe
 from shoc.errors import ConfigError
+
+# Bounds on what one run reads. A window is one triage's worth of tuples; a
+# lookback is history a nightly anti-join scans, and stores keep 90 days by
+# default (`SHOC_RETENTION_DAYS`).
+MAX_WINDOW = "7d"
+MAX_LOOKBACK = "90d"
 
 
 @dataclass
@@ -50,7 +54,13 @@ class Baseline:
     seen_by_fewer_than: int = 0
     # The opposite band: a grouping shared by at least this many (RFC 0023).
     seen_by_at_least: int = 0
+    # Only a grouping whose first event came in this window: a server's own
+    # daily task is reported the day it first runs, not every day after.
+    new_only: bool = False
     lookback: str = "30d"
+    # What has to go back the lookback before the pack is ready: its sources'
+    # events, or its own matches, for a log a source starts sending later (D157).
+    learns_from: str = "source"
 
     @property
     def lookback_seconds(self) -> int:
@@ -107,10 +117,12 @@ class Pack:
                 "among": b.rare_among,
                 "seen_by_fewer_than": b.seen_by_fewer_than,
                 "seen_by_at_least": b.seen_by_at_least,
+                "new_only": b.new_only,
             }
             if b.rare_by
             else None,
             "lookback": b.lookback if b.kind != "none" else "",
+            "learns_from": b.learns_from if b.kind != "none" else None,
             "window": self.window,
             "cadence_days": self.cadence_days,
             "pivot": list(self.pivot),
@@ -165,7 +177,9 @@ def from_dict(data: dict[str, Any], path: Path | None = None) -> Pack:
             rare_among=str(rare.get("among", "actor.user.name")),
             seen_by_fewer_than=int(rare.get("seen_by_fewer_than", 0) or 0),
             seen_by_at_least=int(rare.get("seen_by_at_least", 0) or 0),
+            new_only=bool(rare.get("new_only", False)),
             lookback=str(raw.get("lookback", "30d")),
+            learns_from=str(raw.get("learns_from", "source")),
         ),
         pivot=list(data.get("pivot", []) or []),
         window=str(data.get("window", "1d")),
@@ -195,8 +209,10 @@ def validate(pack: Pack) -> None:
         )
     if not pack.pivot:
         raise ConfigError(f"{pack.id}: a pack needs at least one pivot field")
-    parse_timeframe(pack.window)
-    parse_timeframe(pack.baseline.lookback)
+    if parse_timeframe(pack.window) > parse_timeframe(MAX_WINDOW):
+        raise ConfigError(f"{pack.id}: a window is at most {MAX_WINDOW}")
+    if pack.baseline.lookback_seconds > parse_timeframe(MAX_LOOKBACK):
+        raise ConfigError(f"{pack.id}: a lookback is at most {MAX_LOOKBACK}")
     if (
         pack.baseline.rare_by
         and max(pack.baseline.seen_by_fewer_than, pack.baseline.seen_by_at_least) <= 0
@@ -204,6 +220,8 @@ def validate(pack: Pack) -> None:
         raise ConfigError(
             f"{pack.id}: a rare baseline needs seen_by_fewer_than or seen_by_at_least"
         )
+    if pack.baseline.learns_from not in ("source", "selection"):
+        raise ConfigError(f"{pack.id}: learns_from is source or selection")
     if pack.baseline.first_seen and pack.baseline.rare_by:
         raise ConfigError(
             f"{pack.id}: use one baseline primitive per pack, so the observation set "
@@ -212,7 +230,7 @@ def validate(pack: Pack) -> None:
 
 
 def load_file(path: Path) -> Pack:
-    return from_dict(yaml.safe_load(path.read_text()) or {}, path)
+    return from_dict(load_yaml(path.read_text()) or {}, path)
 
 
 def load_dir(directory: Path) -> list[Pack]:
@@ -227,7 +245,12 @@ def load_dir(directory: Path) -> list[Pack]:
     return packs
 
 
-def load(config: Any = None, conn: Any = None, tenant_id: str = "") -> list[Pack]:
+def load(
+    config: Any = None,
+    conn: Any = None,
+    tenant_id: str = "",
+    skipped: dict[str, str] | None = None,
+) -> list[Pack]:
     """The shipped packs and, given a tenant, the ones the Hunter merged there."""
     from shoc.config import Config
 
@@ -236,24 +259,27 @@ def load(config: Any = None, conn: Any = None, tenant_id: str = "") -> list[Pack
     if conn is None or not tenant_id:
         return shipped
     ids = {p.id for p in shipped}
-    return shipped + [p for p in merged(conn, tenant_id) if p.id not in ids]
+    return shipped + [p for p in merged(conn, tenant_id, skipped) if p.id not in ids]
 
 
-def merged(conn: Any, tenant_id: str) -> list[Pack]:
+def merged(conn: Any, tenant_id: str, skipped: dict[str, str] | None = None) -> list[Pack]:
     """The packs the Hunter merged here and nobody reverted. One that no longer
-    parses is skipped rather than failing every other pack."""
+    parses (a bound a later release added) is left out rather than failing every
+    other pack; why goes into `skipped` by pack id, for the daily run to tell."""
     from shoc.db.pool import fetch_all
 
     out: list[Pack] = []
     for row in fetch_all(
         conn,
-        """SELECT body, merged_by FROM shoc.merged_hunts
+        """SELECT pack_id, body, merged_by FROM shoc.merged_hunts
            WHERE tenant_id = %s AND state = 'merged' ORDER BY pack_id""",
         (tenant_id,),
     ):
         try:
             pack = from_dict(dict(row["body"]))
-        except (ConfigError, KeyError, TypeError, ValueError):
+        except (ConfigError, KeyError, TypeError, ValueError) as exc:
+            if skipped is not None:
+                skipped[str(row["pack_id"])] = str(exc)
             continue
         pack.merged_by = str(row["merged_by"])
         out.append(pack)

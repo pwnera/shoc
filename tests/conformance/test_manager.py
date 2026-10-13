@@ -34,6 +34,17 @@ def case(ctx, store, config, clean):
     return rows[0]
 
 
+@pytest.fixture
+def reached(conn, config, clean):
+    """A webhook a monitor reads: a way to reach a person that sends nothing out."""
+    execute(
+        conn,
+        """INSERT INTO shoc.webhooks (webhook_id, tenant_id, url, secret)
+           VALUES (%s, %s, 'https://hooks.example.test/shoc', decode('00', 'hex'))""",
+        (f"WH-{config.tenant_id}", config.tenant_id),
+    )
+
+
 def pages(conn, tenant_id: str) -> list[dict]:
     return fetch_all(
         conn,
@@ -54,7 +65,7 @@ def outcomes(conn, tenant_id: str) -> list[str]:
     ]
 
 
-def test_two_senders_on_one_incident_page_once(conn, config, case):
+def test_two_senders_on_one_incident_page_once(conn, config, case, pager):
     """The Commander and a playbook on the same leaked key used to page twice."""
     for source in ("IR Commander", "playbook-runner"):
         manager.tell(
@@ -70,9 +81,10 @@ def test_two_senders_on_one_incident_page_once(conn, config, case):
     assert len(done.paged) == 1 and not done.failed
     assert [p["requested_by"] for p in pages(conn, config.tenant_id)] == ["manager"]
     assert outcomes(conn, config.tenant_id) == ["paged", "paged"]
+    assert len(pager.posts) == 1
 
 
-def test_a_later_notice_on_the_same_incident_is_folded_into_the_page(conn, config, case):
+def test_a_later_notice_on_the_same_incident_is_folded_into_the_page(conn, config, case, pager):
     manager.tell(
         conn,
         config.tenant_id,
@@ -111,6 +123,11 @@ def test_a_page_without_a_condition_waits_for_the_weekly(conn, config, case):
 
 def test_critical_is_the_cases_severity_not_the_senders_word(conn, config, case):
     engine.set_severity(conn, config.tenant_id, case["case_uid"], "high", "for this test")
+    execute(
+        conn,
+        "UPDATE shoc.findings SET severity = 'high' WHERE tenant_id = %s AND case_uid = %s",
+        (config.tenant_id, case["case_uid"]),
+    )
     manager.tell(
         conn,
         config.tenant_id,
@@ -173,7 +190,7 @@ def test_a_pending_approval_is_recorded_for_the_manager(conn, config, case):
     assert len(decisions) == 1 and "aws.revoke_role_sessions on deploy" in decisions[0]["body"]
 
 
-def test_a_stalled_scheduler_pages_once_not_on_every_check(conn, config, clean):
+def test_a_stalled_scheduler_pages_once_not_on_every_check(conn, config, clean, pager):
     """`ops.check` is one of the schedules, so a stalled scheduler never reported itself."""
     execute(
         conn,
@@ -207,20 +224,23 @@ def test_the_template_is_enough_without_a_model(conn, config, case):
         (config.tenant_id,),
     )
     text = manager.template(rows)
-    assert text.startswith("CRITICAL (uncontainable and active)")
-    assert case["case_uid"] in text and "the key is still in use" in text
+    assert text.startswith(f"CRITICAL (uncontainable and active) {case['case_uid']}: ")
+    assert "the key is still in use" in text
 
 
 # -- a malicious case nothing contained ----------------------------------------
 def _malicious(conn, config, case, severity: str) -> None:
-    """The crew's verdict on a case whose findings stopped three hours ago."""
+    """The crew's verdict on a case whose findings stopped three hours ago.
+
+    Its findings are as severe as the case: paging reads the worse of the two (ai-3).
+    """
     tenant, uid = config.tenant_id, case["case_uid"]
     execute(
         conn,
         """UPDATE shoc.findings SET first_seen = now() - interval '3 hours',
-                                    last_seen = now() - interval '3 hours'
+                                    last_seen = now() - interval '3 hours', severity = %s
            WHERE tenant_id = %s AND case_uid = %s""",
-        (tenant, uid),
+        (severity, tenant, uid),
     )
     engine.set_severity(conn, tenant, uid, severity, "for this test")
     cited = fetch_all(
@@ -261,7 +281,9 @@ def _hold_ends(conn, config) -> None:
     )
 
 
-def test_a_malicious_case_only_dry_run_touched_pages_however_old_its_findings(conn, config, case):
+def test_a_malicious_case_only_dry_run_touched_pages_however_old_its_findings(
+    conn, config, case, pager
+):
     """Dry run and no credential left a high case alone, and nothing paged: the
     playbook's page step was a digest below critical, and its findings were
     older than the hour `uncontainable_and_active` wants."""
@@ -298,12 +320,48 @@ def test_a_malicious_case_below_high_does_not_page(conn, config, case):
     assert not manager.deliver(conn, config.tenant_id, config).paged
 
 
-def test_a_pending_uncontained_page_settles_once_the_case_is_closed(conn, config, case):
+def test_a_pending_uncontained_page_settles_once_a_person_closes_the_case(conn, config, case):
     _malicious(conn, config, case, "critical")
-    engine.transition(conn, config.tenant_id, case["case_uid"], "closed", "for this test")
+    engine.transition(conn, config.tenant_id, case["case_uid"], "closed", "seen", by="human")
     _hold_ends(conn, config)
     assert not manager.deliver(conn, config.tenant_id, config).paged
     assert _uncontained(conn, config) == [{"outcome": "digest"}]
+
+
+def test_the_crew_closing_a_malicious_case_does_not_cancel_its_page(conn, config, case, pager):
+    """The crew closed in the run that recorded the verdict, inside the hold, and
+    the page meant for exactly that case was settled as a digest (live-5)."""
+    _malicious(conn, config, case, "critical")
+    engine.transition(conn, config.tenant_id, case["case_uid"], "closed", "clean", by="crew")
+    _hold_ends(conn, config)
+    assert len(manager.deliver(conn, config.tenant_id, config).paged) == 1
+    assert _uncontained(conn, config) == [{"outcome": "paged"}]
+
+
+def test_a_malicious_case_closed_with_nothing_proposed_waits_for_a_person(ctx, conn, config, case):
+    """No response credential, so no action to expire: the case closed, and no
+    list named it (live-5)."""
+    from shoc.agents import reporter
+    from shoc.capabilities.registry import call
+
+    tenant, uid = config.tenant_id, case["case_uid"]
+    _malicious(conn, config, case, "medium")
+    engine.transition(conn, tenant, uid, "closed", "verify searches came back clean", by="crew")
+    assert not fetch_all(conn, "SELECT 1 FROM shoc.actions WHERE tenant_id = %s", (tenant,))
+    assert engine.require(conn, tenant, uid)["unacknowledged"] is True
+    refs = {i["reference"] for i in reporter.exceptions(conn, tenant, config)}
+    assert f"uncontained:{uid}" in refs
+    call("case.acknowledge", ctx, {"case_uid": uid})
+    assert engine.require(conn, tenant, uid)["unacknowledged"] is False
+    refs = {i["reference"] for i in reporter.exceptions(conn, tenant, config)}
+    assert f"uncontained:{uid}" not in refs
+
+    # Reopened and closed again by the crew: the old acknowledgement is not for this close.
+    engine.transition(conn, tenant, uid, "triage", "reopened", by="human")
+    engine.transition(conn, tenant, uid, "closed", "still clean", by="crew")
+    assert engine.require(conn, tenant, uid)["unacknowledged"] is True
+    refs = {i["reference"] for i in reporter.exceptions(conn, tenant, config)}
+    assert f"uncontained:{uid}" in refs
 
 
 def test_ask_is_answered_by_the_manager_and_audited(ctx, conn, config, case, monkeypatch):
@@ -367,7 +425,7 @@ def test_log_content_cannot_ping_the_workspace():
 
 # -- the exception report (D52) -----------------------------------------------
 def test_the_exception_report_carries_only_what_needs_a_person_and_says_it_once(
-    conn, store, config, case, monkeypatch
+    conn, store, config, case, reached, monkeypatch
 ):
     from shoc.agents import reporter
 
@@ -409,8 +467,88 @@ def test_the_exception_report_carries_only_what_needs_a_person_and_says_it_once(
     ), "a decision is sent once"
 
 
+def test_an_exception_report_that_reached_nobody_goes_out_once_a_channel_does(
+    conn, store, config, clean, monkeypatch
+):
+    """A decision raised before Slack or a webhook was set up was marked told for
+    30 days, and so never reached the channel set up after it (live-2)."""
+    from shoc.agents import reporter
+
+    monkeypatch.setattr(config, "dry_run", False)
+    monkeypatch.setattr(config, "smtp_url", "")
+    execute(
+        conn,
+        """INSERT INTO shoc.source_onboarding (tenant_id, source, step, scopes, click_path)
+           VALUES (%s, 'okta', 'credentials', '["okta.logs.read"]', 'Admin Console')""",
+        (config.tenant_id,),
+    )
+    assert reporter.send_exceptions(conn, store, config.tenant_id, config).endswith(
+        "; not delivered: no channel"
+    )
+    assert reporter.send_exceptions(conn, store, config.tenant_id, config) == (
+        "exception report: nothing needs a person"
+    ), "kept once for the console, not saved again on every run"
+    execute(
+        conn,
+        """INSERT INTO shoc.webhooks (webhook_id, tenant_id, url, secret)
+           VALUES (%s, %s, 'https://hooks.example.test/shoc', decode('00', 'hex'))""",
+        (f"WH-{config.tenant_id}", config.tenant_id),
+    )
+    assert reporter.send_exceptions(conn, store, config.tenant_id, config).endswith(
+        "1 decision(s)"
+    ), "the credential it still needs, now that somebody can be told"
+    latest = fetch_all(
+        conn,
+        """SELECT body FROM shoc.reports WHERE tenant_id = %s AND kind = 'exception'
+           ORDER BY created_at DESC LIMIT 1""",
+        (config.tenant_id,),
+    )[0]["body"]
+    assert "credentials:okta" in {i["reference"] for i in latest["items"]}
+    assert latest["delivered"] is True
+    assert reporter.send_exceptions(conn, store, config.tenant_id, config) == (
+        "exception report: nothing needs a person"
+    ), "and once it went out, it is told"
+
+
+def test_an_indicator_held_as_too_common_is_a_decision_for_a_person(
+    conn, config, reached, monkeypatch
+):
+    """D166: only a person's intel.add releases it, and a digest line in the
+    weekly was the only place that said so."""
+    from shoc.agents import reporter
+    from shoc.detect import intel
+
+    monkeypatch.setattr(config, "dry_run", False)
+    execute(
+        conn,
+        """INSERT INTO shoc.iocs (tenant_id, type, value, source, confidence)
+           VALUES (%s, 'ip', '198.51.100.23', 'feed:test', 0.4)""",
+        (config.tenant_id,),
+    )
+    held = {"type": "ip", "value": "198.51.100.23", "source": "feed:test"}
+    intel._hold(conn, config.tenant_id, held, 7)
+    # A later feed takes the row over; the decision still names who was held.
+    execute(
+        conn,
+        "UPDATE shoc.iocs SET source = 'feed:other' WHERE tenant_id = %s AND value = '198.51.100.23'",
+        (config.tenant_id,),
+    )
+    [item] = reporter.exceptions(conn, config.tenant_id, config)
+    assert item["reference"] == "intel:held:ip:198.51.100.23"
+    assert "feed:test" in item["why_only_a_human"] and "7 accounts" in item["why_only_a_human"]
+    assert "feed:other" not in item["why_only_a_human"], "the feed the hold notice names"
+    assert "intel.add" in item["what"]
+    execute(
+        conn,
+        """UPDATE shoc.iocs SET tags = array_remove(tags, 'prevalent')
+           WHERE tenant_id = %s AND value = '198.51.100.23'""",
+        (config.tenant_id,),
+    )
+    assert not reporter.exceptions(conn, config.tenant_id, config), "released, it is settled"
+
+
 def test_reading_the_exception_report_does_not_count_as_sending_it(
-    ctx, conn, store, config, clean, monkeypatch
+    ctx, conn, store, config, reached, monkeypatch
 ):
     from shoc.agents import reporter
     from shoc.capabilities.registry import call
@@ -429,7 +567,7 @@ def test_reading_the_exception_report_does_not_count_as_sending_it(
 
 
 def test_the_exception_report_names_dry_run_and_a_vendor_shoc_cannot_act_in(
-    conn, config, clean, monkeypatch
+    conn, config, reached, monkeypatch
 ):
     """Nothing contained a malicious case on the main instance, and nothing said why."""
     from shoc.agents import reporter
@@ -446,6 +584,119 @@ def test_the_exception_report_names_dry_run_and_a_vendor_shoc_cannot_act_in(
     credentials.store(conn, config.tenant_id, "okta", {}, {"api_token": "test"}, config.master_key)
     monkeypatch.setattr(config, "dry_run", False)
     assert not reporter.exceptions(conn, config.tenant_id, config)
+
+
+def test_with_no_way_to_reach_a_person_every_view_says_so_first(
+    ctx, conn, store, config, clean, monkeypatch
+):
+    """No pager key and no Slack channel on the main instance: every page and
+    report went nowhere, and every job said it ran (live-2)."""
+    from shoc.agents import ops, reporter
+    from shoc.capabilities.registry import call
+    from shoc.cases import credentials
+
+    tenant = config.tenant_id
+    monkeypatch.setattr(config, "smtp_url", "")
+    assert not any(manager.reachable(conn, tenant, config).values())
+    assert reporter.exceptions(conn, tenant, config)[0]["reference"] == "notify:unreachable"
+    kinds = lambda: {a.kind for a in ops.alerts(conn, tenant, config=config)}  # noqa: E731
+    assert "notify.unreachable" in kinds()
+    status = call("health.status", ctx, {})
+    assert not status.data.ok and "no way to reach a person" in status.summary
+    assert reporter.send_exceptions(conn, store, tenant, config).endswith(
+        "; not delivered: no channel"
+    ), "a report nobody can receive is not a report sent"
+
+    credentials.store(
+        conn, tenant, "notify", {}, {"routing_key": "test-routing-key"}, config.master_key
+    )
+    try:
+        assert manager.reachable(conn, tenant, config)["pager"]
+        assert "notify:unreachable" not in {
+            i["reference"] for i in reporter.exceptions(conn, tenant, config)
+        }
+        assert "notify.unreachable" not in kinds()
+        assert "no way to reach a person" not in call("health.status", ctx, {}).summary
+    finally:
+        credentials.remove(conn, tenant, "notify")
+
+
+def test_a_webhook_filtered_to_other_events_reaches_nobody(conn, config, clean, monkeypatch):
+    """A hook for case.opened only never carries the weekly or the exceptions (live-2)."""
+    monkeypatch.setattr(config, "smtp_url", "")
+    execute(
+        conn,
+        """INSERT INTO shoc.webhooks (webhook_id, tenant_id, url, secret, types)
+           VALUES (%s, %s, 'https://hooks.example.test/shoc', decode('00', 'hex'), %s)""",
+        (f"WH-{config.tenant_id}", config.tenant_id, ["case.opened"]),
+    )
+    assert not manager.reachable(conn, config.tenant_id, config)["webhook"]
+    execute(
+        conn,
+        "UPDATE shoc.webhooks SET types = %s WHERE tenant_id = %s",
+        (["case.opened", "report.ready"], config.tenant_id),
+    )
+    assert manager.reachable(conn, config.tenant_id, config)["webhook"]
+
+
+def test_a_page_that_reached_nobody_is_an_alert(conn, config, clean, monkeypatch):
+    """Failed pages were counted in a job summary nobody reads (live-2)."""
+    from shoc.agents import ops
+
+    monkeypatch.setattr(config, "smtp_url", "")
+    manager.tell(
+        conn,
+        config.tenant_id,
+        "Ops",
+        "page",
+        "okta has been dark for more than 24h.",
+        condition="coverage_dark",
+        severity="high",
+        group_key="source:okta",
+        deliver=False,
+    )
+
+    def failed() -> list:
+        return [
+            a for a in ops.alerts(conn, config.tenant_id, config=config) if a.kind == "page.failed"
+        ]
+
+    assert not failed(), "a page not yet sent has not failed"
+    assert manager.deliver(conn, config.tenant_id, config).failed
+    [alert] = failed()
+    assert alert.severity == "high" and "no pager is configured" in alert.detail
+
+
+def test_dry_run_left_to_the_policy_is_still_named_and_turning_it_off_acts(
+    conn, config, case, monkeypatch
+):
+    """SHOC_DRY_RUN=0 read as unset: the policy's `dry_run: true` held every action
+    back, and the report stopped saying so (RSP-7)."""
+    from shoc.agents import reporter
+
+    def proposed(role: str) -> dict:
+        return action_store.propose(
+            conn,
+            config.tenant_id,
+            action_store.Proposal(
+                action_type="aws.revoke_role_sessions",
+                params={"role_name": role},
+                case_uid=case["case_uid"],
+            ),
+            "IR Commander",
+            principal_kind="agent",
+            config=config,
+        )
+
+    monkeypatch.setattr(config, "dry_run", None)  # SHOC_DRY_RUN unset
+    held = reporter.exceptions(conn, config.tenant_id, config)
+    assert [i["what"] for i in held if i["reference"] == "dry_run"] == [
+        "Turn dry run off (dry_run: false under defaults in policy.yaml) once the policy "
+        "says what may run"
+    ]
+    assert proposed("deploy")["dry_run"] is True
+    monkeypatch.setattr(config, "dry_run", False)  # SHOC_DRY_RUN=0
+    assert proposed("ci")["dry_run"] is False, "the environment turned response on"
 
 
 def test_the_weekly_no_longer_holds_decisions(conn, store, config, case):

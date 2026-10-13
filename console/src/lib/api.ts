@@ -48,10 +48,8 @@ export class ApiError extends Error {
   }
 }
 
-const base = import.meta.env.VITE_SHOC_URL ?? "";
-
-/** Where shoc answers, as a client outside this page writes it. */
-export const apiBase = base || window.location.origin;
+/** Where shoc answers, as a client outside this page writes it: the console is always served from shoc's own origin. */
+export const apiBase = window.location.origin;
 
 /** The host alone, for "Can't reach 192.0.2.10:8080". */
 export const apiHost = apiBase.replace(/^\w+:\/\//, "");
@@ -79,14 +77,39 @@ export function clearSignedOut() {
   for (const l of listeners) l();
 }
 
-/** One user.me past the short-circuit: signed in again in another tab, it lowers the banner and answers true. */
+/**
+ * The key user.me's id is kept under at sign-in: in sessionStorage beside this
+ * tab's crew thread, and in localStorage beside the browser's recent lookups
+ * (`signedInAs` in `lib/chat.ts`).
+ */
+export const OWNER = "shoc.owner";
+
+/** Whether `id` is the person this tab's thread belongs to (true when nothing was kept). Another tab's sign-in does not count. */
+function sameOwner(id: unknown): boolean {
+  try {
+    const owner = sessionStorage.getItem(OWNER);
+    return owner === null || owner === id;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * One user.me past the short-circuit: signed in again in another tab, it lowers
+ * the banner and answers true. Someone else signed in there answers false, so
+ * this tab goes through the sign-in page, whose check drops the last person's
+ * thread (`signedInAs`), rather than resuming with it.
+ */
 export async function recheck(): Promise<boolean> {
+  let id: unknown;
   try {
     const response = await fetch(path("user.me"), { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
     if (!response.ok) return false;
+    id = ((await response.json().catch(() => null)) as { data?: { id?: unknown } } | null)?.data?.id;
   } catch {
     return false;
   }
+  if (!sameOwner(id)) return false;
   clearSignedOut();
   return true;
 }
@@ -123,7 +146,7 @@ export const bannered = (error: unknown, down: boolean) => error instanceof ApiE
 /* -- calls ------------------------------------------------------------------ */
 
 function path(capability: string): string {
-  return `${base}/v1/${capability.split(".").join("/")}`;
+  return `/v1/${capability.split(".").join("/")}`;
 }
 
 /*
@@ -167,6 +190,15 @@ const SLOW = new Set([
   "posture.get",
   "posture.exposure",
   "config.apply",
+  // A store read, an OSINT fan-out, a model call or a vendor's API behind them.
+  "health.quality",
+  "intel.lookup",
+  "intel.digest",
+  "platform.lookup",
+  "credential.check",
+  "credential.configure",
+  "asset.identify",
+  "identity.resolve",
   // The gate replays fixtures and backtests history.
   "detection.merge",
   "hunt.merge",
@@ -174,6 +206,15 @@ const SLOW = new Set([
 
 /** The proxy's own failure pages: shoc is down behind it, whatever the body says. */
 const UNREACHABLE = new Set([0, 502, 503, 504]);
+
+/**
+ * Whether a failed read gets another try (two at most): only when shoc could not
+ * be reached (a restart, a dropped connection). A refusal is refused again, and a
+ * timeout, the proxy's 504 or a kernel error would run the same warehouse
+ * statement again.
+ */
+export const retryable = (failureCount: number, error: unknown): boolean =>
+  error instanceof ApiError && error.isNetwork && error.status !== 504 && failureCount < 2;
 
 /** Call one capability; a refusal that means the session ended raises the signed-out banner. */
 export async function call<T = unknown>(
@@ -196,7 +237,8 @@ export async function call<T = unknown>(
     });
     text = await response.text();
   } catch (error) {
-    if (late()) throw new ApiError(0, "network", "shoc took too long");
+    // Its own code: a hung call is not an unreachable shoc, and asking again would hang again.
+    if (late()) throw new ApiError(0, "timeout", "shoc took too long");
     if (signal?.aborted || (error as Error)?.name === "AbortError") throw error;
     throw new ApiError(0, "network", `Can't reach ${apiHost}`);
   }
@@ -250,7 +292,7 @@ export async function auth<T = unknown>(path: string, body: Record<string, unkno
   let response: Response;
   let text: string;
   try {
-    response = await fetch(`${base}/auth/${path}`, {
+    response = await fetch(`/auth/${path}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
@@ -269,13 +311,4 @@ export function explain(error: unknown): string {
   if (error.isSignedOut) return "Signed out";
   if (error.isAuth) return "Not allowed";
   return error.message;
-}
-
-export async function health(): Promise<boolean> {
-  try {
-    const response = await fetch(`${base}/healthz`);
-    return response.ok;
-  } catch {
-    return false;
-  }
 }

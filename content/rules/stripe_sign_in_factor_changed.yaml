@@ -9,7 +9,8 @@ description: >
   then on.
 status: experimental
 date: 2026-10-10
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.5
 attack: [T1098, T1556.006]
 logsource:

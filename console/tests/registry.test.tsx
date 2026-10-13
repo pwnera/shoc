@@ -95,6 +95,7 @@ const DATA: Record<string, unknown> = {
     chain_ok: true,
     rows_verified: 4210,
     detail: "",
+    checked: true,
     head: "4210:abc",
     recent: [
       { seq: 4210, ts: "2026-10-01T00:00:00Z", principal_kind: "human", principal_id: "jane", capability: "action.approve", error: null, hash: "abc" },
@@ -136,10 +137,38 @@ describe("the Access screen", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("reads the chain, the human-only count and the rows verified in the strip", async () => {
-    show();
+    show("/access?tab=audit");
     expect(await screen.findByText("Intact")).toBeInTheDocument();
     expect(await screen.findByText("4,210")).toBeInTheDocument();
     expect(screen.getByText("you", { selector: ".sh-strip__label" })).toBeInTheDocument();
+    expect(bodies["health/audit"]).toEqual({ limit: 200 });
+  });
+
+  it("walks the chain on the Audit tab only: elsewhere it lists rows", async () => {
+    const verified = DATA["health/audit"] as Record<string, unknown>;
+    DATA["health/audit"] = { ...verified, chain_ok: true, rows_verified: 0, checked: false };
+    try {
+      show();
+      expect(await screen.findByText("finding.list")).toBeInTheDocument();
+      await waitFor(() => expect(bodies["health/audit"]).toEqual({ limit: 200, verify: false }));
+      expect(screen.queryByText("Intact")).not.toBeInTheDocument();
+      expect(screen.queryByText("verified", { selector: ".sh-strip__label" })).not.toBeInTheDocument();
+    } finally {
+      DATA["health/audit"] = verified;
+    }
+  });
+
+  it("reads nothing into chain_ok when the chain was not checked", async () => {
+    const verified = DATA["health/audit"] as Record<string, unknown>;
+    DATA["health/audit"] = { ...verified, chain_ok: false, rows_verified: 0, checked: false };
+    try {
+      show("/access?tab=audit");
+      expect(await screen.findByText("action.approve")).toBeInTheDocument();
+      expect(screen.queryByText("Broken")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Chain broken/)).not.toBeInTheDocument();
+    } finally {
+      DATA["health/audit"] = verified;
+    }
   });
 
   it("leaves the chain's total to the strip: the Audit pager counts what it loaded", async () => {

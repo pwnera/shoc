@@ -15,7 +15,7 @@ import httpx
 
 from shoc.errors import ConfigError
 from shoc.ingest.connectors import llmusage
-from shoc.ingest.connectors.base import FetchResult, client, since_default, utc
+from shoc.ingest.connectors.base import FetchResult, client, reached, since_default, utc
 
 API = "https://api.openai.com/v1/organization"
 
@@ -29,14 +29,14 @@ class OpenAIConnector:
         key = secret.get("admin_key")
         if not key:
             raise ConfigError("openai: the secret needs admin_key, an organization Admin key")
-        hours = int(settings.get("backfill_hours", 24))
         with client({"Authorization": f"Bearer {key}"}) as http:
-            audit = _audit(http, cursor.get("audit") or {}, min(max(int(limit), 1), 100), hours)
+            size = min(max(int(limit), 1), 100)
+            audit = _audit(http, cursor.get("audit") or {}, size, settings)
             usage = llmusage.read(
                 http,
                 f"{API}/usage/completions",
                 cursor.get("usage") or {},
-                hours,
+                int(settings.get("backfill_hours", 24)),
                 "openai",
                 _usage_query,
             )
@@ -54,10 +54,12 @@ def _usage_query(start: datetime, end: datetime) -> list[tuple[str, Any]]:
     ]
 
 
-def _audit(http: httpx.Client, cursor: dict[str, Any], size: int, hours: int) -> FetchResult:
-    since = since_default(cursor, hours=hours)
+def _audit(
+    http: httpx.Client, cursor: dict[str, Any], size: int, settings: dict[str, Any]
+) -> FetchResult:
+    since = since_default(cursor, settings)
     params: list[tuple[str, Any]] = [
-        ("effective_at[gt]", int(utc(since).timestamp())),
+        ("effective_at[gte]", int(utc(since).timestamp())),
         ("limit", size),
     ]
     if cursor.get("after"):
@@ -68,13 +70,14 @@ def _audit(http: httpx.Client, cursor: dict[str, Any], size: int, hours: int) ->
     records = [_entry(e) for e in body.get("data") or []]
     newest = max(
         [datetime.fromtimestamp(int(e["effective_at"]), tz=UTC).isoformat() for e in records]
-        + [str(cursor.get("newest") or since)],
+        + [reached(cursor, since)],
         key=utc,
     )
+    late = str(cursor.get("since") or "")
     if body.get("has_more") and body.get("last_id"):
-        held = {"since": since, "newest": newest, "after": body["last_id"]}
-        return FetchResult(records=records, cursor=held, more=True)
-    return FetchResult(records=records, cursor={"since": newest}, more=False)
+        held = {**cursor, "start": since, "newest": newest, "after": body["last_id"]}
+        return FetchResult(records=records, cursor=held, more=True, since=late)
+    return FetchResult(records=records, cursor={"since": newest}, more=False, since=late)
 
 
 def _entry(entry: dict[str, Any]) -> dict[str, Any]:

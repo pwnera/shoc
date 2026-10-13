@@ -95,8 +95,9 @@ fields:
       - "properties.initiatedBy.user.id"
       - "properties.initiatedBy.app.servicePrincipalId"
   actor_user_type: { paths: [userType, "properties.userType"] }
-  actor_session_uid:
-    paths: [sessionId, "properties.sessionId", correlationId, "properties.correlationId"]
+  # The sign-in session, which Entra repeats on every token it later issues.
+  # A correlation id names one request or flow, not a session; it stays in raw.
+  actor_session_uid: { paths: [sessionId, "properties.sessionId"] }
   src_endpoint_ip:
     paths:
       - ipAddress
@@ -273,4 +274,5 @@ derive:
 observables:
   - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
   - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: actor_session_uid, name: actor.session.uid, type: "Session UID" }
   - { column: device_hostname, name: device.hostname, type: Hostname }

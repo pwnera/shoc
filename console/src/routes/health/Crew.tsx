@@ -29,7 +29,8 @@ const TONE: Record<RoleState, StatusTone> = { working: "running", idle: "idle", 
 export function Crew() {
   const llm = useLlm();
   const tail = useCrewWindow();
-  const audit = useAudit({ limit: 200 });
+  // Only the rows: walking the chain is the Access screen's.
+  const audit = useAudit({ limit: 200, verify: false });
   const alerts = useAlerts();
   const presence = usePresence();
   const now = useNow();

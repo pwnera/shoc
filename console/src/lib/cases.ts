@@ -7,21 +7,22 @@ import { sinceTime } from "./since";
 import { severityRank } from "./sort";
 import type { Case, CaseState } from "@/types";
 
-export type CaseTab = "investigating" | "contained" | "closed";
+/** Responding is the phase (containment to post-incident), not a claim that anything was contained. */
+export type CaseTab = "investigating" | "responding" | "closed";
 
 /** The Cases screen's tabs, All first: it sorts open work to the top, so nobody lands on closed cases. */
-export const TABS = ["all", "investigating", "contained", "closed"] as const;
+export const TABS = ["all", "investigating", "responding", "closed"] as const;
 export type TabId = (typeof TABS)[number];
 
 export function caseTab(state: CaseState): CaseTab {
   if (state === "closed") return "closed";
   if (state === "triage" || state === "analysis") return "investigating";
-  return "contained";
+  return "responding";
 }
 
 /** Every case lands in exactly one bucket, so the tab counts add up to the queue. */
 export function bucket(rows: Case[]): Record<CaseTab, Case[]> {
-  const out: Record<CaseTab, Case[]> = { investigating: [], contained: [], closed: [] };
+  const out: Record<CaseTab, Case[]> = { investigating: [], responding: [], closed: [] };
   for (const row of rows) out[caseTab(row.state)].push(row);
   return out;
 }

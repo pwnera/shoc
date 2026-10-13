@@ -16,10 +16,14 @@ import threading
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlsplit
 
 import psycopg
 
+from shoc.agents.llm import CALL_SECONDS
+from shoc.agents.openspace import Budget
 from shoc.capabilities.registry import Caller, Context
+from shoc.cases.engine import SEVERITY_ORDER
 from shoc.config import Config
 from shoc.db import jobs
 from shoc.db.pool import ALL_TENANTS, connect, execute, fetch_one, set_tenant
@@ -130,11 +134,20 @@ def handle(job: dict[str, Any], config: Config) -> str:
     """Run one job, then hand this thread's connection back to the shared queue.
 
     The job's Context pins the connection the loop also claims with to the
-    job's tenant, and a job that raises would otherwise leave it there.
+    job's tenant, and a job that raises would otherwise leave it there. The
+    event store the job opened is closed with it (STO-4).
     """
+    ctx: Context | None = None
     try:
-        return _handle(job, config)
+        ctx = Context(
+            tenant_id=job["tenant_id"],
+            caller=SYSTEM_CALLER if job["kind"] in SYSTEM_JOBS else WORKER_CALLER,
+            config=config,
+        )
+        return _handle(job, config, ctx)
     finally:
+        if ctx is not None:
+            ctx.close()
         set_tenant(connect(config), ALL_TENANTS)
 
 
@@ -173,18 +186,32 @@ def _warm_lists(ctx: Any) -> str:
     return "; ".join(f"{name}: {why}" for name, why in sorted(osint.LIST_WARNINGS.items()))
 
 
-def _handle(job: dict[str, Any], config: Config) -> str:
+def heartbeat(config: Config) -> str:
+    """Tell the outside monitor at SHOC_HEARTBEAT_URL that a check just passed (OPS-1).
+
+    Sent only after `ops.check` read Postgres to the end, so a dead database,
+    host or worker stops the pings and the monitor, not shoc, raises it.
+    Returns what the job summary adds: nothing, or why the ping failed.
+    """
+    import httpx
+
+    if not config.heartbeat_url:
+        return ""
+    try:
+        httpx.get(config.heartbeat_url, timeout=10).raise_for_status()
+    except Exception as exc:  # never the check's failure; the URL is a secret, so not logged
+        log.warning("heartbeat ping failed: %s", type(exc).__name__)
+        return f" Heartbeat not sent: {type(exc).__name__}."
+    return ""
+
+
+def _handle(job: dict[str, Any], config: Config, ctx: Context) -> str:
     """Handlers go through the registry, like every other caller."""
     from shoc.capabilities.registry import call
 
     tenant = job["tenant_id"]
     payload = job["payload"] or {}
     kind = job["kind"]
-    ctx = Context(
-        tenant_id=tenant,
-        caller=SYSTEM_CALLER if kind in SYSTEM_JOBS else WORKER_CALLER,
-        config=config,
-    )
     if kind == "source.sync":
         from shoc.errors import UpstreamError
 
@@ -201,12 +228,13 @@ def _handle(job: dict[str, Any], config: Config) -> str:
         except UpstreamError as exc:
             return str(exc)
     if kind == "detect.run":
+        pushed = _flush_pushes(ctx)
         result = call(
             "detect.run", ctx, {k: v for k, v in payload.items() if k in ("rule_id", "lookback")}
         )
         _queue_investigations(ctx, result.data.cases_opened)
         _reread(ctx)
-        return result.summary
+        return result.summary + pushed
     if kind == "case.investigate":
         result = call("case.investigate", ctx, {"case_uid": payload["case_uid"]})
         started = _start_playbooks(ctx, payload["case_uid"])
@@ -228,7 +256,9 @@ def _handle(job: dict[str, Any], config: Config) -> str:
             {
                 "playbook_id": payload["playbook_id"],
                 "case_uid": payload["case_uid"],
-                "dry_run": bool(payload.get("dry_run", config.dry_run)),
+                # False leaves each action's own dry-run setting in charge;
+                # True would make the run a preview (RSP-7).
+                "dry_run": bool(payload.get("dry_run", False)),
             },
         )
         return result.summary
@@ -279,37 +309,7 @@ def _handle(job: dict[str, Any], config: Config) -> str:
     if kind == "manager.deliver":
         return call("manager.deliver", ctx, {}).summary
     if kind == "ops.check":
-        from shoc.agents import manager, ops
-
-        result = call("ops.alerts", ctx, {})
-        for alert in ops.unpublished(ctx.db, tenant, result.data.alerts):
-            _publish_alert(ctx, alert)
-        # Ops' model diagnoses a new outage first, so the page carries it (D47).
-        ops.review(ctx.db, ctx.store, tenant, config)
-        manager.coverage(ctx.db, tenant)
-        # A source that fails or has changed shape goes back to the Integrator,
-        # once a day at most (D50: Ops wakes it when a vendor changes shape).
-        if any(a["kind"] in ("source.failing", "source.quality") for a in result.data.alerts):
-            jobs.enqueue(
-                ctx.db,
-                tenant,
-                "source.onboard",
-                {},
-                idempotency_key=f"onboard:drift:{int(time.time() // 86400)}",
-            )
-        # Nobody runs `health audit` by hand, so the chain is checked here (SEC-1).
-        chain = call("health.audit", ctx, {"limit": 1}).data
-        if not chain.chain_ok and manager.audit_broken(ctx.db, tenant, chain.detail):
-            _publish_alert(
-                ctx,
-                {
-                    "kind": "audit.broken",
-                    "subject": "audit_log",
-                    "detail": chain.detail,
-                    "severity": "critical",
-                },
-            )
-        return result.summary
+        return _ops_check(ctx, tenant, config)
     if kind == "source.onboard":
         return call("source.onboard", ctx, {"source": payload.get("source", "")}).summary
     if kind == "intel.refresh":
@@ -325,8 +325,83 @@ def _handle(job: dict[str, Any], config: Config) -> str:
     if kind == "case.recheck":
         return call("case.recheck", ctx, {}).summary
     if kind == "retention":
-        return call("events.retain", ctx, {"days": int(payload.get("days", 90))}).summary
+        # The control plane first: it is Postgres, and a warehouse that is down
+        # should not keep copies of old events here too.
+        from shoc.capabilities.events import retention_days
+
+        days = int(payload.get("days") or retention_days(ctx))
+        try:
+            pruned = prune(ctx.db, tenant, days)
+        except psycopg.Error:
+            # A purge that timed out still lets old partitions go tonight; the
+            # job then fails and is retried, and both steps are safe to repeat.
+            call("events.retain", ctx, {"days": days})
+            raise
+        retained = call("events.retain", ctx, {"days": days}).summary
+        return f"{retained}; {pruned}"
     raise ValueError(f"unknown job kind '{kind}'")
+
+
+# Job keys that still guard a once-only effect after the job is done: a playbook
+# started on a case, an action run or expired, a page, a recheck, a crew run, a
+# playbook's wait or retry. A purged key would let the same effect happen again.
+GUARD_KEYS = [
+    "playbook:%",
+    "action:%",
+    "expire:%",
+    "recheck:%",
+    "investigate:%",
+    "deliver:%",
+    "lost:%",
+    "timer:%",
+    "retry:%",
+]
+
+# What the nightly retention job deletes besides event partitions, per table
+# (OPS-1). Copies of events (hunt rows, graph entities, lookups, stream payloads)
+# go with the events they came from. Finished jobs go after a week and failed
+# ones after 30 days, except those `resume_waiting_runs` counts. Stream events
+# wait for every enabled webhook to have sent them. Cases, findings, openspace
+# and the audit log are incident records and stay.
+PRUNE = {
+    "jobs": """(state = 'done' AND finished_at < now() - interval '7 days'
+                OR state = 'failed' AND finished_at < now() - interval '30 days'
+                   AND kind <> 'playbook.resume')
+               AND NOT coalesce(idempotency_key, '') LIKE ANY(%(guards)s)""",
+    "stream_events": """created_at < now() - %(days)s * interval '1 day'
+               AND NOT EXISTS (SELECT 1 FROM shoc.webhooks w
+                               WHERE w.tenant_id = %(tenant)s AND w.enabled
+                                 AND w.last_seq < seq)""",
+    "hunt_observations": "seen_at < now() - %(days)s * interval '1 day'",
+    "graph_edges": "last_seen < now() - %(days)s * interval '1 day'",
+    "graph_nodes": "last_seen < now() - %(days)s * interval '1 day'",
+    "intel_lookups": "looked_up_at < now() - %(days)s * interval '1 day'",
+    # A push kept past the retention could only load events already due to go.
+    "push_spool": "received_at < now() - %(days)s * interval '1 day'",
+    "memory": "expires_at < now()",
+}
+PRUNE_BATCH = 10_000
+
+
+def prune(conn: Any, tenant_id: str, days: int) -> str:
+    """Delete one tenant's control-plane rows past their window, a batch at a time."""
+    params = {
+        "tenant": tenant_id,
+        "days": max(1, days),
+        "guards": GUARD_KEYS,
+        "batch": PRUNE_BATCH,
+    }
+    removed: dict[str, int] = {}
+    for table, where in PRUNE.items():
+        sql = f"""DELETE FROM shoc.{table} WHERE ctid = ANY(ARRAY(
+                      SELECT ctid FROM shoc.{table}
+                      WHERE tenant_id = %(tenant)s AND ({where}) LIMIT %(batch)s))"""
+        while (n := execute(conn, sql, params)) > 0:
+            removed[table] = removed.get(table, 0) + n
+            if n < PRUNE_BATCH:
+                break
+    said = ", ".join(f"{n} {table}" for table, n in removed.items())
+    return f"pruned {said or 'nothing'}"
 
 
 # How long the sweep leaves a case after a crew run that did not come back:
@@ -335,6 +410,24 @@ def _handle(job: dict[str, Any], config: Config) -> str:
 # the same four cases around the clock through a two-day provider outage and
 # wrote a failure into each case every time (CASE-9f7294571950d508fb74 took 46).
 FIRST_RETRY_HOURS = 0.25
+
+
+def _flush_pushes(ctx: Context) -> str:
+    """Load the pushes a warehouse kept since the last cycle, before detection reads (ING-2).
+
+    A load that fails leaves them kept for the next cycle, and detection runs anyway.
+    """
+    from shoc.capabilities.events import flush_spool
+
+    try:
+        loaded, failed = flush_spool(ctx)
+    except Exception as exc:
+        log.warning("could not load the kept pushes: %s", exc)
+        return f" Kept pushes not loaded, tried again next cycle: {type(exc).__name__}."
+    said = f" Loaded {loaded} pushed event(s) first." if loaded else ""
+    if failed:
+        said += f" {failed} kept push(es) not loaded, tried again next cycle."
+    return said
 
 
 def _queue_investigations(ctx: Context, case_uids: list[str], attempt: str = "opened") -> None:
@@ -460,6 +553,89 @@ def _sweep_cases(ctx: Context) -> str:
     return f"sweep: queued {len(rows)} case(s) with something new"
 
 
+# How often `ops.check` walks the whole audit chain, by this process's clock;
+# the hourly walks start where the last whole one ended (data-11, SEC-1). The
+# first check after a worker starts walks it all.
+FULL_WALK_SECONDS = 86400
+_WALKED: dict[str, float] = {}
+
+
+def _ops_check(ctx: Context, tenant: str, config: Config) -> str:
+    """The hourly check (OPS-1), the steps that decide a page first (sre-10).
+
+    Each step runs whatever the one before it did: a bad model setting in Ops'
+    review used to raise exactly when a source was down, every hour, so the
+    dark-source page and the audit check after it never ran. A step that
+    failed fails the job once every step has run, naming it, and sends no
+    heartbeat. The dark-source page carries the diagnosis Ops' review wrote in
+    an earlier hour: a source pages after a day dark, and review runs hourly.
+    """
+    from shoc.agents import manager, ops
+    from shoc.capabilities.registry import call
+    from shoc.db import audit
+
+    failed: list[str] = []
+
+    def step(name: str, run: Any) -> Any:
+        try:
+            return run()
+        except Exception as exc:
+            if isinstance(exc, psycopg.OperationalError) and (ctx.db.closed or ctx.db.broken):
+                raise  # the database went away; the loop reconnects
+            log.warning("ops.check %s failed for %s: %s", name, tenant, exc)
+            failed.append(f"{name}: {type(exc).__name__}: {exc}")
+            return None
+
+    def chain() -> None:
+        # Nobody runs `health audit` by hand, so the chain is checked here (SEC-1).
+        full = time.monotonic() - _WALKED.get(tenant, -FULL_WALK_SECONDS) >= FULL_WALK_SECONDS
+        ok, _, detail = audit.check(ctx.db, tenant, full=full)
+        if full:
+            _WALKED[tenant] = time.monotonic()
+        if not ok and manager.audit_broken(ctx.db, tenant, detail):
+            _publish_alert(
+                ctx,
+                {
+                    "kind": "audit.broken",
+                    "subject": "audit_log",
+                    "detail": detail,
+                    "severity": "critical",
+                },
+            )
+
+    step("coverage", lambda: manager.coverage(ctx.db, tenant, config))
+    step("audit", chain)
+    result = step("alerts", lambda: call("ops.alerts", ctx, {}))
+    raised = result.data.alerts if result else []
+    for alert in step("unpublished", lambda: ops.unpublished(ctx.db, tenant, raised)) or []:
+        step(f"publish {alert['kind']}", lambda alert=alert: _publish_alert(ctx, alert))
+    step("review", lambda: ops.review(ctx.db, ctx.store, tenant, config))
+    # A source that fails or whose key fields went empty goes back to the
+    # Integrator, once a day at most (D50: Ops wakes it when a vendor changes
+    # shape). A source still learning its baseline has nothing to repair (live-12).
+    if any(
+        a["kind"] == "source.failing" or (a["kind"] == "source.quality" and EMPTY in a["detail"])
+        for a in raised
+    ):
+        step(
+            "onboard",
+            lambda: jobs.enqueue(
+                ctx.db,
+                tenant,
+                "source.onboard",
+                {},
+                idempotency_key=f"onboard:drift:{int(time.time() // 86400)}",
+            ),
+        )
+    if failed:
+        raise RuntimeError("ops.check: " + "; ".join(failed))
+    return result.summary + heartbeat(config)
+
+
+# The field-fidelity note `ops.source_quality` writes: a column rules read gone empty.
+EMPTY = " is empty in "
+
+
 def _publish_alert(ctx: Context, alert: dict[str, Any]) -> None:
     from shoc.cases import engine
 
@@ -472,13 +648,17 @@ def _start_playbooks(ctx: Context, case_uid: str) -> list[str]:
 
     case = engine.require(ctx.db, ctx.tenant_id, case_uid)
     started: list[str] = []
-    for book in playbooks.match(ctx.db, ctx.tenant_id, case, ctx.config):
+    books = playbooks.match(ctx.db, ctx.tenant_id, case, ctx.config)
+    context = playbooks.context_for(ctx.db, ctx.tenant_id, case, ctx.config) if books else {}
+    for book in books:
+        # Keyed on what the steps act on: a key or account that joins the case
+        # later is answered by a run of its own (RSP-2).
         jobs.enqueue(
             ctx.db,
             ctx.tenant_id,
             "playbook.run",
             {"playbook_id": book.id, "case_uid": case_uid},
-            idempotency_key=f"playbook:{book.id}:{case_uid}",
+            idempotency_key=playbooks.job_key(book, context, ctx.config),
         )
         started.append(book.id)
     return started
@@ -649,15 +829,31 @@ def wait_for_schema(conn: Any, attempts: int = 30, delay: float = 2.0) -> bool:
     deliveries included, and restarted every minute until it came back. A
     detection cycle that cannot reach the store, or finds its table not made
     yet, stops without marking a rule broken instead (`detect.engine.run_all`).
+
+    Every migration this code ships has to be applied, not only the first
+    tables, so new code never runs job after job against an old schema. A
+    schema newer than the code (a rollback) is logged and reported by
+    `health.status`; it is not waited on, since only a restore undoes it.
+    `serve` waits the same way.
     """
-    from shoc.db.pool import fetch_one
+    from shoc.db.migrate import drift
 
     for attempt in range(attempts):
-        row = fetch_one(conn, "SELECT to_regclass('shoc.schedules') IS NOT NULL AS ready")
-        if row and row["ready"]:
+        missing, ahead = drift(conn)
+        if not missing:
+            if ahead:
+                log.error(
+                    "the database has migrations this release does not know (%s); it was "
+                    "migrated by a newer release, and rolling back means restoring a backup",
+                    ", ".join(ahead),
+                )
             return True
         if attempt == 0:
-            log.info("waiting for the database schema; run `shoc migrate` to create it")
+            log.info(
+                "waiting for %d migration(s) (%s); run `shoc migrate`",
+                len(missing),
+                ", ".join(missing[:3]) + ("…" if len(missing) > 3 else ""),
+            )
         time.sleep(delay)
     return False
 
@@ -718,10 +914,26 @@ def ensure_default_schedules(conn: Any, config: Config, tenant: str = "") -> Non
 
 
 # A worker whose loop has not come round in this long is hung, stuck in a job or
-# a call that never returns. `requeue_stale` gave its jobs to other workers at 30
-# minutes. Exiting ends its session, which frees the cron lock for a follower,
-# and the supervisor (`restart: unless-stopped`, a Deployment) starts a fresh one.
-HUNG_AFTER_SECONDS = 30 * 60
+# a call that never returns. A pass runs one job, so this is how long one job
+# may take. Exiting ends its sessions, which frees the cron lock for a follower
+# and gives the job back (`requeue_stale`, parked after its fifth try), and the
+# supervisor (`restart: unless-stopped`, a Deployment) starts a fresh worker.
+# The longest job is the crew on a critical case with reports: its budget is
+# checked between steps, so a model call already running at the deadline, the
+# final answer and a typed reply's retry can each still take CALL_SECONDS.
+# Thirty minutes killed that investigation and started it over.
+HUNG_AFTER_SECONDS = (
+    max(Budget.for_case(s, reports=1).max_seconds for s in SEVERITY_ORDER)
+    + 3 * CALL_SECONDS
+    + 10 * 60
+)
+
+# How often the running job's lease is renewed. `requeue_stale` takes a job
+# back once its lease is 30 minutes old.
+LEASE_SECONDS = 60
+
+# The most jobs `shoc worker --once` runs before it exits.
+ONCE_JOBS = 4
 
 
 def watchdog(last_pass: list[float], stop: threading.Event, hung_after: float) -> None:
@@ -730,6 +942,30 @@ def watchdog(last_pass: list[float], stop: threading.Event, hung_after: float) -
         if time.monotonic() - last_pass[0] > hung_after:
             log.error("no pass in %.0fs; exiting so another worker can lead", hung_after)
             os._exit(1)
+
+
+def keep_lease(
+    config: Config, running: list[int | None], stop: threading.Event, every: float
+) -> None:
+    """Renew the lease of the job the loop is running, on a connection of its own.
+
+    Without it a job past 30 minutes looked abandoned while its worker still ran
+    it, and a second worker ran it again.
+    """
+    from shoc.db import pool
+
+    while not stop.wait(every):
+        job_id = running[0]
+        if job_id is None:
+            continue
+        try:
+            beat = connect(config)
+            set_tenant(beat, ALL_TENANTS)
+            jobs.renew(beat, job_id)
+        except psycopg.Error as exc:
+            log.warning("could not renew the lease of job %s: %s", job_id, exc)
+            pool.close()  # this thread's connection; the next beat opens a new one
+    pool.close()
 
 
 def listen(config: Config) -> Any:
@@ -774,19 +1010,30 @@ def run(
     once: bool = False,
     poll_seconds: float = 30.0,
     stop: threading.Event | None = None,
+    urgent: bool = False,
 ) -> int:
     """Claim and run jobs until stopped.
 
     Between passes the worker waits on NOTIFY, and polls every `poll_seconds`
     whatever happens. `stop` lets an embedder (or a test) end the loop the same
-    way SIGTERM does.
+    way SIGTERM does. An `urgent` worker is the fast lane: it takes only pages,
+    actions, deliveries, detection, syncs, playbooks and the crew's runs on
+    high and critical cases (`jobs.TIER`), so a routine model job never holds
+    up a page.
     """
+    most_tier = jobs.URGENT if urgent else 2
     cfg = config or Config.load()
+    cfg.check_llm_provider()
     conn = connect(cfg)
     set_tenant(conn, ALL_TENANTS)  # the queue is shared; each job scopes itself
     if not wait_for_schema(conn):
         log.error("giving up waiting for the database schema; run `shoc migrate`")
         return 0
+    from shoc.db import audit
+
+    # As `serve` does: a key the audit log was not keyed with would let a job's
+    # change commit and then fail to write its row.
+    audit.check_key(cfg)
     ensure_default_schedules(conn, cfg)
     check_agent_can_read(cfg)
     stopping = stop or threading.Event()
@@ -801,13 +1048,25 @@ def run(
 
     leader = False
     listener = None if once else listen(cfg)
-    log.info("worker started")
+    log.info("worker started%s", " (fast lane)" if urgent else "")
+    if cfg.heartbeat_url:
+        # Egress a deployer asked for is still named once (D57); its path is a secret.
+        log.info(
+            "heartbeat pings go to %s after each ops.check", urlsplit(cfg.heartbeat_url).hostname
+        )
     processed = 0
     last_pass = [time.monotonic()]
+    running: list[int | None] = [None]
     if not once:
         threading.Thread(
             target=watchdog, args=(last_pass, stopping, HUNG_AFTER_SECONDS), daemon=True
         ).start()
+        threading.Thread(
+            target=keep_lease, args=(cfg, running, stopping, LEASE_SECONDS), daemon=True
+        ).start()
+    # A pass runs one job. A page queued meanwhile waits for that job alone,
+    # the leader's ticks and sweeps run between any two jobs, and SIGTERM stops
+    # the worker at the next job instead of after a batch of them.
     while not stopping.is_set():
         last_pass[0] = time.monotonic()
         try:
@@ -825,35 +1084,44 @@ def run(
                 jobs.requeue_stale(conn)
                 resume_waiting_runs(conn)
                 run_approved_actions(conn)
-            claimed = jobs.claim(conn, limit=4)
+            claimed = [] if stopping.is_set() else jobs.claim(conn, most_tier=most_tier)
             for job in claimed:
+                running[0] = job["job_id"]
                 # `handle` hands the connection back to every tenant either way.
                 try:
                     summary = handle(job, cfg)
                     jobs.finish(conn, job["job_id"])
                     log.info("job %s %s: %s", job["job_id"], job["kind"], summary)
-                except psycopg.OperationalError:
-                    raise  # the database went away; reconnect below
                 except Exception as exc:
+                    # Only a lost database is left to the reconnect below. A query
+                    # that timed out, deadlocked or waited too long for a lock, on
+                    # this connection or the store's, fails the job like any other
+                    # error, so a job that always does it is parked.
+                    if isinstance(exc, psycopg.OperationalError) and (conn.closed or conn.broken):
+                        raise
                     jobs.fail(conn, job["job_id"], f"{type(exc).__name__}: {exc}")
                     log.warning("job %s %s failed: %s", job["job_id"], job["kind"], exc)
+                finally:
+                    running[0] = None
                 processed += 1
-            pause = 0.0 if claimed else jobs.seconds_to_next(conn, poll_seconds)
+            pause = 0.0 if claimed else jobs.seconds_to_next(conn, poll_seconds, most_tier)
         except psycopg.OperationalError as exc:
             # A restarted or briefly unreachable database is an ordinary event
             # for a process meant to run for months: reconnect rather than die
-            # and leave it to something else to restart us. Whatever job we were
-            # holding is requeued by `requeue_stale` on the way back.
+            # and leave it to something else to restart us.
             if once:
                 raise
             log.warning("lost the database (%s); reconnecting", exc)
             conn = reconnect(cfg, stop=stopping)
+            # The job in hand died with the old session, but the new one has
+            # the same name, so `requeue_stale` would leave it for half an hour.
+            jobs.release_own(conn)
             leader = False  # the lock went with the old session
             if listener is not None:
                 listener.close()
             listener = listen(cfg)
             continue
-        if once:
+        if once and (not claimed or processed >= ONCE_JOBS):
             break
         if pause:
             wait_for_jobs(listener, pause, stopping)

@@ -8,7 +8,8 @@ description: >
   few times in its life. Turning MagicDNS on or off writes the same event.
 status: experimental
 date: 2026-10-09
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.5
 attack: [T1557]
 logsource:

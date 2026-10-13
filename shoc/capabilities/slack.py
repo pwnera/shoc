@@ -20,12 +20,21 @@ class SlackConfig:
     approvers: dict[str, str] = f(
         doc="Slack user id -> the person's name, for everyone allowed to approve", factory=dict
     )
+    readers: dict[str, str] | None = f(
+        None,
+        doc=(
+            "Slack user id -> the person's name, for everyone else allowed to use /shoc; "
+            "replaces the list ({} empties it), left out keeps it"
+        ),
+    )
+    team_id: str = f("", doc="The workspace id, e.g. T0123456789; requests from others are refused")
 
 
 @dataclass
 class SlackState:
     channel: str = ""
     approvers: list[str] = field(default_factory=list)
+    readers: list[str] = field(default_factory=list)
     configured: bool = False
 
 
@@ -39,6 +48,8 @@ class SlackView:
     channel: str = ""
     # Slack user id -> the person's name: a form edits the ids.
     approvers: dict[str, str] = field(default_factory=dict)
+    readers: dict[str, str] = field(default_factory=dict)
+    team_id: str = ""
     # Whether the bot token is stored, and the signing secret that lets shoc
     # check a request came from Slack; never either value.
     has_bot_token: bool = False
@@ -62,12 +73,14 @@ def show(ctx: Context, inp: Empty) -> Result:
         data=SlackView(
             channel=app.channel,
             approvers=app.approvers,
+            readers=app.readers,
+            team_id=app.team_id,
             has_bot_token=bool(app.bot_token),
             verifies_requests=bool(app.signing_secret),
         ),
         summary=(
             f"Slack posts to {app.channel or 'no channel yet'}; "
-            f"{len(app.approvers)} approver(s)"
+            f"{len(app.approvers)} approver(s), {len(app.readers)} reader(s)"
             + ("." if app.configured else "; its bot token or signing secret is not set.")
         ),
     )
@@ -97,6 +110,8 @@ def configure(ctx: Context, inp: SlackConfig) -> Result:
     settings = {
         "channel": inp.channel or existing.channel,
         "approvers": inp.approvers or existing.approvers,
+        "readers": existing.readers if inp.readers is None else inp.readers,
+        "team_id": inp.team_id or existing.team_id,
     }
     execute(
         ctx.db,
@@ -110,16 +125,19 @@ def configure(ctx: Context, inp: SlackConfig) -> Result:
             seal(ctx.config.master_key, secret, ctx.tenant_id, "connector_config", "slack"),
         ),
     )
+    approvers = ", ".join(sorted(settings["approvers"].values()))
     return Result(
         data=SlackState(
             channel=settings["channel"],
             approvers=sorted(settings["approvers"].values()),
+            readers=sorted(settings["readers"].values()),
             configured=bool(secret["bot_token"] and secret["signing_secret"]),
         ),
         summary=(
             f"Slack app configured for {settings['channel'] or 'no channel yet'}; "
             f"{len(settings['approvers'])} approver(s): "
-            f"{', '.join(sorted(settings['approvers'].values())) or 'none — nobody can approve yet'}."
+            f"{approvers or 'none — nobody can approve yet'}; "
+            f"{len(settings['readers'])} other reader(s) of /shoc."
         ),
     )
 

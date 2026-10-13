@@ -14,10 +14,10 @@ import httpx
 import jwt
 
 from shoc.errors import ConfigError
+from shoc.ingest.connectors.base import cached, keep
 
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
-_TOKENS: dict[str, tuple[str, float]] = {}
 _CLIENT_IDS: dict[str, str] = {}
 
 
@@ -40,15 +40,15 @@ def client_id(secret: dict[str, Any], token: str = "") -> str:
 
 
 def access_token(secret: dict[str, Any], scope: str, subject: str | None = None) -> str:
-    """Signed-assertion token, cached until a minute before it expires."""
+    """Signed-assertion token, cached with every other vendor token, so a refused
+    one is dropped as theirs are (`base.forget`)."""
     client_email = secret.get("client_email")
     private_key = secret.get("private_key")
     if not (client_email and private_key):
         raise ConfigError("google: secret needs client_email and private_key")
-    key = f"{client_email}|{scope}|{subject or ''}"
-    cached = _TOKENS.get(key)
-    if cached and cached[1] > time.time():
-        return cached[0]
+    key = f"google|{client_email}|{scope}|{subject or ''}"
+    if token := cached(key):
+        return token
     now = int(time.time())
     claims: dict[str, Any] = {
         "iss": client_email,
@@ -69,9 +69,7 @@ def access_token(secret: dict[str, Any], scope: str, subject: str | None = None)
             },
         )
         resp.raise_for_status()
-        payload = resp.json()
-    token = payload["access_token"]
-    _TOKENS[key] = (token, time.time() + int(payload.get("expires_in", 3600)) - 60)
+        token = keep(key, resp.json())
     # Google logs this request as an OAuth authorisation by this client id; shoc
     # remembers making it so the record is read as shoc's own (RFC 0021).
     from shoc.cases.own import note_token

@@ -2,7 +2,8 @@
  * Overview — does anything need me, and what happened while I was away? The
  * heading is the state ("2 need you", "Nothing needs you", "Crew down · 2 need
  * you", "Can't tell" while a list failed with nothing to show, "Checking…"
- * while one loads; a refresh that failed keeps the rows it had). Under
+ * while one loads, "Nothing connected" or "Sources down" while shoc sees no
+ * event; a refresh that failed keeps the rows it had). Under
  * it one fact per area (Standing), the inbox, the console's only list of
  * decisions, then what happened since this viewer's last visit; the since chip
  * (S) widens that window. Under 768px the heading wraps and the chip takes its
@@ -25,9 +26,11 @@ import { useCommand } from "@/lib/commands";
 import { day, time } from "@/lib/format";
 import { useCrewDown, useNeedsYou, type CrewDown, type Needs } from "@/lib/needs";
 import { useSince, type SinceChoice } from "@/lib/since";
+import { useSourceState } from "./connections/state";
 import { Handover } from "./overview/Handover";
 import { Inbox } from "./overview/Inbox";
 import { useInboxLists } from "./overview/lists";
+import { blindness, type Blind } from "./overview/blind";
 import { Standing } from "./overview/Standing";
 
 /** Six days back, so a weekday name never stands for two dates. */
@@ -44,12 +47,16 @@ export function Overview() {
   const needs = useNeedsYou();
   const { failed } = useInboxLists(needs);
   const crew = useCrewDown();
+  const delivery = useSourceState();
   const since = useSince();
   const [menu, setMenu] = useState(false);
   useCommand("overview.since", () => setMenu(true));
+  // Blind is said only once the delivery words are known: a source list still loading is not "Nothing connected".
+  const blind = delivery.pending || delivery.error ? null : blindness(delivery.configured.map(delivery.state));
 
+  // With no visit on record the window is the last 24 hours, and says so: no "Last visit" it never saw.
   const choices: { id: SinceChoice; label: string; chip: string }[] = [
-    { id: "visit", label: `Last visit · ${when(since.visit)}`, chip: `since ${when(since.visit)}` },
+    ...(since.visit ? [{ id: "visit" as const, label: `Last visit · ${when(since.visit)}`, chip: `since ${when(since.visit)}` }] : []),
     { id: "24h", label: "Last 24 hours", chip: "last 24 hours" },
     { id: "7d", label: "Last 7 days", chip: "last 7 days" },
   ];
@@ -59,7 +66,7 @@ export function Overview() {
     // Under 768px the heading may take two lines and the chip one of its own: the state is never cut.
     <div className="flex flex-col gap-4 max-md:[&_.sh-page\_\_actions]:basis-full max-md:[&_.sh-page\_\_actions]:justify-start max-md:[&_.sh-page\_\_title]:whitespace-normal">
       <PageHeader
-        title={<Heading needs={needs} failed={failed.length > 0} crew={crew} />}
+        title={<Heading needs={needs} failed={failed.length > 0} crew={crew} blind={blind} />}
         strip={<Standing />}
         aside={
           <Menu
@@ -70,7 +77,7 @@ export function Overview() {
             items={choices.map((c) => ({
               label: c.label,
               check: "radio" as const,
-              checked: c.id === since.choice,
+              checked: c.id === chosen.id,
               onSelect: () => since.setChoice(c.id),
             }))}
             // Under 768px the chip sits under the heading, so its text starts on the page's edge.
@@ -91,13 +98,22 @@ export function Overview() {
   );
 }
 
-/** The page's one sentence: the state, in its tone. */
-function Heading({ needs, failed, crew }: { needs: Needs; failed: boolean; crew: CrewDown }) {
+/**
+ * The page's one sentence: the state, in its tone. Crew down, then Can't tell
+ * and Checking…, then shoc blind (nothing connected, sources down), each of
+ * the downs a link with the inbox count after it.
+ */
+function Heading({ needs, failed, crew, blind }: { needs: Needs; failed: boolean; crew: CrewDown; blind: Blind | null }) {
   const n = needs.count;
   const waiting = n === 1 ? "1 needs you" : `${n} need you`;
   const known = !needs.pending && !failed;
-  const [tone, text] = crew.down
-    ? (["bad", null] as const)
+  const down = crew.down
+    ? { word: "Crew down", tone: "bad" as const, to: crew.cause === "worker" ? "/health/jobs" : "/health/crew" }
+    : known && blind
+      ? { ...blind, to: "/connections" }
+      : null;
+  const [tone, text] = down
+    ? ([down.tone, ""] as const)
     : failed
       ? (["bad", "Can't tell"] as const)
       : needs.pending
@@ -108,13 +124,15 @@ function Heading({ needs, failed, crew }: { needs: Needs; failed: boolean; crew:
   return (
     <span className="inline-flex items-center gap-2 text-[var(--tone-ink)]" data-tone={tone}>
       <Mark tone={tone} large />
-      {text ?? (
+      {down ? (
         <span>
-          <Link to={crew.cause === "worker" ? "/health/jobs" : "/health/crew"} className="sh-link text-inherit">
-            Crew down
+          <Link to={down.to} className="sh-link text-inherit">
+            {down.word}
           </Link>
           {known ? ` · ${n ? waiting : "nothing needs you"}` : ""}
         </span>
+      ) : (
+        text
       )}
     </span>
   );

@@ -23,19 +23,21 @@ are read a run of adjacent buckets at a time.
 
 from __future__ import annotations
 
-import hashlib
 import json
 from collections import Counter
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from functools import cache
 from typing import Any
 
 from shoc.cases import engine as case_engine
 from shoc.db.pool import execute, fetch_all, fetch_one
 from shoc.detect import rules as ruleset
 from shoc.detect.compiler import CompiledRule, compile_rule, evidence_sql, page_sql
+from shoc.detect.osint import is_public_address
 from shoc.errors import ConfigError, StoreError
+from shoc.ids import make_id
 from shoc.ingest.batch import KEPT
 from shoc.store import ocsf as layout
 from shoc.store.base import EventStore
@@ -50,7 +52,8 @@ MAX_GROUPS = 10_000
 # Past this many buckets in one cycle, the newest are evaluated and the rest named.
 MAX_BUCKETS = 10_000
 # rule.test, rule.backtest and the Detection Engineer read at most this many rows
-# per scan and groups per rule; only a scheduled cycle or a lookback reads all.
+# per scan and groups per rule; a scheduled cycle, a lookback and the merge
+# gate's backtest read all.
 ADHOC_LIMIT = 200
 # `ingested_at` is stamped when an event is mapped and the event is visible once
 # its batch commits, so a cycle reads again this far behind its watermark, and
@@ -89,14 +92,15 @@ def _bucket(ts: datetime, seconds: int) -> datetime:
     return datetime.fromtimestamp(epoch - (epoch % seconds), tz=UTC)
 
 
-def _uid(tenant_id: str, rule_id: str, entity: str, window_start: datetime) -> str:
-    blob = f"{tenant_id}|{rule_id}|{entity}|{window_start.isoformat()}"
-    return "F-" + hashlib.sha256(blob.encode()).hexdigest()[:24]
+def finding_uid(tenant_id: str, rule_id: str, entity: str, window_start: datetime) -> str:
+    """A finding's dedup key; the indicator matcher keys its findings the same way."""
+    return make_id("F-", tenant_id, rule_id, entity, window_start.isoformat(), length=24)
 
 
 # The columns worth correlating on, and the prefix each gets in an entity key.
 ENTITY_COLUMNS = {
     "actor_user_name": "user",
+    # `session` where the product's mapping says it is a sign-in (`entity_kind`).
     "actor_session_uid": "key",
     "src_endpoint_ip": "ip",
     "resource_uid": "resource",
@@ -115,22 +119,53 @@ HASH_COLUMNS = {
 }
 
 
+@cache
+def session_products() -> frozenset[str]:
+    """The products whose `actor.session.uid` is a sign-in session, as their
+    mapping says (observable type "Session UID"): Okta's, Entra's. Everywhere
+    else it names a credential: an AWS access key, an API key or token id."""
+    from shoc.ingest import ocsf
+
+    out: set[str] = set()
+    for source in ocsf.available_sources():
+        mapping = ocsf.load_mapping(source)
+        if any(
+            o.get("column") == "actor_session_uid" and o.get("type") == "Session UID"
+            for o in mapping.observables
+        ):
+            out.add(str(mapping.constants.get("metadata_product") or ""))
+    return frozenset(out - {""})
+
+
+def entity_kind(column: str, *products: str) -> str:
+    """The prefix a column's value takes in events of `products`. A session id
+    is `session:`, not `key:`: no key action can target one, and a case titled
+    with it read as a leaked credential."""
+    if column == "actor_session_uid" and products and set(products) <= session_products():
+        return "session"
+    return ENTITY_COLUMNS.get(column) or HASH_COLUMNS[column]
+
+
 def entities_of(row: dict[str, Any]) -> list[str]:
     """Typed entity keys for one event row: user:alice, key:AKIA…, ip:203.0.113.5."""
     out = []
-    for column, prefix in (ENTITY_COLUMNS | HASH_COLUMNS).items():
+    product = str(row.get("metadata_product") or "")
+    for column in ENTITY_COLUMNS | HASH_COLUMNS:
         value = row.get(column)
         if value not in (None, "", "-"):
-            out.append(f"{prefix}:{value}")
+            out.append(f"{entity_kind(column, product)}:{value}")
     # A session key (ASIA…) was issued to a role; CloudTrail and GuardDuty name
     # the role as the user, and only the role's sessions can be revoked.
     if row.get("actor_user_type") == "AssumedRole" and row.get("actor_user_name"):
         out.append(f"role:{row['actor_user_name']}")
     # A finding's remote peer (GuardDuty's C2 address on an outbound call) is
     # what it is about. Telemetry's destinations are every CDN a host talks to,
-    # so only findings make it an entity.
-    if row.get("class_uid") == 2004 and row.get("dst_endpoint_ip") not in (None, ""):
-        out.append(f"ip:{row['dst_endpoint_ip']}")
+    # so only findings make it an entity. A private peer (an inbound probe's
+    # target, 172.31.0.0/16 in every default VPC, an internal resolver) would
+    # join unrelated instances and accounts.
+    peer = str(row.get("dst_endpoint_ip") or "")
+    if row.get("class_uid") == 2004 and peer and is_public_address(peer):
+        out.append(f"ip:{peer}")
     return sorted(dict.fromkeys(out))
 
 
@@ -168,6 +203,7 @@ def run_rule(
     limit: int = ADHOC_LIMIT,
     notes: list[str] | None = None,
     learning: dict[str, datetime] | None = None,
+    stop_at: int = 0,
 ) -> list[Finding]:
     """Evaluate `rule` over the events whose time is in [window_start, window_end).
 
@@ -175,7 +211,9 @@ def run_rule(
     from its first event, so it also reads the timeframe after `window_end`.
     `limit` caps the rows of each scan and the groups; 0 reads everything, and
     then the groups past `MAX_GROUPS` that were left out are written to `notes`.
-    `learning` is `accounts_learning` for a first-seen rule.
+    `learning` is `accounts_learning` for a first-seen rule. Past `stop_at`
+    findings it stops reading, for a caller that only asks whether there are
+    that many.
     """
     compiled = compile_rule(rule, learning)
     params: dict[str, Any] = dict(compiled.params)
@@ -183,9 +221,18 @@ def run_rule(
     if rule.is_aggregate:
         params["window_end"] = window_end + timedelta(seconds=rule.timeframe_seconds)
         return _thresholds(
-            store, tenant_id, rule, compiled, params, window_start, window_end, limit, notes
+            store,
+            tenant_id,
+            rule,
+            compiled,
+            params,
+            window_start,
+            window_end,
+            limit,
+            notes,
+            stop_at,
         )
-    return _matches(store, tenant_id, rule, compiled, params, limit)
+    return _matches(store, tenant_id, rule, compiled, params, limit, stop_at)
 
 
 def _thresholds(
@@ -198,6 +245,7 @@ def _thresholds(
     window_end: datetime,
     limit: int,
     notes: list[str] | None,
+    stop_at: int = 0,
 ) -> list[Finding]:
     seconds = rule.timeframe_seconds
     span = timedelta(seconds=seconds)
@@ -210,6 +258,8 @@ def _thresholds(
         )
     findings: list[Finding] = []
     for g in groups.rows:
+        if stop_at and len(findings) >= stop_at:
+            break
         values = [g[c] for c in compiled.group_columns]
         gparams = dict(params)
         gparams.update({f"g_{i}": v for i, v in enumerate(values) if v is not None})
@@ -237,8 +287,9 @@ def _thresholds(
                 inside[value] -= 1
                 distinct -= inside[value] == 0
         entity = "|".join(str(g[c]) for c in compiled.group_columns)
+        products = {str(r.get("metadata_product") or "") for r in rows}
         group_entities = {
-            f"{ENTITY_COLUMNS[c]}:{g[c]}"
+            f"{entity_kind(c, *products)}:{g[c]}"
             for c in compiled.group_columns
             if c in ENTITY_COLUMNS and g[c] not in (None, "")
         }
@@ -282,12 +333,15 @@ def _matches(
     compiled: CompiledRule,
     params: dict[str, Any],
     limit: int,
+    stop_at: int = 0,
 ) -> list[Finding]:
     seconds = rule.timeframe_seconds
     # (entity, bucket) -> [its first rows up to the evidence cap, hit count, last time]
     buckets: dict[tuple[str, datetime], list[Any]] = {}
     for row in _scan(store, compiled.select_sql, params, limit):
         key = (_entity_value(row, rule), _bucket(row["time"], seconds))
+        if stop_at and key not in buckets and len(buckets) >= stop_at:
+            break
         seen = buckets.setdefault(key, [[], 0, row["time"]])
         if len(seen[0]) < MAX_EVIDENCE:
             seen[0].append(row)
@@ -337,7 +391,7 @@ def _finding(
     entities: list[str] | None = None,
 ) -> Finding:
     return Finding(
-        finding_uid=_uid(tenant_id, rule.id, entity, window_start),
+        finding_uid=finding_uid(tenant_id, rule.id, entity, window_start),
         tenant_id=tenant_id,
         rule_id=rule.id,
         title=rule.title,
@@ -683,6 +737,26 @@ def _failed(
     )
 
 
+def _left_out(conn: Any, tenant_id: str, skipped: dict[str, str]) -> None:
+    """Name the merged rules `rules.merged` left out, so one that no longer
+    parses shows in rule health and the digest instead of stopping the cycle.
+    A row a shipped rule shadows is only told: the shipped rule runs under that
+    id and keeps its own state. The digest hears each reason once."""
+    from shoc.agents import manager
+
+    for rule_id, reason in skipped.items():
+        if reason != ruleset.SHADOWED:
+            _failed(conn, tenant_id, rule_id, reason, None)
+        body = f"{rule_id}: {reason}"
+        if not fetch_one(
+            conn,
+            """SELECT 1 AS told FROM shoc.notices
+               WHERE tenant_id = %s AND group_key = %s AND body = %s LIMIT 1""",
+            (tenant_id, rule_id, body[:4000]),
+        ):
+            manager.tell(conn, tenant_id, "detect", "digest", body, group_key=rule_id)
+
+
 # The indicator matcher keeps its watermark in `rule_state` under this id (DET-4).
 INDICATORS = "ioc_match"
 
@@ -738,8 +812,10 @@ def accounts_learning(rule: ruleset.Rule, history: list[dict[str, Any]]) -> dict
 
     From `shoc.source_history`, per account its sources speak for, the way hunt
     readiness is (D79): a second AWS account connected today is learning even
-    though the product has months of history from the first. An account two
-    sources share counts from the earlier one.
+    though the product has months of history from the first, and so is a
+    member account that joined an organisation trail last week. An account two
+    sources share counts from the earlier one; one named before accounts kept
+    their own start counts from its source's.
     """
     products = set(
         layout.products_for(rule.logsource.get("product", ""), rule.logsource.get("service", ""))
@@ -748,8 +824,10 @@ def accounts_learning(rule: ruleset.Rule, history: list[dict[str, Any]]) -> dict
     for row in history:
         if products and not products & set(row["products"] or []):
             continue
+        own = row.get("account_starts") or {}
         for account in row["account_uids"] or []:
-            starts[account] = min(starts.get(account, row["start"]), row["start"])
+            start = datetime.fromisoformat(own[account]) if own.get(account) else row["start"]
+            starts[account] = min(starts.get(account, start), start)
     lookback = timedelta(seconds=ruleset.parse_timeframe(rule.lookback))
     return {account: start + lookback for account, start in starts.items()}
 
@@ -779,7 +857,12 @@ def run_all(
     stay where they are, so the next scheduled cycle still reads everything
     ingested since the last one.
     """
-    rules = rules if rules is not None else ruleset.load(config, conn, tenant_id)
+    skipped: dict[str, str] = {}
+    if rules is None:
+        rules = ruleset.load(config, conn, tenant_id, skipped)
+    else:
+        ruleset.merged(conn, tenant_id, skipped=skipped, config=config)
+    _left_out(conn, tenant_id, skipped)
     began = _began(conn)
     now = now or datetime.now(UTC)
     seen = min(now, began)
@@ -797,7 +880,8 @@ def run_all(
     late = [] if lookback_seconds else _late_loads(conn, tenant_id)
     history = fetch_all(
         conn,
-        """SELECT products, account_uids, coalesce(first_event_at, first_loaded_at) AS start
+        """SELECT products, account_uids, account_starts,
+                  coalesce(first_event_at, first_loaded_at) AS start
            FROM shoc.source_history WHERE tenant_id = %s""",
         (tenant_id,),
     )

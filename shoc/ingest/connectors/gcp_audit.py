@@ -1,9 +1,9 @@
 """GCP Cloud Audit Logs connector (ING-1).
 
 Google's route for a SIEM is a log sink into a Pub/Sub topic, read here through
-a pull subscription over HTTPS (`subscription`). Each page is acknowledged at
-the start of the next read, after the run loop has loaded it; a message
-redelivered in between loads once, by its insertId.
+a pull subscription over HTTPS (`subscription`). Each page is acknowledged
+once the run loop has stored it; a message redelivered before that loads once,
+by its insertId.
 
 Without a subscription it falls back to Cloud Logging `entries.list`, which
 needs no setup but which Google caps at 60 calls a minute and says is not meant
@@ -17,9 +17,13 @@ default filter leaves them out.
 from __future__ import annotations
 
 import base64
+import contextlib
 import json
 from datetime import timedelta
+from functools import partial
 from typing import Any
+
+import httpx
 
 from shoc.errors import ConfigError
 from shoc.ingest.connectors import googleauth
@@ -29,7 +33,11 @@ ENTRIES = "https://logging.googleapis.com/v2/entries:list"
 SCOPE = "https://www.googleapis.com/auth/logging.read"
 PUBSUB = "https://pubsub.googleapis.com/v1"
 PUBSUB_SCOPE = "https://www.googleapis.com/auth/pubsub"
-ACK_DEADLINE = 600  # the most Pub/Sub allows; longer than a poll interval
+# How long a pulled page is held for shoc before Pub/Sub hands it over again:
+# the most it allows, so a slow load still acknowledges in time.
+ACK_DEADLINE = 600
+# An empty subscription can hold a pull open; past this it counts as empty.
+PULL_WAIT = 10.0
 ADMIN_ACTIVITY = 'logName:"cloudaudit.googleapis.com%2Factivity"'
 LAG = timedelta(minutes=10)
 
@@ -41,14 +49,14 @@ class GCPAuditConnector:
         self, settings: dict[str, Any], secret: dict[str, Any], cursor: dict[str, Any], limit: int
     ) -> FetchResult:
         if settings.get("subscription"):
-            return _pull(str(settings["subscription"]), secret, cursor, limit)
+            return _pull(str(settings["subscription"]), secret, limit)
         projects = settings.get("projects") or (
             [settings["project_id"]] if settings.get("project_id") else []
         )
         if not projects:
             raise ConfigError("gcp_audit: settings need project_id (or a list of projects)")
         token = googleauth.access_token(secret, SCOPE)
-        since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        since = since_default(cursor, settings, timedelta(0))
         until = settled(cursor, LAG)
         if utc(since) >= utc(until):
             return FetchResult(cursor={"since": since})
@@ -79,23 +87,23 @@ class GCPAuditConnector:
         return FetchResult(records=records, cursor={"since": newest}, more=False)
 
 
-def _pull(
-    subscription: str, secret: dict[str, Any], cursor: dict[str, Any], limit: int
-) -> FetchResult:
+def _pull(subscription: str, secret: dict[str, Any], limit: int) -> FetchResult:
     """One page from the sink's subscription, `projects/<p>/subscriptions/<s>`."""
     token = googleauth.access_token(secret, PUBSUB_SCOPE)
     size = min(int(limit), 1000)
     with client({"Authorization": f"Bearer {token}"}) as http:
-        if cursor.get("ack"):
-            # An id past its deadline no longer acknowledges anything; its
-            # message comes back and loads once, so a refusal here is not fatal.
-            http.post(f"{PUBSUB}/{subscription}:acknowledge", json={"ackIds": cursor["ack"]})
-        resp = http.post(f"{PUBSUB}/{subscription}:pull", json={"maxMessages": size})
+        try:
+            resp = http.post(
+                f"{PUBSUB}/{subscription}:pull", json={"maxMessages": size}, timeout=PULL_WAIT
+            )
+        except httpx.ReadTimeout:
+            # An empty subscription holds the pull open and sends nothing. A
+            # connect, write or pool timeout is Pub/Sub out of reach, and says so.
+            return FetchResult()
         resp.raise_for_status()
         received = resp.json().get("receivedMessages") or []
         ids = [m["ackId"] for m in received if m.get("ackId")]
         if ids:
-            # Long enough to be acknowledged by the next cycle, not redelivered first.
             held = http.post(
                 f"{PUBSUB}/{subscription}:modifyAckDeadline",
                 json={"ackIds": ids, "ackDeadlineSeconds": ACK_DEADLINE},
@@ -105,7 +113,21 @@ def _pull(
         json.loads(base64.b64decode((m.get("message") or {}).get("data") or b"e30="))
         for m in received
     ]
-    return FetchResult(records=records, cursor={"ack": ids}, more=len(received) == size)
+    # A pull may return fewer than maxMessages while more wait, so only an
+    # empty one ends the run.
+    ack = partial(_acknowledge, subscription, token, ids) if ids else None
+    return FetchResult(records=records, more=bool(received), commit=ack)
+
+
+def _acknowledge(subscription: str, token: str, ids: list[str]) -> None:
+    """Called by the run loop once the page is stored. A refusal or a lost
+    connection is not fatal: the message comes back and loads once, by its
+    insertId."""
+    with (
+        contextlib.suppress(httpx.HTTPError),
+        client({"Authorization": f"Bearer {token}"}) as http,
+    ):
+        http.post(f"{PUBSUB}/{subscription}:acknowledge", json={"ackIds": ids})
 
 
 CONNECTOR = GCPAuditConnector()

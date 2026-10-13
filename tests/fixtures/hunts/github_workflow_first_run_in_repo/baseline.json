@@ -1,17 +1,19 @@
 [
   {
     "_document_id": "hunt-gh-wf-base",
-    "action": "workflow_run.requested",
+    "action": "workflow_run.completed",
     "actor": "ci-bot",
     "org": "acme",
     "repo": "acme/payments",
     "webhook": {
       "event": "workflow_run",
-      "action": "requested"
+      "action": "completed"
     },
     "workflow_run": {
       "name": "CI",
-      "path": ".github/workflows/build2.yml"
+      "path": ".github/workflows/build2.yml",
+      "status": "completed",
+      "conclusion": "success"
     }
   }
 ]

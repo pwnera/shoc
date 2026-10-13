@@ -53,7 +53,7 @@ def rows_of(source: str, path: Path, limit: int) -> tuple[list[dict[str, Any]], 
                 problems.append(f"{file.name}: a record is {type(record).__name__}, not an object")
                 continue
             try:
-                rows.append(mapping.map_record(record, "probe"))
+                rows.extend(mapping.map_records(record, "probe"))
             except Exception as exc:
                 problems.append(f"{file.name}: {type(exc).__name__}: {exc}")
     return rows, problems

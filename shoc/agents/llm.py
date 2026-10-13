@@ -9,10 +9,13 @@ dataclass, and retry once with the validation error before giving up.
 
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import copy
 import json
 import re
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -46,21 +49,59 @@ ANTHROPIC_API = "https://api.anthropic.com"
 # row left a case as needs_human with nothing wrong in it, so they are retried.
 RETRY_STATUSES = frozenset({408, 429, 500, 502, 503, 504, 520, 522, 524, 529})
 RETRY_DELAYS = (2.0, 10.0)
+# Every try of one call together, well inside the worker's watchdog: three
+# full read timeouts in a row used to outlast it and kill the worker.
+CALL_SECONDS = 600.0
+
+# When every model call made inside `limit` gives up (monotonic seconds), so a
+# caller with less time than CALL_SECONDS, `ask` or a page's wording, is not
+# outlived by its own call. 0 is no limit beyond CALL_SECONDS.
+_GIVE_UP: contextvars.ContextVar[float] = contextvars.ContextVar("shoc_llm_give_up", default=0.0)
+
+
+@contextlib.contextmanager
+def limit(seconds: float) -> Iterator[None]:
+    """Every model call inside gives up `seconds` from now, or sooner if an
+    outer `limit` says so; each try of each call included."""
+    at = time.monotonic() + max(0.0, seconds)
+    outer = _GIVE_UP.get()
+    token = _GIVE_UP.set(min(at, outer) if outer else at)
+    try:
+        yield
+    finally:
+        _GIVE_UP.reset(token)
 
 
 def _post(url: str, payload: dict[str, Any], headers: dict[str, str]) -> dict[str, Any]:
-    """POST and decode, retrying a busy or timed-out provider with backoff."""
+    """POST and decode, retrying a busy provider with backoff, within CALL_SECONDS
+    or the caller's `limit`, whichever ends first.
+
+    A read that timed out has already waited as long as one answer may take, so
+    it is not tried again.
+    """
+    give_up = time.monotonic() + CALL_SECONDS
+    if bounded := _GIVE_UP.get():
+        give_up = min(give_up, bounded)
     for delay in (*RETRY_DELAYS, None):
+        left = give_up - time.monotonic()
+        if left <= 0:
+            raise TimeoutError("the model call ran out of the time it was given")
+        last = delay is None or left <= delay
         try:
-            with httpx.Client(timeout=TIMEOUT) as http:
+            timeout = httpx.Timeout(
+                max(0.1, min(TIMEOUT.read or left, left)), connect=min(10.0, left)
+            )
+            with httpx.Client(timeout=timeout) as http:
                 resp = http.post(url, json=payload, headers=headers)
-            if resp.status_code not in RETRY_STATUSES or delay is None:
+            if resp.status_code not in RETRY_STATUSES or last:
                 resp.raise_for_status()
                 return resp.json()
+        except httpx.ReadTimeout:
+            raise
         except httpx.TransportError:
-            if delay is None:
+            if last:
                 raise
-        time.sleep(delay)
+        time.sleep(delay or 0)
     raise AssertionError("unreachable")
 
 
@@ -435,6 +476,10 @@ class OpenAIResponsesClient(OpenAICompatibleClient):
             "max_output_tokens": max_tokens,
             "input": _responses_input(turns),
         }
+        # OpenAI keeps every /responses call unless told not to; gateways such as Kie
+        # may reject the unknown field, so it goes to OpenAI only (AGT-5).
+        if httpx.URL(self.base_url).host == "api.openai.com":
+            payload["store"] = False
         if tools:
             payload["tools"] = [
                 {
@@ -681,6 +726,11 @@ def _shorten(turns: list[Turn]) -> None:
         )
 
 
+def _late(deadline: float) -> bool:
+    """Whether a turn's time is up. 0 is no deadline."""
+    return bool(deadline) and time.time() >= deadline
+
+
 def _converse(
     client: LLMClient,
     system: str,
@@ -693,21 +743,24 @@ def _converse(
     token_budget: int = 0,
     outside: Any = None,
     max_calls: int = MAX_TOOL_CALLS,
+    deadline: float = 0.0,
 ) -> Completion:
     """Talk until the agent stops asking for things, or runs out of lookups.
 
-    The agent gets the last word either way: when the lookups, or the tokens
-    of `token_budget`, are spent it is told so and asked for its answer,
-    rather than being cut off mid-thought with nothing to record. `outside`
-    returns what was spent elsewhere on this turn's behalf — the colleagues
-    it asked — which counts against the same budget.
+    The agent gets the last word either way: when the lookups, the tokens of
+    `token_budget` or the time before `deadline` (epoch seconds) are spent it is
+    told so and asked for its answer, rather than being cut off mid-thought with
+    nothing to record. `outside` returns what was spent elsewhere on this turn's
+    behalf — the colleagues it asked — which counts against the same budget.
     """
     bill = Completion(model=getattr(client, "model", ""))
     if not (tools and invoke):
         return bill.plus(_complete(client, system, turns, max_tokens, None, schema))
     calls = 0
     for _ in range(max(1, max_steps)):
-        if token_budget and bill.tokens + (outside() if outside else 0) >= token_budget:
+        if _late(deadline) or (
+            token_budget and bill.tokens + (outside() if outside else 0) >= token_budget
+        ):
             break
         _shorten(turns)
         completion = _complete(client, system, turns, max_tokens, tools, schema)
@@ -733,17 +786,19 @@ def _converse(
             answer = invoke(call)
             bill.seen.append(answer)
             turns.append(Turn("tool", answer, call_id=call.id))
-        if calls >= max_calls or (
-            token_budget and bill.tokens + (outside() if outside else 0) >= token_budget
+        if (
+            calls >= max_calls
+            or _late(deadline)
+            or (token_budget and bill.tokens + (outside() if outside else 0) >= token_budget)
         ):
             break
     _shorten(turns)
     turns.append(
         Turn(
             "user",
-            "You have used every lookup this case pays for. Do not call another "
-            "tool. Answer now from what you have, and say in your reasoning what "
-            "you could not check.",
+            "This turn's lookups are spent (calls, tokens or time). Do not call "
+            "another tool. Answer now from what you have, and say in your reasoning "
+            "what you could not check.",
         )
     )
     # The tools stay declared: a history that holds tool calls is refused by the
@@ -763,15 +818,51 @@ def complete_typed(
     token_budget: int = 0,
     outside: Any = None,
     max_calls: int = MAX_TOOL_CALLS,
+    deadline: float = 0.0,
+    timeout: float = CALL_SECONDS,
 ) -> tuple[Any, Completion]:
     """Ask for JSON matching `schema_type`, validate it, and retry once on failure.
 
     With `tools` and `invoke`, the agent may look things up before it answers:
     it is handed the capabilities its role is allowed to call, the answers come
     back as data, and only then is the typed reply parsed. Without them this is
-    the single round trip it always was. Past `token_budget` tokens it looks
-    nothing more up.
+    the single round trip it always was. Past `token_budget` tokens or
+    `deadline` it looks nothing more up. An invalid answer is asked for once
+    more even past `deadline`: one call, which `_post` bounds, keeps the turn's
+    work where a re-raise would count as the provider failing. Every model call
+    of the turn, that retry included, gives up `timeout` seconds from now.
     """
+    with limit(timeout):
+        return _typed(
+            client,
+            system,
+            prompt,
+            schema_type,
+            max_tokens,
+            tools,
+            invoke,
+            max_steps,
+            token_budget,
+            outside,
+            max_calls,
+            deadline,
+        )
+
+
+def _typed(
+    client: LLMClient,
+    system: str,
+    prompt: str,
+    schema_type: type,
+    max_tokens: int,
+    tools: list[ToolSpec] | None,
+    invoke: Any,
+    max_steps: int,
+    token_budget: int,
+    outside: Any,
+    max_calls: int,
+    deadline: float,
+) -> tuple[Any, Completion]:
     schema = dataclass_schema(schema_type)
     instruction = (
         f"{prompt}\n\n"
@@ -796,6 +887,7 @@ def complete_typed(
         token_budget,
         outside,
         max_calls,
+        deadline,
     )
     try:
         # A field the schema does not have is dropped, not fatal: the schema is
@@ -810,7 +902,12 @@ def complete_typed(
             system,
             [
                 *turns,
-                Turn("assistant", completion.text[:2000]),
+                # Never empty: the Anthropic API refuses an empty assistant
+                # turn with a 400, and a last step of only tool calls has no text.
+                Turn(
+                    "assistant",
+                    completion.text[:2000].strip() or "(no answer, only tool calls)",
+                ),
                 Turn("user", f"That was not valid: {exc}. Reply with JSON only."),
             ],
             max_tokens,

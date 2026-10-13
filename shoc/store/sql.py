@@ -64,6 +64,19 @@ FIXUPS: dict[str, tuple[tuple[re.Pattern[str], str], ...]] = {
 }
 
 
+# Nodes that write, wherever they sit in the tree.
+WRITE_NODES = (
+    exp.Insert,
+    exp.Delete,
+    exp.Update,
+    exp.Merge,
+    exp.Create,
+    exp.Drop,
+    exp.Command,
+    exp.Into,
+)
+
+
 def translate(canonical_sql: str, dialect: str, limit: int | None = None) -> str:
     """Parse canonical SQL and write it in `dialect`, keeping placeholders.
 
@@ -76,7 +89,12 @@ def translate(canonical_sql: str, dialect: str, limit: int | None = None) -> str
         statements = [s for s in sqlglot.parse(canonical_sql) if s is not None]
     except ParseError as exc:
         raise StoreError(f"could not parse canonical SQL: {exc}") from exc
-    if len(statements) != 1 or not isinstance(statements[0], exp.Query):
+    if (
+        len(statements) != 1
+        or not isinstance(statements[0], exp.Query)
+        # A CTE that deletes, or SELECT ... INTO, writes under a SELECT.
+        or statements[0].find(*WRITE_NODES) is not None
+    ):
         raise StoreError("the event store reads one SELECT at a time; this is not one")
     tree = statements[0]
     if limit is not None:
@@ -143,16 +161,36 @@ def _bigquery(node: exp.Expression) -> exp.Expression:
                 this="REPLACE",
                 expressions=[pattern, exp.Literal.string(old), exp.Literal.string(new)],
             )
-        return type(node.this)(this=node.this.this, expression=pattern)
-    if isinstance(node, exp.JSONExtractScalar) and isinstance(node.expression, exp.JSONPath):
-        # Its JSONPath brackets a key with a character outside `\w` in single
-        # quotes, which SQLGlot drops: `$.a['x-amz-acl']`.
-        keys = [k.name for k in node.expression.expressions if isinstance(k, exp.JSONPathKey)]
-        path = "$" + "".join(
-            f".{k}" if re.fullmatch(r"\w+", k, re.ASCII) else f"['{k}']" for k in keys
+        # transform() does not descend into a node it replaced, so the left
+        # side is rewritten here: `|contains` on an object reads its JSON text.
+        return type(node.this)(this=node.this.this.transform(_bigquery), expression=pattern)
+    if isinstance(node, exp.JSONExtractScalar):
+        path = node.expression
+        if isinstance(path, exp.JSONPath):
+            # Its JSONPath brackets a key with a character outside `\w` in single
+            # quotes, which SQLGlot drops: `$.a['x-amz-acl']`.
+            keys = [k.name for k in path.expressions if isinstance(k, exp.JSONPathKey)]
+            text = "$" + "".join(
+                f".{k}" if re.fullmatch(r"\w+", k, re.ASCII) else f"['{k}']" for k in keys
+            )
+            path = exp.Literal.string(text)
+
+        def call(name: str, *args: exp.Expression) -> exp.Expression:
+            return exp.Anonymous(this=name, expressions=list(args))
+
+        def extract(name: str) -> exp.Expression:
+            return call(name, node.this.copy(), path.copy())
+
+        # JSON_EXTRACT_SCALAR reads an object or array as NULL; every other
+        # dialect returns its JSON text, which `|re` and `|contains` search and
+        # `|exists: false` reads as present (wh-3). JSON null stays NULL.
+        kind = exp.In(
+            this=call("JSON_TYPE", extract("JSON_EXTRACT")),
+            expressions=[exp.Literal.string("object"), exp.Literal.string("array")],
         )
-        return exp.Anonymous(
-            this="JSON_EXTRACT_SCALAR", expressions=[node.this, exp.Literal.string(path)]
+        return exp.Case(
+            ifs=[exp.If(this=kind, true=call("TO_JSON_STRING", extract("JSON_EXTRACT")))],
+            default=extract("JSON_EXTRACT_SCALAR"),
         )
     if isinstance(node, exp.TimeToUnix):
         return exp.Anonymous(this="UNIX_SECONDS", expressions=[node.this])
@@ -188,4 +226,9 @@ def bind(sql: str, params: dict[str, Any] | None, dialect: str) -> tuple[str, An
 def prepare(
     canonical_sql: str, params: dict[str, Any] | None, dialect: str, limit: int | None = None
 ) -> tuple[str, Any]:
+    # Read from the canonical `:name`s, so BigQuery refuses a missing one too:
+    # its `@name` cannot be told from an `@` in a literal once translated (wh-16).
+    missing = {n for n in PLACEHOLDER.findall(canonical_sql) if n not in (params or {})}
+    if missing:
+        raise StoreError(f"missing query parameter(s): {', '.join(sorted(missing))}")
     return bind(translate(canonical_sql, dialect, limit), params, dialect)

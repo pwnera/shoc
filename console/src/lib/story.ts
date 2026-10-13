@@ -4,6 +4,7 @@
  * events, crew decisions and actions; nothing here asks the kernel for more.
  */
 import { fieldWord } from "@/lib/explore";
+import { bare, isAwsKey } from "@/lib/entity";
 import { actionLabel } from "@/lib/labels";
 import type { Action, Case, CaseFinding, Finding, OcsfEvent, OpenspaceMessage, Severity } from "@/types";
 
@@ -61,7 +62,11 @@ export function timeline(
   return moments.filter((m) => m.at).sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
 }
 
-/** Left to right: where from, who, with what, in which account, on what. */
+/**
+ * Left to right: where from, who, with what, in which account, on what. The key
+ * lane holds sign-in sessions too: a value that is not an AWS access key id is
+ * the node `session:<id>`, the kernel's key for it.
+ */
 export const LAYERS = ["ip", "user", "key", "account", "resource"] as const;
 export type Layer = (typeof LAYERS)[number];
 export const COLUMNS: Record<Layer, keyof OcsfEvent> = {
@@ -131,7 +136,7 @@ export function attackGraph(
     for (const kind of LAYERS) {
       const value = event[COLUMNS[kind]];
       if (value === null || value === undefined || value === "" || value === "-") continue;
-      const id = `${kind}:${value}`;
+      const id = `${kind === "key" && !isAwsKey(String(value)) ? "session" : kind}:${value}`;
       const node = nodes.get(id) ?? { id, kind, label: String(value), events: 0, weight: 0, uids: [] };
       node.events += 1;
       node.weight = node.events;
@@ -163,15 +168,14 @@ export function attackGraph(
 
   const byLabel = new Map<string, Node[]>();
   for (const node of nodes.values()) byLabel.set(node.label, [...(byLabel.get(node.label) ?? []), node]);
-  const strip = (key: string) => key.replace(/^(user|key|ip|resource|account|host):/, "");
   for (const finding of findings)
-    for (const node of byLabel.get(strip(finding.entity_key)) ?? [])
+    for (const node of byLabel.get(bare(finding.entity_key)) ?? [])
       if (!node.severity || SEVERITY.indexOf(finding.severity) > SEVERITY.indexOf(node.severity))
         node.severity = finding.severity;
   for (const action of actions) {
     const overlay = action.state === "done" && action.dry_run ? "planned" : OVERLAY[action.state];
     if (!overlay) continue;
-    for (const node of byLabel.get(strip(action.target)) ?? [])
+    for (const node of byLabel.get(bare(action.target)) ?? [])
       // A pending decision outranks history: it is the one thing still to do.
       if (!node.overlay || overlay === "pending" || (overlay === "done" && node.overlay !== "pending"))
         node.overlay = overlay;
@@ -184,6 +188,6 @@ export function attackGraph(
       const [top, n] = [...counts].sort((a, b) => b[1] - a[1])[0] ?? ["", 0];
       return { ...edge, label: top ? (n > 1 ? `${top} ×${n}` : top) : "" };
     }),
-    keyLane: keys.length && keys.every((n) => /^(AKIA|ASIA)[A-Z0-9]{16}$/.test(n.label)) ? "KEY" : "SESSION",
+    keyLane: keys.length && keys.every((n) => isAwsKey(n.label)) ? "KEY" : "SESSION",
   };
 }

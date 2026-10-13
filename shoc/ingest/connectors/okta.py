@@ -7,8 +7,11 @@ not to build requests from the `after` value inside it.
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 from urllib.parse import urlsplit
+
+import httpx
 
 from shoc.errors import ConfigError
 from shoc.ingest.connectors.base import Asset, FetchResult, client, since_default
@@ -28,7 +31,8 @@ class OktaConnector:
         token = secret.get("api_token")
         if not org_url or not token:
             raise ConfigError("okta: settings need org_url and the secret needs api_token")
-        since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        # Polling goes on from the `next` link: no overlap (D164).
+        since = since_default(cursor, settings, timedelta(0))
         size = min(int(limit), 1000)
         # A cursor from before the link was kept whole still holds `after`.
         link = cursor.get("next") or (
@@ -44,7 +48,7 @@ class OktaConnector:
                 resp = http.get(f"{org_url}/api/v1/logs", params={"limit": size, "since": since})
             resp.raise_for_status()
             records = resp.json() or []
-            nxt = _next_link(resp.headers.get_list("link"), org_url)
+            nxt = _next_link(resp, org_url)
         newest = max(
             [str(r.get("published", "")) for r in records] + [str(cursor.get("newest") or since)]
         )
@@ -82,7 +86,7 @@ class OktaConnector:
                             },
                         )
                     )
-                link = _next_link(resp.headers.get_list("link"), org_url)
+                link = _next_link(resp, org_url)
             resp = http.get(f"{org_url}/api/v1/zones")
             resp.raise_for_status()
             for zone in resp.json() or []:
@@ -102,13 +106,10 @@ class OktaConnector:
         return out
 
 
-def _next_link(links: list[str], org_url: str) -> str | None:
-    """The RFC 5988 `next` link, kept only when it points back at the org."""
-    for link in links:
-        if 'rel="next"' in link:
-            url = link.split(";", 1)[0].strip().strip("<>")
-            return url if url.startswith(f"{org_url}/") else None
-    return None
+def _next_link(resp: httpx.Response, org_url: str) -> str | None:
+    """The RFC 8288 `next` link, kept only when it points back at the org."""
+    url = resp.links.get("next", {}).get("url", "")
+    return url if url.startswith(f"{org_url}/") else None
 
 
 CONNECTOR = OktaConnector()

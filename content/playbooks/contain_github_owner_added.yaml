@@ -23,7 +23,7 @@ example: |
   disposition: malicious, because the new owner used the role at once to bring in an outside account.
 trigger:
   verdict: [malicious]
-  severity_at_least: high
+  severity_at_least: medium
   min_confidence: 0.8
 steps:
   - name: page the on-call engineer
@@ -37,5 +37,5 @@ steps:
     action: github.demote_org_owner
     optional: true
     params:
-      user: "{{ entity.resource }}"
-      org: "{{ entity.account }}"
+      user: "{{ rule.github_member_role_elevated.resource }}"
+      org: "{{ rule.github_member_role_elevated.account }}"

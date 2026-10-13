@@ -74,3 +74,37 @@ def test_anything_researchable_buys_a_turn():
 def test_one_noisy_event_cannot_fill_the_prompt():
     events = [{"src_endpoint": {"ip": f"203.0.113.{i}"}} for i in range(100)]
     assert len(kinds(observables.of_case([], events), "ip")) == observables.MAX_PER_KIND
+
+
+def test_a_domain_follows_the_rule_report_extraction_keeps_it_by(monkeypatch):
+    """A newer gTLD is a domain; a file name in prose is not (DET-7, cti-3)."""
+    from shoc.detect import osint
+
+    monkeypatch.setattr(osint, "_LISTS", {})
+    events = [
+        {"dns": {"query": "login-verify.lol"}, "note": "ran stealer.py from the share"},
+        {"dns": {"query": "evil-panel.cc"}},
+    ]
+    assert kinds(observables.of_case([], events), "domain") == [
+        "login-verify.lol",
+        "evil-panel.cc",
+    ]
+
+
+def test_a_urls_lookup_is_found_where_it_was_cached(monkeypatch):
+    """A lookup is cached under scheme, host and path, never the query (DET-6)."""
+    from typing import Any, cast
+
+    url = "https://evil.example.test/Login?token=abc#top"
+    asked: list[list[str]] = []
+
+    def fetch_all(conn: Any, sql: str, params: tuple[str, list[str]]) -> list[dict[str, Any]]:
+        asked.append(params[1])
+        if "intel_lookups" not in sql:
+            return []
+        return [{"type": "url", "value": "https://evil.example.test/login", "verdict": "malicious"}]
+
+    monkeypatch.setattr(observables, "fetch_all", fetch_all)
+    [hit] = observables.known(cast(Any, None), "t1", [observables.Observable("url", url)])
+    assert "https://evil.example.test/login" in asked[1]
+    assert hit["from"] == "lookup" and hit["value"] == url, "named as the case names it"

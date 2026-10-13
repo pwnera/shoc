@@ -8,8 +8,8 @@ versioned YAML file, so a rule written once works across all of them.
 
 | Source | Settings | Secret | What it reads |
 | --- | --- | --- | --- |
-| `aws_cloudtrail` | optional `region` (one or a list; default every enabled region), `backfill_hours`; or `bucket`, optional `prefix` and `bucket_region` | `access_key_id`, `secret_access_key`, optional `session_token` | `LookupEvents`, or the trail's log files in S3 |
-| `aws_guardduty` | optional `region` (one or a list; default every enabled region), optional `detector_ids` (one region only) | same as CloudTrail | findings, updated since the cursor |
+| `aws_cloudtrail` | optional `region` (one or a list; default every enabled region), `backfill_hours`; or `bucket`, optional `prefix` and `bucket_region`; optional `role_arn` and `external_id` ([one role per account](#one-role-per-aws-account)) | `access_key_id`, `secret_access_key`, optional `session_token` | `LookupEvents`, or the trail's log files in S3 |
+| `aws_guardduty` | optional `region` (one or a list; default every enabled region), optional `detector_ids` (one region only), optional `role_arn` and `external_id` | same as CloudTrail | findings, updated since the cursor |
 | `azure_activity` | `subscription_id` (one or a list), `backfill_hours` | `tenant_id`, `client_id`, `client_secret` | Activity Log management events |
 | `gcp_audit` | `subscription` (`projects/<p>/subscriptions/<s>`), or `project_id` for the fallback | `client_email`, `private_key` | a Pub/Sub subscription on an audit-log sink, or Cloud Logging `entries.list` |
 | `okta` | `org_url` | `api_token` | `/api/v1/logs` |
@@ -20,11 +20,11 @@ versioned YAML file, so a rule written once works across all of them.
 | `defender_hunting` | `storage_account`, optional `tables` (default DeviceProcessEvents, DeviceNetworkEvents, DeviceFileEvents, DeviceLogonEvents, DeviceRegistryEvents, DeviceEvents, EmailEvents, EmailUrlInfo, UrlClickEvents, IdentityLogonEvents, CloudAppEvents), `backfill_hours` | `tenant_id`, `client_id`, `client_secret` | Advanced Hunting tables the Defender XDR Streaming API exports to a storage account |
 | `crowdstrike` | `cloud` (`eu-1`, `us-1`, `us-2`, `us-gov-1`) | `client_id`, `client_secret` | Falcon Alerts API |
 | `crowdstrike_fdr` | `queue_url`, optional `event_names` (`["*"]` for every event) | `access_key_id`, `secret_access_key` from the FDR feed | Falcon Data Replicator: raw sensor events from the SQS queue and S3 bucket CrowdStrike provisions |
-| `sentinelone` | `console_url` | `api_token` | `/web/api/v2.1/threats`, and Unified Alert Management (STAR, identity and cloud alerts) |
+| `sentinelone` | `console_url`, optional `stream` (`threats`, `alerts`, or a list; default both) | `api_token` | `/web/api/v2.1/threats`, and Unified Alert Management (STAR, identity and cloud alerts) |
 | `sentinelone_cloudfunnel` | `bucket`, optional `prefix` (default `s1/cloud_funnel`), `bucket_region`, `event_categories`, `backfill_hours` | `access_key_id`, `secret_access_key`, optional `session_token` | Cloud Funnel 2.0 telemetry in your S3 bucket |
 | `github` | `org` | `token` | organisation audit log (GitHub Enterprise Cloud only; other plans push a [webhook](#github-on-the-free-and-team-plans)) |
 | `gitlab` | optional `group`, `base_url` | `token` | audit events of the group, every group below it and all their projects, or of the instance; each named by its audit event type (`member_updated`, `deploy_key_added`) |
-| `wazuh` | `indexer_url`, optional `index`, `verify_tls` | `username`, `password` | `wazuh-alerts-*` in the Wazuh indexer |
+| `wazuh` | `indexer_url`, optional `index`, `ca_cert` (the PEM text of Wazuh's `root-ca.pem`, so a self-signed indexer is trusted; it overrides `verify_tls`), `verify_tls` | `username`, `password` | `wazuh-alerts-*` in the Wazuh indexer |
 | `cloudflare` | `account_id` | `api_token` | account audit log (Audit Logs v2) |
 | `cloudflare_logs` | `bucket`, `datasets` (dataset → the job's path, e.g. `{"http_requests": "logs/http", "gateway_dns": "zt/dns"}`), `account_id` for R2 or `bucket_region` for S3, `backfill_hours` | `access_key_id`, `secret_access_key` (an R2 API token's S3 credentials, or AWS keys) | Logpush jobs' files in R2 or S3: HTTP requests, firewall events, DNS, Gateway DNS/HTTP/network, Access requests, Zero Trust sessions, audit logs |
 | `tailscale` | optional `tailnet` (default `-`, the credential's own) | `client_id`, `client_secret` of an OAuth client, or an `api_key` access token | configuration audit log |
@@ -35,9 +35,18 @@ versioned YAML file, so a rule written once works across all of them.
 
 A setting that picks a stream takes one value or a list: a Workspace
 application, an Entra log, an M365 content type, an AWS region, an Azure
-subscription. Each stream keeps its own cursor, and one that fails is reported
-while the others go on loading. Entra sign-in logs need an Entra ID P1 or P2
-licence; without one, set `stream` to `directoryAudits`. Risk detections and risky
+subscription. Each stream keeps its own cursor, and one that fails does not
+hold the others back. Its error goes to the source's `last_error`, and names the
+fix: `set <setting> to a list without <stream>`. The source still counts as
+pulled: `last_ok_at` advances, health does not mark it stale, `source sync`
+answers with what it read instead of failing, `source configure` reports the
+credential as working with the stream's error after it, and Ops raises
+`source.partial` (medium) rather than `source.failing`. Entra sign-in logs need
+an Entra ID P1 or P2 licence; without one, set `stream` to `directoryAudits`.
+Without P1, the Microsoft 365 audit feed's `UserLoginFailed` records still feed
+`m365_sign_in_failure_burst` (a spray from one address),
+`m365_password_guessing_one_user` (one account from many addresses) and
+`m365_mfa_denied_burst` (MFA failures for one user). Risk detections and risky
 users need P1 or P2, and carry their risk level only on P2.
 
 GitLab keeps an audit event with the group or project it happened in, and a
@@ -91,12 +100,57 @@ place in each blob and reads what was appended since. Alerts are read by
 `defender` from Graph, so AlertInfo and AlertEvidence are only read when named
 in `tables`.
 
+`entra`, `m365`, `defender`, `defender_hunting` and `azure_activity` take the
+same three secret keys. Give them one app registration that holds every
+permission they need, and have each name the same variables in `shoc.yaml`, so
+the client secret lives in one place:
+
+```yaml
+sources:
+  - source: entra
+    secret_env: &microsoft
+      tenant_id: SHOC_SECRET_MS_TENANT_ID
+      client_id: SHOC_SECRET_MS_CLIENT_ID
+      client_secret: SHOC_SECRET_MS_CLIENT_SECRET
+  - source: m365
+    secret_env: *microsoft
+  - source: defender
+    secret_env: *microsoft
+```
+
+A Microsoft client secret expires, after two years at most. shoc does not read
+the expiry date, so note it when you create the secret. To rotate, put the new
+value in `SHOC_SECRET_MS_CLIENT_SECRET` and run `shoc apply`; `plan` shows each
+source as `credential differs`. A secret that expires first makes every source
+that uses it report that it rejected the credential, and the daily exception
+report lists "Replace <source>'s credential" for each one. A source configured from the console or with
+`source configure` keeps its own copy, which has to be replaced on its own.
+
+Microsoft 365 needs unified audit logging on (Microsoft Purview → Audit). shoc
+starts the Management Activity API's content subscriptions itself, on
+Microsoft's first `AF20022` answer. Microsoft publishes content only from the
+subscription's start, so `backfill_hours` reaches no further back than that,
+and the first events can take up to 12 hours to appear. A Teams message that
+lists two or more links in `MessageURLs` is stored as one row per link, so every
+link is matchable in `http_request_url`: the first row keeps the record's `Id`
+as its `event_uid` and the others add `-1`, `-2` and so on. A rule that counts
+messages counts distinct `event_uid` without that suffix.
+
 ```bash
 shoc source configure --source entra \
   --settings '{"stream": "directoryAudits"}' \
   --secret-file ./entra.json        # or --secret-file - to read stdin
 shoc source sync --source entra
 shoc source list
+```
+
+On Docker there is no `shoc` on the host. Run each command on this page from
+`deploy/` as `docker compose run --rm -T shoc …`, and hand a secret in on stdin,
+because the container cannot read a path on the host:
+
+```bash
+docker compose run --rm -T shoc source configure --source entra \
+  --settings '{"stream": "directoryAudits"}' --secret-file - < entra.json
 ```
 
 `--secret '{…}'` works too, but a credential on a command line is a credential
@@ -118,6 +172,16 @@ permission has been granted; `--no-verify` skips the check. The check reads one
 record and leaves the stored cursor alone, so the first scheduled sync still
 starts from the backfill window. `shoc source sync`
 exits non-zero when a pull fails, so a cron job or a CI step notices.
+
+An error names the vendor's own code beside the status, for example
+`(403, AccessDenied)`, and the permission hint appears only for an
+access-denied code or when the vendor gave none. AWS throttling (a 400
+`ThrottlingException`) reads as rate limiting, and the next cycle retries.
+`RequestTimeTooSkewed` or "Signature expired" reads as "check the clock of the
+host shoc runs on". Graph's
+`Authentication_RequestFromNonPremiumTenantOrB2CTenant` reads as "sign-in logs
+need Entra ID P1". A pull that read only part of what it was asked for says
+`Not all of it was read: <error>`.
 
 A second account of the same vendor is its own source, named after the
 connector and a label: `cloudflare:acme`. It has its own settings, credential,
@@ -143,25 +207,106 @@ retention drops them.
 Cursors survive restarts: each connector stores where it got to in
 `shoc.connector_state`. While a connector follows a provider's page token, its
 time window stays where the walk began, because the token belongs to that
-window. Once the pages run out, the next poll starts at the newest event read,
-with no overlap. The first poll has no event to start from and reads
-`backfill_hours` back (24 by default).
+window. The first poll has no event to start from and reads `backfill_hours`
+back (24 by default).
 
-Where the vendor documents how late its events arrive, a poll stops that far
-behind now, so an event delivered late is still after the next poll's start:
-Google Workspace per application (5 minutes for admin, login and drive, 3 hours
-for OAuth tokens), CloudTrail `LookupEvents` 5 minutes, the Azure Activity Log
-20 minutes and Cloud Logging `entries.list` 10 minutes (D154). The other sources
-document no figure and read up to now, so an event one of them delivers after a
-newer one was read is never ingested. A filter that includes its start reads the
-newest event again; each run keeps a digest of the `event_uid` and time of every
-row it read and stored, and the next run sends the store only the rows it lacks,
-so that re-read costs a warehouse nothing (D150). `events_seen` counts only the
-rows that were new. GuardDuty keeps a window per detector. Microsoft 365
-lists content by when it became available rather than by when the activity
-happened, so its cursor follows availability, in windows of at most 24 hours
+Where the vendor publishes how late its events arrive, a poll stops that far
+behind now and the next one starts at the newest event read, so an event
+delivered late is still after the next poll's start: Google Workspace per
+application (5 minutes for admin, login and drive, 3 hours for OAuth tokens),
+Entra sign-in and directory-audit logs 5 minutes (Microsoft's 99th percentile),
+CloudTrail `LookupEvents` 15 minutes (AWS gives about 5 as an average, not a
+bound), the Azure Activity Log 20 minutes and Cloud Logging `entries.list` 10
+minutes (D154, D164). The sources that poll by event time and publish no
+figure (GitHub, GuardDuty, Defender, CrowdStrike, SentinelOne, the Cloudflare
+API, GitLab, Stripe, OpenAI, Tailscale, Wazuh and Entra's risk streams) start
+each poll 15 minutes before the newest event they read, because a vendor can
+deliver an event after a newer one. Okta follows its own `next` link and needs
+neither. GuardDuty keeps a window per detector.
+
+Each run keeps a digest of the `event_uid` and time of every row it read and
+stored, and the next run sends the store only the rows it lacks, so the re-read
+costs vendor API calls and nothing else (D150). `events_seen` counts only the
+rows that were new. A row found in the re-read window that no earlier run had
+read arrived late; each stream counts them, and `health sources` shows the
+counts as `late_events`, so the window can be tuned from data. It also shows
+`skipped`, rows Postgres refused and the load left out, and `replaced`, events
+placed at ingest time because their own time was unreadable or implausible.
+
+Microsoft 365 lists content by when it became available rather than by when
+the activity happened, so its cursor follows availability, in windows of at most 24 hours
 and never more than 7 days back; content Microsoft publishes hours late is
-still in the next window.
+still in the next window. After an outage of more than a week, the source's
+`last_error` names the days that were not read, and the source still counts as
+reading.
+
+One run reads for at most 120 seconds or `max_pages` pages (20 by default).
+When the vendor still has more, `source sync` says "More to read; the rest is
+queued." and queues the rest as another `source.sync` job at once, unless one
+for that source is already waiting. A backlog then drains in jobs of two
+minutes each, and other jobs run between them. Detection wakes once, when the
+source has caught up; the scheduled cycle reads what loads in between.
+
+### One role per AWS account
+
+`aws_cloudtrail` (both modes) and `aws_guardduty` take `role_arn` and an
+optional `external_id`. With `role_arn` set, shoc calls `sts:AssumeRole` with
+the source's access key and reads with the role's session, which it renews five
+minutes before it expires. The stored key then needs only `sts:AssumeRole` on
+that role, and the role holds the read permissions in the
+[table below](#permissions-to-grant). One role in each member account stands in
+for one long-lived key per account. The role's trust policy names the IAM user
+that owns the key, and the external id when you set one:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": { "AWS": "arn:aws:iam::111122223333:user/shoc" },
+    "Action": "sts:AssumeRole",
+    "Condition": { "StringEquals": { "sts:ExternalId": "shoc-reader" } }
+  }]
+}
+```
+
+In Terraform, for a member account that shoc reads CloudTrail in:
+
+```hcl
+resource "aws_iam_role" "shoc_reader" {
+  name = "shoc-reader"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { AWS = "arn:aws:iam::111122223333:user/shoc" }
+      Action    = "sts:AssumeRole"
+      Condition = { StringEquals = { "sts:ExternalId" = "shoc-reader" } }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "shoc_reader" {
+  role = aws_iam_role.shoc_reader.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["cloudtrail:LookupEvents", "ec2:DescribeRegions"]
+      Resource = "*"
+    }]
+  })
+}
+```
+
+```bash
+shoc source configure --source aws_cloudtrail:prod \
+  --settings '{"role_arn": "arn:aws:iam::444455556666:role/shoc-reader", "external_id": "shoc-reader"}' \
+  --secret-file - < aws-base-key.json
+```
+
+For the bucket mode the role needs `s3:ListBucket` and `s3:GetObject` on the
+trail bucket instead; for GuardDuty, the GuardDuty read permissions.
 
 ### Onboarding
 
@@ -202,7 +347,7 @@ allows:
 | Entra ID | Graph application permissions `AuditLog.Read.All`, `Directory.Read.All`, and for Identity Protection `IdentityRiskEvent.Read.All`, `IdentityRiskyUser.Read.All` |
 | Google Workspace | Service account with domain-wide delegation for `https://www.googleapis.com/auth/admin.reports.audit.readonly`, and the Admin SDK API enabled in its Cloud project; `admin_email` is a user whose only admin role has the Reports privilege |
 | Microsoft 365 | `ActivityFeed.Read` on the Management API |
-| GitHub | Fine-grained token with organisation `Administration: read`; the audit-log API answers 404 unless the organisation is on GitHub Enterprise Cloud, so other plans send a webhook instead |
+| GitHub | Fine-grained token with organisation `Administration: read`; the audit-log API answers 404 unless the organisation is on GitHub Enterprise Cloud, so other plans send a webhook instead. An owner must also turn on source IP disclosure (Enterprise settings → Settings → Audit log → Source IP disclosure, or Organisation → Settings → Logs → Audit log → Settings → Enable source IP disclosure). It is off by default, and without it audit events carry no `actor_ip`, so `src_endpoint.ip` is empty |
 | GitLab | Token with `read_api` of a group Owner: a group access token with the Owner role, or an Owner's personal token. GitLab gives a member below Owner only their own actions in a group, and below Maintainer only their own in a project. Instance-wide events need an administrator |
 | Azure Activity Log | `Reader` on the subscription, granted to the same app registration as Entra ID |
 | GCP Cloud Audit | Service account with `roles/pubsub.subscriber` on the sink's subscription; `roles/logging.viewer` on the project for the `project_id` fallback |
@@ -210,7 +355,7 @@ allows:
 | Defender Advanced Hunting | `Storage Blob Data Reader` on the Streaming API's storage account |
 | CrowdStrike Falcon | API client with the `Alerts: read` scope |
 | CrowdStrike FDR | The key pair of an FDR feed; CrowdStrike scopes it to that feed's queue and bucket |
-| SentinelOne | Service-user API token with viewer rights |
+| SentinelOne | Service-user API token with viewer rights, and Unified Alert Management view access for the `alerts` stream |
 | SentinelOne Cloud Funnel | `s3:ListBucket` and `s3:GetObject` on the Cloud Funnel bucket |
 | Wazuh | Indexer user whose role reads `wazuh-alerts-*` (port 9200) |
 | Cloudflare | Account API token with `Account Settings: Read` |
@@ -254,14 +399,40 @@ one band, to medium, and a critical one stays critical. A Defender alert that
 Defender or an analyst classified as a false positive, expected activity or a
 security test before shoc read it is informational. Defender's `serviceSource`
 and Falcon's `product` go to `api.service.name`, so the endpoint rules leave out
-Office 365, Identity, Cloud Apps, Entra ID Protection and Falcon Identity alerts.
+Office 365, Identity, Cloud Apps, Entra ID Protection, App Governance, Purview
+DLP and Falcon Identity alerts. High and critical ones go to
+`edr_identity_or_email_alert` and medium ones to
+`edr_medium_identity_or_email_alert`; Defender for Cloud alerts go to
+`azure_vendor_alert`. A tenant that also connects the Microsoft 365 audit feed
+sees a high Defender for Office 365 or Cloud Apps alert from `m365_vendor_alert`
+as well.
+
+Defender, CrowdStrike and SentinelOne are polled on the alert's update time
+(`lastUpdateDateTime`, `updated_timestamp`, `updatedAt`), so each change to an
+alert is a row of its own, with the same `event_uid`, whose `time` is the
+update. The creation time stays in `raw` (`raw.createdDateTime`,
+`raw.created_timestamp`, `raw.threatInfo.createdAt` or `raw.detectedAt`). Each
+connector keeps the newest creation time it has read in its cursor (`created`),
+and a row whose alert was created at or before `created` less 15 minutes is
+marked `_update` and mapped to Detection Finding activity Update (`activity_id`
+2). The 15 minutes are the stretch a poll re-reads (D164), so an alert created
+just before `created` but listed late still reads as new. The alert rules skip
+activity Update, so a change to an alert opens no second finding, except a
+change to one created in those 15 minutes; the crew and `case.recheck` read the
+new state. SentinelOne's two APIs are streams of one
+source (`stream`), so a token Unified Alert Management refuses still reads
+threats, and the refusal shows as the source's error. The alerts stream needs a
+service user with Unified Alert Management view access.
 
 Falcon Data Replicator keeps process starts, DNS requests, network
 connections, logons, account changes, executable and script writes, scheduled
 tasks, service starts and autorun registry values by default; `event_names`
 changes that list and `["*"]` keeps everything FDR sends. FDR events carry no
 host name (it lives in the `aidmaster` inventory, which shoc skips), so rules
-and hunts on telemetry key on the device id.
+and hunts on telemetry key on the device id. The SQS queue is long-polled (20
+seconds a receive), and each data file is unpacked line by line as it
+downloads. A page reads whole messages until it holds `limit` events; a message
+it did not touch comes back on the queue after 30 minutes.
 
 Defender's Streaming API writes `AdditionalFields` as JSON text; the
 `defender_hunting` connector decodes it, so a rule can read
@@ -275,7 +446,23 @@ keeps process, command_script, logins, scheduled_task, driver, dns, ip, url,
 indicators, threat_intelligence_indicators and windows_event_logs by default
 and leaves out file, registry, module and cross_process; `all` keeps
 everything. The filter applies after download, so narrow the stream in
-SentinelOne's Cloud Funnel settings too.
+SentinelOne's Cloud Funnel settings too. A walk that stops at the record limit
+resumes listing after the last key it reached, and each new walk lists the day
+again from its start, so a file written later that sorts earlier is still
+found.
+
+A GCP Pub/Sub subscription is read until a pull comes back empty; a pull that
+waits more than 10 seconds on an empty subscription counts as empty. Each page
+is acknowledged once the run loop has stored it, and a page whose load failed is
+redelivered by Pub/Sub.
+
+Wazuh's installer makes its own certificate authority. Give `ca_cert` the PEM
+text of its `root-ca.pem` (under the installer's certificates on the indexer and
+the manager), and shoc trusts the certificates that authority signed and no
+other.
+`verify_tls: false` remains a fallback that sends the indexer password to
+whoever answers on the path, and `source configure` warns when it is set
+without a `ca_cert`.
 
 ## How each source is read
 
@@ -330,6 +517,19 @@ either. A release has no audit-log action and stays `release.<action>`;
 change as `team.add_repository`. A webhook carries no source address, so rules
 and questions that read `src_endpoint.ip` get nothing from it.
 
+On Postgres a delivery loads at once and detection reads it within a minute.
+On a warehouse backend the webhook answers 200 with `data.spooled`, keeps the
+delivery in Postgres (`shoc.push_spool`), and the events load when the next
+detection cycle starts, so the warehouse wakes once per cycle.
+
+A webhook row's time is when shoc received it. The time in GitHub's delivery id
+is kept as `raw.webhook.delivered_at` (milliseconds). A delivery whose id is
+dated more than three days back (GitHub's redelivery window) or more than five
+minutes ahead is refused with a 400 and loads nothing. A `push` delivery also
+carries `default_ref`, the repository's default branch as a full ref
+(`refs/heads/<name>`), which `github_force_push_to_default_branch` compares the
+pushed ref with.
+
 The webhook covers less than the audit log. GitHub sends no webhook for a
 classic personal access token, an SSH key, an OAuth app grant, a change to
 organisation settings or member roles, or a Git clone or push by token; those
@@ -365,10 +565,28 @@ pytest tests/unit/test_mappings_all.py -k fastly
 ```
 
 The run loop gives you cursors, batching, deduplication and health accounting;
-a connector only answers "what happened after this cursor?". Keep `since` where
-it was while a page token is in the cursor, and set it to the newest event time
-once the pages run out. If the vendor documents a delivery lag, end the window
-at `settled(cursor, LAG)` and keep `until` in the cursor while paging.
+a connector only answers "what happened after this cursor?". Take the window's
+start from `since_default(cursor, settings)`, which begins a new walk `OVERLAP`
+(15 minutes) before `since`, the newest event the last walk read. While a page
+token is in the cursor, hold the walk's start as `start`
+(`{**cursor, "start": since, "newest": newest, "page": page}`), so the next
+page keeps the filter its token came from. Compute `newest` from the records
+and `reached(cursor, since)`, which never falls behind where the last walk
+ended, and once the pages run out set `since` to the newest event read. If the
+vendor publishes a delivery lag, pass `since_default` no overlap, end the window
+at `settled(cursor, LAG)` and keep `until` in the cursor while paging. Return
+`str(cursor.get("since") or "")` in `FetchResult.since`, so the run loop can
+count what arrived late. `shoc new connector` writes exactly this. Set
+`more` on the `FetchResult` while the vendor has more to hand over. A vendor
+that wants what it handed over acknowledged (a Pub/Sub ack) gets it through
+`FetchResult.commit`, a callable the run loop calls only after the page is
+stored, so a page that failed to load is never acknowledged.
+
+Every vendor token, Google's included, sits in one cache in
+`connectors/base.py` (`client_token`, `cached`, `keep`). A 401 drops the token.
+A 403 drops it only when it was minted more than 15 minutes ago (`FRESH`), so a
+stream refused for a licence does not mint a new token on every run, and a
+permission granted since the token was minted takes effect within 15 minutes.
 
 A new platform also ships its own response actions under `shoc/actions/`, with
 `platforms` naming the product its rules carry; CI fails when a platform we
@@ -419,6 +637,28 @@ A rule then reads `unmapped.params.NEW_VALUE`,
 fields an item has; without it the item minus its key is written. A list of
 keys nests. The first item with a given name wins, and a character a rule path
 cannot hold becomes `_`.
+
+A record that holds several events in one list declares that list under
+`explode`, and each item becomes a row of its own:
+
+```yaml
+explode: events
+```
+
+Each row keeps the record's envelope with the list narrowed to its one item, so
+`events[0]` paths read the row's own item. The first row keeps the record's
+`event_uid` and the others add `-<position>`, so rows stored before a mapping
+gained `explode` still deduplicate. A record whose list has fewer than two
+items maps as one row. Google Workspace explodes `events`, so a save that turns
+off 2-step verification enforcement next to another setting is two rows, and
+Microsoft 365 explodes a Teams message's `MessageURLs`.
+
+An event time that does not parse, falls before 2000-01-01 or lies more than a
+day past ingest is stored as the ingest time, with the vendor's value kept in
+`unmapped._time_original` and in `raw`. Older but sane times, from a
+backfill or a late delivery, are kept as they are. NUL characters are removed
+from every mapped value, `raw` included, and a lone UTF-16 surrogate becomes
+U+FFFD, because Postgres refuses both.
 
 Supported conditions are `exists`, `equals`, `in`, `contains` and the numeric
 comparisons `gt`, `gte`, `lt`, `lte`. Later rules win, so numeric bands are

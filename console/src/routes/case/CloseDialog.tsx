@@ -3,13 +3,18 @@
  * never guessed when the crew had none), why, and for Expected and Rule was
  * wrong how long the crew should remember it (the kernel writes a memory for
  * those two only, and reads "none" as 90 days, so there is no "don't
- * remember"). Close confirms first, in a popover on the button; 1–4 pick the
- * disposition, and with no preset the choice holds the focus so they work at
- * once. Under 768px the four choices sit two by two.
+ * remember"). Close confirms first, in a popover on the button, and names
+ * every action still waiting on the case, which the close rejects. Closed as an
+ * attack with actions waiting, "Approve and close" approves and runs them first,
+ * since a closed case runs nothing. 1–4 pick the disposition, and with no
+ * preset the choice holds the focus so they work at once. Under 768px the four
+ * choices sit two by two.
  *
- * Capabilities used: case.close (its hook toasts what it rejected and links the memory).
+ * Capabilities used: case.close (its hook toasts what it rejected and links the
+ * memory); action.list, action.approve and action.run for what waits.
  */
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Field } from "@/components/ui/field";
@@ -17,10 +22,11 @@ import { Input, Label } from "@/components/ui/misc";
 import { Confirm, Popover } from "@/components/ui/pop";
 import { Seg } from "@/components/ui/seg";
 import { AutonomyBadge } from "@/components/ui/status";
+import { bare } from "@/lib/entity";
 import { shortId } from "@/lib/format";
-import { DISPOSITIONS } from "@/lib/labels";
-import { useCloseCase } from "@/lib/queries";
-import type { Case, Disposition, Verdict } from "@/types";
+import { DISPOSITIONS, actionLabel } from "@/lib/labels";
+import { useApprove, useCaseActions, useCloseCase, useRunAction } from "@/lib/queries";
+import type { Action, Case, Disposition, Verdict } from "@/types";
 
 const CHOICES = Object.entries(DISPOSITIONS).map(([value, label]) => ({ value: value as Disposition, label }));
 
@@ -40,6 +46,24 @@ const REMEMBER = [
 ];
 
 const remembers = (d: Disposition | "") => d === "benign_expected" || d === "false_positive";
+const attack = (d: Disposition | "") => d === "malicious" || d === "suspicious";
+
+/** What waits on a case: the kernel's close rejects these (`actions.reject_pending`). */
+const waits = (a: Action) => a.state === "proposed" || a.state === "approved";
+
+/** One warn badge per waiting action, three at most and a count. */
+function Waiting({ rows, verb }: { rows: Action[]; verb: string }) {
+  return (
+    <>
+      {rows.slice(0, 3).map((a) => (
+        <Badge key={a.action_uid} tone="warn">
+          {verb} {actionLabel(a.type)} · {bare(a.target)}
+        </Badge>
+      ))}
+      {rows.length > 3 ? <Badge tone="warn">+{rows.length - 3}</Badge> : null}
+    </>
+  );
+}
 
 export function CloseDialog({
   record,
@@ -52,11 +76,14 @@ export function CloseDialog({
   onClose: () => void;
 }) {
   const close = useCloseCase();
+  const approve = useApprove();
+  const run = useRunAction();
+  const waiting = (useCaseActions(record.case_uid).data?.rows ?? []).filter(waits);
   const [preset] = useState<Disposition | "">(() => chosen ?? PRESET[record.verdict] ?? "");
   const [disposition, setDisposition] = useState<Disposition | "">(preset);
   const [reason, setReason] = useState("");
   const [days, setDays] = useState("90");
-  const [asking, setAsking] = useState(false);
+  const [asking, setAsking] = useState<"close" | "act" | null>(null);
   const ready = Boolean(disposition) && Boolean(reason.trim());
   const form = useRef<HTMLFormElement>(null);
 
@@ -70,42 +97,62 @@ export function CloseDialog({
     if (/^(INPUT|TEXTAREA)$/.test(target.tagName) || !/^[1-4]$/.test(event.key)) return;
     const next = CHOICES[Number(event.key) - 1]!.value;
     setDisposition(next);
-    setAsking(false);
+    setAsking(null);
     // The focus follows the check, so only one choice looks picked.
     form.current?.querySelector<HTMLElement>(`[role="radio"][data-value="${next}"]`)?.focus();
   };
 
-  const footer = (
+  const closeAs = (as: Disposition) =>
+    close
+      .mutateAsync({
+        case_uid: record.case_uid,
+        disposition: as,
+        reason: reason.trim(),
+        ...(remembers(as) ? { remember_days: Number(days) } : {}),
+      })
+      .then(onClose);
+  // A closed case runs nothing, so what is approved here runs before the close.
+  const actThenClose = async (as: Disposition, rows: Action[]) => {
+    for (const a of rows) {
+      if (a.state === "proposed") await approve.mutateAsync(a.action_uid);
+      await run.mutateAsync(a);
+    }
+    await closeAs(as);
+  };
+
+  const confirm = (kind: "close" | "act", go: string) => (
     <Popover
-      open={asking}
-      onOpenChange={setAsking}
-      label="Close the case"
+      open={asking === kind}
+      onOpenChange={(open) => setAsking(open ? kind : null)}
+      label={go}
       align="end"
       trigger={(props) => (
-        <Button {...props} variant="primary" disabled={!ready}>
-          Close
+        <Button {...props} variant={kind === "close" ? "primary" : "default"} disabled={!ready}>
+          {go}
         </Button>
       )}
     >
       {disposition ? (
         <Confirm
           what={`Close ${shortId(record.case_uid)} as ${DISPOSITIONS[disposition]}`}
-          facts={<AutonomyBadge level="L2" />}
-          go="Close"
-          onConfirm={() =>
-            close
-              .mutateAsync({
-                case_uid: record.case_uid,
-                disposition,
-                reason: reason.trim(),
-                ...(remembers(disposition) ? { remember_days: Number(days) } : {}),
-              })
-              .then(onClose)
+          facts={
+            <>
+              <AutonomyBadge level="L2" />
+              <Waiting rows={waiting} verb={kind === "close" ? "rejects" : "runs"} />
+            </>
           }
-          onCancel={() => setAsking(false)}
+          go={go}
+          onConfirm={() => (kind === "close" ? closeAs(disposition) : actThenClose(disposition, waiting))}
+          onCancel={() => setAsking(null)}
         />
       ) : null}
     </Popover>
+  );
+  const footer = (
+    <>
+      {attack(disposition) && waiting.length ? confirm("act", "Approve and close") : null}
+      {confirm("close", "Close")}
+    </>
   );
 
   return (
@@ -116,7 +163,7 @@ export function CloseDialog({
         onKeyDown={onKeyDown}
         onSubmit={(event) => {
           event.preventDefault();
-          if (ready) setAsking(true);
+          if (ready) setAsking("close");
         }}
       >
         <Seg<Disposition | "">
@@ -127,7 +174,7 @@ export function CloseDialog({
           options={CHOICES}
           onChange={(next) => {
             setDisposition(next);
-            setAsking(false);
+            setAsking(null);
           }}
         />
         <Field label="Reason">

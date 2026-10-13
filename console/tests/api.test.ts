@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi, afterEach } from "vitest";
-import { ApiError, auth, call, callData, clearSignedOut, explain, markSignedOut, recheck, useSignedOut } from "@/lib/api";
+import { ApiError, auth, call, callData, clearSignedOut, explain, markSignedOut, recheck, retryable, useSignedOut } from "@/lib/api";
 import { renderHook } from "@testing-library/react";
 
 function respond(body: unknown, status = 200) {
@@ -90,6 +90,24 @@ describe("the API client", () => {
     expect(renderHook(() => useSignedOut()).result.current).toBe(false);
   });
 
+  it("does not resume in place when someone else signed in from another tab", async () => {
+    // This tab's thread is user-1's; the other tab's sign-in as user-2 already wrote the browser-wide owner.
+    sessionStorage.setItem("shoc.owner", "user-1");
+    localStorage.setItem("shoc.owner", "user-2");
+    try {
+      markSignedOut();
+      mockFetch(() => respond({ data: { id: "user-2" }, summary: "", citations: [] }));
+      expect(await recheck()).toBe(false);
+      expect(renderHook(() => useSignedOut()).result.current).toBe(true);
+      mockFetch(() => respond({ data: { id: "user-1" }, summary: "", citations: [] }));
+      expect(await recheck()).toBe(true);
+      expect(renderHook(() => useSignedOut()).result.current).toBe(false);
+    } finally {
+      sessionStorage.removeItem("shoc.owner");
+      localStorage.removeItem("shoc.owner");
+    }
+  });
+
   it("posts a sign-in route as JSON and keeps the route's own code, without the banner", async () => {
     const fetchMock = mockFetch(() => respond({ error: { code: "bad_credentials", message: "no" } }, 401));
     const error = (await auth("login", { email: "jane@example.com", password: "p", code: "123456" }).catch((e) => e)) as ApiError;
@@ -129,5 +147,33 @@ describe("the API client", () => {
     const error = await call("detection.merge").catch((e) => e);
     expect(error.code).toBe("gate_refused");
     expect(error.reasons).toEqual(reasons);
+  });
+
+  it("calls a deadline a timeout, not an unreachable shoc, and gives store and vendor reads the long one", async () => {
+    const timeout = vi.spyOn(AbortSignal, "timeout").mockImplementation(() => AbortSignal.abort());
+    mockFetch(() => Promise.reject(new DOMException("aborted", "AbortError")));
+    const error = (await call("intel.lookup", { value: "198.51.100.4" }).catch((e) => e)) as ApiError;
+    expect(error.code).toBe("timeout");
+    expect(error.isNetwork).toBe(false);
+    expect(explain(error)).toBe("shoc took too long");
+    expect(timeout).toHaveBeenLastCalledWith(150_000);
+    for (const slow of ["health.quality", "intel.digest", "platform.lookup", "credential.check", "credential.configure", "asset.identify", "identity.resolve"]) {
+      await call(slow).catch(() => {});
+      expect(timeout).toHaveBeenLastCalledWith(150_000);
+    }
+    await call("finding.list").catch(() => {});
+    expect(timeout).toHaveBeenLastCalledWith(30_000);
+    timeout.mockRestore();
+  });
+
+  it("tries a read again only when shoc could not be reached", () => {
+    expect(retryable(0, new ApiError(0, "network", "Can't reach shoc"))).toBe(true);
+    expect(retryable(1, new ApiError(502, "network", "Can't reach shoc"))).toBe(true);
+    expect(retryable(2, new ApiError(0, "network", "Can't reach shoc"))).toBe(false);
+    expect(retryable(0, new ApiError(504, "network", "Can't reach shoc"))).toBe(false);
+    expect(retryable(0, new ApiError(0, "timeout", "shoc took too long"))).toBe(false);
+    expect(retryable(0, new ApiError(500, "internal_error", "statement timeout"))).toBe(false);
+    expect(retryable(0, new ApiError(404, "not_found", "no such case"))).toBe(false);
+    expect(retryable(0, new ApiError(401, "signed_out", "signed out"))).toBe(false);
   });
 });

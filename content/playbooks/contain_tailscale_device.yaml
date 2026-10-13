@@ -31,8 +31,8 @@ steps:
     action: tailscale.enable_key_expiry
     optional: true
     params:
-      device_id: "{{ entity.resource }}"
+      device_id: "{{ rule.tailscale_device_key_expiry_disabled.resource }}"
   - name: deauthorize the device
     action: tailscale.deauthorize_device
     params:
-      device_id: "{{ entity.resource }}"
+      device_id: "{{ rule.tailscale_device_key_expiry_disabled.resource }}"

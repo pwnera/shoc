@@ -17,9 +17,14 @@ happen automatically, what waits for you, and what any of it can undo.
     the model cannot answer the prompt (RFC 0018). See
     [`security-model.md`](security-model.md#an-assistant-asks-the-person-confirms).
 
-`SHOC_DRY_RUN=1` (the default for a new install) means every action is
-planned, recorded and shown, and nothing is executed anywhere. Turn it off when
-you trust what you see in `shoc action list`.
+Dry run (the default for a new install) means every action is planned,
+recorded and shown, and nothing is executed anywhere. `SHOC_DRY_RUN` set to `1`
+or `0` wins over the policy in both directions; unset, the policy decides, with
+`defaults.dry_run` or an action's own `dry_run`. `SHOC_DRY_RUN=0` turns response
+on. The exception report names whichever of the two holds actions back. A page
+(`notify.page`) is the one exception: it changes nothing in the company's
+systems, so the Manager sends it for real while dry run is on. Turn dry run off
+when you trust what you see in `shoc action list`.
 
 ## The policy
 
@@ -55,6 +60,15 @@ The rules it enforces, in order:
 
 `shoc policy show` prints exactly what is in force.
 
+Some targets always wait for a person when an agent or a playbook aims at them,
+whatever the policy says: what `own.add` records as shoc's own, the people who
+sign in to shoc, the identity each source credential reads with (the AWS key
+the CloudTrail source uses), and the login each response token acts as, which
+the Okta and GitHub checks record (RFC 0021). Register break-glass and
+emergency admin accounts with `own.add` and kind `operator` so they join that
+list. The plans of `entra.remove_admin_role` and `github.demote_org_owner` say
+how many other holders of the role remain.
+
 ## Where a proposal comes from, and where it goes
 
 The IR Commander proposes. It is shown the action catalogue (every action that
@@ -89,7 +103,9 @@ that may never happen, so waiting has a deadline of four hours. Past it:
 
 **Every L2 names the fallback that runs if nobody answers** (a narrower
 reversible action, or an expiry) and the window after which it runs. An L2
-with neither is incomplete and is rejected as one.
+with no fallback is treated as an expiry: nothing narrower runs, it is chased
+and paged on a `high` or `critical` case, and abandoned with a reason below
+that. One with no window waits the four-hour cap.
 
 No role may choose `needs_human`, for the same reason: a case still
 reaches that disposition without being chosen (no model, an LLM failure,
@@ -106,17 +122,32 @@ expiry the role holding it (the Investigator, or the Commander once there is a
 response) is re-woken and must either close it or say what it is still waiting
 for. A `high` or `critical` case that expires twice pages.
 
+## Closing a case
+
+`case.close`, and `case.set_state` to `closed`, reject the case's proposed
+actions and the approved ones that have not started, and cancel its open
+playbook runs. An approved action whose case was closed or ruled benign before
+it ran is not run: it becomes `rejected` by `system` with the note
+`not run: …`. Pages are exempt from both.
+
+A close as `benign_expected` or `false_positive` returns `still_in_force`: each
+done, reversible, live action on the case other than a page, with its uid, type
+and target. The summary names them so each can be undone with `action.undo`.
+
+A person who reopens a case can propose again an action their close rejected.
+Their reject of the action itself stays final.
+
 ## Actions
 
 | Action | Target | Platform | Automatic? | Undo |
 | --- | --- | --- | --- | --- |
-| `aws.disable_access_key` | access key | aws | L1 | re-activates the key |
-| `aws.quarantine_user` | the IAM user behind an access key | aws | L2 | detaches AWSCompromisedKeyQuarantineV3 |
+| `aws.disable_access_key` | access key | aws | L1 | re-activates the key, only if it was Active before shoc |
+| `aws.quarantine_user` | the IAM user behind an access key (not a session key) | aws | L2 | detaches AWSCompromisedKeyQuarantineV3, unless AWS attached it first |
 | `aws.isolate_instance` | EC2 instance | aws | L2 | gives each network interface its recorded security groups |
 | `aws.detach_user_policy` | IAM user | aws | L1 | re-attaches the policy |
 | `aws.detach_role_policy` | IAM role | aws | L2 | re-attaches the policy |
-| `aws.revoke_role_sessions` | IAM role | aws | L2 | removes the revocation policy |
-| `aws.revoke_sessions` | access key (AKIA or ASIA) | aws | L2 | removes the revocation policy |
+| `aws.revoke_role_sessions` | IAM role | aws | L2 | puts back the earlier revocation policy, or removes it if there was none |
+| `aws.revoke_sessions` | access key (AKIA or ASIA) | aws | L2 | puts back the earlier revocation policy, or removes it if there was none |
 | `aws.start_cloudtrail_logging` | trail | aws | L1 | stops it again |
 | `aws.start_config_recorder` | Config recorder | aws | L1 | stops it again |
 | `aws.enable_guardduty` | GuardDuty detector | aws | L1 | suspends it again |
@@ -124,12 +155,12 @@ for. A `high` or `critical` case that expires twice pages.
 | `aws.cancel_key_deletion` | KMS key | aws | L1 | disables it, or schedules the deletion 30 days out |
 | `aws.unshare_snapshot` | EBS snapshot or AMI | aws | L1 | adds the recorded grants back |
 | `okta.revoke_sessions` | user | okta | L1 | none needed: they sign in again |
-| `okta.remove_admin_role` | user | okta | L1 | gives the recorded role back |
+| `okta.remove_admin_role` | user | okta | L1 | gives the recorded role back with the groups or apps it was scoped to; refused, and recorded as not reversible, when those could not be read at removal |
 | `okta.suspend_user` | user | okta | L2 | unsuspends |
 | `okta.reset_password` | user | okta | L2 | none: Okta emails the user a link to set a new one |
 | `okta.remove_factor` | MFA factor | okta | L2 | none: only the user can enrol it again |
 | `entra.revoke_sessions` | user | entra, m365, azure | L1 | none needed: they sign in again |
-| `entra.remove_admin_role` | user | entra | L1 | gives the recorded role back |
+| `entra.remove_admin_role` | user | entra, m365 | L1 | gives the recorded role back |
 | `entra.suspend_user` | user | entra, m365, azure | L2 | enables the account |
 | `entra.reset_password` | user | entra, m365, azure | L2 | none: the user sets a new password |
 | `entra.remove_factor` | MFA method | entra, m365 | L2 | none: only the user can register it again |
@@ -141,7 +172,7 @@ for. A `high` or `critical` case that expires twice pages.
 | `google.reset_password` | user | google | L2 | none: an administrator or recovery sets a new one |
 | `google.disable_mail_forwarding` | mailbox | google | L1 | turns the recorded forwarding back on |
 | `google.revoke_app_token` | app token | google | L2 | none: the user must grant it again |
-| `github.make_repo_private` | repository | github | L2 | restores the previous visibility |
+| `github.make_repo_private` | repository | github | L2 | restores visibility only: GitHub drops stars and watchers and detaches public forks when a repository goes private, and undo does not bring them back |
 | `github.demote_org_owner` | user | github | L2 | restores the recorded role |
 | `github.remove_collaborator` | user | github | L2 | re-invites with the recorded permission |
 | `github.remove_deploy_key` | deploy key | github | L2 | adds the recorded public key back |
@@ -150,7 +181,7 @@ for. A `high` or `critical` case that expires twice pages.
 | `crowdstrike.isolate_host` | device | edr | L2 | lifts the containment |
 | `crowdstrike.block_hash` | SHA-256 | edr | L1, reviewed | deletes the indicator |
 | `sentinelone.isolate_host` | agent | edr | L2 | reconnects it |
-| `sentinelone.block_hash` | SHA-1 or SHA-256 | edr | L1, reviewed | deletes the blocklist item |
+| `sentinelone.block_hash` | SHA-1 or SHA-256, one entry per OS (Windows, macOS, Linux) or the one `os` a step names | edr | L1, reviewed | deletes every entry it added; an OS where the hash was blocklisted already is left as it was |
 | `defender.isolate_host` | machine | edr | L2 | releases it from isolation |
 | `defender.block_hash` | SHA-1 or SHA-256 | edr | L1, reviewed | deletes the indicator |
 | `wazuh.block_ip` | address, on one agent or all | edr | L2 | none: Wazuh's API cannot lift it, so it lasts until the agent's active-response timeout |
@@ -179,7 +210,36 @@ which trail, recorder or detector is off in the credential's `regions`, and a
 step whose service is on proposes nothing. `okta.remove_factor` and
 `entra.remove_factor` with no `factor_id` remove the newest factor enrolled in
 the last week, which `okta.recent_factor` or `entra.recent_factor` reads; with
-none that recent, they propose nothing.
+none that recent, they propose nothing. `entra.remove_factor` also resolves
+nothing while an undated method could be the newest (an OATH app, or any phone
+or email when the directory audit cannot be read), and a person then picks one
+from the lookup's list.
+
+`m365.delete_inbox_rule`, `okta.remove_admin_role` and
+`entra.remove_admin_role` fill `rule_id` or `role` from a lookup when the step
+leaves it out. The rule deleted is the one the finding's New-InboxRule or
+Set-InboxRule object names when exactly one rule has that name, otherwise the
+single enabled rule that forwards outside the mailbox's domain, deletes or moves
+mail. The role is the one assignment given in the last 7 days.
+`contain_m365_account_abuse` and `contain_privilege_grant` run these removals as
+optional L1 steps; with several candidates the step is skipped and the
+Commander picks. Exchange mailbox forwarding (`Set-Mailbox
+ForwardingSmtpAddress`, which Graph cannot clear) and a mailbox permission
+have no action, so `contain_m365_account_abuse` pages for them.
+
+An action that reads before it changes (a GitHub owner's demotion, an Okta or
+Entra admin role's removal, an M365 inbox rule's deletion, an EC2 isolation)
+keeps that read in `actions.result.before` before the change. A retry uses it,
+and a 404 on a retry's removal counts as done.
+
+An action's identity is its type, every required parameter (or the ones it
+names as its identity, such as an AWS key's id) and its case, so two inbox
+rules, policies, roles or repositories on one user are two actions.
+
+`gcp.disable_service_account` and `gcp.disable_service_account_key` accept a
+project's default Compute Engine (`<number>-compute@developer.gserviceaccount.com`)
+and App Engine (`<project>@appspot.gserviceaccount.com`) accounts. Disabling the
+default compute account stops every VM that runs as it.
 
 Stripe's API cannot revoke a key, remove a team member or hold payouts for the
 account that calls it, so a Stripe takeover ends in a page. No playbook blocks an
@@ -258,9 +318,13 @@ The `gcp` service account needs Service Account Key Admin for the key and
 service-account actions, and Compute Security Admin for
 `gcp.disable_firewall_rule`.
 
+With `role_arn` (and `external_id` when the role's trust policy asks for one),
+every AWS action, lookup and credential check signs as that role. The role holds
+the response grant above, and the stored key needs only `sts:AssumeRole`.
+
 | Provider | Settings | Secret |
 | --- | --- | --- |
-| `aws` | optional `regions` or `region` (default us-east-1) | `access_key_id`, `secret_access_key` |
+| `aws` | optional `regions` or `region` (default us-east-1); optional `role_arn` and `external_id`, with `accounts` when each `aws:<name>` credential names its own account's role | `access_key_id`, `secret_access_key` |
 | `okta` | `org_url` | `api_token` (a super administrator's) |
 | `entra` | | `tenant_id`, `client_id`, `client_secret` |
 | `m365` | | `tenant_id`, `client_id`, `client_secret` |
@@ -270,7 +334,7 @@ service-account actions, and Compute Security Admin for
 | `crowdstrike` | `cloud` | `client_id`, `client_secret` |
 | `sentinelone` | `console_url` | `api_token` |
 | `defender` | | `tenant_id`, `client_id`, `client_secret` |
-| `wazuh` | `api_url` (the server API, port 55000), optional `verify_tls`, `block_command` (default `!firewall-drop`) | `username`, `password` of an API user with `active-response:command`, `agent:read` and `syscheck:read` |
+| `wazuh` | `api_url` (the server API, port 55000), optional `ca_cert` (the PEM text of Wazuh's `root-ca.pem`, which overrides `verify_tls`), `verify_tls`, `block_command` (default `!firewall-drop`) | `username`, `password` of an API user with `active-response:command`, `agent:read` and `syscheck:read` |
 | `azure` | | `tenant_id`, `client_id`, `client_secret` |
 | `gcp` | | `client_email`, `private_key` |
 | `cloudflare` | `account_id` | `api_token` with `Account Firewall Access Rules: Edit` and `Account API Tokens: Edit` |
@@ -278,7 +342,7 @@ service-account actions, and Compute Security Admin for
 | `stripe` | optional `block_lists` (`{"card_fingerprint": "rsl_…", "email": "rsl_…"}`) | `api_key`, restricted to Charges read and Radar write |
 | `anthropic` | | `admin_key` |
 | `openai` | | `admin_key` |
-| `notify` | | `routing_key` (PagerDuty Events v2) |
+| `notify` | optional `region`, `us` (default) or `eu`, which pages through `events.eu.pagerduty.com`; any other value fails the page at once, without retries | `routing_key` (PagerDuty Events v2) |
 
 ### Several tenants of one provider
 
@@ -302,6 +366,12 @@ and shoc picks the credential that serves both. An action only ever uses its
 own vendor's credentials, so an Entra target never reaches an Okta token, and a
 key seen in the staging account is disabled with `aws:staging`. A target seen in two tenants is acted on
 in both. The action lists where it acts in `acts_in`, and its undo runs there.
+An action that acted with some credentials and failed with others can be undone
+in the tenants it changed, and a tenant whose vendor does not know the target is
+recorded as "not here" when another tenant acted on it. An AWS key or user
+action goes to the account in the ARN of the user who used the key. The account
+that received the call (an organisation trail's `recipientAccountId`) does not
+decide it.
 
 A tenant with no credential, or one that two credentials could both claim, is
 written into the action's reason and the action is not taken there. With one
@@ -335,8 +405,12 @@ credentials, and only ever reads. `platform.lookups` lists them:
 | Lookup | Answers |
 | --- | --- |
 | `okta.get_user`, `entra.get_user` | status, admin roles with their assignment ids, MFA factors, last sign-in or password change |
-| `okta.recent_factor`, `entra.recent_factor` | MFA factors with their ids, and the newest enrolled in the last week |
+| `okta.recent_factor`, `entra.recent_factor` | MFA factors with their ids, and the newest enrolled in the last week. Entra dates phone and email methods from the directory audit's "User registered security info" and "Admin registered security info", and lists the methods it cannot date as `undated`; it names no factor while any of them could be newer |
+| `okta.recent_admin_role`, `entra.recent_role_assignment` | a user's admin role assignments, and the one given in the last 7 days. Entra's is dated from the audit's "Add member to role", which needs `AuditLog.Read.All` |
+| `entra.role_holders` | who else holds the directory role of an assignment |
+| `github.org_owners` | an organisation's owners, and how many stay besides a given user |
 | `m365.list_inbox_rules` | each rule's id, and what it forwards, moves or deletes |
+| `m365.suspect_inbox_rule` | the one rule a playbook deletes: the rule a finding names, or the one enabled rule that forwards outside the mailbox's domain, deletes or moves mail; nothing when several match |
 | `m365.list_app_consents` | the apps a user granted, their scopes and publisher, with grant ids |
 | `google.get_user` | suspended, admin, 2-step enrolment, last sign-in |
 | `google.list_app_tokens` | the apps a user granted, with client ids and scopes |
@@ -411,17 +485,38 @@ the playbook answers. The kinds are `user`, `key`, `ip`, `host`, `device`,
 `process_hash` and `account`. Roles, hashes and accounts do not link findings
 into a case.
 
+A step whose target reads `{{ rule.<id>.<kind> }}` or
+`{{ platform.<product>.<kind> }}` with several values fans out to one step per
+value, named `<step> (<value>)`, up to 10. More than 10 fails a required step as
+ambiguous, and the run then pages through `malicious_uncontained`; an optional
+one is skipped. `{{ entity.<kind> }}` never fans out: it holds every finding
+linked to the case (the accounts a spray failed on, the CI key next to the
+leaked one), so it renders its first value. A page step lists every value. A
+plain render of a rule or platform scope gives its alphabetically first value
+across all of that scope's findings.
+
 An **optional** step whose parameters cannot be filled is skipped; a required
 one stops the run and says what was missing.
 
 A run walks its steps until one needs a human, one fails, or the playbook
 finishes. Each step is a row, so a restart resumes exactly where it stopped, and
 an action that is already `done` returns its recorded result instead of acting
-twice.
+twice. A run is keyed on the playbook, the case, the values its targets render
+to (`playbook_runs.targets`, migration 057) and whether it is dry, so a key or
+an account that joins an open case later gets a run of its own.
+
+`playbook.run` and `action.run` take `dry_run`, which is `true` by default for
+people and agents. A dry run is a preview: a run of its own, never standing in
+for the live one, in which each step the policy would run for real is recorded
+as its own plan and settled at once. Nobody approves, chases or runs a plan, it
+reaches no Manager and it spends no live action budget. A run is recorded as dry
+when it is a preview or `SHOC_DRY_RUN=1`; otherwise each action's own `dry_run`
+decides. Pass `--dry-run false` to act.
 
 ```bash
 shoc playbook list --case-uid CASE-1a2b…
-shoc playbook run --playbook-id contain_leaked_cloud_key --case-uid CASE-1a2b…
+shoc playbook run --playbook-id contain_leaked_cloud_key --case-uid CASE-1a2b… --dry-run true
+shoc playbook run --playbook-id contain_leaked_cloud_key --case-uid CASE-1a2b… --dry-run false
 shoc action list --state proposed
 shoc action approve ACT-9f8e…          # only a human can do this
 shoc playbook resume --run-uid RUN-…
@@ -463,14 +558,21 @@ reaches `malicious` at 0.93 with citations, and
 
 1. **page the on-call engineer**: L1. The runner hands it to the SOC Manager,
    which pages at once on a critical case and otherwise holds it for the weekly.
-2. **revoke the sessions minted from the key**: L2, so it is left for a human
-   to approve and the run goes on.
-3. **disable the access key**: L1, reversible, in the account the key was seen
-   in. The key's user comes from the events where the key acted.
+2. **revoke the sessions minted from the key**: L2 and optional, one per key
+   the case's AWS findings name, so each is left for a human to approve and
+   the run goes on.
+3. **disable the key the attacker created**: L1 and optional, when a
+   CreateAccessKey finding names one.
+4. **disable every key the findings name**: L1 and optional, one per key.
+   A session key (ASIA…) is refused by IAM and skipped; step 2 ends it.
+5. **disable the access key**: L1, required, reversible, on the case's first
+   key, in the account the key was seen in. The key's user comes from the
+   events where the key acted.
+6. **quarantine the key's user**: L2 and optional.
 
-The page and the disabled key need nobody awake, and both run in the same pass. The page goes first
-so that a key IAM cannot disable (a role's session key) or a missing credential,
-either of which fails the run, never costs it.
+The page and the disabled keys need nobody awake, and all run in the same pass.
+The page goes first so that a missing credential, which fails the run, never
+costs it.
 
 A step that is the kind of decision a person should make waits four hours for
 an approval: making a repository private, suspending an account, revoking a

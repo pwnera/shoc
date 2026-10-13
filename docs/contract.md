@@ -14,7 +14,8 @@ reviewed.
 | REST paths | generated: `POST /v1/<area>/<name>` | Changing a path or the response envelope |
 | MCP tool names | generated: `area_name` | Renaming a tool, or changing its input schema |
 | Response envelope | `{data, summary, citations}` | Anything other than these three keys at the top level |
-| Event types | read from the code that publishes them | Renaming or removing a type |
+| Error statuses | `ERRORS` in `shoc/api/rest.py`: 400, 401, 403, 404, 409, 413 `payload_too_large` (a body over `SHOC_MAX_REQUEST_BYTES`, chunked bodies included) and 500, each as `{"error": {code, message}}` | Removing a status or changing what one means |
+| Event types | read from the code that publishes them | Renaming or removing a type, or a field its payload carries on every path (`case.opened` carries `entity`, `severity` and `findings` whether code or Sentinel's split opened the case) |
 | `EventStore` interface | `shoc/store/base.py` | Adding a required method, changing a signature |
 | OCSF table layout | `shoc/store/ocsf.py` | Removing a column, changing its type or meaning |
 | Content formats | rules, playbooks, policy YAML | Removing a key, changing what one means |
@@ -29,11 +30,13 @@ external agent, is unchanged.
 
 ## What is *not* in the contract
 
-- Adding a capability, a column, an event type or a rule. Those are minor
-  releases.
+- Adding a capability, a column, an event type, an output field (such as
+  `case.close`'s `still_in_force`) or a rule. Those are minor releases.
 - Internal module layout, database table shapes other than the OCSF tables, job
   kinds, prompt text, model choice.
-- The CLI's exact output text. Use `--json` for anything a script depends on.
+- The CLI's exact output text. Use `--json` for anything a script depends on;
+  it and `--tenant` go before or after the subcommand
+  (`shoc finding list --json --tenant demo`).
 - The `/auth/*` routes a browser signs in through (RFC 0028). They are
   documented in [`security-model.md`](security-model.md#people-sign-in), and the
   capabilities that manage people are in the contract like any other.

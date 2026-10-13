@@ -40,7 +40,7 @@ export const NAV: { label: string; items: Screen[] }[] = [
         label: "Cases",
         icon: Box,
         chord: "c",
-        tabs: ["All", "Investigating", "Contained", "Closed"],
+        tabs: ["All", "Investigating", "Responding", "Closed"],
       },
       { to: "/findings", label: "Findings", icon: Radar, chord: "f", tabs: ["Open", "Handled", "Set aside"] },
       { to: "/explore", label: "Explore", icon: Compass, chord: "e" },

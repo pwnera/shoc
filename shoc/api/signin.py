@@ -26,6 +26,7 @@ import threading
 import time
 from collections import deque
 from collections.abc import Awaitable, Callable
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from starlette.requests import Request
@@ -146,7 +147,10 @@ def _address(request: Request, cfg: Config) -> str:
 
 
 def _tenant(request: Request, cfg: Config) -> str:
-    return request.headers.get("x-shoc-tenant") or cfg.tenant_id
+    tenant = request.headers.get("x-shoc-tenant") or cfg.tenant_id
+    if tenant == pool.ALL_TENANTS:
+        raise _bad()  # row-level security reads it as every tenant (migration 026)
+    return tenant
 
 
 def _secure(cfg: Config) -> bool:
@@ -233,11 +237,14 @@ def _post(fn: Handler, cfg: Config) -> Callable[[Request], Awaitable[Response]]:
 
 
 # -- password, code, token -------------------------------------------------------
-def _wrong_code(cfg: Config, conn: pool.Conn, tenant: str, user: dict[str, Any]) -> None:
-    """Count a wrong code; a lock is audited once and the person told."""
+def _wrong_code(
+    cfg: Config, conn: pool.Conn, tenant: str, user: dict[str, Any], address: str
+) -> None:
+    """Count a wrong code; a lock is audited once, with the address, and the person told."""
     minutes = people.code_failed(conn, tenant, user["user_id"])
     if minutes:
-        people.audit_person(conn, tenant, user["email"], "auth.locked", {"minutes": minutes})
+        detail = {"minutes": minutes, "from": address}
+        people.audit_person(conn, tenant, user["email"], "auth.locked", detail)
         if mail.configured(cfg):
             mail.send_later(cfg, user["email"], *mail.locked(cfg, minutes))
 
@@ -250,18 +257,19 @@ def _account(cfg: Config, tenant: str, email: str) -> dict[str, Any] | None:
         return user
 
 
-def _second_factor(cfg: Config, tenant: str, user: dict[str, Any], code: str) -> str:
+def _second_factor(cfg: Config, tenant: str, user: dict[str, Any], code: str, address: str) -> str:
     with people.pinned(cfg, tenant) as conn:
         seed = people.seed_of(cfg.master_key, tenant, user)
         step = credentials.totp_step(seed, code, time.time(), user["totp_step"]) if seed else None
         if step is None:
-            _wrong_code(cfg, conn, tenant, user)
+            _wrong_code(cfg, conn, tenant, user, address)
             raise _bad()
         if not people.advance_step(conn, tenant, user["user_id"], step):
             raise _bad()  # the same code, used meanwhile
         people.signed_in(conn, tenant, user["user_id"])
         session = people.create_session(conn, tenant, user)
-        people.audit_person(conn, tenant, user["email"], "auth.signin", {"method": "password"})
+        detail = {"method": "password", "from": address}
+        people.audit_person(conn, tenant, user["email"], "auth.signin", detail)
         return session
 
 
@@ -283,13 +291,13 @@ async def login(request: Request, body: dict[str, Any], cfg: Config) -> Response
         raise _bad()
     if user is None or user["disabled_at"] or user["locked"] or user["sso"]:
         raise _bad()
-    session = await asyncio.to_thread(_second_factor, cfg, tenant, user, code)
+    session = await asyncio.to_thread(_second_factor, cfg, tenant, user, code, address)
     response = JSONResponse({"email": user["email"]})
     _set_session(response, cfg, session)
     return response
 
 
-def _token_signin(cfg: Config, value: str, asked: str | None) -> str:
+def _token_signin(cfg: Config, value: str, asked: str | None, address: str) -> str:
     entry = entry_for(value, cfg)[1] if value else None
     # A person's token, not a machine's and not another browser's session.
     if not entry or "role" not in entry or entry.get("user_id"):
@@ -299,7 +307,7 @@ def _token_signin(cfg: Config, value: str, asked: str | None) -> str:
         raise _bad()
     who = str(entry.get("id", "token"))
     with people.pinned(cfg, tenant) as conn:
-        people.audit_person(conn, tenant, who, "auth.signin", {"method": "token"})
+        people.audit_person(conn, tenant, who, "auth.signin", {"method": "token", "from": address})
     return who
 
 
@@ -307,7 +315,7 @@ async def token(request: Request, body: dict[str, Any], cfg: Config) -> Response
     """A person's token becomes the session cookie itself; revoking it signs the browser out."""
     value = _string(body, "token", 512).strip()
     asked = request.headers.get("x-shoc-tenant")
-    who = await asyncio.to_thread(_token_signin, cfg, value, asked)
+    who = await asyncio.to_thread(_token_signin, cfg, value, asked, _address(request, cfg))
     response = JSONResponse({"id": who})
     _set_session(response, cfg, value)
     return response
@@ -356,7 +364,12 @@ async def link(request: Request, body: dict[str, Any], cfg: Config) -> Response:
 
 
 def _link_code(
-    cfg: Config, tenant: str, found: dict[str, Any], new_seed: bytes | None, code: str
+    cfg: Config,
+    tenant: str,
+    found: dict[str, Any],
+    new_seed: bytes | None,
+    code: str,
+    address: str,
 ) -> int:
     """The step of a right code; a wrong one is refused and counted.
 
@@ -372,16 +385,22 @@ def _link_code(
         if step is None:
             people.link_code_failed(conn, tenant, found["link_id"])
             if new_seed is None:
-                _wrong_code(cfg, conn, tenant, found)
+                _wrong_code(cfg, conn, tenant, found, address)
             raise _bad_code()
         return step
 
 
 def _accept(
-    cfg: Config, tenant: str, found: dict[str, Any], hashed: str, seed: bytes | None, step: int
+    cfg: Config,
+    tenant: str,
+    found: dict[str, Any],
+    hashed: str,
+    seed: bytes | None,
+    step: int,
+    address: str,
 ) -> str | None:
     with people.pinned(cfg, tenant) as conn:
-        return people.accept_link(conn, tenant, found, hashed, seed, step, cfg.master_key)
+        return people.accept_link(conn, tenant, found, hashed, seed, step, cfg.master_key, address)
 
 
 async def accept(request: Request, body: dict[str, Any], cfg: Config) -> Response:
@@ -395,9 +414,10 @@ async def accept(request: Request, body: dict[str, Any], cfg: Config) -> Respons
     if problem:
         raise ValidationError(problem)
     new_seed = credentials.link_seed(cfg.master_key, value) if found["enrol"] else None
-    step = await asyncio.to_thread(_link_code, cfg, tenant, found, new_seed, code)
+    address = _address(request, cfg)
+    step = await asyncio.to_thread(_link_code, cfg, tenant, found, new_seed, code, address)
     hashed = await credentials.hashing(credentials.hash_password, password)
-    session = await asyncio.to_thread(_accept, cfg, tenant, found, hashed, new_seed, step)
+    session = await asyncio.to_thread(_accept, cfg, tenant, found, hashed, new_seed, step, address)
     if session is None:
         raise _expired()
     response = JSONResponse({"email": found["email"]})
@@ -421,11 +441,17 @@ def _forgot(cfg: Config, tenant: str, email: str) -> None:
             value, _ = people.issue_link(
                 conn, tenant, user["user_id"], False, people.FORGOT, "forgot-password"
             )
+        pool.close()  # before the mail goes: a slow mail server holds no connection
         mail.send(cfg, user["email"], *mail.forgot(cfg, value))
     except Exception as exc:
         log.warning("could not send a password link: %s", exc)
     finally:
-        pool.close()  # this thread's connection ends with it
+        pool.close()  # this thread's connection ends with the request
+
+
+# Forgotten passwords are handled two at a time, so a burst of requests queues
+# here instead of opening a database connection each.
+_forgetting = ThreadPoolExecutor(max_workers=2, thread_name_prefix="shoc-forgot")
 
 
 async def forgot(request: Request, body: dict[str, Any], cfg: Config) -> Response:
@@ -434,7 +460,7 @@ async def forgot(request: Request, body: dict[str, Any], cfg: Config) -> Respons
     if not mail.configured(cfg):
         return JSONResponse({"sent": False})
     tenant = _tenant(request, cfg)
-    threading.Thread(target=_forgot, args=(cfg, tenant, email), daemon=True).start()
+    _forgetting.submit(_forgot, cfg, tenant, email)
     return JSONResponse({"sent": True})
 
 
@@ -516,7 +542,7 @@ async def start(request: Request, body: dict[str, Any], cfg: Config) -> Response
     return response
 
 
-def _sso_signin(cfg: Config, state: dict[str, Any], code: str) -> str:
+def _sso_signin(cfg: Config, state: dict[str, Any], code: str, address: str) -> str:
     tenant = state["tenant"]
     with people.pinned(cfg, tenant) as conn:
         provider = people.provider(conn, tenant, cfg.master_key)
@@ -531,7 +557,8 @@ def _sso_signin(cfg: Config, state: dict[str, Any], code: str) -> str:
         user = people.sso_person(conn, tenant, provider["issuer"], str(found["sub"]), email)
         people.signed_in(conn, tenant, user["user_id"])
         session = people.create_session(conn, tenant, user)
-        people.audit_person(conn, tenant, user["email"], "auth.signin", {"method": "sso"})
+        detail = {"method": "sso", "from": address}
+        people.audit_person(conn, tenant, user["email"], "auth.signin", detail)
         return session
 
 
@@ -562,7 +589,7 @@ def callback(cfg: Config) -> Callable[[Request], Awaitable[Response]]:
             if "error" in query or not query.get("code"):
                 log.warning("SSO provider error: %r", query.get("error", "")[:100])
                 raise SignInError("sso_failed", 401, "the provider returned no code")
-            session = await asyncio.to_thread(_sso_signin, cfg, state, query["code"])
+            session = await asyncio.to_thread(_sso_signin, cfg, state, query["code"], address)
             response: Response = RedirectResponse(cfg.public_url + state["return_to"], 303)
             _set_session(response, cfg, session)
         except Exception as exc:

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { act, renderHook } from "@testing-library/react";
-import { notePresence, resetPresence, usePresence } from "@/lib/presence";
+import { KEPT_CASES, notePresence, resetPresence, usePresence } from "@/lib/presence";
 import type { StreamEvent } from "@/lib/stream";
 
 const message = (agent: string, caseUid: string, round = 3, seq = 1): StreamEvent => ({
@@ -54,5 +54,16 @@ describe("crew presence", () => {
     expect(result.current.down).toBe(false);
     act(() => notePresence({ seq: 3, type: "case.budget_exhausted", subject: "CASE-9", payload: {}, created_at: "" }));
     expect(result.current.budget.has("CASE-9")).toBe(true);
+  });
+
+  it("remembers the newest cases only, so a tab left open for days stays small", () => {
+    const { result } = renderHook(() => usePresence());
+    const start = Date.now() - 60 * 60_000;
+    act(() => {
+      for (let i = 0; i <= KEPT_CASES; i++) notePresence(message("Investigator", `CASE-${i}`), start + i);
+    });
+    expect(result.current.last("CASE-0")).toBeUndefined();
+    expect(result.current.last("CASE-1")?.caseUid).toBe("CASE-1");
+    expect(result.current.last(`CASE-${KEPT_CASES}`)?.caseUid).toBe(`CASE-${KEPT_CASES}`);
   });
 });

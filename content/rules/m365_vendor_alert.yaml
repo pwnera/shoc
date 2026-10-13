@@ -4,10 +4,11 @@ description: >
   Microsoft 365 raised a high-severity alert of its own: Defender for Office
   365, Defender for Cloud Apps, malware found in a stored file, or a DLP match.
   These arrive in the audit feed and are stored either way; this turns them
-  into a case for tenants that do not connect the Defender XDR API.
+  into a case. A tenant that also connects Defender XDR gets the same Office
+  365 and Cloud Apps alert again from edr_identity_or_email_alert.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-02
+modified: 2026-10-12
 severity: high
 confidence: 0.7
 attack: [T1566, T1114]

@@ -17,6 +17,7 @@ spec:
         {{- include "shoc.labels" . | nindent 8 }}
     spec:
       restartPolicy: Never
+      automountServiceAccountToken: false
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -35,5 +36,5 @@ spec:
               mountPath: /tmp
       volumes:
         - name: tmp
-          emptyDir: {}
+          emptyDir: { sizeLimit: {{ .Values.tmpSizeLimit }} }
 {{- end }}

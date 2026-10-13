@@ -20,6 +20,7 @@ pytestmark = pytest.mark.postgres
 
 SIGNING_SECRET = "slack-signing-secret"
 APPROVER = "U-SAM"
+READER = "U-RITA"
 BYSTANDER = "U-RANDOM"
 
 
@@ -111,10 +112,44 @@ def test_a_listed_approver_is_an_operator(slack_app):
     assert caller.allows("actions:approve") and not caller.allows("config:write")
 
 
-def test_everyone_else_can_only_read(slack_app):
-    caller = slack.caller_for(slack_app, BYSTANDER)
-    assert caller.kind == "external_agent"
-    assert not caller.allows("actions:approve")
+def test_a_listed_reader_can_only_read_and_anyone_else_nothing(ctx, slack_app):
+    call("slack.configure", ctx, {"readers": {READER: "rita"}, "team_id": "T-ACME"})
+    app = slack.load_app(ctx.db, ctx.tenant_id, ctx.config.master_key)
+    assert app.approvers == {APPROVER: "sam"}, "configuring readers keeps the approvers"
+    reader = slack.caller_for(app, READER, "T-ACME")
+    assert reader.kind == "external_agent" and reader.allows("ask:read")
+    assert not reader.allows("actions:approve")
+    assert slack.caller_for(app, BYSTANDER, "T-ACME").scopes == ()
+    # Another workspace is nobody, whatever the user id says.
+    assert slack.caller_for(app, APPROVER, "T-OTHER").scopes == ()
+    assert slack.caller_for(app, READER, "").scopes == ()
+    # Left out, the readers stay; given empty, the list is emptied.
+    call("slack.configure", ctx, {"channel": "C0123"})
+    assert slack.load_app(ctx.db, ctx.tenant_id, ctx.config.master_key).readers == {READER: "rita"}
+    call("slack.configure", ctx, {"readers": {}})
+    assert slack.load_app(ctx.db, ctx.tenant_id, ctx.config.master_key).readers == {}
+
+
+def test_a_bystander_gets_help_and_nothing_else(api, ctx, config, store):
+    from evals.run import SCENARIOS, replay
+
+    replay(SCENARIOS / "leaked_aws_key", tenant_id=config.tenant_id, store=store)
+    for text in ("cases", "what happened with AKIAIOSFODNN7EXAMPLE?"):
+        body = command(text, user=BYSTANDER)
+        answer = api.post("/slack/commands", content=body, headers=sign(body)).json()
+        assert answer["response_type"] == "ephemeral"
+        assert "not on this workspace's shoc reader or approver list" in answer["text"]
+        assert "CASE-" not in answer["text"]
+    body = command("help", user=BYSTANDER)
+    assert "/shoc cases" in api.post("/slack/commands", content=body, headers=sign(body)).text
+
+
+def test_one_person_cannot_keep_the_crew_busy(ctx, slack_app, monkeypatch):
+    monkeypatch.setattr(slack, "QUESTIONS", slack.Throttle(1, 3600))
+    monkeypatch.setattr(slack, "_answer", lambda _ctx, question: f"answered {question}")
+    form = {"text": "what happened?", "user_id": APPROVER}
+    assert slack.handle_command(ctx, slack_app, form)["text"] == "answered what happened?"
+    assert "questions this hour" in slack.handle_command(ctx, slack_app, form)["text"]
 
 
 # -- commands ---------------------------------------------------------------
@@ -290,9 +325,19 @@ def test_a_page_is_mirrored_to_slack_through_the_audited_notify(
 
 
 def test_a_mirror_slack_refuses_is_reported_not_swallowed(conn, config, pending_action, slack_api):
+    from shoc.cases import credentials
+
+    # The pager's post lands in the same fake, which answers it 200.
+    credentials.store(
+        conn, config.tenant_id, "notify", {}, {"routing_key": "rk"}, config.master_key
+    )
     slack_api.reply = {"ok": False, "error": "channel_not_found"}
     case_uid, _action_uid = pending_action
-    done = _page_the_case(conn, config, case_uid)
+    try:
+        done = _page_the_case(conn, config, case_uid)
+    finally:
+        # Never left for a test after this one, once the fake transport is gone.
+        credentials.remove(conn, config.tenant_id, "notify")
     assert len(done.paged) == 1, "the page itself still went out"
     assert done.slack_errors and "channel_not_found" in done.summary
     row = fetch_one(
@@ -340,7 +385,7 @@ def test_a_question_is_answered_through_response_url_after_slack_has_its_reply(
     from evals.run import SCENARIOS, replay
     from shoc.agents import manager
 
-    replay(SCENARIOS / "leaked_aws_key", tenant_id=config.tenant_id)
+    replay(SCENARIOS / "leaked_aws_key", tenant_id=config.tenant_id, store=store)
     release, posted = threading.Event(), threading.Event()
     seen: list[tuple[str, dict]] = []
 
@@ -368,7 +413,8 @@ def test_a_question_is_answered_through_response_url_after_slack_has_its_reply(
     release.set()
     assert posted.wait(30), "the answer follows through response_url"
     url, body = seen[0]
-    assert url == RESPONSE_URL and body["response_type"] == "in_channel"
+    # Only the asker sees the answer: it may name colleagues and their sign-ins.
+    assert url == RESPONSE_URL and body["response_type"] == "ephemeral"
     assert "finding(s)" in body["text"] and "Evidence:" in body["text"]
 
 

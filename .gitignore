@@ -7,6 +7,8 @@ build/
 .pytest_cache/
 .ruff_cache/
 .env
+# Live provider credentials for Compose (deploy/secrets.env.example).
+secrets.env
 
 # Datasets fetched by scripts/fetch_dataset.py; never committed.
 var/

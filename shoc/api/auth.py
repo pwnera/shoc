@@ -33,7 +33,7 @@ from typing import Any, get_args
 from urllib.parse import urlsplit
 
 from shoc.capabilities.registry import Caller, Principal
-from shoc.config import Config
+from shoc.config import SCRATCH_SUFFIXES, TENANT_ID, Config
 from shoc.errors import ConfigError, Denied, SignInError, Unauthenticated
 
 SINGLE_USER = Caller(kind="human", id="local", scopes=("*",))
@@ -232,7 +232,7 @@ def authenticate(
     ended, entry = entry_for(token, config)
     if not ended:
         _only_from_this_machine(headers)
-        return SINGLE_USER, asked or default_tenant
+        return SINGLE_USER, _tenant(asked) if asked else default_tenant
     if token is None:
         raise Unauthenticated(
             "no credential: send Authorization: Bearer <token>, or sign in through "
@@ -245,7 +245,7 @@ def authenticate(
         if cookie is not None:
             raise Unauthenticated("signed out; sign in again")
         raise Unauthenticated("unknown or revoked token", code="unauthenticated")
-    tenant = entry.get("tenant") or default_tenant
+    tenant = _tenant(entry["tenant"]) if entry.get("tenant") else default_tenant
     if asked and asked != tenant:
         raise Denied(f"this token may not act on tenant '{asked}'")
     who = entry.get("id", "token")
@@ -256,6 +256,14 @@ def authenticate(
         raise Denied(f"token '{who}' names an unknown kind '{kind}'")
     # No scopes means no access: a forgotten field must not become every scope.
     return Caller(kind=kind, id=who, scopes=tuple(entry.get("scopes", ()))), tenant
+
+
+def _tenant(tenant: str) -> str:
+    """A tenant a request may name: a valid id, never a merge gate's scratch,
+    which the next gate run empties (wh-13)."""
+    if not TENANT_ID.fullmatch(tenant) or tenant.endswith(SCRATCH_SUFFIXES):
+        raise Denied(f"'{tenant}' is not a tenant a request may act on")
+    return tenant
 
 
 def _loopback(host: str | None) -> bool:

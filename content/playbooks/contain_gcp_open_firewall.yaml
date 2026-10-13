@@ -34,5 +34,5 @@ steps:
     action: gcp.disable_firewall_rule
     optional: true
     params:
-      firewall: "{{ entity.resource }}"
-      project: "{{ entity.account }}"
+      firewall: "{{ rule.gcp_firewall_opened_to_internet.resource }}"
+      project: "{{ rule.gcp_firewall_opened_to_internet.account }}"

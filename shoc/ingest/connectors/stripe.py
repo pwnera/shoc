@@ -16,7 +16,7 @@ from typing import Any
 import httpx
 
 from shoc.errors import ConfigError
-from shoc.ingest.connectors.base import FetchResult, client, since_default, utc
+from shoc.ingest.connectors.base import FetchResult, client, reached, since_default, utc
 
 API = "https://api.stripe.com"
 PREVIEW = "2026-09-30.preview"
@@ -37,7 +37,7 @@ class StripeConnector:
             raise ConfigError("stripe: the secret needs api_key, a restricted key")
         size = max(1, min(int(limit), PAGE))
         held = cursor.get("events") or {}
-        since = since_default(held, hours=int(settings.get("backfill_hours", 24)))
+        since = since_default(held, settings)
         with client({"Authorization": f"Bearer {key}"}) as http:
             logs = _activity(http, cursor.get("logs") or {}, size)
             events = _events(http, held, size, since)
@@ -53,6 +53,11 @@ class StripeConnector:
                 "payouts": bool(cursor.get("payouts") or first),
             },
             more=logs.more or events.more,
+            parts=[
+                ("logs", len(logs.records), ""),
+                ("events", len(events.records), events.since),
+                ("payouts", len(history), ""),
+            ],
         )
 
 
@@ -79,9 +84,9 @@ def _activity(http: httpx.Client, cursor: dict[str, Any], size: int) -> FetchRes
 
 
 def _events(http: httpx.Client, cursor: dict[str, Any], size: int, since: str) -> FetchResult:
-    """Newest first: `since` is held while paging back with `starting_after`."""
+    """Newest first: the walk's start is held while paging back with `starting_after`."""
     params: list[tuple[str, Any]] = [
-        ("created[gt]", int(utc(since).timestamp())),
+        ("created[gte]", int(utc(since).timestamp())),
         ("limit", size),
         *(("types[]", t) for t in EVENT_TYPES),
     ]
@@ -93,13 +98,14 @@ def _events(http: httpx.Client, cursor: dict[str, Any], size: int, since: str) -
     records = body.get("data") or []
     newest = max(
         [datetime.fromtimestamp(int(e["created"]), tz=UTC).isoformat() for e in records]
-        + [str(cursor.get("newest") or since)],
+        + [reached(cursor, since)],
         key=utc,
     )
+    late = str(cursor.get("since") or "")
     if body.get("has_more") and records:
-        held = {"since": since, "newest": newest, "after": records[-1]["id"]}
-        return FetchResult(records=records, cursor=held, more=True)
-    return FetchResult(records=records, cursor={"since": newest}, more=False)
+        held = {**cursor, "start": since, "newest": newest, "after": records[-1]["id"]}
+        return FetchResult(records=records, cursor=held, more=True, since=late)
+    return FetchResult(records=records, cursor={"since": newest}, more=False, since=late)
 
 
 def _payouts(http: httpx.Client, before: str) -> list[dict[str, Any]]:

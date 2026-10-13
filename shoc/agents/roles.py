@@ -333,12 +333,12 @@ class Proposal:
     )
     fallback: str = f(
         "",
-        doc="Required on L2: the exact name of a narrower reversible action, run on "
-        "the same target if nobody answers, or 'expire' when the right answer is "
-        "to stop waiting. An L2 without one is incomplete",
+        doc="On an L2: the exact name of a narrower reversible action, run on the "
+        "same target if nobody answers, or 'expire' when the right answer is to stop "
+        "waiting. Left empty, it is 'expire': nothing narrower runs",
     )
     fallback_after_minutes: int = f(
-        0, doc="Required on L2: how long to wait before the fallback runs, at most 240"
+        0, doc="On an L2: how long to wait before the fallback runs, at most 240; 0 is 240"
     )
     destroys_evidence: str = f(
         "",
@@ -683,8 +683,9 @@ class TupleVerdict:
     basis: Literal["human_fact", "own_credential", "older_event", "none"] = f(
         "none",
         doc="What an explanation rests on: a fact a person wrote (memory_id), shoc's "
-        "own credential or the company's automation (the value), or an event "
-        "from before this window that a follow-up query returned (event_uid). "
+        "own credential or the company's automation (the value), or a successful "
+        "event from before the pack's lookback, from the same product, that one of "
+        "your queries returned (event_uid). "
         "Names, descriptions and same-day events are not a basis",
     )
     basis_ref: str = f("", doc="The memory_id, the identity, or the event_uid the basis is")
@@ -1110,9 +1111,9 @@ COMMANDER = Role(
     model_hint="strong",
     # No raw-log reads (RFC 0020): the role that picks a target decides from
     # what was established. The platform reads stay, because they are how an
-    # action's id is found and how its effect is verified.
+    # action's id is found and how its effect is verified. It proposes in its
+    # answer, not through `action.propose`, so every target is grounded (D45).
     tools=(
-        "action.propose",
         "action.list",
         "posture.exposure",
         "graph.neighbours",
@@ -1155,8 +1156,8 @@ use, deleting a resource, suspending a founder's account — is L2.
 An L2 that waits for a person waits for ever. The human this runs for does
 not open the tool most days. So every L2 names its `fallback` — a narrower
 reversible action, or `expire` when the right answer is to stop waiting — and
-`fallback_after_minutes`. An L2 without both is incomplete and will be rejected
-as incomplete.
+`fallback_after_minutes`. An L2 without a fallback is treated as `expire`, so
+nothing narrower ever runs, and one without a window waits the 4-hour cap.
 
 Paging is the scarcest thing you can spend. You may page on exactly two
 conditions, and you must name which in `page_condition`: `critical_severity`, or
@@ -1237,8 +1238,9 @@ You own the indicator store, which is four things:
   an observable of its own.
 - False-positive defence. Set `do_not_match` with the reason on anything that
   will burn us: a CDN edge, shared hosting, a popular service, a sinkhole, our own
-  infrastructure. That list is permanent and it is more valuable than the
-  indicators.
+  infrastructure. It keeps the value out of this report's indicators; another
+  report or a feed that lists it is still matched, until `indicator.exclude`
+  exists to keep it out for good.
 - Enrichment. Tie an indicator to the actor, malware, campaign and technique
   it came from, so a match answers "what is this" rather than only "this is bad".
 
@@ -1327,10 +1329,11 @@ covers it (`finding.list`, `case.list`), and each pack's follow-up questions.
 For each tuple, one outcome:
 - `explained`: only on a basis code can check. `human_fact` with the memory_id
   a person wrote; `own_credential` with the identity of shoc's own credential or
-  the company's automation; `older_event` with an event_uid from before this
-  window that one of your queries returned and that shows the same thing as
-  routine. A name, a description, a hostname that says "deploy" or "shoc", or an
-  event from the same day is not a basis: an attacker controls all of those.
+  the company's automation; `older_event` with the event_uid of a successful
+  event from before the pack's lookback, from the same product, that one of
+  your queries returned and that shows the same thing as routine. A name, a
+  description, a hostname that says "deploy" or "shoc", or an event from the
+  same day is not a basis: an attacker controls all of those.
   Cite the tuple's events you are explaining.
 - `suspicious`: something a person should see, citing the events that show it.
 - `inconclusive`: you could not settle it. Say in `missing` which follow-up would.

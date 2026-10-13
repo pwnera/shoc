@@ -10,7 +10,8 @@
  *
  * Capabilities used: case.get, timeline.build, case.history, action.list
  * {case_uid}, playbook.runs, playbook.list, ops.alerts (a stalled case),
- * case.investigate (palette); the parts name their own writes.
+ * case.investigate (palette), credential.list (the propose dialog); the parts
+ * name their own writes.
  */
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";

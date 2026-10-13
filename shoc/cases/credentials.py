@@ -13,9 +13,11 @@ is decided from where its target was seen (RFC 0025).
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlsplit
 
 from shoc.actions.base import Credentials
 from shoc.db.pool import Conn, execute, fetch_all, fetch_one
@@ -42,6 +44,50 @@ def accounts_of(settings: dict[str, Any]) -> tuple[str, ...]:
     raw = settings.get("accounts") or ()
     values = [raw] if isinstance(raw, str) else list(raw)
     return tuple(sorted({str(v).strip() for v in values if str(v).strip()}))
+
+
+# Settings that name where a secret goes without being a URL: a CrowdStrike
+# cloud, an Azure storage account. Every http(s) URL setting is compared too.
+HOST_SETTINGS = ("cloud", "storage_account")
+DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+def _host(name: str, value: Any) -> str | None:
+    """Where a setting sends the secret: scheme, host and port, so http:// (in
+    clear) or another service on the same host is a move too."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    if name in HOST_SETTINGS:
+        return value.strip().lower()
+    parts = urlsplit(value.strip())
+    if parts.scheme not in DEFAULT_PORTS:
+        return None
+    try:
+        port: Any = parts.port or DEFAULT_PORTS[parts.scheme]
+    except ValueError:  # not a port number: compared as written
+        port = parts.netloc
+    return f"{parts.scheme}://{parts.hostname or ''}:{port}"
+
+
+def same_host(stored: dict[str, Any], given: dict[str, Any]) -> None:
+    """Refuse to keep a stored secret for settings that send it to another host.
+
+    A secret never comes back out of shoc; one kept while `org_url` or
+    `base_url` changed would go to whoever answers there on the next call.
+    sso.configure refuses the same for a provider's secret. Sources, action
+    credentials, intel feeds and lookups all keep a blank secret field, so all
+    of them ask here first.
+    """
+    moved = sorted(
+        name
+        for name in set(stored) | set(given)
+        if _host(name, stored.get(name)) != _host(name, given.get(name))
+    )
+    if moved:
+        raise ValidationError(
+            f"{', '.join(moved)}: a new host, port or scheme needs its credential "
+            "again; the stored one never goes anywhere else"
+        )
 
 
 def store(
@@ -99,25 +145,41 @@ def save(
     source's form does, so changing a setting never means typing the key again."""
     row = fetch_one(
         conn,
-        "SELECT secret FROM shoc.action_credentials WHERE tenant_id=%s AND provider=%s",
+        "SELECT settings, secret FROM shoc.action_credentials WHERE tenant_id=%s AND provider=%s",
         (tenant_id, name),
     )
     given = {k: v for k, v in secret.items() if v not in (None, "")}
     if row:
         stored = open_secret(master_key, row["secret"], tenant_id, "action_credentials", name)
+        if set(stored) - set(given):
+            same_host(dict(row["settings"]), settings)
         given = {**stored, **given}
     elif not given:
         raise ValidationError(f"{name}: a new credential needs its secret")
     store(conn, tenant_id, name, settings, given, master_key)
 
 
+# Providers whose token names no user: their probe reads the token's own login.
+NAMELESS = ("okta", "github")
+SIGNED_IN = "signed in as "
+
+
 def record_check(conn: Conn, tenant_id: str, name: str, ok: bool | None, detail: str) -> None:
-    """What the last read with a credential said (`credential.configure`, `credential.check`)."""
+    """What the last read with a credential said (`credential.configure`, `credential.check`).
+
+    An Okta or GitHub token's probe names the login it acts as, kept as the
+    setting `acts_as`, so an agent's action on that login waits for a person
+    (RFC 0021)."""
+    login = ""
+    if ok and provider_of(name) in NAMELESS and detail.startswith(SIGNED_IN):
+        login = detail.removeprefix(SIGNED_IN).strip()
     execute(
         conn,
-        """UPDATE shoc.action_credentials SET checked_at = now(), check_ok = %s, check_detail = %s
+        """UPDATE shoc.action_credentials SET checked_at = now(), check_ok = %s, check_detail = %s,
+               settings = CASE WHEN %s::text = '' THEN settings
+                               ELSE settings || jsonb_build_object('acts_as', %s::text) END
            WHERE tenant_id = %s AND provider = %s""",
-        (ok, detail[:500], tenant_id, name),
+        (ok, detail[:500], login, login, tenant_id, name),
     )
 
 
@@ -407,7 +469,58 @@ def route(
         return [], []
     target = str(params.get(acting.required_params[0], "")) if acting.required_params else ""
     places = where_seen(conn, tenant_id, tuple(acting.platforms), target, case_uid, config)
+    kind = getattr(acting, "target_kind", "")
+    # An IAM key or user lives in the account its ARN names; an org trail
+    # files the call under the account that received it (ir-14).
+    if (
+        case_uid
+        and target
+        and acting.provider == "aws"
+        and kind in ("key", "user")
+        and (mine := owners(conn, tenant_id, target, case_uid, config))
+    ):
+        places = {(p, a) for p, _ in places or {("", "")} for a in mine}
     return choose(found, acting.provider, places, named)
+
+
+ARN_ACCOUNT = re.compile(r"arn:aws[\w-]*:(?:iam|sts)::(\d{12}):")
+
+
+def owners(conn: Conn, tenant_id: str, target: str, case_uid: str, config: Any = None) -> set[str]:
+    """The accounts in the ARNs (`actor_user_uid`) of a case's cited events whose
+    actor is this key or user; empty when none names one, or they cannot be read."""
+    from shoc.config import Config
+    from shoc.store import ocsf as layout
+    from shoc.store import open_store
+
+    uids = [
+        str(r["uid"])
+        for r in fetch_all(
+            conn,
+            """SELECT DISTINCT unnest(event_uids) AS uid FROM shoc.findings
+               WHERE tenant_id = %s AND case_uid = %s LIMIT 200""",
+            (tenant_id, case_uid),
+        )
+    ]
+    if not uids:
+        return set()
+    params: dict[str, Any] = {f"u{i}": u for i, u in enumerate(uids)}
+    try:
+        store = open_store(config or Config.load(), tenant_id)
+        try:
+            rows = store.query(
+                f"SELECT DISTINCT actor_user_uid FROM {layout.EVENTS_TABLE} "
+                "WHERE tenant_id = :tenant_id "
+                f"AND event_uid IN ({', '.join(f':{k}' for k in params)}) "
+                "AND (actor_session_uid = :target OR actor_user_name = :target)",
+                {**params, "tenant_id": tenant_id, "target": target},
+                50,
+            ).rows
+        finally:
+            store.close()
+    except Exception:  # unread: routed by where the findings were seen, as before
+        return set()
+    return {m.group(1) for r in rows if (m := ARN_ACCOUNT.match(str(r["actor_user_uid"] or "")))}
 
 
 def in_use(conn: Conn, tenant_id: str) -> set[str]:
@@ -680,8 +793,6 @@ def split_legacy(conn: Conn, config: Any = None) -> None:
 def check_name(name: str) -> None:
     """A credential is named after a provider that has actions or lookups, as a
     source is named after its connector (D76)."""
-    import re
-
     from shoc.actions import load, lookups
 
     known = {a.provider for a in load().values()} | {lk.provider for lk in lookups().values()}

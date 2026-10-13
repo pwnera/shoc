@@ -176,7 +176,15 @@ def apply(
         )
     if not remaining:
         # Every finding went to another open case: the case was a grouping that
-        # did not hold, and its findings are worked where they went.
+        # did not hold, and its findings are worked where they went, which the
+        # closed case names.
+        if into := next((u for u in touched[1:] if u), ""):
+            execute(
+                conn,
+                """UPDATE shoc.cases SET related_case_uid = %s
+                   WHERE tenant_id = %s AND case_uid = %s""",
+                (into, tenant_id, case_uid),
+            )
         engine.transition(
             conn,
             tenant_id,

@@ -71,6 +71,7 @@ def _snowflake(cfg: Any, tid: str, readonly: bool) -> EventStore:
         ),
         private_key=cfg.snowflake_private_key,
         reader=cfg.snowflake_readonly_role,
+        statement_timeout_seconds=cfg.statement_timeout_seconds,
     )
 
 
@@ -103,6 +104,7 @@ def _bigquery(cfg: Any, tid: str, readonly: bool) -> EventStore:
         cfg.tenant_catalog(tid),
         location=cfg.bigquery_location,
         reader=str(reader.get("client_email") or ""),
+        statement_timeout_seconds=cfg.statement_timeout_seconds,
     )
 
 

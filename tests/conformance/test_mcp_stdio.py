@@ -25,6 +25,8 @@ def test_a_client_lists_tools_and_calls_one_over_stdio(ctx, config, clean):
         "SHOC_TENANT": config.tenant_id,
         "SHOC_MASTER_KEY": config.master_key,
         "SHOC_MCP_ROLE": "",
+        # `shoc mcp` warms the warninglists when feeds are on; CI fetches nothing.
+        "SHOC_INTEL_FEEDS": "off",
     }
     server = StdioServerParameters(command=sys.executable, args=["-m", "shoc", "mcp"], env=env)
 

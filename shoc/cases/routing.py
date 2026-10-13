@@ -20,13 +20,13 @@ closure produced (`undo_closure`).
 
 from __future__ import annotations
 
-import hashlib
 import json
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from shoc.db.pool import Conn, execute, fetch_all, fetch_one
+from shoc.ids import make_id
 
 # A suppression a closure writes lasts this long at most. Sentinel's in-incident
 # exception lasts a day; a week stops the repeat noise of one benign activity
@@ -54,7 +54,7 @@ class Routed:
     note: str = ""
 
     def to_json(self) -> dict[str, Any]:
-        return {"routed_to": self.routed_to, "reference": self.reference, "note": self.note}
+        return asdict(self)
 
 
 @dataclass
@@ -67,10 +67,6 @@ class Routing:
             "disposition": self.disposition,
             "routed": [e.to_json() for e in self.entries],
         }
-
-
-def _uid(prefix: str, *parts: str) -> str:
-    return prefix + hashlib.sha256("|".join(parts).encode()).hexdigest()[:20]
 
 
 def _pairs(conn: Conn, tenant_id: str, case_uid: str) -> list[dict[str, Any]]:
@@ -124,8 +120,13 @@ def route(
             )
         )
     elif disposition == "benign_expected":
-        out.entries += _suppress(conn, tenant_id, case_uid, pairs, reason, by)
-        out.entries += _remember(conn, tenant_id, case, reason)
+        from shoc.agents.checks import BENIGN_CLOSE_FLOOR
+
+        # The loop does not close below the floor; a crew close that gets here
+        # anyway quiets nothing and teaches nothing (D77).
+        if closer == "human" or float(case.get("confidence") or 0.0) >= BENIGN_CLOSE_FLOOR:
+            out.entries += _suppress(conn, tenant_id, case_uid, pairs, reason, by)
+            out.entries += _remember(conn, tenant_id, case, reason)
         out.entries += _recurring(conn, tenant_id, case, pairs, reason, closer)
     elif disposition == "false_positive":
         out.entries += _backlog(
@@ -212,7 +213,7 @@ def suppress_draft(
         return ""
     days = ttl_days if 1 <= ttl_days <= SUPPRESSION_DAYS else SUPPRESSION_DAYS
     expires = datetime.now(UTC) + timedelta(days=days)
-    uid = _uid("SUP-", tenant_id, rule_id, entity)
+    uid = make_id("SUP-", tenant_id, rule_id, entity)
     execute(
         conn,
         """INSERT INTO shoc.suppressions
@@ -239,6 +240,11 @@ def suppress_draft(
     return uid
 
 
+def closure_mark(case_uid: str) -> str:
+    """How a closure's note in memory ends, so it can be found again by case."""
+    return f"(case {case_uid}, closed as expected activity)"
+
+
 def _remember(conn: Conn, tenant_id: str, case: dict[str, Any], reason: str) -> list[Routed]:
     """Write down why it was expected, scoped to the case, so the next one does not relearn it."""
     from shoc.agents import memory
@@ -249,7 +255,7 @@ def _remember(conn: Conn, tenant_id: str, case: dict[str, Any], reason: str) -> 
     memory_id = memory.add(
         conn,
         tenant_id,
-        f"{entity}: {reason} (case {case['case_uid']}, closed as expected activity)",
+        f"{entity}: {reason} {closure_mark(str(case['case_uid']))}",
         subject=entity,
         kind="episodic",
         source="crew",
@@ -400,7 +406,8 @@ def undo_closure(conn: Conn, tenant_id: str, case_uid: str, why: str) -> dict[st
     """A closure that turned out wrong takes back what it produced (RFC 0020, D77).
 
     Every merge whose backlog item came from this case is reverted, every
-    suppression it wrote is revoked, and its backlog items reopen.
+    suppression it wrote is revoked, its note in memory expires, and its backlog
+    items reopen.
     """
     from shoc.agents import detection_engineer as engineer
 
@@ -423,6 +430,15 @@ def undo_closure(conn: Conn, tenant_id: str, case_uid: str, why: str) -> dict[st
            WHERE tenant_id = %s AND case_uid = %s AND state = 'active'
            RETURNING suppression_uid""",
         (tenant_id, case_uid),
+    )
+    # Left in place, "expected activity" kept arguing benign on this entity for
+    # six months after the closure was found wrong.
+    execute(
+        conn,
+        """UPDATE shoc.memory SET expires_at = now()
+           WHERE tenant_id = %s AND source = 'crew' AND body LIKE %s
+             AND (expires_at IS NULL OR expires_at > now())""",
+        (tenant_id, "%" + closure_mark(case_uid)),
     )
     # Reopened rather than withdrawn: the gate refuses to merge for a case that
     # is not closed false_positive or benign, so an item whose case turned out

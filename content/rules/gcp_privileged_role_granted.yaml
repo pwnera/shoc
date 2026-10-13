@@ -6,8 +6,8 @@ description: >
   size grants them a few times a year.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-02
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.6
 attack: [T1098.003]
 logsource:

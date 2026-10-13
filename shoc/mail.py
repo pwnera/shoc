@@ -1,4 +1,5 @@
-"""Email to the people who sign in: invitations, resets and locks (SEC-3, RFC 0028).
+"""Email to the people who sign in: invitations, resets, locks (SEC-3, RFC 0028),
+and a page the pager did not take (RSP-4, shoc/agents/manager.py).
 
 `smtplib` from the standard library, against the company's own mail server
 (SHOC_SMTP_URL). Certificates are verified, and plain `smtp://` must upgrade
@@ -105,6 +106,14 @@ def forgot(cfg: Config, link: str) -> tuple[str, str]:
         "Open this link within an hour. You will need a code from your authenticator:\n"
         f"{link_url(cfg, link)}\n\n"
         "If it was not you, ignore this email. Your password has not changed.\n",
+    )
+
+
+def page(cfg: Config, message: str) -> tuple[str, str]:
+    return (
+        "shoc needs you",
+        f"{message}\n\nThe pager did not take this page, so it came by email. "
+        f"The cases are in the console at {cfg.public_url}.\n",
     )
 
 

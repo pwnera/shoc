@@ -75,9 +75,14 @@ sensitive: true
 
 For each tuple the Hunter returns `explained`, `inconclusive` or `suspicious`.
 `explained` names its basis: a memory fact a person wrote (`human_fact`), shoc's
-own credential or the company's automation (`own_credential`), or an event from
-before the window that one of its queries returned (`older_event`). Anything
-else is inconclusive. `suspicious` cites events. An inconclusive tuple is read
+own credential or the company's automation (`own_credential`), or a successful
+event (not Failure, Other or Unknown) from before the pack's lookback, from the
+pack's products and accounts, carrying the tuple's keyed values, that a lookup
+in the same turn returned (`older_event`); `older_event` is never accepted on a
+`seen_by_at_least` pack or a retry. A `human_fact` must name the tuple's actor
+as a whole word; a tuple with no actor needs one of its keyed values, and an
+operation, a class, a boolean or a value under 4 characters never counts (D232,
+2026-10-12). Anything else is inconclusive. `suspicious` cites events. An inconclusive tuple is read
 again the next day with what was missing named.
 
 ## Reference-level explanation
@@ -90,17 +95,38 @@ again the next day with what was missing named.
   stale is a `coverage_dark` page grouped with that source's coverage page; one
   whose source was removed is a Manager digest. A `gap` is a `hunt.gap` Ops
   alert, not a hunt backlog item.
-- **Windows** follow `ingested_at` from `hunt_packs.ingested_through`, capped at
-  the lookback; a window advances only when the run concluded. First-seen
-  history is what was ingested before the window, from the same products and
-  accounts; a failed attempt (`status` Failure) is not history, so a denied
-  call does not make the successful one familiar. "Rare" counts principals
-  over the whole lookback.
+- **Windows** follow `ingested_at` from `hunt_packs.ingested_through`, read in
+  window-sized slices, at most 7 per run, reaching back the longer of the
+  lookback and 7 windows (D229, 2026-10-12). A range older than that is named
+  in `unseen` and the run is a `gap`; what lies past the 7th slice is read by
+  the next run. The daily cycle ends its windows `SETTLE` (10 minutes) before
+  now on the database clock, and a load that committed after the last window
+  ended, with events stamped before it, pulls the start back to its oldest
+  stamp, as D64 and D103 do for rules. A pack whose last run was a gap that did
+  not advance reads one slice. A pack run directly (`hunt.pack`) reads up to now
+  but moves its cursor only to now minus `SETTLE`. A window advances only when
+  the run concluded. First-seen history is what was ingested before the window,
+  from the same products and accounts, and counts only events that got somebody
+  in: status Failure, Other (Okta CHALLENGE, SKIPPED or DEFERRED, GitHub
+  cancelled or skipped) and Unknown are not history, so a denied call does not
+  make the successful one familiar (D234). A first-seen tuple is one new set of
+  `first_seen` values per user or host, with the pack's other pivots
+  (addresses, clients) listed on it, at most 10 each; a rare tuple is one
+  grouping. "Rare" counts principals over the whole lookback.
 - **Triage**: one `complete_typed` call over every tuple of the day, tools
   `events.query`, `events.summarize`, `memory.search`, `finding.list`,
   `case.list`, `graph.neighbours`. With no model, or a failed one, nothing is
-  triaged and the window is read again. Past 200 tuples a pack's first 200 in a
-  fixed order are triaged and the rest are recorded as too broad. The turn has
+  triaged and the window is read again. Past 200 tuples a pack's 200 rarest
+  (fewest events, then earliest) are triaged (D230, 2026-10-12). The rest are
+  kept as inconclusive observations marked cut, read once by the next day's
+  retries and then once more as an ordinary second reading, and the run is a
+  `gap`, so `hunt.gap` fires, unless a tuple was suspicious. Retries join the
+  turn before the day's packs: sensitive packs first, and second readings
+  before cut tuples. Within an agenda rank, a pack never run comes first, then
+  the oldest `ingested_through`, then sensitive packs, then the pack id (D231).
+  The prompt shows at most 5 event ids per tuple, and citations are checked
+  against all of them. A merged pack's title, hypothesis, triage and follow-up
+  reach the turn quoted as untrusted data (D235). The turn has
   a daily token ceiling, `hunt_tokens_per_day` in `llm.configure` (200,000 by
   default): packs join it in agenda order while their tuples fit in half of
   what is left, a pack that does not fit is a `gap` read again the next day,
@@ -131,7 +157,10 @@ again the next day with what was missing named.
 - **Let the model write the query.** Rejected: unreviewable, and RFC 0005's
   boundary stands.
 - **A known-benign tuple table.** Not now: first-seen never resurfaces a tuple,
-  and a model-written allowlist is a suppression (D46).
+  and a model-written allowlist is a suppression (D46). Since 2026-10-12 a rare
+  pack can say the same with `rare: {..., new_only: true}`, which reports a
+  grouping only in the window its first event was ingested; the five
+  `seen_by_fewer_than` packs set it (D233).
 - **A 30-day backfill on connect.** Rejected: it would end learning on day one
   and fire every rule on a month of old admin changes.
 - **The CTI peer.** Not now: it would carry `intel.digest` egress into an

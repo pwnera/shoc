@@ -32,12 +32,12 @@ steps:
     action: okta.revoke_sessions
     optional: true
     params:
-      user: "{{ entity.user }}"
+      user: "{{ rule.cloudflare_gateway_phishing_resolved.user }}"
   - name: revoke the person's sessions in Entra ID
     action: entra.revoke_sessions
     optional: true
     params:
-      user: "{{ entity.user }}"
+      user: "{{ rule.cloudflare_gateway_phishing_resolved.user }}"
   - name: page the on-call engineer
     action: notify.page
     params:

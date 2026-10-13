@@ -97,6 +97,18 @@ An agent's proposal against shoc's own credential or address, or against an
 operator account, always waits for a person (L2). It is not blocked: a person
 can still approve revoking a stolen shoc key.
 
+> Amended on 2026-10-12 (D182). What is protected is computed when asked:
+> `own_identities`, the emails of enabled shoc admins and operators, the
+> non-secret identity of each stored response credential (AWS
+> `access_key_id`, Google `admin_email` and `client_email`, Microsoft and EDR
+> `client_id`), who each source credential acts as (for example the AWS key
+> the CloudTrail source reads with), and the login a response token acts as
+> (`acts_as`, recorded by the Okta and GitHub probes). An agent's or a
+> playbook's automatic action on any of them waits for a person. Response
+> credentials are not copied into `own_identities`, so `classify` never treats
+> them as shoc's own and nothing drifts when a credential rotates. Break-glass
+> and emergency accounts are registered with `own.add`, kind `operator` (D253).
+
 A person closes a case with `case.close`:
 
 ```

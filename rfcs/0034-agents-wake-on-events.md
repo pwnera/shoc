@@ -18,7 +18,9 @@ queued to fall due at the end of the window, keyed on that window, so the first
 event of a burst queues it and the rest of the burst joins it. The crew goes back
 to a case within seconds of a new finding, a person's message, an Ops nudge or an
 action finishing. A report CTI keeps starts the Hunter and the Detection Engineer
-within ten minutes. A GitHub push is read for detections within a minute. The
+within ten minutes. On Postgres a GitHub push is read for detections within a
+minute; on a warehouse it waits in `shoc.push_spool` and is read with the next
+detection cycle, so the warehouse wakes once per cycle. The
 schedules keep the work that depends on the clock.
 
 ## Motivation
@@ -113,12 +115,17 @@ dependency.
 ## Not done
 
 - Webhook delivery (`stream.deliver`) still runs every minute. It is not an
-  agent, and with no webhook configured a run is one query.
+  agent, and with no webhook configured a run is one query. Since 2026-10-12
+  (D163) the tick queues no `stream.deliver` job for a tenant with no enabled
+  webhook.
 - A finding Sentinel attaches to another open case publishes no event; the
   receiving case's next event or sweep picks it up.
 - The worker runs the jobs it claims one after another, so a long job still
   holds up a crew run queued behind it. Running more workers is the scaling knob
-  (D6); a priority between job kinds is a separate change.
+  (D6); a priority between job kinds is a separate change. Done on 2026-10-12
+  (D191): a worker claims one job at a time in three tiers, pages, actions and
+  webhook deliveries first, and `shoc worker --urgent` claims only the first
+  two.
 - Source schedules set before a deployment moved to a warehouse keep their
   interval; `source.configure` applies the warehouse's 900-second floor only when
   it runs.

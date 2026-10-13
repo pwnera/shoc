@@ -1,9 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { QueryClient } from "@tanstack/react-query";
-import { announce, eventHref, invalidations } from "@/lib/live";
-import { backoff, dataOf, type StreamEvent } from "@/lib/stream";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createElement, type ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { announce, eventHref, invalidations, receive, useApply } from "@/lib/live";
+import { resetPresence, usePresence } from "@/lib/presence";
+import { backoff, dataOf, HIDDEN, streamState, subscribe, type StreamEvent } from "@/lib/stream";
 import { dismiss, useToasts } from "@/lib/toast";
 import { act, renderHook } from "@testing-library/react";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const CONTRACT = join(__dirname, "..", "..", "contract", "v1.json");
 
 const ev = (type: string, subject = "S1", payload: Record<string, unknown> = {}): StreamEvent => ({
   seq: 10,
@@ -48,8 +54,8 @@ describe("what each event makes stale (section 7, item 8)", () => {
   });
 
   it("refreshes health.status only for health, finding and source events", () => {
-    expect(keys("health.source.failing")).toEqual(["health.sources", "ops.alerts", "health.status"]);
-    expect(keys("health.source.stale")).toEqual(["health.sources", "ops.alerts", "health.status"]);
+    expect(keys("health.source.failing")).toEqual(["health.sources", "source.list", "ops.alerts", "health.status"]);
+    expect(keys("health.source.stale")).toEqual(["health.sources", "source.list", "ops.alerts", "health.status"]);
     expect(keys("health.source.quality")).toEqual(["health.quality", "ops.alerts"]);
     expect(keys("health.rule.failing")).toEqual(["health.rules", "ops.alerts", "health.status"]);
     expect(keys("health.rule.noisy")).toEqual(["health.rules", "ops.alerts", "health.status"]);
@@ -65,6 +71,110 @@ describe("what each event makes stale (section 7, item 8)", () => {
     expect(keys("report.ready")).toEqual([]);
     for (const type of ["case.opened", "openspace.message", "action.executed", "playbook.finished"])
       expect(keys(type)).not.toContain("health.status");
+  });
+
+  it("refreshes the hunt backlog on a filed item, and the intel lists on a read report", () => {
+    expect(keys("hunt.item")).toEqual(["hunt.backlog"]);
+    expect(keys("intel.report")).toEqual(["intel.reports", "intel.list"]);
+  });
+
+  // A console-only copy has no contract/ to read; CI checks out the whole repo, so there a missing one fails.
+  it.skipIf(!existsSync(CONTRACT) && !process.env.CI)("refreshes something on every event type the contract lists, or says why not", () => {
+    // report.get is a mutation, with no query to refresh; health.sources already polls every 30s.
+    const NOTHING = ["events.loaded", "report.ready"];
+    const types = (JSON.parse(readFileSync(CONTRACT, "utf8")) as { event_types: string[] }).event_types;
+    const silent = types.filter((type) => {
+      const { now, later } = invalidations(ev(type));
+      return !now.length && !later.length;
+    });
+    expect(silent.sort()).toEqual(NOTHING);
+  });
+});
+
+describe("refreshes after a quiet spell", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("still refreshes a list within twice its spell while a burst does not let up", () => {
+    vi.useFakeTimers();
+    const client = new QueryClient();
+    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue(undefined);
+    const wrapper = ({ children }: { children: ReactNode }) => createElement(QueryClientProvider, { client }, children);
+    const { result } = renderHook(() => useApply(), { wrapper });
+    const listed = () => invalidate.mock.calls.some(([filters]) => JSON.stringify(filters?.queryKey) === '["finding.list"]');
+    // A finding every 5s, under finding.list's 15s spell: a plain trailing debounce would wait for the burst to end.
+    for (let at = 0; at < 30_000; at += 5_000) {
+      expect(listed()).toBe(false);
+      void result.current(ev("finding.new"));
+      vi.advanceTimersByTime(5_000);
+    }
+    expect(listed()).toBe(true);
+  });
+});
+
+describe("a hidden tab", () => {
+  let hidden = false;
+  const turn = (to: boolean) => {
+    hidden = to;
+    document.dispatchEvent(new Event("visibilitychange"));
+  };
+  beforeEach(() => {
+    vi.useFakeTimers();
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => (hidden ? "hidden" : "visible") });
+    // jsdom has no stream piping: the fake body below hands out text already decoded.
+    vi.stubGlobal("TextDecoderStream", class {});
+  });
+  afterEach(() => {
+    hidden = false;
+    Reflect.deleteProperty(document, "visibilityState");
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  /** A stream that sends `frames`, then a keep-alive every 2s, until its connection is aborted. */
+  function streamed(signal: AbortSignal, frames: string[]): Response {
+    const read = () =>
+      new Promise<{ done: boolean; value?: string }>((resolve, reject) => {
+        const gone = () => reject(new DOMException("aborted", "AbortError"));
+        if (signal.aborted) return gone();
+        signal.addEventListener("abort", gone, { once: true });
+        const next = frames.shift();
+        if (next !== undefined) resolve({ done: false, value: next });
+        else setTimeout(() => resolve({ done: false, value: ": keep-alive\n\n" }), 2_000);
+      });
+    return { status: 200, ok: true, body: { pipeThrough: () => ({ getReader: () => ({ read }) }) } } as unknown as Response;
+  }
+
+  it("gives its stream's socket back after 30s, and picks up from the last event once in view", async () => {
+    const opened: { url: string; signal: AbortSignal }[] = [];
+    const event: StreamEvent = { ...ev("case.updated", "C1"), seq: 50 };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init: RequestInit) => {
+        const signal = init.signal as AbortSignal;
+        opened.push({ url, signal });
+        return streamed(signal, opened.length === 1 ? [`data: ${JSON.stringify(event)}\n\n`] : []);
+      }),
+    );
+    const seen: number[] = [];
+    const stop = new AbortController();
+    const done = subscribe({ since: 42, onEvent: (e) => seen.push(e.seq), signal: stop.signal });
+    await vi.waitFor(() => expect(seen).toEqual([50]));
+    expect(streamState()).toBe("live");
+
+    turn(true);
+    await vi.advanceTimersByTimeAsync(HIDDEN - 1_000);
+    expect(opened[0]!.signal.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(opened[0]!.signal.aborted).toBe(true);
+    // Hidden, it stays closed however long, and no retry wakes it.
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    expect(opened).toHaveLength(1);
+
+    turn(false);
+    await vi.waitFor(() => expect(opened).toHaveLength(2));
+    expect(opened.map((o) => o.url)).toEqual(["/v1/stream?since=42", "/v1/stream?since=50"]);
+    stop.abort();
+    await done;
   });
 });
 
@@ -90,6 +200,8 @@ describe("where each event leads", () => {
     expect(href("health.approval.waiting")).toBe("/");
     expect(href("health.audit.broken")).toBe("/access?tab=audit");
     expect(href("report.ready")).toBe("/measurement");
+    expect(href("hunt.item", "HI-1")).toBe("/hunts?tab=backlog&item=HI-1");
+    expect(href("intel.report", "RPT-1")).toBe("/intel?tab=reports&report=RPT-1");
   });
 });
 
@@ -139,6 +251,30 @@ describe("toasts from the stream (section 3.5)", () => {
       say(ev("action.executed", uid, { type: "cloudflare.block_ip", ok: true, dry_run: true, case_uid: "CASE-9" }));
     expect(shown()).toHaveLength(1);
     expect(shown()[0]).toMatchObject({ count: 3, text: "3 actions done" });
+  });
+
+  it("takes what a tab back from hiding replays as history: no toast, and no role working on a case it finished", () => {
+    resetPresence();
+    const pulse = renderHook(() => usePresence());
+    const now = Date.parse("2026-10-03T13:00:00Z");
+    const old = { created_at: "2026-10-03T12:00:00Z" };
+    act(() => {
+      receive({ ...ev("openspace.message", "CASE-1", { agent: "Investigator", kind: "finding" }), ...old }, client, Promise.resolve(), now);
+      receive({ ...ev("case.opened", "CASE-2", { severity: "critical", entity: "x" }), ...old }, client, Promise.resolve(), now);
+    });
+    expect(shown()).toHaveLength(0);
+    expect(pulse.result.current.working).toBe(false);
+    // Posted three minutes ago and replayed now: it counts from when it was posted, so the pulse has already lapsed.
+    act(() =>
+      receive(
+        { ...ev("openspace.message", "CASE-1", { agent: "Investigator", kind: "finding" }), created_at: "2026-10-03T12:57:00Z" },
+        client,
+        Promise.resolve(),
+        now,
+      ),
+    );
+    expect(pulse.result.current.last("CASE-1")?.at).toBe(Date.parse("2026-10-03T12:57:00Z"));
+    resetPresence();
   });
 });
 

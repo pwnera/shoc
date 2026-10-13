@@ -12,7 +12,8 @@ evidence, and the one thing that needs a person has a button next to it.
   human, with findings and verdict, and **Approve** and **Reject** buttons on
   those actions. If nobody presses one, the action waits four hours and is then
   paged or rejected ([`response.md`](response.md)).
-- Answers `/shoc`: ask a question, list open cases, or see what is waiting.
+- Answers `/shoc` for the people you list: ask a question, list open cases, or
+  see what is waiting. Each answer is shown to the asker only.
 
 ## Setting it up
 
@@ -21,18 +22,37 @@ evidence, and the one thing that needs a person has a button next to it.
 2. Point the slash command and the interactivity request URL at your shoc:
     - Slash command `/shoc` → `https://shoc.example.com/slack/commands`
     - Interactivity → `https://shoc.example.com/slack/interactions`
-3. Configure shoc:
+3. Put the bot token and the signing secret in `SHOC_SECRET_SLACK_BOT_TOKEN`
+   and `SHOC_SECRET_SLACK_SIGNING_SECRET` (on Docker, in `deploy/secrets.env`),
+   so neither is typed on a command line, and name them in `shoc.yaml`:
 
-```bash
-shoc slack configure \
-  --bot-token 'xoxb-…' \
-  --signing-secret '…' \
-  --channel C0123456789 \
-  --approvers '{"U0123ALICE": "alice", "U0456SAM": "sam"}'
+```yaml
+slack:
+  channel: C0123456789
+  bot_token_env: SHOC_SECRET_SLACK_BOT_TOKEN
+  signing_secret_env: SHOC_SECRET_SLACK_SIGNING_SECRET
+  team_id: T0123456789
+  approvers: { U0123ALICE: alice, U0456SAM: sam }
+  readers: { U0789RITA: rita }   # everyone else who may use /shoc; leave out to keep the stored list
 ```
 
+4. Apply it with `shoc plan -f shoc.yaml` and `shoc apply -f shoc.yaml -y`
+   (the Docker form is in [`deploy.md`](deploy.md#config-as-code)).
+
 The token and signing secret are encrypted with your master key before they are
-stored.
+stored. `shoc slack configure --channel … --approvers …` changes the rest later
+and keeps the stored token and secret when they are left out.
+
+## Reaching shoc from Slack
+
+Posts go out from shoc, so they work from a loopback or VPN-only install. The
+slash command and the buttons are Slack calling in, so `/slack/commands` and
+`/slack/interactions` must be reachable over public HTTPS. Expose those two
+paths, and `/ingest/github` if a GitHub webhook pushes to it, through a TLS
+reverse proxy, and keep `/v1`, `/mcp`, `/metrics` and the console private.
+Those two paths check Slack's signature (below) and need no token. Without that
+route, a button press shows an error in Slack and the action keeps waiting on
+the four-hour path above.
 
 ## Who may approve
 
@@ -45,7 +65,30 @@ same rule the CLI and the API follow.
 That mapping is the security boundary of the Slack integration, so treat it like
 one: keep it short, and remove people when they leave.
 
+## Who may read
+
+`/shoc` answers only the Slack users named in `readers` or `approvers`;
+approvers are readers already. Anyone else in the workspace, guests included,
+gets `/shoc help` and a refusal that names `shoc slack configure`. A listed
+reader asks as an external agent with read access to events, findings, cases,
+health and `ask`. The crew answers with its own read access, so a reader can
+learn more than their own role would show. Keep the list as short as the
+approver list.
+
+```bash
+shoc slack configure --readers '{"U0789RITA": "rita"}' --team-id T0123456789
+```
+
+`--readers` replaces the list (`'{}'` empties it), and leaving it out keeps the
+stored one. An install set up before readers existed answers only its
+approvers until you add the others. With `--team-id` set, a request from any
+other workspace is refused. Answers to `/shoc cases`, `/shoc waiting` and questions are shown to the asker
+only; the Approve and Reject confirmations still post in the channel. Each
+person may ask 20 questions an hour of each `serve` process.
+
 ## What the commands do
+
+Every row but help needs the asker to be a reader or an approver.
 
 | Command | What you get |
 | --- | --- |

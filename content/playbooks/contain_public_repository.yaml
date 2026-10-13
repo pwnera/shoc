@@ -36,4 +36,4 @@ steps:
     action: github.make_repo_private
     optional: true
     params:
-      repo: "{{ entity.resource }}"
+      repo: "{{ rule.github_repo_made_public.resource }}"

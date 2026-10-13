@@ -6,6 +6,9 @@ the tests check the statements they send.
 
 from __future__ import annotations
 
+import os
+import time
+from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
@@ -13,7 +16,8 @@ import pytest
 from shoc.config import Config
 from shoc.errors import ConfigError, StoreError
 from shoc.ingest import batch
-from shoc.store import open_store
+from shoc.store import ocsf, open_store
+from shoc.store.base import RetentionPolicy
 from shoc.store.databricks import DatabricksStore
 from shoc.store.snowflake import SnowflakeStore
 from shoc.store.sql import translate
@@ -52,6 +56,9 @@ def _fake(store, answers):
         "DELETE FROM ocsf_events WHERE tenant_id = :t",
         "SELECT 1 FROM ocsf_events; DROP TABLE ocsf_events",
         "INSERT INTO ocsf_events (event_uid) VALUES ('x')",
+        # Both write under a SELECT root.
+        "WITH d AS (DELETE FROM ocsf_events RETURNING *) SELECT * FROM d",
+        "SELECT * INTO copied FROM ocsf_events",
     ],
 )
 def test_the_read_path_runs_nothing_but_one_select(sql):
@@ -162,6 +169,96 @@ def test_snowflake_copies_into_a_temporary_table_and_merges_what_is_new(tmp_path
     assert bounds == (EARLY, LATE)
     assert sent[5][0] == f"DROP TABLE IF EXISTS {temp}"
     assert stats.rows == 1
+    assert "OVERWRITE" not in sent[0][0], "a stage object is never replaced"
+
+
+def test_snowflake_creates_the_events_table_without_a_clustering_key():
+    """A key turns on reclustering, billed apart, for nothing load order does not give (D64)."""
+    store = SnowflakeStore("a", "u", "p", "w", "acme", "SHOC_ACME")
+    sent = _fake(store, {})
+    store.create_tenant()
+    (ddl,) = [sql for sql, _ in sent if sql.startswith("CREATE TABLE")]
+    assert "CLUSTER BY" not in ddl
+
+
+def test_two_batches_written_in_one_millisecond_get_two_files(tmp_path, monkeypatch):
+    """Serve loads webhooks in threads of one process: a name from the time and the pid
+    was shared, and one batch replaced the other (ING-3)."""
+    monkeypatch.setattr(batch, "time", SimpleNamespace(time=lambda: 1_790_000_000.0))
+    first, _ = batch.write_batch([{"event_uid": "a", "time": EARLY}], str(tmp_path))
+    second, _ = batch.write_batch([{"event_uid": "b", "time": EARLY}], str(tmp_path))
+    assert first != second
+    assert batch.read_unique(str(first))[0]["event_uid"] == "a"
+
+
+def test_a_failed_load_leaves_no_batch_file_behind():
+    """A cursor or a sender's retry fetches the batch again; nothing reads the file (ING-3)."""
+    staged: list[str] = []
+
+    class Stopped:
+        tenant_id = "t1"
+
+        def load_batch(self, path):
+            staged.append(path)
+            raise StoreError("warehouse stopped")
+
+    with pytest.raises(StoreError, match="stopped"):
+        batch.load(cast(Any, Stopped()), [{"tenant_id": "t1", "event_uid": "a", "time": EARLY}])
+    assert staged and not os.path.exists(staged[0])
+
+
+def test_a_batch_holding_another_tenants_rows_is_refused():
+    """A row mapped for another tenant would land in this tenant's table (STO-1, SEC-1)."""
+    staged: list[str] = []
+
+    class Store:
+        tenant_id = "t1"
+
+        def load_batch(self, path):
+            staged.append(path)
+
+    rows = [
+        {"tenant_id": "t1", "event_uid": "a", "time": EARLY},
+        {"tenant_id": "t2", "event_uid": "b", "time": EARLY},
+    ]
+    with pytest.raises(StoreError, match="1 row"):
+        batch.load(cast(Any, Store()), rows)
+    with pytest.raises(StoreError, match="another tenant_id"):
+        batch.load(cast(Any, Store()), [{"event_uid": "c", "time": EARLY}])
+    assert not staged
+
+
+def _names():
+    """A batch staged two days ago, one staged now, and a file that is no batch."""
+    old = f"batch-{int((time.time() - 2 * 86400) * 1000)}-{'0' * 32}.ndjson"
+    return old, f"{batch.batch_name()}.ndjson", "notes.txt"
+
+
+def test_retention_sweeps_the_batches_a_killed_load_left_staged():
+    """os._exit or an eviction skips the cleanup, and the copy outlives retention (STO-3)."""
+    old, new, other = _names()
+    dbx = DatabricksStore("h", "/p", "t", "acme", "shoc_acme")
+    sent = _fake(dbx, {"LIST": [{"name": n} for n in (old, new, other)]})
+    dbx.apply_retention(RetentionPolicy(days=30))
+    removed = [sql for sql, _ in sent if sql.startswith("REMOVE")]
+    assert removed == [f"REMOVE '/Volumes/shoc_acme/shoc/batches/{old}'"]
+
+    sf = SnowflakeStore("a", "u", "p", "w", "acme", "SHOC_ACME")
+    sent = _fake(sf, {"LIST": [{"name": f"shoc_batches/{n}.gz"} for n in (old, new, other)]})
+    sf.apply_retention(RetentionPolicy(days=30))
+    removed = [sql for sql, _ in sent if sql.startswith("REMOVE")]
+    assert removed == [f'REMOVE @"SHOC_ACME"."SHOC".SHOC_BATCHES/{old}.gz']
+
+
+def test_a_warehouse_returns_json_columns_as_objects():
+    """Postgres hands back jsonb as objects; a warehouse answers alike (STO-1)."""
+    sf = SnowflakeStore("a", "u", "p", "w", "acme", "SHOC_ACME")
+    _fake(sf, {"SELECT": [{"event_uid": "e1", "raw": '{"a": {"b": [1]}}', "message": "{}"}]})
+    (row,) = sf.query("SELECT event_uid, raw, message FROM ocsf_events").rows
+    assert row["raw"] == {"a": {"b": [1]}}
+    assert row["message"] == "{}", "only the JSON columns are decoded"
+    cut = '{"a": "cut sh'
+    assert ocsf.decoded([{"raw": cut}]) == [{"raw": cut}], "text that is not JSON stays text"
 
 
 def test_snowflake_reads_columns_from_the_tenant_database():
@@ -183,9 +280,12 @@ def test_snowflake_gets_a_pem_private_key_as_der():
     pem = key.private_bytes(
         serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()
     ).decode()
-    assert _der(pem) == key.private_bytes(
+    der = key.private_bytes(
         serialization.Encoding.DER, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()
     )
+    assert _der(pem) == der
+    assert "\n" not in pem.replace("\n", "\\n")
+    assert _der(pem.replace("\n", "\\n")) == der, "a PEM kept on one line of an .env file"
 
 
 def test_retention_counts_what_the_delete_reports():
@@ -193,8 +293,6 @@ def test_retention_counts_what_the_delete_reports():
     _fake(dbx, {"DELETE": [{"num_affected_rows": 7}]})
     sf = SnowflakeStore("a", "u", "p", "w", "acme", "SHOC_ACME")
     _fake(sf, {"DELETE": [{"number of rows deleted": 3}]})
-    from shoc.store.base import RetentionPolicy
-
     assert dbx.apply_retention(RetentionPolicy(days=30)) == 7
     assert sf.apply_retention(RetentionPolicy(days=30)) == 3
 

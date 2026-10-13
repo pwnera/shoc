@@ -8,8 +8,8 @@ description: >
   parameters. Each one hands a principal the whole account.
 status: stable
 date: 2026-09-24
-modified: 2026-10-02
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.7
 attack: [T1098.003, T1548.005, T1562.008]
 logsource:

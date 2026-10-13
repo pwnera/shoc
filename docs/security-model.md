@@ -7,7 +7,7 @@ This page states what it assumes, what it enforces and what it leaves to you.
 
 | Principal | Arrives through | Rights |
 | --- | --- | --- |
-| Human | CLI, the console with a session, Slack, an assistant over MCP | Those of the person's role (below). The CLI and single-user mode are `admin` |
+| Human | CLI, the console with a session, Slack, an assistant over MCP | Those of the person's role (below). The CLI and single-user mode are `admin`. The CLI is trusted host access: whoever can run it also holds the DSN and the master key. Its caller is recorded as `cli:<SHOC_CLI_USER>`, or `cli` when the variable is unset, a name the person running it declares and nothing authenticates; it attributes an honest operator and stops no one |
 | Crew agent | Internal tool calls | Per crew role; L1 actions only where policy allows |
 | External agent | MCP with no role (a teammate's assistant, a partner bot) | Read, ask, post to a case, add facts and indicators, run hunts. Never propose or approve an action |
 | Service | REST, ingest, webhooks | The scopes its token lists |
@@ -29,7 +29,10 @@ roles (RFC 0018). All four are human principals.
 | `deployer` | Read everything; connect sources, store action credentials, configure intel feeds, Slack, the LLM and webhooks, record shoc's own assets, apply config as code |
 | `reader` | Read everything |
 
-A listed Slack approver is an `operator`.
+A listed Slack approver is an `operator`. A listed Slack reader is an external
+agent with the `events`, `findings`, `cases`, `ask` and `health` read scopes,
+and a Slack user on neither list gets `/shoc help` and a refusal
+([`slack.md`](slack.md)).
 
 ### Tokens and single-user mode
 
@@ -106,8 +109,13 @@ shoc user list
 `user.list` and `sso.show` need `users:read` and `sso:read`, which every role
 holds through `*:read`; neither returns a hash or a secret. Disabling a person
 ends their sessions, their links and the role tokens issued to their email, and
-`--no-disabled` lets them sign in again. `user.update` refuses to leave no
-active admin.
+clears their password and authenticator. `--no-disabled` re-enables the
+account; a password account then needs `user.reset` to set a new password and
+authenticator before it can sign in, and an SSO account signs in as before.
+Changing a person's role also revokes any role token issued to their email
+under a different role, since a role token keeps the role it was issued with,
+and the summary names those tokens. `user.update` refuses to leave no active
+admin.
 
 `SHOC_PUBLIC_URL`, the console's origin as people reach it, is required for any
 sign-in. Emailed links and the SSO redirect URI are built from it and never
@@ -129,7 +137,7 @@ not part of the frozen contract.
 | `POST /auth/token {token}` | Makes a person's token (one with a role) the session cookie, for up to 12 hours, or until the token ends if sooner. A machine token is 401 `bad_credentials` |
 | `POST /auth/link {link}` | Answers the link's email and, for an enrolling link, the new authenticator's `otpauth://` URI. An unknown, used or expired link is 410 `link_expired` |
 | `POST /auth/link/accept {link, password, code}` | Sets the password, and for an enrolling link the authenticator, once the code checks. Ends the link and the person's other links and sessions, and signs this browser in. A wrong code is 401 `bad_code`, and the fifth ends the link |
-| `POST /auth/forgot {email}` | Emails an active password account a link that keeps its authenticator, at most one per 5 minutes, from a background thread so the answer takes as long either way. Always `{"sent": true}`, or `{"sent": false}` when mail is not configured |
+| `POST /auth/forgot {email}` | Emails an active password account a link that keeps its authenticator, at most one per 5 minutes. The work runs on two threads of its own, so the answer takes as long either way and a burst of requests waits in a queue instead of each opening a database connection. Always `{"sent": true}`, or `{"sent": false}` when mail is not configured |
 | `POST /auth/logout` | Revokes the session and clears the cookie. A token used through `/auth/token` stays live; `token.revoke` ends it |
 
 Every `POST` to these routes, and every `POST` that relies on the session
@@ -144,12 +152,20 @@ lasts 12 hours. A request with more than one is refused. The cookie holds a
 session token, kept like any other as a SHA-256 row in `shoc.api_tokens`, with
 the account's `user_id` and no role of its own. `authenticate` reads a bearer
 token first, then the cookie. A session takes its role from the account on
-every request, so a role change applies on the next one and a disabled account
-is signed out. The caller is a human whose id is the email, so the audit log
+every request, so a role change applies on the next one (role tokens issued to
+the email under another role are revoked by the same `user.update`) and a
+disabled account is signed out. The caller is a human whose id is the email, so the audit log
 names the person. A cookie that names no live session is 401 `signed_out`, and
 the event stream checks its caller again every 30 seconds and ends with the
-session. No script on the page can read the cookie, the console keeps no
-credential in storage, and "Log out" clears the tab's session storage.
+session. No script on the page can read the cookie and the console keeps no
+credential in storage. The console keeps the signed-in `user.me` id under
+`shoc.owner`, beside the crew thread in the tab's session storage (`shoc.chat`)
+and beside the recent records and queries in local storage (`shoc.recent`,
+`shoc.explore.recent`). Those belong to that person: "Log out" removes them, and
+so does a sign-in by someone else on the same browser (SEC-3). A link the
+console builds from kernel data (a rule or hunt reference, an intel report URL)
+is clickable only when it is `http` or `https`; any other scheme shows as plain
+text, and the console's lint rules stop any screen from rendering HTML.
 
 Passwords, codes and links:
 
@@ -180,6 +196,7 @@ Passwords, codes and links:
 
 Wrong passwords and codes:
 
+- `/auth/*` refuses `X-Shoc-Tenant: shoc:all`, as the API does.
 - A wrong password is throttled per account and client address, 10 in 15
   minutes, and answers 429 `slow_down` past that. It never locks the account,
   so knowing the admin's email is not enough to lock them out.
@@ -210,9 +227,10 @@ client id and secret, and the company's domains.
   `organizations` and `consumers` issuers are refused. It refuses while no admin
   exists, since the first person through SSO joins as `reader`.
 - The ID token must be signed with RS256, PS256 or ES256 by a key from the
-  provider's JWKS, cached an hour. It must name the issuer exactly, hold the
-  client id in `aud` (and in `azp` when present), be current within 60 seconds
-  and carry the nonce.
+  provider's JWKS, which is fetched like discovery and the token exchange
+  (`https` to a public host, no redirects) and kept an hour. It must name the
+  issuer exactly, hold the client id in `aud` (and in `azp` when present), be
+  current within 60 seconds and carry the nonce.
 - Its `email` must be in a configured domain and vouched for by the provider:
   `email_verified` true, plus `hd` in the domains for Google. For Microsoft, the
   token's `tid` must be the issuer's tenant, and a guest (`idp` present) is
@@ -251,6 +269,18 @@ the person approves in Slack or runs the `shoc` command in a terminal. A
 person who confirms without reading the prompt approves what the model asked
 for; the prompt names the target so that reading it takes seconds.
 
+The prompt is never cut. One that would run past 600 characters refuses the
+call with `confirmation_required` and points to the `shoc <area> <verb>`
+command, since whatever lay past the cut would be confirmed unseen.
+`config.apply` is shown as its plan's change list, unchanged lines left out.
+Other L2 arguments are shown with the fields that say who or what changes first
+(email, who, role, type, target, kind, provider, issuer, domains, base URL and
+the like), then the rest by name, secrets as `(hidden)`. An action's rationale
+comes last, labelled `Crew rationale (unverified)`, and is left out whole when
+it does not fit. A tool is reached only by its underscored name
+(`action_approve`); a dotted name such as `action.approve` is refused with
+`unknown_tool`, so no second spelling of an L2 tool skips the confirmation.
+
 For the stdio client:
 
 ```
@@ -270,8 +300,10 @@ stateful so that the prompt and the answer travel on the same session.
   a `high` or `critical` case pages once, and anything lower is rejected with the
   reason written into the case (D37).
 
-New installs default to dry run (`SHOC_DRY_RUN=1`): actions are proposed and
-recorded, never executed.
+New installs default to dry run: actions are proposed and recorded, never
+executed. `SHOC_DRY_RUN` set to `1` or `0` wins over the policy's `dry_run` in
+both directions; unset, the policy decides. A page is sent for real either way
+([`response.md`](response.md#autonomy-in-three-levels)).
 
 ## Evidence or nothing
 
@@ -297,6 +329,34 @@ migrate` grants `SELECT` on each tenant's catalog, database, schema or dataset,
 and on every backend the
 store's read path runs nothing but a single `SELECT`.
 
+## Outbound fetches
+
+A URL a caller hands in or a person configures (an `intel.add` or
+`intel.digest` URL, a list or RSS source, an item on the report queue) is
+fetched by one function (`shoc/detect/report.py`, `get`). Each hop must resolve
+only to public addresses, and the connection goes to the address that was
+checked, with the name kept for `Host` and TLS, so neither a redirect nor a
+second DNS answer reaches an internal address. A fetch follows at most 3
+redirects, each checked, reads at most 8 MiB and gives up after 60 seconds in
+all, connect and headers included. That pinned path ignores the environment, so
+`SSL_CERT_FILE` and `SSL_CERT_DIR` do not apply to it.
+
+Behind `HTTPS_PROXY` or `ALL_PROXY`, each hop is still checked with local DNS
+but sent by name, because an HTTPS tunnel checks the certificate against the
+host it is given. The proxy resolves the name again, so DNS rebinding between
+the two lookups is not caught there, and a network with a proxy and no local DNS
+cannot fetch reports.
+
+A keyless research source may follow a redirect only to a public address, and
+connects to the address it vetted on every hop, redirects included, with the
+name kept for `Host` and TLS, as report fetches do. Through `HTTPS_PROXY` or
+`ALL_PROXY` it goes by name, as above. `.localhost` and `.svc` names count as
+internal for research and report fetches. A source that carries a key follows
+no redirect, so the key never reaches another host; OTX and MISP feeds report a
+redirect as a feed error. The OpenID Connect issuer, token endpoint and JWKS
+URI must resolve to public addresses, a name that resolves to a private one is
+refused, and each call connects to the address it checked.
+
 ## Audit
 
 Every audited capability call, and every change of an action's state, appends a
@@ -306,14 +366,41 @@ a row, and `ops.alerts` raises `action.stuck` for an action left running over an
 hour. Each row carries an HMAC of the previous row's hash and its own fields,
 keyed from `SHOC_MASTER_KEY`, and triggers refuse UPDATE, DELETE and TRUNCATE.
 
-`shoc migrate` records a fingerprint of the key in `shoc.audit_key`. A process
-whose key is empty or different refuses to write or verify the log, so a shell
-or an MCP client started with the wrong environment fails instead of adding a
-row that would never verify.
+`shoc migrate` records a fingerprint of the key in `shoc.audit_key`. `serve`
+and the worker refuse to start when their key does not match it, and any other
+process whose key is empty or different refuses to write or verify the log, so
+a shell or an MCP client started with the wrong environment fails instead of
+adding a row that would never verify.
 
-`shoc health audit` walks the whole chain and counts every row that does not
-match. The worker runs it every hour from `ops.check`; a break it has not seen
-before pages the operator through the Manager (`audit_broken`) and publishes
+What is audited:
+
+- Every call to an audited capability, the ones that fail included. A failed
+  call's row keeps a shoc error's message, or only the class name of any other
+  exception, whose message may hold data. An L2 or security-tagged capability
+  commits its change and its audit row in one transaction or not at all, except
+  `action.undo` and anything scoped `actions:run` or `playbooks:run`, because
+  what a vendor did cannot be rolled back.
+- A refused call by a caller that authenticated, once a minute per principal and
+  capability; later refusals within that minute leave no row. Failed sign-ins
+  other than a lock are the one refusal not audited (above).
+- Reads of `events.query`, `search`, `timeline.build`, `case.get`, `finding.get`
+  and `memory.search` by an external agent or a service token. A person's
+  `events.query` is audited only with `include_raw` or a limit over 100. The
+  crew's reads and a person's console views are not audited per call: the
+  crew's are in the case's openspace, and a row per click would bury the rest.
+
+Each row carries `subject` (migration 058): a masked summary of the
+identifiers in the input (an email, a role, a case id, an endpoint's host), up
+to 10 citations, and for a sign-in its method and client address. Secrets show
+as `(hidden)` and free text is never stored, since a row is never deleted.
+`subject` joins the HMAC only when present, so older rows still verify.
+
+`shoc health audit` walks the chain and counts every row that does not
+match. A walk that finds it whole keeps its last row in
+`shoc.audit_checkpoints` (migration 063), and the next one starts there; the
+worker walks the whole chain once a day, so a rewrite of rows an earlier walk
+passed is still found. The worker runs the check every hour from `ops.check`;
+a break it has not seen before pages the operator through the Manager (`audit_broken`) and publishes
 `health.audit.broken` once. The same break does not page again, and a later one
 does, because rows after a break are still checked.
 
@@ -346,9 +433,18 @@ associated data, so a value copied into another row or another tenant does not
 open. Values sealed before that, with Fernet and bound to
 nothing, are sealed again by `shoc migrate`, and one that is left is refused.
 Lose the key and the secrets are unrecoverable by design. Rotate a credential by
-re-running `source configure`, and the key itself with `shoc rotate-key`, which
+re-running `source configure`, or by changing its `SHOC_SECRET_*` variable and
+running `shoc apply` (a new credential keeps the source's push key), and the
+key itself with `shoc rotate-key`, which
 seals every value again under the new key in the same transaction that moves
 the audit chain.
+
+A blank secret field on reconfiguration keeps the stored secret only while
+every URL setting (`org_url`, `base_url`, `indexer_url`, `console_url`, `url`
+and the rest) keeps its scheme, host and port, and `cloud` and
+`storage_account` keep their value (`credentials.same_host`). A new host needs
+the credential again. This holds for sources, action credentials, intel feeds
+and lookup sources, as `sso.configure` already does for SSO.
 
 Passwords are kept as scrypt hashes, and sessions, links and tokens as SHA-256.
 The read-only role agents query through cannot read accounts, links, SSO
@@ -367,6 +463,132 @@ on its own tenant, and a header that names another is refused the same way
 (D63). A browser that is not signed in yet signs in to the tenant its header
 names, else `SHOC_TENANT`; emails are unique within a tenant, and an SSO domain
 belongs to one provider within it.
+
+## Data and privacy
+
+The company that runs shoc is the controller of everything shoc collects. The
+shoc project receives nothing from a deployment, so it has no sub-processors of
+its own. Every third party in this section is one the deployer turns on, and the
+contract with it is the deployer's.
+
+### What shoc holds
+
+Security logs name people. Depending on the sources connected, events carry
+email addresses, user names, account and device ids, group and role names,
+source and destination addresses, user agents and host names, and what the
+product logged about the act itself: mail subjects and recipients, file names
+and paths, URLs, command lines, API calls and their parameters. Each event keeps
+its original record in `raw` beside its OCSF columns.
+
+Postgres also holds the people who use shoc (email, role, a scrypt password
+hash, a sealed authenticator seed), the audit log with each sign-in's client
+address, cases, findings, the crew's messages, and the memory facts people and
+the crew wrote about the company.
+
+| Data | Where | Kept |
+| --- | --- | --- |
+| Events | Postgres, or the warehouse `SHOC_BACKEND` names | `SHOC_RETENTION_DAYS` (90 by default). Postgres drops whole monthly partitions, so it keeps an event at least that long and up to about 31 days more. A warehouse deletes by exact time; its own history (Delta time travel, Snowflake Fail-safe) follows the warehouse's settings |
+| Stream events | Postgres | The same window, and until every enabled webhook has sent them |
+| Hunt observations, the entity graph, indicator lookups | Postgres | The same window |
+| Pushed records waiting to load | Postgres | Until they load, or the same window |
+| Memory facts | Postgres | Each until its expiry; a fact with none stays |
+| Exposures (each account, key, address and resource the Surveyor saw act) | Postgres | Until a survey no longer sees it; an account or user stays, marked stale after 60 days |
+| The queue of threat reports to read | Postgres | 30 days from when each was queued; one still unread after 7 is dropped |
+| Jobs | Postgres | 7 days once done, 30 once failed. A job that guards a one-time effect stays |
+| Cases, findings, openspace messages, notices, the audit log | Postgres | Never expired. They are the incident record, and the audit log refuses deletes |
+| Threat reports read, with the crew's reading; posture snapshots | Postgres | Never expired |
+| Accounts | Postgres | Never deleted. Disabling one erases its password hash and authenticator seed |
+
+No capability finds, exports or erases one person's data. Events leave with the
+retention window; cases, findings and the audit log stay. `events.retain`
+refuses fewer days than the configured retention (the value `config.apply` set,
+else `SHOC_RETENTION_DAYS`), so lowering retention is a `config.apply` change a
+person confirms, never one call an assistant can be steered into.
+
+### What reaches the model
+
+With `SHOC_LLM_PROVIDER=none`, the default, no model is called and none of this
+leaves. Once a provider is set, each crew turn on a case sends it:
+
+- the case: its id, entity, severity, ATT&CK techniques, and the rule, title,
+  severity, event count and times of its 25 worst findings;
+- the events those findings cite, up to 40, each with its OCSF columns and up
+  to 60 fields of its original record, 200 characters each;
+- the memory facts about the entity, the entities one hop away in the graph,
+  and the Surveyor's posture for up to five of the case's entities;
+- the indicators the evidence contains, what the feeds and earlier lookups say
+  about them, and threat reports already read that describe the same technique
+  or malware;
+- the earlier discussion on the case (its last 25 messages, 500 characters
+  each) and what brought the crew back to it;
+- what people wrote into the case: its last 10 messages from a person, 1,000
+  characters each, with who wrote each one;
+- CTI's answer, when the evidence holds something worth researching;
+- the answer to every lookup the role makes during the turn, up to 8,000
+  characters each. An `events.query` with `include_raw` returns whole records.
+
+Outside a case, the model also gets a person's question to `ask` with what the
+Manager looks up to answer it; a threat report's title and summary, then its
+text, with the company's profile (the products it connects, how many identities
+its logs name, its clouds) when CTI reads one; up to five recent records of a
+source whose format changed, when the Integrator repairs its mapping; and a
+report's body, when the Manager writes its reading of one. It also gets:
+
+- every day, with no case open, the rows each hunt pack returned, which are
+  log records, with the pack's prose, for the Hunter to settle;
+- what the Hunter and the Detection Engineer read in their backlog turns,
+  whose tools include `events.query`;
+- new findings with the open cases, when the Sentinel places them in a case;
+- a proposed action with the case's cited events, the memory facts, the
+  entities around it in the graph and the lookups made on it, when the IR
+  Commander reviews the action;
+- the day's posture survey and the one before it, when the Surveyor reads it;
+- the sources that are down, their errors and the open alerts, when the
+  Manager judges a source outage.
+
+Log content goes into a prompt quoted as data (see [Untrusted
+content](#untrusted-content)). No field is redacted, masked or pseudonymised:
+the crew matches an account across sources, looks it up and cites the values it
+read, and a token in place of an email would break each of those.
+
+To keep all of it inside the deployment, set `SHOC_LLM_PROVIDER=openai` and
+point `SHOC_LLM_BASE_URL` at a model you host, such as vLLM or Ollama (see
+[Models](agents.md#models)). `llm.configure` can move the endpoint only to a host
+in `SHOC_LLM_BASE_URL_ALLOWLIST`.
+
+The provider's region, its retention of prompts and its data processing terms
+are set on your account with it, not in shoc. With
+`SHOC_LLM_PROVIDER=openai-responses` pointed at `api.openai.com`, shoc sends
+`store: false`, so OpenAI keeps no response for later retrieval; its
+abuse-monitoring retention still applies. A gateway gets no such field, and what
+it keeps follows its own terms.
+
+### Who else receives what
+
+| Destination | Receives | Turned on by |
+| --- | --- | --- |
+| The model provider | What the section above lists | `SHOC_LLM_PROVIDER`, or `llm.configure` |
+| Lookups without an account: RDAP (the registry IANA names, else rdap.org), FIRST EPSS, NVD | The host of a domain, URL or email, a public address, a CVE id | Always on. `SHOC_INTEL_FEEDS=off` does not stop them |
+| Your DNS resolver | A domain a lookup resolves, a public address it reverse-resolves | Always on, like the row above |
+| Lookups with an account: abuse.ch, ipapi.is, AbuseIPDB, GreyNoise, Shodan, Netlas, VirusTotal, urlscan.io | The indicator: a public address, a domain, a hash, or a URL cut to scheme, host and path | A key set with `shoc intel configure --lookup` |
+| Slack | Case cards (title, severity, verdict, entity, summary, five finding titles, actions waiting with their rationale, three event ids), the Manager's messages and reports, answers to `/shoc` | `slack.configure` |
+| PagerDuty, in the US or EU region the credential names | A page's text (severity, the conditions behind it, case ids), its severity and the notice ids | A `notify` credential |
+| Your mail server | Sign-in links and lock notices to the person concerned; a page the pager did not take, to every enabled admin and operator who has signed in | `SHOC_SMTP_URL` |
+| Webhook subscribers | The stream events of the types subscribed to (case, finding, action and health changes), and the audit chain head, signed | `stream.subscribe` |
+| Your identity provider | The person's email as a sign-in hint, and the code exchange | `sso.configure` |
+| A warehouse | Every event, whole | `SHOC_BACKEND` |
+| An outside monitor | A bare GET after each hourly check | `SHOC_HEARTBEAT_URL` |
+| The products you connect | Connectors only read from them. An action sends the target of its step (an account, a key, a host) | `source.configure`, `credential.configure` |
+
+A lookup never sends a private, loopback or internal value, a value the company
+owns, or one a source shared under a restricted TLP marking; those are answered
+from local lists and the company's own data. The indicator feeds and the lists
+lookups read from are downloads: they receive a request and no company data.
+
+A webhook URL must be `https`, except for an address that is not on the
+internet (loopback, private, link-local, or carrier-grade NAT such as a
+tailnet), a name with no dot, or a name under `.local`, `.internal`, `.lan`,
+`.corp`, `.home.arpa`, `.intranet`, `.localhost` or `.svc`.
 
 ## What is yours to do
 
@@ -393,8 +615,16 @@ belongs to one provider within it.
   does not own the schema, and keep the owner's DSN for `shoc migrate`.
 - Give each person the narrowest role that fits, and each machine token only
   the scopes it uses. Keep `admin` to the one or two people who need it.
-- `SHOC_INTEL_FEEDS=off` if shoc should open no outbound connection you did not
-  configure. By default it pulls two public abuse.ch feeds every six hours and
-  the lists lookups answer from once a day (the quick start names the hosts).
+- By default shoc pulls two public abuse.ch feeds every six hours and the
+  lists lookups answer from once a day (the quick start names the hosts).
+  `SHOC_INTEL_FEEDS=off` stops the two feeds and the startup list download. It
+  does not make shoc silent: lookups still reach RDAP, FIRST EPSS, NVD and your
+  DNS resolver, and load the lists on first use (see [Who else receives
+  what](#who-else-receives-what)). A feed you configure yourself (OTX, MISP, a
+  list) also loads the MISP warninglists from their source, which is one more
+  host.
+- Choose the model provider as you would any processor that reads your logs,
+  and add it and every destination you turn on to your record of processing
+  ([Data and privacy](#data-and-privacy)).
 
 Report vulnerabilities as described in [`SECURITY.md`](https://github.com/pwnera/shoc/blob/main/SECURITY.md).

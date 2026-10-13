@@ -1,44 +1,87 @@
+{{- /* Two lanes: the workers, and the fast lane (`shoc worker --urgent`) that
+takes only pages, actions, detection, syncs, playbooks and the crew's runs on
+high and critical cases, so a model job never holds those up. */ -}}
+{{- range $lane := list "" "-urgent" }}
+{{- $replicas := ternary $.Values.worker.urgentReplicas $.Values.worker.replicas (eq $lane "-urgent") }}
+{{- if $replicas }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "shoc.fullname" . }}-worker
+  name: {{ include "shoc.fullname" $ }}-worker{{ $lane }}
   labels:
-    {{- include "shoc.labels" . | nindent 4 }}
-    app.kubernetes.io/component: worker
+    {{- include "shoc.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: worker{{ $lane }}
 spec:
-  replicas: {{ .Values.worker.replicas }}
+  replicas: {{ $replicas }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "shoc.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/component: worker
+      app.kubernetes.io/name: {{ include "shoc.name" $ }}
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+      app.kubernetes.io/component: worker{{ $lane }}
   template:
     metadata:
       labels:
-        {{- include "shoc.labels" . | nindent 8 }}
-        app.kubernetes.io/component: worker
+        {{- include "shoc.labels" $ | nindent 8 }}
+        app.kubernetes.io/component: worker{{ $lane }}
     spec:
-      serviceAccountName: {{ .Values.serviceAccount.name | default (include "shoc.fullname" .) }}
+      serviceAccountName: {{ $.Values.serviceAccount.name | default (include "shoc.fullname" $) }}
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: {{ $.Values.worker.terminationGracePeriodSeconds }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
       containers:
         - name: worker
-          image: {{ include "shoc.image" . }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args: ["worker"]
+          image: {{ include "shoc.image" $ }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          args: {{ if $lane }}["worker", "--urgent"]{{ else }}["worker"]{{ end }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+            {{- toYaml $.Values.securityContext | nindent 12 }}
           env:
-            {{- include "shoc.env" . | nindent 12 }}
-            {{- include "shoc.runtimeEnv" . | nindent 12 }}
+            {{- include "shoc.env" $ | nindent 12 }}
+            {{- include "shoc.runtimeEnv" $ | nindent 12 }}
+            {{- with $.Values.diskBudgetGb }}
+            - name: SHOC_DISK_BUDGET_GB
+              value: {{ . | quote }}
+            {{- end }}
           envFrom:
             - secretRef:
-                name: {{ include "shoc.secretName" . }}
+                name: {{ include "shoc.secretName" $ }}
           resources:
-            {{- toYaml .Values.worker.resources | nindent 12 }}
+            {{- toYaml $.Values.worker.resources | nindent 12 }}
           volumeMounts:
             - name: tmp
               mountPath: /tmp
       volumes:
         - name: tmp
-          emptyDir: {}
+          emptyDir: { sizeLimit: {{ $.Values.tmpSizeLimit }} }
+      {{- with $.Values.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- /* A node drain keeps one worker of the lane running. With one replica
+minAvailable 1 would block every drain, so there is no budget then. */}}
+{{- if gt (int $replicas) 1 }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "shoc.fullname" $ }}-worker{{ $lane }}
+  labels:
+    {{- include "shoc.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: worker{{ $lane }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "shoc.name" $ }}
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+      app.kubernetes.io/component: worker{{ $lane }}
+{{- end }}
+{{- end }}
+{{- end }}

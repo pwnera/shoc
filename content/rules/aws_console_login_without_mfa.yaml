@@ -1,15 +1,19 @@
 id: aws_console_login_without_mfa
-title: AWS console login without MFA
+title: AWS console login without MFA from a new address
 description: >
-  An IAM user or the root user signed in to the console and CloudTrail reports
-  that no MFA was used. Either the account is missing MFA, or the session was
-  established with a stolen password. SSO sign-ins are left out: their MFA
-  happens at the identity provider, and CloudTrail always reports it as unused.
+  An IAM user signed in to the console without MFA, from an address that user
+  has not signed in from without MFA in the last 30 days. Either the account
+  is missing MFA, or the session was established with a stolen password. A
+  user who never enrolled MFA and signs in from the office every day is a gap
+  in posture, not an attack, and stays quiet after the first sign-in. The
+  root user is aws_root_console_login_without_mfa's. SSO sign-ins are left
+  out: their MFA happens at the identity provider, and CloudTrail always
+  reports it as unused.
 status: stable
 date: 2026-09-24
-modified: 2026-10-02
-severity: high
-confidence: 0.65
+modified: 2026-10-12
+severity: medium
+confidence: 0.6
 attack: [T1078.004, T1556.006]
 logsource:
   product: aws
@@ -18,9 +22,14 @@ detection:
   selection:
     api.operation: ConsoleLogin
     status_code: no_mfa
-    actor.user.type: [IAMUser, Root]
+    actor.user.type: IAMUser
   condition: selection
   timeframe: 15m
+# Until 30 days of CloudTrail are stored, every such sign-in fires.
+baseline:
+  first_seen: [actor.user.name, src_endpoint.ip]
+  lookback: 30d
+  while_learning: fire
 entity: actor.user.name
 fields: [actor.user.name, actor.user.type, src_endpoint.ip, http_request.user_agent, cloud.account.uid]
 sources:

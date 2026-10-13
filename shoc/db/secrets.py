@@ -15,6 +15,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import logging
 import os
 from typing import Any
 
@@ -36,6 +37,45 @@ SEALED = (
     ("users", "user_id"),  # the authenticator's seed (RFC 0028)
     ("sso_providers", "provider"),  # the OIDC client secret
 )
+
+
+# `shoc keygen` prints 44 characters. Anything much shorter was typed by hand,
+# and deploy/.env.example's `replace-me` is public.
+MIN_KEY_LENGTH = 32
+EXAMPLE_KEYS = frozenset({"replace-me"})
+
+
+def check_master_key(master_key: str, name: str = "SHOC_MASTER_KEY", *, new: bool = False) -> None:
+    """Refuse a master key anyone can read, and warn about one someone could guess (sre-7).
+
+    It seals every connector, vendor-action and webhook secret and keys the
+    audit chain, so a guessable one opens them all to whoever holds a dump.
+    serve, worker and migrate call this as they start. The example key is
+    refused. A short key already in use is only warned about: an install keyed
+    with one must still start after an upgrade, and `shoc rotate-key` moves it
+    off. A new key (`new=True`) must be long. An unset key is left to the paths
+    that need one. SHOC_ALLOW_WEAK_KEY=1 lets tests and local trials use any.
+    """
+    if not master_key or os.environ.get("SHOC_ALLOW_WEAK_KEY") == "1":
+        return
+    advice = (
+        "Generate one with `shoc keygen`; an install already keyed with this one "
+        "moves to it with `SHOC_NEW_MASTER_KEY=<new key> shoc rotate-key`"
+    )
+    if master_key in EXAMPLE_KEYS:
+        raise ConfigError(f"{name} is the example key from deploy/.env.example. {advice}")
+    if len(master_key) < MIN_KEY_LENGTH:
+        if new:
+            raise ConfigError(
+                f"{name} is shorter than {MIN_KEY_LENGTH} characters, so it can be guessed. "
+                "Generate one with `shoc keygen`"
+            )
+        logging.getLogger("shoc").warning(
+            "%s is shorter than %d characters, so it can be guessed. %s",
+            name,
+            MIN_KEY_LENGTH,
+            advice,
+        )
 
 
 def _aead(master_key: str) -> AESGCM:

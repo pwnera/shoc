@@ -8,6 +8,7 @@ You are working on **shoc** (Security Headless Operation Center), an open-source
 2. `docs/architecture.md`: the v0.3 architecture (headless kernel, capability registry, openspace, memory, composable event store).
 3. `docs/decisions.md`: every decision already made and why. Don't reopen these without an RFC.
 4. `docs/ui-prototype.md`: the optional console prototype (not part of the kernel).
+5. `docs/guidelines.md`: the engineering guidelines, each with the test or review step that checks it.
 
 ## What we are building right now
 
@@ -34,6 +35,19 @@ Always reference requirement IDs in commits, PRs and code comments where relevan
 5. **Bounded autonomy.** Agents read; only the playbook runner acts. Every action is typed, policy-checked (L0/L1/L2), reversible or human-approved, and audited. L2 approval requires a *human* principal.
 6. **Evidence or nothing.** A verdict without cited event IDs becomes "needs human". Log content is untrusted data. Quote it into prompts as data, never as instructions.
 7. **SaaS-ready, not SaaS-shaped.** `tenant_id` in every table and every call from day one. No multi-tenant control plane, billing or hosting code in this repo.
+
+## Engineering guidelines
+
+`docs/guidelines.md` is binding. A change that breaks a guideline needs an entry in `docs/decisions.md` or an RFC. These six broke most often in the pre-go-live audit:
+
+- A fix to one sibling (store adapters, merged loaders, time parsing, token caches) lands on all of them in the same change (TST-G6).
+- A cap sorts by an explicit key with a unique tie-breaker and filters in SQL before LIMIT, and a cursor that moves past rows it did not read writes the loss where Ops reads it (CON-G7).
+- A page counts as sent only when PagerDuty, Slack or mail took it, and `notify.*` is never a dry run (RSP-G2).
+- A new or changed playbook step whose action is not `notify.*` takes its targets from `{{ rule.<id>.<kind> }}` or `{{ platform.<p>.<kind> }}`, never from `{{ entity.<kind> }}` (RSP-G5).
+- A poll by event time with no published vendor lag re-reads `base.OVERLAP` from an inclusive start (D164), and `stored_keys` covers that window (ING-G1).
+- All text in a prompt, model-written text included, goes through `safety.quote` or `safety.quote_events` (AGT-G3).
+
+A defect class found later gets its own guideline and check in the same change that fixes it.
 
 ## Dependency budget
 

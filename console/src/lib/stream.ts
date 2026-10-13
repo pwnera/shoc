@@ -25,8 +25,6 @@ export type StreamEvent = {
   created_at: string;
 };
 
-const base = import.meta.env.VITE_SHOC_URL ?? "";
-
 /** What the top bar's health pill and the "live updates paused" banner read. */
 export type StreamState = {
   state: "connecting" | "live" | "retrying" | "denied";
@@ -94,11 +92,7 @@ export function dataOf(chunk: string): string {
 
 export type StreamOptions = {
   since?: number;
-  types?: string[];
   onEvent: (event: StreamEvent) => void;
-  /** Called each time the connection opens, before any event arrives. */
-  onOpen?: () => void;
-  onError?: (error: unknown) => void;
   signal: AbortSignal;
 };
 
@@ -127,23 +121,37 @@ export async function pause(attempt: number, signal: AbortSignal): Promise<void>
 /** Silence after which a "live" stream is taken for dead: several missed 2s keep-alives. */
 const SILENT = 15_000;
 
+/**
+ * How long a hidden tab keeps its stream. On plain HTTP/1.1 the browser gives
+ * one host six sockets across every tab, and each open stream holds one: about
+ * six console tabs would leave none for the API calls.
+ */
+export const HIDDEN = 30_000;
+
+/** Settles once the tab is in view again, or the stream is stopped. */
+function shown(signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const check = () => {
+      if (document.visibilityState === "hidden" && !signal.aborted) return;
+      document.removeEventListener("visibilitychange", check);
+      signal.removeEventListener("abort", check);
+      resolve();
+    };
+    document.addEventListener("visibilitychange", check);
+    signal.addEventListener("abort", check);
+    check();
+  });
+}
+
 class Refused extends Error {
   constructor(readonly problem: ApiError) {
     super(problem.message);
   }
 }
 
-export async function subscribe({
-  since = 0,
-  types = [],
-  onEvent,
-  onOpen,
-  onError,
-  signal,
-}: StreamOptions): Promise<void> {
+export async function subscribe({ since = 0, onEvent, signal }: StreamOptions): Promise<void> {
   const query = new URLSearchParams();
   if (since) query.set("since", String(since));
-  if (types.length) query.set("types", types.join(","));
   let attempt = 0;
 
   while (!signal.aborted) {
@@ -151,17 +159,37 @@ export async function subscribe({
      * The kernel sends a keep-alive every 2s. A connection silent for 15s is
      * half-open (a sleep, a network change, a dropped NAT entry) and would read
      * as live for minutes: it is dropped and reconnected from `since`. Coming
-     * back to the tab with nothing heard for 10s does the same at once.
+     * back to the tab with nothing heard for 10s does the same at once. A tab
+     * hidden for 30s gives its socket back and reconnects from `since` once in
+     * view: the replay refreshes what changed meanwhile.
      */
     const conn = new AbortController();
     const stop = () => conn.abort();
     signal.addEventListener("abort", stop, { once: true });
     let heard = Date.now();
+    let away = false;
+    let hiding: ReturnType<typeof setTimeout> | undefined;
     const watch = setInterval(() => Date.now() - heard > SILENT && conn.abort(), 5_000);
-    const back = () => document.visibilityState === "visible" && Date.now() - heard > 10_000 && conn.abort();
-    document.addEventListener("visibilitychange", back);
+    const look = () => {
+      clearTimeout(hiding);
+      if (document.visibilityState === "hidden")
+        hiding = setTimeout(() => {
+          away = true;
+          conn.abort();
+        }, HIDDEN);
+      else if (Date.now() - heard > 10_000) conn.abort();
+    };
+    look();
+    document.addEventListener("visibilitychange", look);
+    // Before parking or backing off too: the dead connection needs no watching.
+    const release = () => {
+      clearInterval(watch);
+      clearTimeout(hiding);
+      document.removeEventListener("visibilitychange", look);
+      signal.removeEventListener("abort", stop);
+    };
     try {
-      const response = await fetch(`${base}/v1/stream?${query.toString()}`, { signal: conn.signal });
+      const response = await fetch(`/v1/stream?${query.toString()}`, { signal: conn.signal });
       if (response.status === 401 || response.status === 403) {
         // The body says which refusal it is: an ended session, or a caller without the scope.
         const text = await response.text().catch(() => "");
@@ -179,7 +207,6 @@ export async function subscribe({
       if (!response.ok || !response.body) throw new Error(`stream: ${response.status}`);
       setStatus({ state: "live" });
       attempt = 0;
-      onOpen?.();
 
       const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
       let buffer = "";
@@ -207,19 +234,23 @@ export async function subscribe({
       if (signal.aborted) return;
       throw new Error("stream closed");
     } catch (error) {
+      release();
       if (signal.aborted) return;
       if (error instanceof Refused) {
         deny(error.problem);
-        onError?.(error.problem);
         return;
       }
-      onError?.(error);
-      // The server restarts, the laptop sleeps. Wait, then pick up from `since`.
-      await pause(attempt++, signal);
+      if (away) {
+        // The state stays as it was, so coming back neither flashes "connecting" nor refetches every screen.
+        await shown(signal);
+        // Parked before it ever went live (a tab opened in the background): the time hidden is not time down.
+        if (status.state !== "live") setStatus({ state: "connecting", downSince: Date.now() });
+      } else {
+        // The server restarts, the laptop sleeps. Wait, then pick up from `since`.
+        await pause(attempt++, signal);
+      }
     } finally {
-      clearInterval(watch);
-      document.removeEventListener("visibilitychange", back);
-      signal.removeEventListener("abort", stop);
+      release();
     }
   }
 }

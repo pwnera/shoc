@@ -120,11 +120,20 @@ class WebhookResult:
 )
 def subscribe(ctx: Context, inp: WebhookInput) -> Result:
     from shoc.db.secrets import seal
+    from shoc.detect import osint
+    from shoc.errors import ValidationError
 
-    if not inp.url.startswith(("http://", "https://")):
-        from shoc.errors import ValidationError
-
+    scheme = inp.url.partition("://")[0].lower()
+    if scheme not in ("http", "https"):
         raise ValidationError("a webhook url must be http or https")
+    # host_of is '' for a url that does not parse, such as an unclosed IPv6 bracket.
+    if not (host := osint.host_of(inp.url, "url")):
+        raise ValidationError("a webhook url must name a host")
+    # Findings, case titles and the names in them go out in every delivery. A
+    # receiver on the same host or network may take them over http; anything
+    # across the internet takes https.
+    if scheme == "http" and not osint.is_internal(inp.url, "url"):
+        raise ValidationError(f"a webhook to a public host ({host}) must be https")
     webhook_id = "WH-" + hashlib.sha256(f"{ctx.tenant_id}|{inp.url}".encode()).hexdigest()[:16]
     secret = secrets.token_urlsafe(32)
     # A new subscriber starts at the head of the stream. Subscribing the same

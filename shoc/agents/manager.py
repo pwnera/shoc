@@ -14,11 +14,19 @@ the Manager decides what one person reads:
 - **The gate is a query.** Pages are grouped by incident — the same case, or
   cases on the same entity — and a group pages only on one of six typed
   conditions, at most once in `PAGE_AT_MOST_EVERY_HOURS`. A model is never asked
-  whether to wake somebody, so a model misled by log content can change a page's
-  wording and cannot stop it.
-- **The model writes the text.** If there is no model, it fails, or it cites
-  something the group does not contain, a fixed template goes out instead. A
-  page is never late because of the model.
+  whether to wake somebody. The gate reads a case's severity as the higher of
+  its own and its worst finding's, whatever the Investigator set it to, so a
+  model misled by log content can change a page's wording and the case's
+  display severity, and cannot lower a page below what its findings say.
+- **The model writes the text.** If there is no model, it fails, takes longer
+  than `WORDING_SECONDS`, or cites something the group does not contain, a
+  fixed template goes out instead. Either way the page opens with its severity,
+  conditions and cases, which no model writes. A page is never late because of
+  the model.
+- **A page is delivered when anybody could read it.** PagerDuty, the Slack
+  channel, or failing the pager an email to every enabled admin and operator.
+  When none took it and the pager failed on the way, it is tried again
+  (`RETRY_MINUTES`); a pager nobody configured is not waited for.
 - **Questions come back through here too.** `ask` hands the Manager the
   question, and it answers by calling the colleague who knows. Without a model
   `ask` answers the way it always did.
@@ -30,13 +38,18 @@ Manager cannot stand between a person and a decision.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import httpx
+import psycopg
+
 from shoc.capabilities.registry import Caller
+from shoc.cases.engine import CONTAINED, FLOORED
 from shoc.cases.unattended import PAGE_AT_MOST_EVERY_HOURS
 from shoc.db.pool import Conn, execute, fetch_all, fetch_one
 
@@ -60,22 +73,31 @@ ACTIVE_WITHIN_HOURS = 1
 # runs in its own job after that.
 CONTAIN_WITHIN_MINUTES = 15
 
-# An action on the case that ran for real. A page contains nothing, and a dry
-# run changed nothing: neither the action's row nor its result may say dry run.
-CONTAINED = """EXISTS (
-    SELECT 1 FROM shoc.actions a
-    WHERE a.tenant_id = c.tenant_id AND a.case_uid = c.case_uid AND a.state = 'done'
-      AND a.type NOT LIKE 'notify.%%' AND NOT a.dry_run
-      AND coalesce(a.result->>'dry_run', 'false') <> 'true')"""
-
 # A source dark this long is material: a day of an identity provider is a day of
 # logins nobody saw.
 COVERAGE_DARK_HOURS = 24
+
+# A page no channel took, after the pager failed on the way (a 5xx, a timeout),
+# is tried again this many minutes later, then settled as failed. A pager
+# nobody configured, or a page the policy refuses, is settled at once.
+RETRY_MINUTES = (1, 5, 15)
+
+# How long the model may take to word a page. The client retries a slow
+# provider for minutes, and the template is enough alone.
+WORDING_SECONDS = 20
 
 CASE_UID = re.compile(r"\bCASE-[0-9a-f]{20}\b")
 
 # How many earlier turns of a conversation `ask` hands the Manager.
 HISTORY_TURNS = 12
+
+# How long `ask` keeps looking things up, its colleagues included, before it
+# answers: inside the minute an HTTP or MCP client waits, so the server does
+# not go on working for a caller that gave up. Every model call of the answer,
+# its colleagues' and its own last one included, gives up `ANSWER_SECONDS`
+# after that (`llm.limit`), so `ask` answers within about a minute.
+ASK_SECONDS = 45
+ANSWER_SECONDS = 15
 
 # The principal the Manager's own pages are requested under. `notify.page` from
 # anybody else is handed back to the Manager as a notice (`cases/actions.py`).
@@ -106,10 +128,13 @@ def tell(
     """
     case: dict[str, Any] = {}
     if case_uid:
+        # A page about a case says its worst finding's severity, whatever a
+        # model lowered the case to (ai-3).
         case = (
             fetch_one(
                 conn,
-                "SELECT severity, entity_key FROM shoc.cases WHERE tenant_id = %s AND case_uid = %s",
+                f"""SELECT {FLOORED} AS severity, c.entity_key FROM shoc.cases c
+                    WHERE c.tenant_id = %s AND c.case_uid = %s""",
                 (tenant_id, case_uid),
             )
             or {}
@@ -156,12 +181,14 @@ class Delivered:
     merged: int = 0
     digest: int = 0
     failed: list[str] = field(default_factory=list)
-    # Why a Slack copy of a page did not go out. The page itself still did.
+    # Incidents whose page no channel took this time, to be tried again.
+    retrying: list[str] = field(default_factory=list)
+    # Why a Slack copy of a page did not go out. The page may still have.
     slack_errors: list[str] = field(default_factory=list)
 
     @property
     def summary(self) -> str:
-        if not (self.paged or self.merged or self.digest or self.failed):
+        if not (self.paged or self.merged or self.digest or self.failed or self.retrying):
             return "manager: nothing to deliver"
         parts = []
         if self.paged:
@@ -172,6 +199,8 @@ class Delivered:
             parts.append(f"{self.digest} held for the weekly")
         if self.failed:
             parts.append(f"{len(self.failed)} page(s) could not be sent")
+        if self.retrying:
+            parts.append(f"{len(self.retrying)} page(s) to be tried again")
         if self.slack_errors:
             parts.append(f"Slack refused {len(self.slack_errors)} post(s): {self.slack_errors[0]}")
         return "manager: " + ", ".join(parts)
@@ -182,7 +211,8 @@ def deliver(conn: Conn, tenant_id: str, config: Any = None, store: Any = None) -
     out = Delivered()
     pending = fetch_all(
         conn,
-        f"""SELECT n.*, c.severity AS case_severity, c.state AS case_state,
+        f"""SELECT n.*, {FLOORED} AS case_severity, c.state AS case_state,
+                   c.closed_by AS case_closed_by,
                    c.verdict AS case_verdict, {CONTAINED} AS case_contained,
                    n.created_at > now() - %s * interval '1 minute' AS held,
                    (SELECT max(f.last_seen) FROM shoc.findings f
@@ -190,28 +220,37 @@ def deliver(conn: Conn, tenant_id: str, config: Any = None, store: Any = None) -
             FROM shoc.notices n
             LEFT JOIN shoc.cases c ON c.tenant_id = n.tenant_id AND c.case_uid = n.case_uid
             WHERE n.tenant_id = %s AND n.kind = 'page' AND n.delivered_at IS NULL
+              AND (n.retry_at IS NULL OR n.retry_at <= now())
             ORDER BY n.created_at LIMIT 200""",
         (CONTAIN_WITHIN_MINUTES, tenant_id),
     )
     groups: dict[str, list[dict[str, Any]]] = {}
     fresh = datetime.now(UTC) - timedelta(hours=ACTIVE_WITHIN_HOURS)
     for row in pending:
-        # "Critical" is the case's severity now, not what somebody said it was;
-        # a closed case wakes nobody; "still active" means a detection fired
-        # within the hour, not that a model said so; and "uncontained" is the
-        # case's verdict, severity and actions now. These are queries, so log
-        # content can change none of them (RFC 0015).
+        # "Critical" is the case's severity now, not what somebody said it was,
+        # and never below its worst finding's: a model lowering the case does
+        # not lower the page (ai-3); a closed case wakes nobody; "still active"
+        # means a detection fired within the hour, not that a model said so;
+        # and "uncontained" is the case's verdict, severity and actions now.
+        # These are queries, so log content can change none of them (RFC 0015).
+        # The crew closing a malicious case contains nothing: it often closes
+        # in the run that recorded the verdict, inside the hold, so only a
+        # person's close settles that page.
+        containment = row["condition"] == "malicious_uncontained"
         stale = (
             (row["condition"] == "critical_severity" and row["case_severity"] != "critical")
-            or (row["case_uid"] and row["case_state"] == "closed")
+            or (row["case_uid"] and row["case_state"] == "closed" and not containment)
             or (
                 row["condition"] == "uncontainable_and_active"
                 and not (row["case_last_seen"] and row["case_last_seen"] >= fresh)
             )
             or (
-                row["condition"] == "malicious_uncontained"
-                and not _malicious_uncontained(
-                    row["case_verdict"], row["case_severity"], row["case_contained"]
+                containment
+                and (
+                    row["case_closed_by"] == "human"
+                    or not _malicious_uncontained(
+                        row["case_verdict"], row["case_severity"], row["case_contained"]
+                    )
                 )
             )
         )
@@ -233,27 +272,57 @@ def deliver(conn: Conn, tenant_id: str, config: Any = None, store: Any = None) -
             (tenant_id, key, PAGE_AT_MOST_EVERY_HOURS),
         )
         if earlier:
-            _settle(conn, tenant_id, rows, "merged", str(earlier["delivered_uid"]))
+            _settle(conn, tenant_id, rows, "merged", str(earlier["delivered_uid"] or ""))
             out.merged += len(rows)
             continue
         message = word(conn, tenant_id, rows, config, store)
-        action_uid, sent = _page(conn, tenant_id, rows, message, config)
-        _settle(conn, tenant_id, rows, "paged" if sent else "failed", action_uid)
-        (out.paged if sent else out.failed).append(key)
-        out.slack_errors += _mirror(conn, tenant_id, rows, message, config)
+        action_uid, error, transient = _page(conn, tenant_id, rows, message, config)
+        slack_errors, in_slack = _mirror(conn, tenant_id, rows, message, config)
+        out.slack_errors += slack_errors
+        mailed = False
+        if error:
+            mailed, mail_error = _mail(conn, tenant_id, message, config)
+            error = "; ".join(e for e in (error, mail_error) if e)
+        tried = max(int(r["attempts"] or 0) for r in rows)
+        if not error or in_slack or mailed:
+            _settle(conn, tenant_id, rows, "paged", action_uid, error)
+            out.paged.append(key)
+        elif transient and tried < len(RETRY_MINUTES):
+            _again(conn, tenant_id, rows, error, RETRY_MINUTES[tried])
+            out.retrying.append(key)
+        else:
+            _settle(conn, tenant_id, rows, "failed", action_uid, error)
+            out.failed.append(key)
     return out
 
 
 def _settle(
-    conn: Conn, tenant_id: str, rows: list[dict[str, Any]], outcome: str, action_uid: str = ""
+    conn: Conn,
+    tenant_id: str,
+    rows: list[dict[str, Any]],
+    outcome: str,
+    action_uid: str = "",
+    error: str = "",
 ) -> None:
-    """Record what the gate did, and let the page carry its cases' pending decisions."""
+    """Record what the gate did, and let the page carry its cases' pending decisions.
+
+    `error` is why a channel did not take the page, kept even when another did.
+    """
     uids = [str(r["notice_uid"]) for r in rows]
     execute(
         conn,
-        """UPDATE shoc.notices SET delivered_at = now(), outcome = %s, delivered_uid = %s
+        """UPDATE shoc.notices SET delivered_at = now(), outcome = %s, delivered_uid = %s,
+                  last_error = coalesce(%s, last_error),
+                  attempts = attempts + %s
            WHERE tenant_id = %s AND notice_uid = ANY(%s)""",
-        (outcome, action_uid or None, tenant_id, uids),
+        (
+            outcome,
+            action_uid or None,
+            error[:2000] or None,
+            int(outcome in ("paged", "failed")),
+            tenant_id,
+            uids,
+        ),
     )
     cases = sorted({str(r["case_uid"]) for r in rows if r["case_uid"]})
     if outcome == "paged" and cases:
@@ -267,8 +336,39 @@ def _settle(
         )
 
 
-def template(rows: list[dict[str, Any]]) -> str:
-    """The page that goes out when no model writes one. It must be enough alone."""
+def _again(
+    conn: Conn, tenant_id: str, rows: list[dict[str, Any]], error: str, minutes: int
+) -> None:
+    """Leave the notices undelivered and come back for them in `minutes` (RSP-4).
+
+    The job runs at the database's `retry_at`, so a host clock behind it cannot
+    bring the job before the gate would take the notices. It is keyed on that
+    time too: the group's notices can each have tried a different number of times.
+    """
+    from shoc.db import jobs
+
+    uids = [str(r["notice_uid"]) for r in rows]
+    row = fetch_one(
+        conn,
+        """UPDATE shoc.notices SET attempts = attempts + 1, last_error = %s,
+                  retry_at = now() + %s * interval '1 minute'
+           WHERE tenant_id = %s AND notice_uid = ANY(%s)
+           RETURNING retry_at""",
+        (error[:2000], minutes, tenant_id, uids),
+    )
+    if row:
+        jobs.enqueue(
+            conn,
+            tenant_id,
+            "manager.deliver",
+            {},
+            run_at=row["retry_at"],
+            idempotency_key=f"deliver:{uids[0]}@{row['retry_at'].isoformat()}",
+        )
+
+
+def _head(rows: list[dict[str, Any]]) -> str:
+    """What every page opens with, whoever words the rest: how bad, why, which cases."""
     from shoc.cases.engine import SEVERITY_ORDER
 
     worst = max(
@@ -277,12 +377,13 @@ def template(rows: list[dict[str, Any]]) -> str:
     )
     cases = sorted({str(r["case_uid"]) for r in rows if r["case_uid"]})
     reasons = sorted({str(r["condition"]).replace("_", " ") for r in rows})
+    return f"{worst.upper()} ({', '.join(reasons)})" + (f" {', '.join(cases)}" if cases else "")
+
+
+def template(rows: list[dict[str, Any]]) -> str:
+    """The page that goes out when no model writes one. It must be enough alone."""
     lines = list(dict.fromkeys(str(r["body"]).strip() for r in rows))
-    return (
-        f"{worst.upper()} ({', '.join(reasons)}): "
-        + " ".join(lines)[:900]
-        + (f" Cases: {', '.join(cases)}." if cases else "")
-    )
+    return f"{_head(rows)}: " + " ".join(lines)[:900]
 
 
 def word(
@@ -291,9 +392,10 @@ def word(
     """The Manager's wording of one page, or the template when it cannot be trusted."""
     from shoc.agents import roles, safety
     from shoc.agents.llm import NoLLM, complete_typed, for_hint, from_config
-    from shoc.agents.ops import charge
+    from shoc.agents.ops import charge, record_failure
 
     fallback = template(rows)
+    client: Any = None
     try:
         client = from_config(config, conn, tenant_id)
         if isinstance(client, NoLLM) or not getattr(client, "available", True):
@@ -313,6 +415,8 @@ def word(
             }
             for r in rows
         ]
+        # Bounded on every try, so a stalled provider costs the page
+        # `WORDING_SECONDS` and no call is left running behind it.
         said, usage = complete_typed(
             for_hint(client, roles.MANAGER.model_hint, config),
             safety.system_prompt(roles.MANAGER.prompt),
@@ -320,24 +424,51 @@ def word(
             "the one message they will read.\n\n" + safety.quote("notices", notices),
             roles.ManagerOutput,
             getattr(config, "llm_max_tokens", 1024) if config else 1024,
+            timeout=WORDING_SECONDS,
         )
         charge(conn, tenant_id, usage)
-    except Exception:  # the model is optional; the page is not
+    except Exception as exc:  # the model is optional; the page is not
+        # Running out of `WORDING_SECONDS` is shoc's own cut-off, not the
+        # provider failing: counted, it stood the case sweep down (ai-4).
+        if client is not None and not isinstance(exc, TimeoutError | httpx.TimeoutException):
+            with contextlib.suppress(Exception):
+                record_failure(
+                    conn,
+                    tenant_id,
+                    getattr(client, "model", "none"),
+                    f"Manager: {type(exc).__name__}: {exc}",
+                )
         return fallback
     message = (said.message or "").strip()
     cited = set(said.citations or [])
     if not message or len(message) > 1200 or not cited or not cited <= allowed:
         return fallback
-    return message
+    # Log content can steer the wording, so it never decides how the page opens.
+    return f"{_head(rows)}: {message}"
 
 
 def _page(
     conn: Conn, tenant_id: str, rows: list[dict[str, Any]], message: str, config: Any
-) -> tuple[str, bool]:
-    """Send one page through the `notify.page` action, so it is audited like any other."""
-    from shoc.cases import actions as action_store
-    from shoc.cases.engine import max_severity
+) -> tuple[str, str, bool]:
+    """Send one page through the `notify.page` action, so it is audited like any other.
 
+    Returns the action, why the page did not go out ("" when it did), and
+    whether trying again could change that: a failed post can, a missing pager,
+    a credential that is not complete or the policy's refusal cannot. A page
+    changes nothing in the company's systems, so it is proposed with dry run
+    off whatever SHOC_DRY_RUN says, and its record says it was sent for real
+    (RSP-4, RSP-7).
+    """
+    from shoc.cases import actions as action_store
+    from shoc.cases import credentials
+    from shoc.cases.engine import max_severity
+    from shoc.config import Config
+    from shoc.errors import ConfigError
+
+    if not credentials.instances(conn, tenant_id, "notify"):
+        return "", "no pager is configured: set a notify credential", False
+    cfg = config if config is not None else Config.load()
+    live = replace(cfg, dry_run=False) if isinstance(cfg, Config) else cfg
     case_uid = next((str(r["case_uid"]) for r in rows if r["case_uid"]), "")
     critical = any(r["severity"] == "critical" for r in rows)
     try:
@@ -358,17 +489,17 @@ def _page(
             ),
             PRINCIPAL,
             principal_kind="agent",
-            config=config,
+            config=live,
         )
-    except Exception:  # no pager configured, or the policy refuses
-        return "", False
+    except Exception as exc:  # the policy refuses
+        return "", f"the policy refused the page: {exc}"[:500], False
     uid = str(row.get("action_uid") or "")
     if str(row.get("state")) == "proposed":
         # Nobody approves a page; one left waiting wakes nobody.
         action_store.reject(conn, tenant_id, uid, PRINCIPAL, "a page that waits wakes nobody")
-        return uid, False
+        return uid, "the policy wants the page approved", False
     if str(row.get("state")) != "approved":
-        return uid, False
+        return uid, f"the page is {row.get('state')}", False
     try:
         _done, result = action_store.execute(
             conn,
@@ -377,22 +508,133 @@ def _page(
             getattr(config, "master_key", "") if config else "",
             by=PRINCIPAL,
         )
-    except Exception:
-        return uid, False
-    return uid, bool(result.ok)
+    except Exception as exc:
+        return uid, f"{type(exc).__name__}: {exc}"[:500], not isinstance(exc, ConfigError)
+    if result.dry_run:
+        return uid, "the page was only a dry run", False
+    if not result.ok:
+        # `execute` keeps the exception's name: a ConfigError (no routing key,
+        # a region PagerDuty does not have) is the same on every try.
+        return uid, result.detail[:500], "ConfigError" not in result.detail
+    return uid, "", True
 
 
 def _mirror(
     conn: Conn, tenant_id: str, rows: list[dict[str, Any]], message: str, config: Any
-) -> list[str]:
-    """Put the page in Slack too, with Approve buttons for what its cases wait on."""
+) -> tuple[list[str], bool]:
+    """Put the page in Slack too, with Approve buttons for what its cases wait on.
+
+    Returns why Slack refused posts, and whether the page itself reached a channel.
+    """
+    from shoc.api import slack
     from shoc.cases import actions as action_store
 
+    if config is None:
+        return [], False
+    app = slack.load_app(conn, tenant_id, config.master_key)
+    if not app.configured or not app.channel:
+        return [], False
     errors = [say_in_slack(conn, tenant_id, config, text=message)]
     for case_uid in sorted({str(r["case_uid"]) for r in rows if r["case_uid"]}):
         if action_store.listing(conn, tenant_id, "proposed", case_uid):
             errors.append(say_in_slack(conn, tenant_id, config, case_uid=case_uid))
-    return [e for e in errors if e]
+    return [e for e in errors if e], not errors[0]
+
+
+def _mail(conn: Conn, tenant_id: str, message: str, config: Any) -> tuple[bool, str]:
+    """Email a page the pager did not take to every enabled admin and operator
+    who has signed in once: a mistyped invitation never reads case titles.
+
+    Sent before the gate settles, so it knows whether anybody got it. Audited
+    as the Manager, like the page. Returns whether one mail went out, and why
+    any did not.
+    """
+    from shoc import mail
+    from shoc.db import audit
+
+    if config is None or not mail.configured(config):
+        return False, ""
+    to = _mail_to(conn, tenant_id)
+    if not to:
+        return False, "no enabled admin or operator who has signed in to email"
+    subject, body = mail.page(config, message)
+    sent: list[str] = []
+    errors: list[str] = []
+    for address in to:
+        try:
+            mail.send(config, address, subject, body)
+            sent.append(address)
+        except Exception as exc:
+            errors.append(f"{address}: {type(exc).__name__}: {exc}")
+    problem = "; ".join(errors)[:500]
+    audit.append(
+        conn,
+        tenant_id,
+        "agent",
+        PRINCIPAL,
+        "notify.mail",
+        audit.hash_payload({"to": to, "message": message}),
+        audit.hash_payload({"sent": sent}) if sent else None,
+        problem or None,
+    )
+    return bool(sent), problem
+
+
+def _mail_to(conn: Conn, tenant_id: str) -> list[str]:
+    return [
+        str(r["email"])
+        for r in fetch_all(
+            conn,
+            """SELECT email FROM shoc.users WHERE tenant_id = %s AND disabled_at IS NULL
+                 AND role IN ('admin', 'operator')
+                 AND (password_hash IS NOT NULL OR sso_subject IS NOT NULL)
+               ORDER BY email""",
+            (tenant_id,),
+        )
+    ]
+
+
+def reachable(conn: Conn, tenant_id: str, config: Any = None) -> dict[str, bool]:
+    """The ways shoc has to reach a person now (OPS-1, RSP-4).
+
+    A pager, a Slack channel, mail to an admin or operator who has signed in,
+    and a webhook a monitor reads. With none of them every page, exception
+    report and weekly is built, kept and read by nobody, while each job says it
+    ran. `say_in_slack` still answers "" with no channel; this is the check.
+    """
+    from shoc import mail
+    from shoc.api import slack
+    from shoc.cases import credentials
+    from shoc.config import Config
+
+    cfg = config if config is not None else Config.load()
+    try:
+        app = slack.load_app(conn, tenant_id, cfg.master_key)
+        in_slack = bool(app.configured and app.channel)
+    except Exception:  # a secret this key cannot open posts nothing either
+        in_slack = False
+    in_mail = mail.configured(cfg)
+    if in_mail:
+        # The agents' read-only role cannot read shoc.users (D22); the server
+        # being set is then the most it can tell.
+        with contextlib.suppress(psycopg.errors.InsufficientPrivilege):
+            in_mail = bool(_mail_to(conn, tenant_id))
+    return {
+        "pager": bool(credentials.instances(conn, tenant_id, "notify")),
+        "slack": in_slack,
+        "mail": in_mail,
+        # A hook filtered to other types never carries the weekly or exceptions.
+        "webhook": bool(
+            fetch_one(
+                conn,
+                """SELECT 1 AS hooked FROM shoc.webhooks
+                   WHERE tenant_id = %s AND enabled
+                     AND (cardinality(types) = 0 OR 'report.ready' = ANY(types))
+                   LIMIT 1""",
+                (tenant_id,),
+            )
+        ),
+    }
 
 
 def say_in_slack(conn: Conn, tenant_id: str, config: Any, **post: str) -> str:
@@ -418,11 +660,15 @@ def say_in_slack(conn: Conn, tenant_id: str, config: Any, **post: str) -> str:
     return ""
 
 
-def coverage(conn: Conn, tenant_id: str) -> int:
-    """Tell the Manager about every source dark long enough to matter (OPS-1).
+def coverage(conn: Conn, tenant_id: str, config: Any = None) -> int:
+    """Tell the Manager about every source dark long enough to matter, about
+    detection that stopped, about a disk about to stop everything, and about a
+    model that stopped answering (OPS-1).
 
     Whether it pages is this query. What Ops' model said about the outage
-    (`ops.review`), when it is about this outage, goes with it (D47).
+    (`ops.review`), when it is about this outage, goes with it (D47). A source
+    that never succeeded is dark since it was set up: a wrong credential on day
+    one is the worst state a connector can be in, and it used to page never.
     """
     from shoc.agents import ops
 
@@ -436,11 +682,29 @@ def coverage(conn: Conn, tenant_id: str) -> int:
             (tenant_id,),
         )
     }
+    set_up = {
+        str(r["source"]): r["created_at"]
+        for r in fetch_all(
+            conn,
+            "SELECT source, created_at FROM shoc.connector_config WHERE tenant_id = %s",
+            (tenant_id,),
+        )
+    }
     told = 0
     for source in ops.source_health(conn, tenant_id):
-        minutes = source.minutes_since
-        if not (source.error or source.stale) or minutes is None:
+        if not (source.error or source.stale):
             continue
+        minutes = source.minutes_since
+        # Worded the same all day, so an hourly check tells it once a day.
+        dark = f"{source.source} has been dark for more than {COVERAGE_DARK_HOURS}h."
+        if minutes is None:
+            if source.source not in set_up:
+                continue
+            minutes = (datetime.now(UTC) - set_up[source.source]).total_seconds() / 60
+            dark = (
+                f"{source.source} has never succeeded since it was set up, "
+                f"over {COVERAGE_DARK_HOURS}h ago."
+            )
         if minutes < COVERAGE_DARK_HOURS * 60:
             continue
         tell(
@@ -448,16 +712,137 @@ def coverage(conn: Conn, tenant_id: str) -> int:
             tenant_id,
             "Ops",
             "page",
-            # Worded the same all day, so an hourly check tells it once a day.
-            f"{source.source} has been dark for more than {COVERAGE_DARK_HOURS}h. "
-            "Detections on it are not running, and cases do not see it."
+            f"{dark} Detections on it are not running, and cases do not see it."
             + (f" Ops: {said[source.source]}" if source.source in said else ""),
             condition="coverage_dark",
             severity="high",
             group_key=f"source:{source.source}",
         )
         told += 1
-    return told
+    return (
+        told
+        + _detection_stopped(conn, tenant_id)
+        + _disk_full(conn, tenant_id, config)
+        + _model_dark(conn, tenant_id)
+    )
+
+
+# What a provider that refuses every call is telling the operator to fix.
+REFUSED = {"401": "rejected the API key", "402": "says the credit is spent", "403": "refused"}
+
+
+def _model_dark(conn: Conn, tenant_id: str) -> int:
+    """Page when no model call has come back for hours, or the provider refuses
+    the key or the credit (ai-4).
+
+    Ops' own model cannot diagnose it, the sweep stands down and `unattended`
+    holds the cases nobody read, so this one page names the cause instead of a
+    page per case. Worded the same while it lasts, so an hourly check tells it
+    once a day.
+    """
+    from shoc.agents import ops
+
+    down = ops.model_down(conn, tenant_id)
+    if not down:
+        return 0
+    since = f"{down['since']:%Y-%m-%d %H:%M} UTC" if down["since"] else "it was set up"
+    why = (
+        f"The model provider {REFUSED[down['status']]} (HTTP {down['status']})"
+        if down["status"]
+        else "The model provider has failed every call"
+    )
+    tell(
+        conn,
+        tenant_id,
+        "Ops",
+        "page",
+        f"{why}; no model call has come back since {since}. No case is investigated and "
+        "no hunt or report is read until it does: fix the key or the credit (llm.configure).",
+        condition="coverage_dark",
+        severity="high",
+        group_key="llm",
+    )
+    return 1
+
+
+def _disk_full(conn: Conn, tenant_id: str, config: Any = None) -> int:
+    """Page while Postgres is past `ops.DISK_PAGE` of SHOC_DISK_BUDGET_GB.
+
+    On a full disk Postgres refuses writes, the notice a page is sent from
+    included, so this is the last page that can still be written.
+    """
+    from shoc.agents import ops
+
+    if not getattr(config, "disk_budget_gb", 0):
+        return 0
+    room = ops.disk(conn, config)
+    if room["used"] < ops.DISK_PAGE:
+        return 0
+    tell(
+        conn,
+        tenant_id,
+        "Ops",
+        "page",
+        # Worded the same all day, so an hourly check tells it once a day.
+        f"The database is past {ops.DISK_PAGE:.0%} of SHOC_DISK_BUDGET_GB "
+        f"({room['budget_gb']:g} GB). On a full disk Postgres refuses every write and "
+        "shoc stops: grow the disk, lower SHOC_RETENTION_DAYS or move events to a warehouse.",
+        condition="coverage_dark",
+        severity="high",
+        group_key="store:size",
+    )
+    return 1
+
+
+def _detection_stopped(conn: Conn, tenant_id: str) -> int:
+    """Page when no detection run has finished in three cycles, an hour at least.
+
+    Sources can load while every `detect.run` fails: on a bug, a statement
+    timeout, or a store that takes writes and refuses reads. Only dark sources
+    paged, so rules could stop for weeks with nothing but a stream alert.
+    A tenant with no enabled source, or whose first run is younger than the
+    window, has nothing to say yet; a schedule nobody ticks is `scheduler`'s.
+    """
+    row = fetch_one(
+        conn,
+        """WITH s AS (
+               SELECT tenant_id, greatest(3 * interval_seconds, 3600) AS seconds
+               FROM shoc.schedules
+               WHERE tenant_id = %s AND kind = 'detect.run' AND enabled LIMIT 1)
+           SELECT s.seconds,
+                  (SELECT j.last_error FROM shoc.jobs j
+                    WHERE j.tenant_id = s.tenant_id AND j.kind = 'detect.run'
+                      AND j.last_error IS NOT NULL
+                    ORDER BY j.job_id DESC LIMIT 1) AS error
+           FROM s
+           WHERE EXISTS (SELECT 1 FROM shoc.connector_config c
+                          WHERE c.tenant_id = s.tenant_id AND c.enabled
+                            AND c.source NOT IN ('slack', 'llm'))
+             AND EXISTS (SELECT 1 FROM shoc.jobs j
+                          WHERE j.tenant_id = s.tenant_id AND j.kind = 'detect.run'
+                            AND j.created_at < now() - s.seconds * interval '1 second')
+             AND NOT EXISTS (SELECT 1 FROM shoc.jobs j
+                              WHERE j.tenant_id = s.tenant_id AND j.kind = 'detect.run'
+                                AND j.state = 'done'
+                                AND j.finished_at > now() - s.seconds * interval '1 second')""",
+        (tenant_id,),
+    )
+    if not row:
+        return 0
+    error = " ".join(str(row["error"] or "").split())[:300]
+    tell(
+        conn,
+        tenant_id,
+        "Ops",
+        "page",
+        f"No detection run has finished for over {int(row['seconds']) // 3600}h, so no rule "
+        "has read the events that arrived since."
+        + (f" The last run failed with: {error}" if error else ""),
+        condition="coverage_dark",
+        severity="high",
+        group_key="detection",
+    )
+    return 1
 
 
 def _malicious_uncontained(verdict: Any, severity: Any, contained: Any) -> bool:
@@ -471,12 +856,13 @@ def uncontained(conn: Conn, tenant_id: str, case_uid: str) -> bool:
     case ends. Below critical, a playbook's page step reaches the weekly, and
     `uncontainable_and_active` wants a finding within the hour, so a case that
     dry run or a missing credential left alone woke nobody. Told once per case,
-    and delivered after `CONTAIN_WITHIN_MINUTES`; the gate asks again then.
+    or again when that page failed, and delivered after `CONTAIN_WITHIN_MINUTES`;
+    the gate asks again then.
     Returns whether this was news.
     """
     case = fetch_one(
         conn,
-        f"""SELECT c.verdict, c.severity, c.state, {CONTAINED} AS contained
+        f"""SELECT c.verdict, {FLOORED} AS severity, c.state, {CONTAINED} AS contained
             FROM shoc.cases c WHERE c.tenant_id = %s AND c.case_uid = %s""",
         (tenant_id, case_uid),
     )
@@ -486,8 +872,10 @@ def uncontained(conn: Conn, tenant_id: str, case_uid: str) -> bool:
         return False
     if fetch_one(
         conn,
+        # A page that could not be sent is not a page told.
         """SELECT 1 AS told FROM shoc.notices WHERE tenant_id = %s AND case_uid = %s
-             AND condition = 'malicious_uncontained' LIMIT 1""",
+             AND condition = 'malicious_uncontained' AND outcome IS DISTINCT FROM 'failed'
+           LIMIT 1""",
         (tenant_id, case_uid),
     ):
         return False
@@ -504,15 +892,25 @@ def uncontained(conn: Conn, tenant_id: str, case_uid: str) -> bool:
         condition="malicious_uncontained",
         deliver=False,
     )
+    # The same day it is the same row, so the one that failed is opened again
+    # and sent again, with its own retries.
+    execute(
+        conn,
+        """UPDATE shoc.notices SET delivered_at = NULL, outcome = NULL, retry_at = NULL,
+                  attempts = 0
+           WHERE tenant_id = %s AND notice_uid = %s AND outcome = 'failed'""",
+        (tenant_id, uid),
+    )
+    # A minute past the hold: with this host's clock a little behind the
+    # database's, the job would otherwise come while the gate still holds it.
+    run_at = datetime.now(UTC) + timedelta(minutes=CONTAIN_WITHIN_MINUTES + 1)
     jobs.enqueue(
         conn,
         tenant_id,
         "manager.deliver",
         {},
-        # A minute past the hold: with this host's clock a little behind the
-        # database's, the job would otherwise come while the gate still holds it.
-        run_at=datetime.now(UTC) + timedelta(minutes=CONTAIN_WITHIN_MINUTES + 1),
-        idempotency_key=f"deliver:{uid}",
+        run_at=run_at,
+        idempotency_key=f"deliver:{uid}@{run_at.isoformat()}",
     )
     return True
 
@@ -604,7 +1002,7 @@ def answer(
     """
     from shoc.agents import loop, roles
     from shoc.agents.dossier import build_dossier
-    from shoc.agents.llm import NoLLM, from_config
+    from shoc.agents.llm import NoLLM, from_config, limit
     from shoc.agents.openspace import Budget, Evidence, validate_citations
     from shoc.agents.safety import quote
     from shoc.capabilities.ask import entities_in
@@ -631,7 +1029,9 @@ def answer(
         case_uid = named.group(0) if case else ""
     built = build_dossier(conn, store, tenant_id, case) if case else None
     dossier = built.text if built else "No case is named."
-    report = loop.RunReport(case_uid=case_uid)
+    # Started, so the Manager's own turn stops at the budget's time as its peers do.
+    started = datetime.now(UTC)
+    report = loop.RunReport(case_uid=case_uid, started=started)
     # Nobody named is the least anybody can be: a client holding `ask:read`.
     on_behalf = caller or Caller(kind="external_agent", id="ask", scopes=("ask:read",))
     peers = loop._Peers(
@@ -643,27 +1043,34 @@ def answer(
         client,
         config,
         dossier,
-        Budget.for_severity(str((case or {}).get("severity") or "medium")),
-        datetime.now(UTC),
+        replace(
+            Budget.for_severity(str((case or {}).get("severity") or "medium")),
+            max_seconds=ASK_SECONDS,
+        ),
+        started,
         on_behalf=on_behalf,
     )
+    left = ASK_SECONDS - (datetime.now(UTC) - started).total_seconds()
     try:
-        said, usage = loop._ask(
-            client,
-            roles.MANAGER,
-            f"{dossier}\n\n"
-            + (f"The conversation so far:\n{quote('conversation', turns)}\n\n" if turns else "")
-            + f"The operator asks:\n{quote('question', question)}\n"
-            "Answer in at most four sentences, and cite the events behind anything "
-            "you say happened.",
-            roles.RemarkOutput,
-            config,
-            conn,
-            tenant_id,
-            store,
-            ask=peers.ask_for(roles.MANAGER.name),
-            on_behalf=on_behalf,
-        )
+        with limit(left + ANSWER_SECONDS):
+            said, usage = loop._ask(
+                client,
+                roles.MANAGER,
+                f"{dossier}\n\n"
+                + (f"The conversation so far:\n{quote('conversation', turns)}\n\n" if turns else "")
+                + f"The operator asks:\n{quote('question', question)}\n"
+                "Answer in at most four sentences, and cite the events behind anything "
+                "you say happened.",
+                roles.RemarkOutput,
+                config,
+                conn,
+                tenant_id,
+                store,
+                ask=peers.ask_for(roles.MANAGER.name),
+                on_behalf=on_behalf,
+                # Its own turn and the colleagues it asks share one budget (OPS-1).
+                budget=loop._turn(report, peers.budget, 0.5),
+            )
     except Exception:
         return None
     loop._charge(conn, tenant_id, usage)

@@ -27,6 +27,7 @@ class CaseFilter:
         False,
         doc="Only cases closed without their containment that nobody has acknowledged",
     )
+    open: bool = f(False, doc="Only cases not closed")
 
 
 @dataclass
@@ -45,10 +46,14 @@ class CasePage:
 )
 def list_cases(ctx: Context, inp: CaseFilter) -> Result:
     rows = engine.recent(
-        ctx.db, ctx.tenant_id, max(1, min(inp.limit, 200)), inp.state, inp.unacknowledged
+        ctx.db,
+        ctx.tenant_id,
+        max(1, min(inp.limit, 200)),
+        inp.state,
+        inp.unacknowledged,
+        verdict=inp.verdict,
+        open_only=inp.open,
     )
-    if inp.verdict:
-        rows = [r for r in rows if r["verdict"] == inp.verdict]
     open_count = sum(1 for r in rows if r["state"] != "closed")
     return Result(
         data=CasePage(rows=[to_json(r) for r in rows], count=len(rows)),
@@ -172,15 +177,14 @@ def set_state(ctx: Context, inp: StateChange) -> Result:
 
 
 def _reject_pending(ctx: Context, case_uid: str, why: str) -> int:
-    """A person who closes a case answers what was waiting on it."""
-    from shoc.cases import actions
+    """A person who closes a case answers what was waiting on it, and its playbook
+    runs stop (RSP-1)."""
+    from shoc.cases import actions, playbooks
 
+    why = f"closed: {why}"
+    playbooks.cancel_case_runs(ctx.db, ctx.tenant_id, case_uid, why)
     return actions.reject_pending(
-        ctx.db,
-        ctx.tenant_id,
-        case_uid,
-        f"{ctx.caller.kind}:{ctx.caller.id}",
-        f"case closed: {why}",
+        ctx.db, ctx.tenant_id, case_uid, f"{ctx.caller.kind}:{ctx.caller.id}", why
     )
 
 
@@ -207,6 +211,9 @@ class CloseResult:
     rejected_actions: int = 0
     routed: list[dict[str, Any]] = field(default_factory=list)
     memory_id: str = ""
+    # On a benign or false-positive close: what shoc did on the case that is
+    # still in force, which nothing undoes on its own (RSP-4).
+    still_in_force: list[dict[str, Any]] = field(default_factory=list)
 
 
 @capability(
@@ -282,7 +289,21 @@ def close_case(ctx: Context, inp: CloseInput) -> Result:
         closer="human",
     )
     memory_id = ""
-    if inp.disposition in ("benign_expected", "false_positive") and findings:
+    benign = inp.disposition in ("benign_expected", "false_positive")
+    still = (
+        fetch_all(
+            ctx.db,
+            """SELECT action_uid, type, target FROM shoc.actions
+               WHERE tenant_id = %s AND case_uid = %s AND state = 'done' AND reversible
+                 AND type NOT LIKE 'notify.%%' AND NOT dry_run
+                 AND coalesce(result->>'dry_run', 'false') <> 'true'
+               ORDER BY updated_at""",
+            (ctx.tenant_id, inp.case_uid),
+        )
+        if benign
+        else []
+    )
+    if benign and findings:
         rules = sorted({str(r["rule_id"]) for r in findings})
         resources = sorted({str(r["resource"]) for r in findings if r["resource"]})
         start = min(r["first_seen"] for r in findings)
@@ -307,10 +328,18 @@ def close_case(ctx: Context, inp: CloseInput) -> Result:
             rejected_actions=rejected,
             routed=[e.to_json() for e in routed.entries],
             memory_id=memory_id,
+            still_in_force=[dict(r) for r in still],
         ),
         summary=(
             f"{inp.case_uid} closed as {inp.disposition}."
             + (f" {rejected} pending action(s) rejected." if rejected else "")
+            + (
+                f" {len(still)} action(s) still in force: "
+                + ", ".join(f"{r['type']} {r['target']}" for r in still[:5])
+                + "; undo each with action.undo."
+                if still
+                else ""
+            )
         ),
         citations=[inp.case_uid, *citations[:20]],
     )
@@ -534,11 +563,10 @@ class MemoryRef:
     tags=("memory", "write"),
 )
 def add_fact(ctx: Context, inp: MemoryFact) -> Result:
-    from datetime import datetime
+    from shoc.capabilities.events import parse_since
 
-    expires = (
-        datetime.fromisoformat(inp.expires_at.replace("Z", "+00:00")) if inp.expires_at else None
-    )
+    # A time without an offset is UTC; one that does not parse is the caller's 400.
+    expires = parse_since(inp.expires_at) if inp.expires_at.strip() else None
     memory_id = memory_store.add(
         ctx.db, ctx.tenant_id, inp.body, inp.subject, inp.kind, ctx.caller.kind, expires
     )

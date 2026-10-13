@@ -5,8 +5,8 @@ description: >
   for an existing one, keeps working after a password reset.
 status: stable
 date: 2026-09-30
-modified: 2026-09-30
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.5
 attack: [T1098]
 logsource:

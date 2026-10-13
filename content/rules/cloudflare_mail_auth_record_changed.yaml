@@ -5,11 +5,12 @@ description: >
   address added to SPF, a DKIM key the intruder holds, or a relaxed or deleted
   DMARC policy lets their mail to customers and the finance team pass every
   check. Mail tools such as a newsletter or CRM add SPF includes and DKIM
-  records a few times a year, which is why this is medium. MX and NS records
+  records a few times a year, which is why this is low. MX and NS records
   belong to cloudflare_mail_dns_record_changed.
 status: experimental
 date: 2026-10-09
-severity: medium
+modified: 2026-10-12
+severity: low
 confidence: 0.45
 attack: [T1584.002, T1656]
 logsource:

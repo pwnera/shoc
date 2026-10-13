@@ -7,8 +7,8 @@ description: >
   network zone works for whoever holds it, from anywhere.
 status: stable
 date: 2026-09-24
-modified: 2026-10-09
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.7
 attack: [T1098.001]
 logsource:

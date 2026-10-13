@@ -55,7 +55,7 @@ fields:
   # User, ServicePrincipal or Group: whether a person or an app made the call.
   actor_user_type:
     paths: ["authorization.evidence.principalType", "identity.authorization.evidence.principalType"]
-  actor_session_uid: { path: correlationId }
+  # A correlation id names one request or flow, not a session; it stays in raw.
   src_endpoint_ip:
     paths: ["httpRequest.clientIpAddress", callerIpAddress, "claims.ipaddr", "identity.claims.ipaddr"]
   cloud_account_uid: { path: subscriptionId }

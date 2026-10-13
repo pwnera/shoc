@@ -49,7 +49,7 @@ example: |
   disposition: malicious, because an outside account became owner through a key used from a new address.
 trigger:
   verdict: [malicious]
-  severity_at_least: high
+  severity_at_least: medium
   min_confidence: 0.8
 steps:
   - name: disable the service account key the calls were signed with

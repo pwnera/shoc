@@ -5,8 +5,14 @@ const minute = 60_000;
 const now = Date.parse("2026-10-03T12:00:00Z");
 
 describe("the visit window", () => {
-  it("covers the last 24 hours on a first visit", () => {
-    expect(begin(null, now)).toEqual({ since: now - 24 * 60 * minute, last: now });
+  it("covers the last 24 hours on a first visit, marked first so it is never called a last visit", () => {
+    expect(begin(null, now)).toEqual({ since: now - 24 * 60 * minute, last: now, first: true });
+  });
+
+  it("stays first through a reload, and drops it once a real visit starts", () => {
+    const first = begin(null, now - 10 * minute);
+    expect(begin(first, now)).toEqual({ since: first.since, last: now, first: true });
+    expect(begin(first, now + 60 * minute).first).toBeUndefined();
   });
 
   it("starts a new visit at the last heartbeat after 30 minutes away", () => {

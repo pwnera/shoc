@@ -4,8 +4,22 @@
  * licence, linked, then the references. Sigma's licence (DRL 1.1) asks for the
  * author next to the link, so the popover always shows it.
  */
+import type { ReactNode } from "react";
+import { safeHref } from "@/lib/url";
 import type { RuleSource } from "@/types";
 import { Popover } from "./ui/pop";
+
+/** A link when the URL is http(s), otherwise the same text unlinked. */
+function Out({ url, className, children }: { url: string; className: string; children: ReactNode }) {
+  const href = safeHref(url);
+  return href ? (
+    <a href={href} target="_blank" rel="noreferrer noopener" className={`sh-link ${className}`}>
+      {children}
+    </a>
+  ) : (
+    <span className={className}>{children}</span>
+  );
+}
 
 /** "Elastic ×3 · adapted · Elastic-2.0": the commonest origin, relation and licence. */
 function line(sources: RuleSource[]): string {
@@ -33,17 +47,17 @@ export function Provenance({ sources, references = [] }: { sources?: RuleSource[
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {all.map((s) => (
           <li key={s.url} className="flex min-w-0 flex-col gap-0.5">
-            <a href={s.url} target="_blank" rel="noreferrer noopener" className="sh-link truncate">
+            <Out url={s.url} className="truncate">
               {s.name} · {s.title}
-            </a>
+            </Out>
             <span className="sh-mono">{[s.author, s.relation, s.license].filter(Boolean).join(" · ")}</span>
           </li>
         ))}
         {references.map((url) => (
           <li key={url} className="min-w-0">
-            <a href={url} target="_blank" rel="noreferrer noopener" className="sh-link block truncate font-mono text-xs">
+            <Out url={url} className="block truncate font-mono text-xs">
               {url}
-            </a>
+            </Out>
           </li>
         ))}
       </ul>

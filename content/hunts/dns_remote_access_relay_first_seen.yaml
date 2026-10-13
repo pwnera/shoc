@@ -1,12 +1,14 @@
 id: dns_remote_access_relay_first_seen
-title: A remote-access relay is looked up for the first time
+title: A remote-access vendor or ScreenConnect instance is looked up for the first time
 hypothesis: >
-  A remote-access session reaches its vendor's relay by name, and a
-  ScreenConnect instance has a relay name of its own. A relay this company
-  never looked up before is a tool, or a ScreenConnect server, that is not the
-  company's. Windows' own Quick Assist counts too, since callers posing as IT
-  support start there before they install anything. Gateway also sees it from
-  Macs and unmanaged laptops.
+  A remote-access session reaches its vendor's servers by name, and a
+  ScreenConnect instance has a relay name of its own. A vendor, or a
+  ScreenConnect instance, this company never looked up before is a tool that
+  is not the company's. AnyDesk and TeamViewer hand each session a relay from
+  a large, changing set, so their relays are left out and the vendor's fixed
+  names stand for it. Windows' own Quick Assist counts too, since callers
+  posing as IT support start there before they install anything. Gateway also
+  sees it from Macs and unmanaged laptops.
 attack: [T1219]
 sources:
   - name: Sigma
@@ -35,15 +37,38 @@ logsource:
 window: 1d
 cadence_days: 1
 detection:
-  selection:
-    query.hostname|endswith: [screenconnect.com, anydesk.com, teamviewer.com, rustdesk.com,
-                              atera.com, splashtop.com, getscreen.me, logmein.com, logmeininc.com,
-                              gotoassist.com, remoteutilities.com, netsupportsoftware.com,
-                              dwservice.net, tmate.io, zohoassist.com, beyondtrustcloud.com,
-                              parsec.app, helpwire.app, remoteassistance.support.services.microsoft.com,
-                              remotedesktop-pa.googleapis.com, ammyy.com, kaseya.net, swi-rc.com,
-                              swi-tc.com, remotepc.com, bomgar.com]
-  condition: selection
+  # A name under the vendor's domain, with the dot, or the domain itself:
+  # `anydesk.com` as a bare suffix also matched notanydesk.com.
+  sel_vendor:
+    query.hostname|endswith: [.screenconnect.com, .anydesk.com, .teamviewer.com, .rustdesk.com,
+                              .atera.com, .splashtop.com, .getscreen.me, .logmein.com,
+                              .logmeininc.com, .gotoassist.com, .remoteutilities.com,
+                              .netsupportsoftware.com, .dwservice.net, .tmate.io, .zohoassist.com,
+                              .beyondtrustcloud.com, .parsec.app, .helpwire.app, .ammyy.com,
+                              .kaseya.net, .swi-rc.com, .swi-tc.com, .remotepc.com, .bomgar.com,
+                              .remoteassistance.support.services.microsoft.com]
+  sel_name:
+    query.hostname: [screenconnect.com, anydesk.com, teamviewer.com, rustdesk.com, atera.com,
+                     splashtop.com, getscreen.me, logmein.com, logmeininc.com, gotoassist.com,
+                     remoteutilities.com, netsupportsoftware.com, dwservice.net, tmate.io,
+                     zohoassist.com, beyondtrustcloud.com, parsec.app, helpwire.app, ammyy.com,
+                     kaseya.net, swi-rc.com, swi-tc.com, remotepc.com, bomgar.com,
+                     remoteassistance.support.services.microsoft.com,
+                     remotedesktop-pa.googleapis.com]
+  # Rotating relays: AnyDesk's relay-<id>.net.anydesk.com and TeamViewer's
+  # numbered router hosts are new most days for a company that uses either.
+  # boot.net.anydesk.com and TeamViewer's master hosts, a small set a new
+  # install looks up, stay, so the vendor itself still shows.
+  relay_anydesk:
+    query.hostname|endswith: .net.anydesk.com
+  boot_anydesk:
+    query.hostname: boot.net.anydesk.com
+  relay_teamviewer_host:
+    query.hostname|startswith: router
+  relay_teamviewer:
+    query.hostname|endswith: .teamviewer.com
+  condition: (sel_vendor or sel_name) and not (relay_anydesk and not boot_anydesk)
+    and not (relay_teamviewer_host and relay_teamviewer)
 baseline:
   first_seen: [query.hostname]
   lookback: 30d

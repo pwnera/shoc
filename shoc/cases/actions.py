@@ -14,12 +14,13 @@ runner, the Manager or the unattended path (SEC-1).
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
+
+import httpx
 
 from shoc.actions import get as get_action
 from shoc.actions.base import ActionResult, dry_run_result, follows_link, out_of_scope
@@ -28,6 +29,7 @@ from shoc.cases.policy import Decision, Policy
 from shoc.db import audit
 from shoc.db.pool import Conn, fetch_all, fetch_one
 from shoc.errors import ConfigError, Denied, NotFound, ValidationError
+from shoc.ids import make_id
 
 TERMINAL = ("done", "failed", "rejected", "rolled_back")
 
@@ -39,6 +41,14 @@ STUCK_AFTER_MINUTES = 15
 RUN_JOBS = 3
 
 PRINCIPAL_KINDS = ("human", "agent", "external_agent", "service")
+
+# The error of every rejection the case made rather than a decision on the
+# action: a close, a benign verdict, or a case that wanted nothing more when the
+# action came to run. A person may ask for such an action again, and the crew
+# once the case wants a response again (D152). A person's own reject never
+# carries it: `reject` strips it from their note.
+BY_CASE = "[case] "
+BENIGN = ("benign_expected", "false_positive")
 
 
 def _settle(
@@ -64,21 +74,22 @@ def _settle(
         row = fetch_one(conn, sql, params) or {}
         if not row:  # a guarded UPDATE that matched nothing changed nothing
             return row
+        acted_on = {
+            "action_uid": row.get("action_uid"),
+            "type": row.get("type"),
+            "target": row.get("target"),
+        }
         audit.append(
             conn,
             tenant_id,
             who,
             ident,
             event,
-            audit.hash_payload(
-                {
-                    "action_uid": row.get("action_uid"),
-                    "type": row.get("type"),
-                    "target": row.get("target"),
-                }
-            ),
+            audit.hash_payload(acted_on),
             audit.hash_payload(row),
             error,
+            # What was acted on, readable without SQL; secrets masked (SEC-1).
+            subject=audit.subject_of(acted_on),
         )
     return row
 
@@ -106,11 +117,23 @@ class Proposal:
     # One of the provider's credentials, `aws:staging`, when a person names it.
     # It narrows where shoc may act; it never adds a place (RFC 0025).
     credential: str = ""
+    # A step of a playbook run asked to be a preview. One the policy would run for
+    # real is recorded as its own plan, settled at once, so a plan never takes the
+    # live action's row or waits on anyone (RSP-7).
+    dry_run: bool = False
 
 
 def make_uid(tenant_id: str, action_type: str, target: str, case_uid: str | None) -> str:
-    blob = f"{tenant_id}|{action_type}|{target}|{case_uid or ''}"
-    return "ACT-" + hashlib.sha256(blob.encode()).hexdigest()[:20]
+    return make_id("ACT-", tenant_id, action_type, target, case_uid or "")
+
+
+def target_key(action: Any, params: dict[str, Any]) -> str:
+    """Every parameter that names what is acted on, so a second rule or policy on
+    the same user is its own action. With one it is that value, as the ids stored
+    before were. An action whose other parameters only locate the object (the
+    user an access key belongs to) names its own in `identity_params`."""
+    names = getattr(action, "identity_params", None) or action.required_params
+    return "|".join(str(params.get(p, "")) for p in names)
 
 
 def decide(
@@ -142,13 +165,20 @@ def decide(
         case = engine.require(conn, tenant_id, proposal.case_uid)
         confidence = float(case["confidence"])
         severity = case["severity"]
+        if proposal.action_type.startswith("notify."):
+            # A page is gated at the worst finding's severity, whatever a model
+            # lowered the case to (ai-3); an action that changes something is not.
+            severity = engine.floored(conn, tenant_id, proposal.case_uid) or severity
         cited = _case_has_citations(conn, tenant_id, proposal.case_uid)
         # An action is only a response to an incident on the platform it acts on,
         # or to the login the case's user signs in as there (RFC 0027).
         why = out_of_scope(action, engine.platforms(conn, tenant_id, proposal.case_uid, cfg))
         if why and not linked[0]:
             return Decision(allowed=False, reason=linked[1] or why), case
-    already = _auto_actions(conn, tenant_id, proposal.case_uid)
+    # A plan changed nothing, so it spends nothing of a live action's budget;
+    # a plan counts every action, as the live one would (RSP-3, RSP-7).
+    planned = proposal.dry_run or policy.dry_run_for(proposal.action_type, cfg.dry_run)
+    already = _auto_actions(conn, tenant_id, proposal.case_uid, live_only=not planned)
     target = (
         str(proposal.params.get(action.required_params[0], "")) if action.required_params else ""
     )
@@ -174,7 +204,7 @@ def decide(
         has_citations=cited,
         grounded=proposal.grounded,
         auto_actions_so_far=already,
-        dry_run_default=cfg.dry_run or None,
+        dry_run_default=cfg.dry_run,
         research=research,
         review=review,
         blast_radius=proposal.blast_radius,
@@ -188,7 +218,7 @@ def decide(
         # key can still be revoked, but a person says so (RFC 0021).
         from shoc.cases import own
 
-        if own.bare(target).lower() in own.protected(conn, tenant_id):
+        if own.bare(target).lower() in own.protected(conn, tenant_id, cfg.master_key):
             decision.autonomy, decision.needs_approval = "L2", True
             decision.reason = (
                 f"{target} is shoc's own or the operator's; a person approves. " + decision.reason
@@ -249,7 +279,7 @@ def _case_has_citations(conn: Conn, tenant_id: str, case_uid: str) -> bool:
     return bool(row and row["n"])
 
 
-def _auto_actions(conn: Conn, tenant_id: str, case_uid: str | None) -> int:
+def _auto_actions(conn: Conn, tenant_id: str, case_uid: str | None, live_only: bool) -> int:
     if not case_uid:
         return 0
     row = fetch_one(
@@ -257,10 +287,49 @@ def _auto_actions(conn: Conn, tenant_id: str, case_uid: str | None) -> int:
         """SELECT count(*) AS n FROM shoc.actions
            WHERE tenant_id = %s AND case_uid = %s AND autonomy = 'L1'
              AND type NOT LIKE 'notify.%%'
-             AND state IN ('approved','running','done')""",
-        (tenant_id, case_uid),
+             AND state IN ('approved','running','done')
+             AND NOT (dry_run AND %s)""",
+        (tenant_id, case_uid, live_only),
     )
     return int(row["n"]) if row else 0
+
+
+def _planned(action: Any, params: dict[str, Any], needs_approval: bool) -> ActionResult:
+    """What a preview's step would do, recorded when it is proposed. Not a run, so
+    it is not `dry_run_result`, which stands for one."""
+    detail = f"[dry run] {action.plan(params)}"
+    if needs_approval:
+        detail += " (live, a person approves it first)"
+    return ActionResult(detail=detail, data={"planned": params}, dry_run=True)
+
+
+def _revives(
+    existing: dict[str, Any],
+    proposal: Proposal,
+    principal: str,
+    principal_kind: str,
+    case: dict[str, Any],
+) -> bool:
+    """Whether asking again brings a settled action back (D152, OPS-1, RFC 0015).
+
+    A person may ask again for one nobody decided in time, or one the case
+    rejected. The crew may ask again for one the case rejected once the case is
+    open and not benign again; never for an expired one, or it would come back
+    every time the crew is woken. A person's reject of the action itself stands.
+    The Manager's page goes out again for the next outage, though its words are
+    the same as the last one's; its own gate says how often.
+    """
+    state, by = existing["state"], str(existing["approved_by"] or "")
+    by_case = state == "rejected" and str(existing["error"] or "").startswith(BY_CASE)
+    if principal_kind == "human" and state == "rejected" and (by == "unattended" or by_case):
+        return True
+    if by_case and case.get("state") != "closed" and case.get("verdict") not in BENIGN:
+        return True
+    return (
+        proposal.action_type == "notify.page"
+        and principal == "manager"
+        and (state in ("done", "rolled_back") or (state == "rejected" and by == "manager"))
+    )
 
 
 def propose(
@@ -279,6 +348,10 @@ def propose(
     """
     action = get_action(proposal.action_type)
     proposal.params = dict(proposal.params)
+    # A count the plan states (how many admins stay) comes from the vendor, never
+    # from whoever proposed (ir-9).
+    for name in getattr(action, "looked_up", ()):
+        proposal.params.pop(name, None)
     linked = _follow_link(conn, tenant_id, action, proposal, config)
     # Which platform, and which tenant of it: from where the target was seen.
     acts_with, gaps = credentials.route(
@@ -290,9 +363,11 @@ def propose(
         config=config,
         named=proposal.credential,
     )
-    _resolve(conn, tenant_id, action, proposal.params, config, acts_with[:1])
+    _resolve(
+        conn, tenant_id, action, proposal.params, config, acts_with[:1], proposal.case_uid or ""
+    )
     action.check(proposal.params)
-    decision, _case = decide(
+    decision, case = decide(
         conn, tenant_id, proposal, principal_kind, config, policy, linked=linked
     )
     if gaps and not acts_with and decision.allowed:
@@ -303,19 +378,19 @@ def propose(
     target = (
         str(proposal.params.get(action.required_params[0], "")) if action.required_params else ""
     )
-    uid = make_uid(tenant_id, proposal.action_type, target, proposal.case_uid)
+    key = target_key(action, proposal.params)
+    # A preview's step that the policy would run for real is its own action,
+    # so a plan never takes the live action's row (RSP-7).
+    preview = proposal.dry_run and not decision.dry_run
+    if preview:
+        decision.dry_run = True
+        key += "|dry run"
+    uid = make_uid(tenant_id, proposal.action_type, key, proposal.case_uid)
     existing = fetch_one(
         conn, "SELECT * FROM shoc.actions WHERE tenant_id=%s AND action_uid=%s", (tenant_id, uid)
     )
-    # A person may ask again for one nobody decided in time; the crew may not,
-    # or an expired L2 would come back every time the crew is woken (D152).
-    expired = (
-        existing is not None
-        and existing["state"] == "rejected"
-        and existing["approved_by"] == "unattended"
-        and principal_kind == "human"
-    )
-    if existing and existing["state"] not in ("proposed", "blocked", "failed") and not expired:
+    revived = existing is not None and _revives(existing, proposal, principal, principal_kind, case)
+    if existing and existing["state"] not in ("proposed", "blocked", "failed") and not revived:
         # Settled, approved or running already. Re-proposing it must not undo a
         # human's rejection or approval, or repeat a completed action. A failed
         # one is decided again, with the parameters it is proposed with now.
@@ -328,6 +403,13 @@ def propose(
     params = dict(proposal.params)
     if decision.ttl_minutes and not params.get("ttl_minutes"):
         params["ttl_minutes"] = decision.ttl_minutes  # the policy's expiry (RSP-4)
+    plan = None
+    if preview and state != "blocked":
+        # Settled as its plan at once: nobody approves, chases or runs a preview's
+        # step, no live action's budget counts it, and a page in one reaches no
+        # Manager (RSP-3, RSP-7).
+        plan = _planned(action, params, needs_approval=state == "proposed")
+        state = "done"
     # An action that waits for a human needs a point at which waiting stops
     # being the answer: nobody here watches the tool most days, and an approval
     # that never comes used to leave the action `proposed` for ever (017). The
@@ -352,9 +434,12 @@ def propose(
         """INSERT INTO shoc.actions
                (action_uid, tenant_id, case_uid, run_uid, type, target, params, autonomy,
                 state, reversible, dry_run, rationale, requested_by, idempotency_key,
-                decide_by, fallback, blast_radius, grounded, acts_in)
-           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                decide_by, fallback, blast_radius, grounded, acts_in, result)
+           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                   coalesce(%s::jsonb, '{}'::jsonb))
            ON CONFLICT (action_uid) DO UPDATE SET
+               result = CASE WHEN EXCLUDED.result = '{}'::jsonb THEN shoc.actions.result
+                             ELSE EXCLUDED.result END,
                case_uid = EXCLUDED.case_uid,
                run_uid = coalesce(EXCLUDED.run_uid, shoc.actions.run_uid),
                params = EXCLUDED.params,
@@ -396,6 +481,7 @@ def propose(
             None if proposal.blast_radius is None else json.dumps(proposal.blast_radius),
             proposal.grounded,
             acts_with or None,
+            None if plan is None else json.dumps(plan.to_json(), default=str),
         ),
         kind=principal_kind,
     )
@@ -479,7 +565,12 @@ def approve(
     return out or {}
 
 
-def reject(conn: Conn, tenant_id: str, action_uid: str, who: str, note: str = "") -> dict[str, Any]:
+def reject(
+    conn: Conn, tenant_id: str, action_uid: str, who: str, note: str = "", by_case: bool = False
+) -> dict[str, Any]:
+    """Reject an action. Only the case's own rejections carry `BY_CASE`."""
+    while not by_case and note.startswith(BY_CASE):
+        note = note[len(BY_CASE) :]
     row = require(conn, tenant_id, action_uid)
     if row["state"] in TERMINAL:
         raise ValidationError(f"{action_uid} is already {row['state']}")
@@ -490,9 +581,11 @@ def reject(conn: Conn, tenant_id: str, action_uid: str, who: str, note: str = ""
         "action.rejected",
         """UPDATE shoc.actions SET state='rejected', approved_by=%s, updated_at=now(),
                error=%s
-           WHERE tenant_id=%s AND action_uid=%s RETURNING *""",
+           WHERE tenant_id=%s AND action_uid=%s AND state <> 'running' RETURNING *""",
         (who, note or None, tenant_id, action_uid),
     )
+    if not out:  # a worker is in the call already; its outcome stands (RSP-2)
+        return require(conn, tenant_id, action_uid)
     engine.publish(
         conn,
         tenant_id,
@@ -504,15 +597,18 @@ def reject(conn: Conn, tenant_id: str, action_uid: str, who: str, note: str = ""
 
 
 def reject_pending(conn: Conn, tenant_id: str, case_uid: str, who: str, note: str) -> int:
-    """Answer every proposal still waiting on a case. Returns how many."""
+    """Answer every action still waiting on a case: proposed, or approved and not
+    started, which would otherwise run on a case that wants nothing more (RSP-1).
+    The case answered them, not a decision on each, so they carry `BY_CASE`.
+    Returns how many."""
     pending = fetch_all(
         conn,
         """SELECT action_uid FROM shoc.actions
-           WHERE tenant_id = %s AND case_uid = %s AND state = 'proposed'""",
+           WHERE tenant_id = %s AND case_uid = %s AND state IN ('proposed', 'approved')""",
         (tenant_id, case_uid),
     )
     for row in pending:
-        reject(conn, tenant_id, str(row["action_uid"]), who, note[:500])
+        reject(conn, tenant_id, str(row["action_uid"]), who, (BY_CASE + note)[:500], by_case=True)
     return len(pending)
 
 
@@ -580,6 +676,20 @@ def queue_run(conn: Conn, tenant_id: str, action_uid: str) -> bool:
     )
 
 
+def _case_says_no(conn: Conn, tenant_id: str, row: dict[str, Any]) -> str:
+    """Why the action's case wants nothing more done, or ''. Approved before a
+    person closed the case or ruled it benign, it is not run after (RSP-1).
+    A page still goes: it changes nothing."""
+    if not row["case_uid"] or str(row["type"]).startswith("notify."):
+        return ""
+    case = engine.require(conn, tenant_id, str(row["case_uid"]))
+    if case["state"] == "closed":
+        return f"{BY_CASE}not run: {row['case_uid']} was closed first"
+    if case["verdict"] in BENIGN:
+        return f"{BY_CASE}not run: {row['case_uid']} is {case['verdict']}"
+    return ""
+
+
 def execute(
     conn: Conn,
     tenant_id: str,
@@ -595,27 +705,44 @@ def execute(
         return row, ActionResult(ok=True, detail="already done", data=dict(row["result"] or {}))
     if row["state"] != "approved":
         raise ValidationError(f"{action_uid} is {row['state']}, not approved")
-    if row["type"] == "notify.page" and row["requested_by"] != "manager":
-        return _hand_to_manager(conn, tenant_id, row, by)
     action = get_action(row["type"])
     params = dict(row["params"] or {})
     dry_run = row["dry_run"] if force_dry_run is None else force_dry_run
+    if dry_run and not row["dry_run"]:
+        # A plan asked of a live action changes nothing, its row included: it
+        # stays approved for the job or the run that acts on it (RSP-7).
+        return row, dry_run_result(action, params)
+    if why := _case_says_no(conn, tenant_id, row):
+        rejected = reject(conn, tenant_id, action_uid, "system", why, by_case=True)
+        return rejected, ActionResult(ok=False, detail=why)
+    if row["type"] == "notify.page" and row["requested_by"] != "manager":
+        return _hand_to_manager(conn, tenant_id, row, by)
 
     acts_with = list(row.get("acts_in") or [])
     execute_sql = """UPDATE shoc.actions SET state=%s, result=%s, undo=%s, error=%s,
-                          acts_in=%s, executed_at=now(), updated_at=now()
+                          acts_in=%s, reversible = reversible AND NOT %s,
+                          executed_at=now(), updated_at=now()
                      WHERE tenant_id=%s AND action_uid=%s RETURNING *"""
     # On record before the side effect: a worker that dies mid-call leaves
     # `action.started` in the chain and the row `running` (ops alert `action.stuck`).
-    _settle(
+    # Only from `approved`, so two workers that both read it approved never both act.
+    if not _settle(
         conn,
         tenant_id,
         by,
         "action.started",
         """UPDATE shoc.actions SET state='running', updated_at=now()
-           WHERE tenant_id=%s AND action_uid=%s RETURNING *""",
+           WHERE tenant_id=%s AND action_uid=%s AND state='approved' RETURNING *""",
         (tenant_id, action_uid),
-    )
+    ):
+        now = require(conn, tenant_id, action_uid)
+        return now, ActionResult(
+            ok=now["state"] == "done",
+            detail=f"already {now['state']}",
+            data=dict(now["result"] or {}),
+        )
+    # What was there before, kept from the first try (RSP-4).
+    kept = dict((row["result"] or {}).get("before") or {})
     state, undo_data, error = "done", {}, None
     if dry_run:
         result = dry_run_result(action, params)
@@ -633,18 +760,28 @@ def execute(
             result = _act(
                 conn,
                 tenant_id,
+                action_uid,
                 action,
                 params,
                 acts_with or [action.provider],
                 master_key,
                 dict(row["result"] or {}),
+                kept,
             )
             undo_data = result.undo
         except Exception as exc:
+            _refused(exc)
             result = ActionResult(ok=False, detail=f"{type(exc).__name__}: {exc}")
             state, error = "failed", str(exc)[:2000]
     if not result.ok and state == "done":  # the vendor answered, and said no
         state, error = "failed", result.detail[:2000]
+    recorded = result.to_json() | ({"before": kept} if kept else {})
+    # One credential's part that cannot be given back as it was makes the whole
+    # action irreversible (ir-13).
+    parts = (result.data.get("acts_in") or {}).values()
+    undo_lost = bool(result.data.get("undo_lost")) or any(
+        (p.get("data") or {}).get("undo_lost") for p in parts
+    )
     out = _settle(
         conn,
         tenant_id,
@@ -653,10 +790,11 @@ def execute(
         execute_sql,
         (
             state,
-            json.dumps(result.to_json(), default=str),
+            json.dumps(recorded, default=str),
             json.dumps(undo_data, default=str),
             error,
             acts_with or None,
+            undo_lost,
             tenant_id,
             action_uid,
         ),
@@ -678,7 +816,7 @@ def execute(
         },
     )
     ttl = int(params.get("ttl_minutes") or 0)
-    if result.ok and ttl and row["reversible"]:
+    if result.ok and ttl and out.get("reversible"):
         # A block with a lifetime is undone when it runs out (RSP-4).
         from shoc.db import jobs
 
@@ -693,40 +831,121 @@ def execute(
     return out or {}, result
 
 
+def _status(exc: BaseException) -> int:
+    """The HTTP status a vendor refused with, under the error an action raised; 0 if none."""
+    for e in (exc, exc.__cause__):
+        if isinstance(e, httpx.HTTPStatusError):
+            return e.response.status_code
+    return 0
+
+
+def _refused(exc: BaseException) -> None:
+    """Drop the token the vendor refused, as a connector does: its roles are fixed
+    when it is minted, and one minted before admin consent would keep failing
+    until it expired."""
+    from shoc.ingest.connectors import base
+
+    for e in (exc, exc.__cause__):
+        if isinstance(e, httpx.HTTPStatusError) and e.response.status_code in (401, 403):
+            base.forget(e.request, e.response.status_code)
+
+
 def _act(
     conn: Conn,
     tenant_id: str,
+    action_uid: str,
     action: Any,
     params: dict[str, Any],
     acts_with: list[str],
     master_key: str,
     before: dict[str, Any],
+    kept: dict[str, Any],
 ) -> ActionResult:
     """Act with each credential the action was routed to (RFC 0025).
 
     One credential keeps the result and undo as the action returns them. With
     several, each is recorded under its name, and one that succeeded on an
-    earlier try is not asked again: suspending a user twice is an error at Okta.
+    earlier try, or was undone since, is not asked again: suspending a user
+    twice is an error at Okta. A tenant whose vendor does not know the target is
+    `not_here` once another one acted on it: an org trail names the account a
+    key was used in, and only the one that owns it can disable it (ir-14).
     """
+
+    def act(name: str) -> ActionResult:
+        return _act_with(
+            conn, tenant_id, action_uid, action, params, name, master_key, kept, bool(before)
+        )
+
     if len(acts_with) == 1:
-        return action.execute(credentials.load(conn, tenant_id, acts_with[0], master_key), params)
+        return act(acts_with[0])
     done = (before.get("data") or {}).get("acts_in") or {}
     each: dict[str, dict[str, Any]] = {}
+    unknown: list[str] = []
     for name in acts_with:
         if (done.get(name) or {}).get("ok"):
             each[name] = done[name]
             continue
         try:
-            res = action.execute(credentials.load(conn, tenant_id, name, master_key), params)
+            res = act(name)
         except Exception as exc:
+            _refused(exc)
             res = ActionResult(ok=False, detail=f"{type(exc).__name__}: {exc}")
+            if isinstance(exc, NotFound) or _status(exc) == 404:
+                unknown.append(name)
         each[name] = {"ok": res.ok, "detail": res.detail, "data": res.data, "undo": res.undo}
+    if any(v["ok"] and not v.get("not_here") for v in each.values()):
+        for name in unknown:
+            said = f"not here: {each[name]['detail']}"
+            each[name] = {"ok": True, "not_here": True, "detail": said, "data": {}, "undo": {}}
     return ActionResult(
         ok=all(v["ok"] for v in each.values()),
         detail="; ".join(f"{n}: {v['detail']}" for n, v in each.items()),
         data={"acts_in": each},
         undo={"acts_in": {n: v.get("undo") or {} for n, v in each.items()}},
     )
+
+
+def _act_with(
+    conn: Conn,
+    tenant_id: str,
+    action_uid: str,
+    action: Any,
+    params: dict[str, Any],
+    name: str,
+    master_key: str,
+    kept: dict[str, Any],
+    retried: bool,
+) -> ActionResult:
+    """Act with one credential. An action that reads what it changes first
+    (`snapshot`) has that read stored before the change, and a retry reuses it:
+    a first try whose answer was lost would otherwise make the changed state
+    the one to restore, or find nothing left to read (RSP-4).
+
+    A retry of a first try that kept nothing, made before snapshots were kept,
+    that finds the thing gone did what it set out to: done, and not reversible.
+    """
+    creds = credentials.load(conn, tenant_id, name, master_key)
+    if not hasattr(action, "snapshot"):
+        return action.execute(creds, params)
+    if name not in kept:
+        try:
+            kept[name] = action.snapshot(creds, params)
+        except Exception as exc:
+            if not (retried and _status(exc) == 404):
+                raise
+            return ActionResult(
+                detail=f"{action.plan(params)}: gone already, done by an earlier try that kept "
+                "nothing to restore, so it cannot be undone",
+                data={"undo_lost": True},
+            )
+        fetch_one(
+            conn,
+            """UPDATE shoc.actions
+                  SET result = jsonb_set(coalesce(result, '{}'::jsonb), '{before}', %s::jsonb)
+                WHERE tenant_id=%s AND action_uid=%s RETURNING action_uid""",
+            (json.dumps(kept, default=str), tenant_id, action_uid),
+        )
+    return action.execute(creds, params, before=kept[name])
 
 
 def _undo_one(
@@ -737,6 +956,7 @@ def _undo_one(
         creds = credentials.load(conn, tenant_id, name, master_key)
         return action.undo(creds, dict((stored.get("acts_in") or {}).get(name) or {}))
     except Exception as exc:
+        _refused(exc)
         return ActionResult(ok=False, detail=f"{type(exc).__name__}: {exc}")
 
 
@@ -754,7 +974,8 @@ def _hand_to_manager(
     case_uid = str(row["case_uid"] or "")
     severity = ""
     if case_uid:
-        severity = str(engine.require(conn, tenant_id, case_uid)["severity"])
+        engine.require(conn, tenant_id, case_uid)
+        severity = engine.floored(conn, tenant_id, case_uid)
     notice = manager.tell(
         conn,
         tenant_id,
@@ -782,30 +1003,55 @@ def _hand_to_manager(
 def undo(
     conn: Conn, tenant_id: str, action_uid: str, master_key: str, *, by: str
 ) -> tuple[dict[str, Any], ActionResult]:
-    """Roll an executed action back as `by`, if it is reversible."""
+    """Roll an executed action back as `by`, if it is reversible.
+
+    With several credentials, each part is undone where it acted and marked
+    `undone`, so undoing again or a retry leaves it be. One that failed in some
+    tenants is undone in those it changed: otherwise shoc could not take back a
+    change it made (ir-14).
+    """
     row = require(conn, tenant_id, action_uid)
-    if row["state"] != "done":
-        raise ValidationError(f"{action_uid} is {row['state']}; only a done action can be undone")
+    recorded = dict(row["result"] or {})
+    parts = dict((recorded.get("data") or {}).get("acts_in") or {})
+    acted = [
+        n
+        for n, p in parts.items()
+        if (p or {}).get("ok") and not p.get("not_here") and not p.get("undone")
+    ]
+    if row["state"] != "done" and not (row["state"] == "failed" and acted):
+        raise ValidationError(
+            f"{action_uid} is {row['state']}; only a done action, or a failed one that "
+            "acted somewhere, can be undone"
+        )
     if not row["reversible"]:
         raise ValidationError(f"{row['type']} is not reversible")
     action = get_action(row["type"])
-    if row["dry_run"]:
+    if row["dry_run"] or recorded.get("dry_run"):
         result = ActionResult(ok=True, detail="[dry run] nothing to undo", dry_run=True)
     else:
         acts_with = list(row.get("acts_in") or []) or [action.provider]
         stored = dict(row["undo"] or {})
         if len(acts_with) == 1:
             creds = credentials.load(conn, tenant_id, acts_with[0], master_key)
-            result = action.undo(creds, stored)
+            try:
+                result = action.undo(creds, stored)
+            except Exception as exc:
+                _refused(exc)
+                raise
         else:
             each = {
                 name: _undo_one(conn, tenant_id, action, name, master_key, stored)
-                for name in acts_with
+                for name in (acted if parts else acts_with)
             }
+            for name, r in each.items():
+                if r.ok and name in parts:
+                    parts[name] = {**parts[name], "undone": True}
             result = ActionResult(
                 ok=all(r.ok for r in each.values()),
                 detail="; ".join(f"{n}: {r.detail}" for n, r in each.items()),
+                data={"acts_in": parts} if parts else {},
             )
+    kept = {"before": recorded["before"]} if recorded.get("before") else {}
     out = _settle(
         conn,
         tenant_id,
@@ -814,8 +1060,8 @@ def undo(
         """UPDATE shoc.actions SET state=%s, result=%s, updated_at=now()
            WHERE tenant_id=%s AND action_uid=%s RETURNING *""",
         (
-            "rolled_back" if result.ok else "done",
-            json.dumps(result.to_json(), default=str),
+            "rolled_back" if result.ok else row["state"],
+            json.dumps(result.to_json() | kept, default=str),
             tenant_id,
             action_uid,
         ),
@@ -879,15 +1125,7 @@ class Taken:
     error: str = ""
 
     def to_json(self) -> dict[str, Any]:
-        return {
-            "action": self.action,
-            "target": self.target,
-            "action_uid": self.action_uid,
-            "state": self.state,
-            "autonomy": self.autonomy,
-            "queued": self.queued,
-            "error": self.error,
-        }
+        return asdict(self)
 
 
 def catalogue(
@@ -1078,6 +1316,7 @@ def _resolve(
     params: dict[str, Any],
     config: Any,
     acts_with: list[str] | None = None,
+    case_uid: str = "",
 ) -> None:
     """Fill in the parameters a proposal left out (RSP-4).
 
@@ -1087,7 +1326,12 @@ def _resolve(
     names only the key. A value the events disagree on is left out, and the
     proposal is then refused for the missing parameter rather than guessed.
     With no column, only the lookup answers, and it is asked with the
-    proposal's parameters: which trail is off now, which factor is newest.
+    proposal's parameters: which trail is off now, which factor is newest. An
+    action that names where its case's events say what was granted (`granted_at`)
+    has the lookup told it, so of two roles given that week the case's is taken.
+    Several columns, each with the path its value is read at, are tried in turn:
+    a key that has not acted yet is named only by the CreateAccessKey call that
+    made it (ir-6).
     """
     wanted = {k: v for k, v in getattr(action, "resolve", {}).items() if not params.get(k)}
     if not wanted:
@@ -1095,6 +1339,7 @@ def _resolve(
     target = str(params.get(action.required_params[0], ""))
     from shoc.capabilities.events import EventQuery, build_query
     from shoc.config import Config
+    from shoc.ingest.ocsf import dig
     from shoc.store import open_store
 
     cfg = config or Config.load()
@@ -1102,19 +1347,27 @@ def _resolve(
         if where:
             if not PLAIN.fullmatch(target):
                 continue
-            try:
-                store = open_store(cfg, tenant_id)
-                sql, args, limit = build_query(
-                    EventQuery(q=f"{where}={target}", since="-30d", limit=50, include_raw=True),
-                    tenant_id,
-                )
-                seen = {str(r.get(column) or "") for r in store.query(sql, args, limit).rows}
-                seen -= {""}
-                if len(seen) == 1:
-                    params[name] = seen.pop()
-                    continue
-            except Exception:  # an unreadable store falls through to the platform
-                pass
+            pairs = (
+                zip(where, column, strict=True) if isinstance(where, tuple) else [(where, column)]
+            )
+            found = ""
+            for at, read in pairs:
+                try:
+                    store = open_store(cfg, tenant_id)
+                    sql, args, limit = build_query(
+                        EventQuery(q=f"{at}={target}", since="-30d", limit=50, include_raw=True),
+                        tenant_id,
+                    )
+                    seen = {str(dig(r, read) or "") for r in store.query(sql, args, limit).rows}
+                    seen -= {""}
+                    if len(seen) == 1:
+                        found = seen.pop()
+                        break
+                except Exception:  # an unreadable store falls through to the platform
+                    pass
+            if found:
+                params[name] = found
+                continue
         if not lookup:
             continue
         try:
@@ -1127,11 +1380,39 @@ def _resolve(
                 cred = lk.provider
             creds = credentials.load(conn, tenant_id, cred, cfg.master_key)
             asked = {action.required_params[0]: target} if where else dict(params)
+            if not where and case_uid and action.granted_at:
+                asked["granted"] = _granted(conn, tenant_id, case_uid, action.granted_at, cfg)
             value = str(lk.run(creds, asked).get(name) or "")
             if value:
                 params[name] = value
         except Exception:  # no credentials, or the platform said no: it stays missing
             pass
+
+
+def _granted(conn: Conn, tenant_id: str, case_uid: str, paths: tuple[str, ...], config: Any) -> str:
+    """The value at the first of `paths` each of the case's cited events has, when
+    they agree: the role an Okta or Entra grant named, which no entity column
+    carries; else ''."""
+    from shoc.capabilities.events import by_uid
+    from shoc.cases.review import case_citations
+    from shoc.ingest.ocsf import dig
+    from shoc.store import open_store
+
+    uids = case_citations(conn, tenant_id, case_uid, 200)
+    if not uids:
+        return ""
+    try:
+        store = open_store(config, tenant_id)
+        try:
+            rows = by_uid(store, tenant_id, uids, include_raw=True).rows
+        finally:
+            store.close()
+    except Exception:  # unread: the lookup decides as it did without it
+        return ""
+    # Graph writes a changed value as JSON text, quotes included.
+    found = (next((v for p in paths if (v := dig(r, p)) not in (None, "")), None) for r in rows)
+    seen = {str(v).strip().strip('"') for v in found if v is not None}
+    return seen.pop() if len(seen) == 1 else ""
 
 
 def approved_unrun(conn: Conn, limit: int = 50) -> list[dict[str, Any]]:

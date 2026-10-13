@@ -65,7 +65,7 @@ class GoogleWorkspaceConnector:
         token = access_token(
             secret, settings.get("admin_email", ""), str(settings.get("client_id") or "")
         )
-        since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        since = since_default(cursor, settings, timedelta(0))
         params: dict[str, Any] = {"maxResults": min(int(limit), 1000), "startTime": since}
         until = settled(cursor, LAG[application]) if application in LAG else ""
         if until:

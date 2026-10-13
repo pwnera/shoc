@@ -25,7 +25,12 @@ constants:
 
 fields:
   event_uid: { paths: [id, alertId] }
-  time: { paths: [createdDateTime, alertCreationTime, firstActivityDateTime], transform: iso8601 }
+  # Graph updates an alert in place and the connector reads it again, so its
+  # last update is its time: each change is its own row. The creation time
+  # stays in `raw`.
+  time:
+    paths: [lastUpdateDateTime, createdDateTime, alertCreationTime, firstActivityDateTime]
+    transform: iso8601
   api_operation: { paths: [category, title] }
   # alerts_v2 also returns Office 365, Identity, Cloud Apps, Entra ID Protection
   # and Purview alerts; serviceSource says which, and the endpoint rules skip
@@ -80,6 +85,10 @@ derive:
   # Graph updates an alert in place; a resolved one is a closed finding.
   - when: { status: resolved }
     set: { type_uid: 200403, activity_id: 3, activity_name: Close }
+  # A change to an alert an earlier poll read (the connector marks it), closed
+  # or not: an update of that finding, not a new one.
+  - when: { _update: true }
+    set: { activity_id: 2, activity_name: Update }
 
 observables:
   - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }

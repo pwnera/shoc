@@ -97,3 +97,31 @@ def test_a_field_summary_ranks_its_values(ctx, store, config, clean, now):
         ctx, SummarizeInput(since="-1h", by="api.operation", q="status=Failure")
     )
     assert [(g.key, g.count) for g in filtered.data.rows] == [("GetSecretValue", 3)]
+
+
+def test_a_windows_path_is_found_and_an_underscore_is_no_wildcard(ctx, store, config, clean, now):
+    base = {"eventSource": "s3.amazonaws.com", "sourceIPAddress": "203.0.113.10"}
+    loaded = _load(
+        store,
+        config.tenant_id,
+        now,
+        [
+            {
+                **base,
+                "eventID": "win-1",
+                "eventName": "GetObject",
+                "userIdentity": {"type": "IAMUser", "userName": r"CORP\svc_backup"},
+            },
+            {
+                **base,
+                "eventID": "win-2",
+                "eventName": "GetObject",
+                "userIdentity": {"type": "IAMUser", "userName": r"CORP\svcXbackup"},
+            },
+        ],
+    )
+    assert loaded == 2
+    found = events_query.fn(ctx, EventQuery(since="-1h", q=r"actor.user.name~corp\svc_backup"))
+    assert [r["actor_user_name"] for r in found.data.rows] == [r"CORP\svc_backup"]
+    unlike = events_query.fn(ctx, EventQuery(since="-1h", q=r"actor.user.name!~svc_backup"))
+    assert [r["actor_user_name"] for r in unlike.data.rows] == [r"CORP\svcXbackup"]

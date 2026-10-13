@@ -154,5 +154,54 @@
         "ipAddress": "203.0.113.66"
       }
     ]
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "ldt:5d40e8a1c7c1:9101",
+    "type": "ldt",
+    "product": "epp",
+    "severity": 80,
+    "tactic": "Credential Access",
+    "description": "Credential dumping blocked",
+    "device": {
+      "device_id": "5d40e8a1c7c1",
+      "hostname": "laptop-41"
+    },
+    "user_name": "jdoe",
+    "_update": true
+  },
+  {
+    "_source": "defender",
+    "id": "da-update-1",
+    "severity": "high",
+    "title": "Suspicious PowerShell command line",
+    "category": "Execution",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "status": "inProgress",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-42.example.org",
+        "mdeDeviceId": "4444444444444444444444444444444444444441"
+      }
+    ],
+    "_update": true
+  },
+  {
+    "_source": "sentinelone",
+    "id": "1373834705420287101",
+    "threatInfo": {
+      "threatId": "1373834705420287101",
+      "threatName": "invoice.pdf.exe",
+      "confidenceLevel": "malicious",
+      "mitigationStatus": "not_mitigated",
+      "classification": "Trojan"
+    },
+    "agentRealtimeInfo": {
+      "agentComputerName": "host41.example.com",
+      "agentId": "1000000000000000041",
+      "agentUuid": "11112222333344445555666677774101"
+    },
+    "_update": true
   }
 ]

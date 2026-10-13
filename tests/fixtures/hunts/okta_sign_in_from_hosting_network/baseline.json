@@ -1,0 +1,16 @@
+[
+  {
+    "uuid": "hunt-okta-digitalocean-vpn",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "outcome": { "result": "SUCCESS" },
+    "_repeat": 3,
+    "actor": { "alternateId": "jane@example.com", "displayName": "Jane", "type": "User" },
+    "client": {
+      "ipAddress": "203.0.113.231",
+      "userAgent": { "rawUserAgent": "Mozilla/5.0" },
+      "geographicalContext": { "country": "Netherlands", "city": "Amsterdam" }
+    },
+    "securityContext": { "asNumber": 14061, "asOrg": "digitalocean llc", "isProxy": false }
+  }
+]

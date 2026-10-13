@@ -24,7 +24,7 @@ example: |
   disposition: malicious, because devices nobody approved joined through a key nobody expected.
 trigger:
   verdict: [malicious]
-  severity_at_least: high
+  severity_at_least: medium
   min_confidence: 0.75
 steps:
   - name: page the on-call engineer
@@ -38,9 +38,9 @@ steps:
     action: tailscale.revoke_key
     optional: true
     params:
-      key_id: "{{ entity.resource }}"
+      key_id: "{{ rule.tailscale_key_created.resource }}"
   - name: suspend the user who created it
     action: tailscale.suspend_user
     optional: true
     params:
-      user: "{{ entity.user }}"
+      user: "{{ rule.tailscale_key_created.user }}"

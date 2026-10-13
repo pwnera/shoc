@@ -44,7 +44,7 @@ behind it.
 
 - **Sources:** pull connectors, with cursors that survive restarts, for the
   identity providers (Okta, Entra ID, Google Workspace), the productivity suites
-  where business email compromise actually shows (Microsoft 365, Google
+  where business email compromise shows (Microsoft 365, Google
   Workspace), the EDRs (Defender, CrowdStrike, SentinelOne), the cloud control
   planes (AWS CloudTrail and GuardDuty, Azure Activity Log, GCP Cloud Audit) and
   source control (GitHub, GitLab). For teams whose plans have no enterprise
@@ -58,13 +58,15 @@ behind it.
   BigQuery adapters are written and untested. See
   [what has been tested](#what-has-been-tested).
 - **Detection:** our own Sigma-subset compiler to canonical SQL, translated per
-  dialect with SQLGlot; 271 rules mapped to ATT&CK across AWS, Azure, GCP,
+  dialect with SQLGlot; 279 rules mapped to ATT&CK across AWS, Azure, GCP,
   Okta, Entra ID, Google Workspace, Microsoft 365, GitHub, GitLab, EDR,
   Cloudflare, Tailscale, Stripe, OpenAI and Anthropic, each with a positive and
   a negative fixture test; threat-intel feeds with IOC matching and a 90-day
-  retro-hunt; a five-minute scheduler on Postgres. The two feeds a new install
-  pulls are named in the quick start, and `SHOC_INTEL_FEEDS=off` stops shoc
-  contacting anything you did not configure.
+  retro-hunt; a detection cycle every 15 minutes by default
+  (`SHOC_CYCLE_SECONDS`, D153). The two feeds a new install pulls are named in
+  the quick start. `SHOC_INTEL_FEEDS=off` turns off the two feeds and the list
+  download at startup; indicator lookups still reach the hosts
+  [the quick start names](docs/quickstart.md#what-shoc-contacts-on-its-own).
 - **Surfaces:** REST + OpenAPI, MCP, and a CLI, all generated from one
   capability registry, so they cannot drift apart.
 - **Cases and crew:** Sentinel decides what a case is (by shared entity, by the
@@ -78,14 +80,14 @@ behind it.
 - **Response:** an autonomy policy in YAML (L0/L1/L2), typed reversible actions
   for AWS, Azure, GCP, Okta/Entra, Google Workspace, Microsoft 365, GitHub,
   GitLab, the EDRs, Wazuh, Cloudflare, Tailscale, Stripe, OpenAI and
-  Anthropic, a playbook for every rule (38 ship, and an operator can merge more
+  Anthropic, a playbook for every rule (39 ship, and an operator can merge more
   at runtime from those actions), and a playbook runner whose state lives in
   Postgres. Dry run is the default; an L2 action can only
   be approved by a human.
-- **Slack:** cases arrive with their evidence, and the one thing that needs a
-  person has a button; approvers are named explicitly, so being in the channel
-  is not authority.
-- **Operations:** source and rule health, LLM spend, shift, weekly and
+- **Slack:** the SOC Manager's pages and reports go to one channel, with
+  Approve and Reject on the actions a paged case waits for; approvers are named
+  explicitly, so being in the channel is not authority.
+- **Operations:** source and rule health, LLM spend, exception, weekly and
   executive reports, daily behavioural hunts, a Detection Engineer that merges
   its own rules behind fixtures and a backtest, and a world graph built from
   events.
@@ -104,8 +106,8 @@ has been run.
 | --- | --- | --- |
 | Postgres 16 | Tested | Every unit and conformance test, the 29 replayed attack and benign scenarios in `evals/`, and a deployment that runs around the clock |
 | Databricks SQL | In test | A deployment has run on Databricks Free Edition. The conformance suite has not run on it yet; it gates v0.2 |
-| Snowflake | Untested | Unit tests translate all 271 rules and the query capabilities to its dialect. Never run against a live account; conformance gates v0.4 |
-| Amazon Redshift, Google BigQuery | Untested | Unit tests translate all 271 rules to each dialect. Never run against a live warehouse; planned after v1.0 |
+| Snowflake | Untested | Unit tests translate every shipped rule and the query capabilities to its dialect. Never run against a live account; conformance gates v0.4 |
+| Amazon Redshift, Google BigQuery | Untested | Unit tests translate every shipped rule to each dialect. Never run against a live warehouse; planned after v1.0 |
 
 | Connector | How it is tested |
 | --- | --- |
@@ -123,6 +125,11 @@ See [`docs/quickstart.md`](docs/quickstart.md). The short version:
 
 ```bash
 cd deploy && cp .env.example .env
+# the four database passwords
+for v in SHOC_DB_PASSWORD SHOC_APP_DB_PASSWORD SHOC_AGENT_DB_PASSWORD POSTGRES_SUPERUSER_PASSWORD
+do
+  sed -i.bak "s/^$v=\$/$v=$(openssl rand -hex 24)/" .env
+done && rm .env.bak
 docker compose run --rm --no-deps shoc keygen   # put the value in .env
 docker compose up -d
 ```

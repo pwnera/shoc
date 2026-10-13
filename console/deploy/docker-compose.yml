@@ -17,6 +17,13 @@ services:
       # firewalls. Put TLS in front before this leaves a private network.
       - "${CONSOLE_BIND:-127.0.0.1}:${CONSOLE_PORT:-8089}:8080"
     networks: [shoc]
+    # nginx logs every API poll the console proxies; json-file keeps them all
+    # unless capped.
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
     restart: unless-stopped
 
 networks:

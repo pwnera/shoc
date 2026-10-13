@@ -33,6 +33,7 @@ nav = [
   { "Project" = [
     { "Requirements and roadmap" = "prd.md" },
     { "Decisions" = "decisions.md" },
+    { "Engineering guidelines" = "guidelines.md" },
     { "Console prototype" = "ui-prototype.md" },
     { "Good first issues" = "good-first-issues.md" },
   ] },

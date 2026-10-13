@@ -6,8 +6,8 @@ description: >
   trying to plant a workflow fails this way first; a person rarely does.
 status: experimental
 date: 2026-10-02
-modified: 2026-10-02
-severity: medium
+modified: 2026-10-12
+severity: low
 confidence: 0.5
 attack: [T1195.002]
 logsource:

@@ -182,6 +182,22 @@ decides whether the action it chased gets a second window.
    unconfigured, fails, or returns text whose citations do not verify (D25), a
    fixed template goes out instead. A page is never late because of the model.
 
+> Amended on 2026-10-12 (D165, D168 to D171, D240). Every page opens with a
+> head code writes, `SEVERITY (conditions) CASE-ids: `, and the model words
+> only the rest, within `WORDING_SECONDS` (20); past that the template goes
+> out, so a page is never late because of the model. `critical_severity` and
+> `malicious_uncontained` read the higher of the case's severity and its worst
+> finding's. `malicious_uncontained` is settled only by containment or a
+> person's close, never as stale because the crew closed the case. A page is
+> never a dry run: the Manager sends it for real even while SHOC_DRY_RUN is
+> on, and the action record says so. A failed PagerDuty post is retried after
+> 1, 5 and 15 minutes, only when no other channel took the page (D167); a page
+> Slack or mail took settles as paged with the pager's error recorded. A missing pager, an incomplete or invalid credential or
+> a policy refusal settles the page as failed at once. A `coverage_dark` page
+> also fires when no `detect.run` has finished within the longer of three
+> cycles and one hour, and for a source that has never succeeded, counted from
+> when it was set up.
+
 The message goes to PagerDuty through the existing `notify.page` action, with the
 group's `dedup_key`, and is mirrored to the Slack channel when one is set. Every
 notice in the group records the `action_uid` in `delivered_uid`, so the audit log
@@ -292,7 +308,10 @@ can page or stay quiet. It cannot contain, rotate or approve anything.
   the channel that gets muted.
 - **Email is left to a later RFC.** This RFC covers PagerDuty and Slack, the two
   channels that exist today. Email (L7 in `architecture.md`) will go behind the
-  same gate once it is built.
+  same gate once it is built. Superseded on 2026-10-12 by D167: a page the
+  pager did not take is emailed to every enabled admin and operator who has
+  signed in, and a page counts as delivered when any channel took it. Mail for
+  the exception and weekly reports still waits on its own decision.
 
 ## Unresolved questions
 

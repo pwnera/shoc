@@ -16,12 +16,28 @@ _COLS = """finding_uid, rule_id, title, severity, confidence, status, entity_key
            window_start, window_end, first_seen, last_seen, event_count,
            event_uids, attack, evidence, created_at, updated_at"""
 
+# A list carries only the evidence a row is read by: its kind, the indicator
+# it matched, where Sentinel put it and why intake set it aside. The sample
+# and the group are `finding.get`'s: 170 rows with them came to 300k
+# characters, past what an assistant's client reads in one result.
+_LISTED = _COLS.replace(
+    "evidence,",
+    """jsonb_strip_nulls(jsonb_build_object(
+               'kind', evidence->'kind', 'indicator', evidence->'indicator',
+               'sentinel', evidence->'sentinel', 'own', evidence->'own',
+               'intake', evidence->'intake')) AS evidence,""",
+)
+
 
 @dataclass
 class FindingFilter:
     """List findings, newest first."""
 
-    status: str = f("", doc="new, triage, closed or false_positive")
+    status: str = f(
+        "",
+        doc="new, triage, closed, false_positive, suppressed or self (shoc's own "
+        "credentials at work); every status when empty",
+    )
     severity: str = f("", doc="informational, low, medium, high or critical")
     rule_id: str = f("", doc="Only this rule")
     entity: str = f("", doc="Only this entity key (a user, key or IP)")
@@ -63,7 +79,7 @@ def list_findings(ctx: Context, inp: FindingFilter) -> Result:
             where.append(f"{column} = %({column})s")
     rows = fetch_all(
         ctx.db,
-        f"SELECT {_COLS} FROM shoc.findings WHERE {' AND '.join(where)} "
+        f"SELECT {_LISTED} FROM shoc.findings WHERE {' AND '.join(where)} "
         f"ORDER BY last_seen DESC LIMIT {limit}",
         params,
     )
@@ -108,12 +124,10 @@ def get_finding(ctx: Context, inp: FindingRef) -> Result:
     uids = list(row["event_uids"] or [])
     events: list[dict[str, Any]] = []
     if uids:
-        from shoc.capabilities.events import EventQuery, build_query
+        from shoc.capabilities.events import by_uid
 
-        sql, params, limit = build_query(
-            EventQuery(event_uids=uids, limit=len(uids)), ctx.tenant_id
-        )
-        events = [to_json(r) for r in ctx.store.query(sql, params, limit).rows]
+        # One row per cited event, however often an alert was updated in place.
+        events = [to_json(r) for r in by_uid(ctx.store, ctx.tenant_id, uids).rows]
     rule: dict[str, Any] = {}
     try:
         from shoc.detect import hunts

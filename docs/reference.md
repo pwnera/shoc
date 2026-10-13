@@ -9,6 +9,7 @@ always `{data, summary, citations}`.
 | --- | --- | --- | --- | --- | --- | --- |
 | `action.approve` | `actions:approve` | L2 | human | `POST /v1/action/approve` | `action_approve` | `shoc action approve` |
 | `action.expire` | `actions:run` | L0 | service | `POST /v1/action/expire` | `action_expire` | `shoc action expire` |
+| `action.get` | `actions:read` | L0 | human, agent, external_agent, service | `POST /v1/action/get` | `action_get` | `shoc action get` |
 | `action.list` | `actions:read` | L0 | human, agent, external_agent, service | `POST /v1/action/list` | `action_list` | `shoc action list` |
 | `action.propose` | `actions:propose` | L0 | human, agent, service | `POST /v1/action/propose` | `action_propose` | `shoc action propose` |
 | `action.reject` | `actions:approve` | L0 | human | `POST /v1/action/reject` | `action_reject` | `shoc action reject` |
@@ -184,6 +185,32 @@ Input schema:
     "action_uid": {
       "type": "string",
       "description": "The done action whose `ttl_minutes` ran out"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "action_uid"
+  ]
+}
+```
+
+## `action.get`
+
+Get one response action in full: its parameters, result and blast radius.
+
+- **Scope:** `actions:read` · **Autonomy:** L0 · **Audited:** no
+- **Principals:** human, agent, external_agent, service
+
+Input schema:
+
+```json
+{
+  "type": "object",
+  "title": "ActionRef",
+  "properties": {
+    "action_uid": {
+      "type": "string",
+      "description": "The action identifier, e.g. ACT-1a2b\u2026"
     }
   },
   "additionalProperties": false,
@@ -688,6 +715,10 @@ Input schema:
     "unacknowledged": {
       "type": "boolean",
       "description": "Only cases closed without their containment that nobody has acknowledged"
+    },
+    "open": {
+      "type": "boolean",
+      "description": "Only cases not closed"
     }
   },
   "additionalProperties": false
@@ -1224,6 +1255,10 @@ Input schema:
         "additionalProperties": {}
       },
       "description": "Raw source records, exactly as the API returns them"
+    },
+    "spool": {
+      "type": "boolean",
+      "description": "Keep the records in Postgres for the worker to load with the next detection cycle, as GitHub's push is kept on a warehouse. Only GitHub's signed webhook may set it"
     }
   },
   "additionalProperties": false,
@@ -1318,7 +1353,7 @@ Input schema:
 
 ## `events.retain`
 
-Drop the event partitions older than the retention window.
+Delete the events older than the retention window, never fewer days than configured.
 
 - **Scope:** `events:retain` · **Autonomy:** L0 · **Audited:** yes
 - **Principals:** human, service
@@ -1332,7 +1367,7 @@ Input schema:
   "properties": {
     "days": {
       "type": "integer",
-      "description": "Keep this many days of events; older whole months are dropped"
+      "description": "Keep this many days of events, at least the configured retention (0 = the configured retention). Postgres drops whole months older than that; a warehouse deletes the older rows"
     }
   },
   "additionalProperties": false
@@ -1460,7 +1495,7 @@ Input schema:
   "properties": {
     "status": {
       "type": "string",
-      "description": "new, triage, closed or false_positive"
+      "description": "new, triage, closed, false_positive, suppressed or self (shoc's own credentials at work); every status when empty"
     },
     "severity": {
       "type": "string",
@@ -1574,7 +1609,7 @@ Input schema:
   "properties": {
     "days": {
       "type": "integer",
-      "description": "How much history to rebuild the graph from"
+      "description": "How much history to rebuild the graph from, 1 to 90 days"
     }
   },
   "additionalProperties": false
@@ -1602,6 +1637,30 @@ Input schema:
     "head": {
       "type": "string",
       "description": "A seq:hash kept outside the database, e.g. from a webhook delivery; the chain must still hold that row"
+    },
+    "verify": {
+      "type": "boolean",
+      "description": "Check the chain from where the last check that found it whole ended; false only lists rows"
+    },
+    "since": {
+      "type": "string",
+      "description": "Only rows from this time: ISO-8601 or relative like -7d"
+    },
+    "until": {
+      "type": "string",
+      "description": "Only rows before this ISO-8601 time"
+    },
+    "principal": {
+      "type": "string",
+      "description": "Only this caller, as kind:id (human:<id>, agent:worker)"
+    },
+    "capability": {
+      "type": "string",
+      "description": "Only calls of this capability"
+    },
+    "before": {
+      "type": "integer",
+      "description": "Only rows before this seq: the last row of the previous page"
     }
   },
   "additionalProperties": false
@@ -1852,7 +1911,7 @@ Input schema:
     "pack": {
       "type": "object",
       "additionalProperties": {},
-      "description": "The pack: id, title, hypothesis, attack, logsource.product, detection, baseline (first_seen: [fields] or rare: {by, among, seen_by_fewer_than}, and lookback), window, pivot and triage, as in content/hunts; hunt.results shows each pack's logic. A shipped id is refused, and an id merged here is refused until hunt.revert takes it back"
+      "description": "The pack: id, title, hypothesis, attack, logsource.product, detection, baseline (first_seen: [fields] or rare: {by, among, seen_by_fewer_than | seen_by_at_least, new_only}, and lookback), window, pivot and triage, as in content/hunts; hunt.results shows each pack's logic. A window is at most 7d, and a lookback at most 90d and within what this deployment keeps. A shipped id is refused, and an id merged here is refused until hunt.revert takes it back"
     },
     "fixtures": {
       "type": "object",
@@ -2025,7 +2084,7 @@ Input schema:
   "properties": {
     "value": {
       "type": "string",
-      "description": "What to hunt for: an IP, a domain or a user name"
+      "description": "What to hunt for: an IP, a domain, a URL, a SHA-256 or a user name"
     },
     "days": {
       "type": "integer",
@@ -2033,7 +2092,7 @@ Input schema:
     },
     "field": {
       "type": "string",
-      "description": "auto, src_ip, domain or actor"
+      "description": "auto (from the value), ip, domain, url or sha256 (every column the indicator matcher reads for that type), src_ip (the source address only) or actor"
     }
   },
   "additionalProperties": false,
@@ -2655,7 +2714,7 @@ Input schema:
 
 ## `metrics.export`
 
-Findings, jobs and source age in the Prometheus text format, as /metrics serves them.
+Findings, jobs, and when each source and detection last succeeded, in the Prometheus text format, as /metrics serves them.
 
 - **Scope:** `health:read` · **Autonomy:** L0 · **Audited:** no
 - **Principals:** human, agent, external_agent, service
@@ -3428,6 +3487,24 @@ Input schema:
         "type": "string"
       },
       "description": "Slack user id -> the person's name, for everyone allowed to approve"
+    },
+    "readers": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Slack user id -> the person's name, for everyone else allowed to use /shoc; replaces the list ({} empties it), left out keeps it"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "The workspace id, e.g. T0123456789; requests from others are refused"
     }
   },
   "additionalProperties": false,
@@ -3983,7 +4060,7 @@ Input schema:
     },
     "value": {
       "type": "string",
-      "description": "An identity or an indicator: user:\u2026, key:\u2026, ip:\u2026, resource:\u2026, host:\u2026, or a bare value matched against all of them"
+      "description": "An identity or an indicator: user:\u2026, key:\u2026, session:\u2026, ip:\u2026, resource:\u2026, host:\u2026, or a bare value matched against all of them"
     },
     "hours": {
       "type": "integer",

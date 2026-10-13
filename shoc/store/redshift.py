@@ -12,7 +12,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -25,7 +24,7 @@ from psycopg.rows import DictRow, dict_row
 
 from shoc.db.pool import Params, q
 from shoc.errors import ConfigError, StoreError
-from shoc.ingest.batch import read_unique
+from shoc.ingest.batch import batch_name, read_unique
 from shoc.ingest.connectors import awssig
 from shoc.store import ocsf
 from shoc.store.base import LoadStats, QueryResult, RetentionPolicy, StoreHealth
@@ -127,7 +126,7 @@ class RedshiftStore:
             self._execute(f'GRANT USAGE ON SCHEMA "{self.schema}" TO "{self.reader}"')
             self._execute(f'GRANT SELECT ON {self.table} TO "{self.reader}"')
 
-    def migrate(self, ocsf_version: str = "1.3.0") -> None:
+    def migrate(self) -> None:
         self.create_tenant()
         rows, _ = self._execute(
             "SELECT column_name FROM information_schema.columns "
@@ -140,7 +139,7 @@ class RedshiftStore:
                 self._execute(f'ALTER TABLE {self.table} ADD COLUMN "{name}" {_RS_TYPES[tp]}')
 
     # -- load -----------------------------------------------------------
-    def load_batch(self, path: str, table: str = ocsf.EVENTS_TABLE) -> LoadStats:
+    def load_batch(self, path: str) -> LoadStats:
         """Stage the batch in S3, COPY it into a temporary table, insert what is new.
 
         Redshift enforces no primary key. The insert skips an event already
@@ -155,10 +154,11 @@ class RedshiftStore:
         started = time.monotonic()
         rows = read_unique(path)
         if not rows:
-            return LoadStats(table=table)
+            return LoadStats()
         body = "".join(json.dumps(row, default=str) + "\n" for row in rows)
         times = [datetime.fromisoformat(str(row["time"])) for row in rows]
-        name = f"batch-{int(time.time() * 1000)}-{os.getpid()}"
+        # The S3 prefix is shared by every worker, so the key is unique to this load.
+        name = batch_name()
         bucket, _, prefix = self.stage.removeprefix("s3://").partition("/")
         key = "/".join(p for p in (prefix, self.schema, f"{name}.ndjson") if p)
         role = "default" if self.iam_role == "default" else f"'{self.iam_role}'"
@@ -192,7 +192,6 @@ class RedshiftStore:
             rows=max(loaded, 0),
             bytes=len(body),
             duration_ms=int((time.monotonic() - started) * 1000),
-            table=table,
         )
 
     def _s3(self, method: str, bucket: str, key: str, body: str = "") -> None:
@@ -216,7 +215,11 @@ class RedshiftStore:
             raise StoreError(f"s3 {method} {key}: {resp.status_code} {resp.text[:300]}")
 
     def _remove(self, bucket: str, key: str, loading: str) -> None:
-        """Loaded or not, the staged copy is spent: a replay stages the batch again."""
+        """Loaded or not, the staged copy is spent: a replay stages the batch again.
+
+        A worker killed before this leaves the object; a one-day lifecycle rule
+        on the stage prefix removes it, and shoc lists no bucket (STO-5).
+        """
         try:
             self._execute(f"DROP TABLE IF EXISTS {loading}")
             self._s3("DELETE", bucket, key)
@@ -236,7 +239,7 @@ class RedshiftStore:
         except psycopg.Error as exc:
             raise StoreError(f"query failed: {exc}") from exc
         return QueryResult(
-            rows=rows[:limit],
+            rows=ocsf.decoded(rows[:limit]),
             sql=sql,
             duration_ms=int((time.monotonic() - started) * 1000),
             truncated=len(rows) > limit,

@@ -161,6 +161,13 @@ Comparison is case-insensitive, like every other equality. Under `not`, an
 event where either field is empty counts as different, so pair it with
 `exists` as above.
 
+> Amended on 2026-10-12 (D236). Equality, `contains` and `fieldref` are
+> case-insensitive. `re`, sequence `by`, `first_seen` and
+> `group_by`/`count_distinct` compare the stored text exactly, case included,
+> so Alice@corp and alice@corp are two keys. A pattern that must accept both
+> cases spells them, as in `[Hh][Tt][Tt][Pp]`; `(?i)` is not portable, because
+> Snowflake and Redshift regular expressions are POSIX.
+
 **CIDR.** "An RDP logon from an address outside the private ranges."
 
 ```yaml
@@ -297,6 +304,19 @@ read the same alias.
   `A-Za-z0-9_-`) become `_`.
 - **`seen_by_at_least`.** Adds `COUNT(DISTINCT among) >= N` to the `rare`
   `HAVING`; a `rare` baseline needs this, `seen_by_fewer_than`, or both.
+  `rare` also takes `new_only` (a boolean, false by default), which reports a
+  grouping only in the window its first event was ingested (D233,
+  2026-10-12). `hunts.validate()` bounds a pack's `window` at 7 days and its
+  `lookback` at 90, and the `hunt.merge` gate also refuses a lookback past the
+  tenant's retention (the value `config.apply` set, else
+  `SHOC_RETENTION_DAYS`) (D235). A `seen_by_at_least` pack counts over one
+  lookback ending with the window.
+- **`baseline.learns_from`.** `source` (the default) or `selection`. With
+  `selection`, a pack is ready only once its own first match is older than its
+  lookback, for a source that starts sending the log a pack reads after it was
+  connected (a Workspace source that adds the token log later). Readiness asks
+  `MIN(time)` over the selection once the sources are ready, and keeps the
+  answer as the pack's `ready_at` (amends D157).
 
 Two dialect fixes from DET-1's open list landed with this, because the
 conformance cases for list membership needed them: `bind()` no longer reads

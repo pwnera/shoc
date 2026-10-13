@@ -24,8 +24,11 @@ minimum_severity: critical
 expected_verdict: malicious
 minimum_confidence: 0.6
 # The leaked key is the one thing that stops it; an address block does not.
+# The key the attacker created has not acted yet, so only CreateAccessKey's
+# response names it.
 must_propose:
   - {type: aws.disable_access_key, target: AKIAIOSFODNN7EXAMPLE}
+  - {type: aws.disable_access_key, target: AKIAI44QH8DHBEXAMPLE}
 # Nothing connected sends CloudTrail in a replay, so no AWS pack may run and
 # none may call itself "clear" (RFC 0022).
 expected_hunts:

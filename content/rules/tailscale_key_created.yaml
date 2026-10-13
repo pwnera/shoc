@@ -7,8 +7,8 @@ description: >
   left out; a reusable one from the same client still fires.
 status: stable
 date: 2026-09-30
-modified: 2026-10-03
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.5
 attack: [T1098.001]
 sources:

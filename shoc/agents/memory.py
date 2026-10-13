@@ -7,10 +7,10 @@ Postgres rows with full-text search, no vector database until evals justify one
 
 from __future__ import annotations
 
-import hashlib
 from typing import Any
 
 from shoc.db.pool import Conn, execute, fetch_all
+from shoc.ids import make_id
 
 KINDS = ("semantic", "episodic", "correction")
 
@@ -25,7 +25,7 @@ def add(
     expires_at: Any = None,
     confidence: float = 1.0,
 ) -> str:
-    memory_id = "MEM-" + hashlib.sha256(f"{tenant_id}|{subject}|{body}".encode()).hexdigest()[:20]
+    memory_id = make_id("MEM-", tenant_id, subject, body)
     execute(
         conn,
         """INSERT INTO shoc.memory

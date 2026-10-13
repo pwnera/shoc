@@ -3,7 +3,7 @@
 shoc is a client of a provider the company already runs: the authorization code
 flow with PKCE, the ID token checked with `pyjwt`, and its email trusted only
 when the provider vouches for it. The network calls are `_get_json` and
-`_post_form` (plus `PyJWKClient` for the keys), so tests replace those.
+`_post_form`, the keys included, so tests replace those.
 """
 
 from __future__ import annotations
@@ -50,12 +50,22 @@ def _object(response: httpx.Response) -> dict[str, Any]:
     return body
 
 
+def _client() -> httpx.Client:
+    """A public name can still point at 10.0.0.5, and answer again with it after
+    a check: the connection goes to the address `vet` passed (SEC-1)."""
+    from shoc.detect.report import Pinned
+
+    return httpx.Client(transport=Pinned(), timeout=TIMEOUT, follow_redirects=False)
+
+
 def _get_json(url: str) -> dict[str, Any]:
-    return _object(httpx.get(_https(url), timeout=TIMEOUT, follow_redirects=False))
+    with _client() as http:
+        return _object(http.get(_https(url)))
 
 
 def _post_form(url: str, data: dict[str, str]) -> dict[str, Any]:
-    return _object(httpx.post(_https(url), data=data, timeout=TIMEOUT, follow_redirects=False))
+    with _client() as http:
+        return _object(http.post(_https(url), data=data))
 
 
 def _microsoft_tenant(issuer: str) -> str | None:
@@ -136,6 +146,16 @@ def exchange(provider: dict[str, Any], code: str, verifier: str, redirect_uri: s
     return token
 
 
+class _KeyClient(jwt.PyJWKClient):
+    """pyjwt's key client, fetching as the other provider calls do: https, no redirects."""
+
+    def fetch_data(self) -> Any:
+        keys = _get_json(self.uri)
+        if self.jwk_set_cache is not None:
+            self.jwk_set_cache.put(keys)
+        return keys
+
+
 _jwks: dict[str, jwt.PyJWKClient] = {}
 _jwks_lock = threading.Lock()
 
@@ -144,7 +164,7 @@ def _keys(uri: str) -> jwt.PyJWKClient:
     """One key client per JWKS URI, keeping the keys for an hour."""
     with _jwks_lock:
         if uri not in _jwks:
-            _jwks[uri] = jwt.PyJWKClient(uri, lifespan=3600, timeout=TIMEOUT)
+            _jwks[uri] = _KeyClient(uri, lifespan=3600, timeout=TIMEOUT)
         return _jwks[uri]
 
 

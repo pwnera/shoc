@@ -3,6 +3,9 @@ import {
   ACTIONS,
   actionLabel,
   actionState,
+  CASE_STATE_TIPS,
+  CASE_STATES,
+  caseStateLabel,
   findingCase,
   findingStatus,
   jobWord,
@@ -18,60 +21,20 @@ import {
   stepState,
 } from "@/lib/labels";
 import type { RuleHealth } from "@/types";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const CONTRACT = join(__dirname, "..", "..", "contract", "v1.json");
 
 describe("action labels", () => {
   it("names a known action in plain words", () => {
     expect(actionLabel("notify.page")).toBe("Page on-call");
   });
 
-  it("names every action type policy.show lists (contract/v1.json actions)", () => {
-    const types = [
-      "anthropic.disable_api_key",
-      "aws.detach_role_policy",
-      "aws.detach_user_policy",
-      "aws.disable_access_key",
-      "aws.revoke_role_sessions",
-      "azure.stop_vm",
-      "cloudflare.block_ip",
-      "cloudflare.disable_api_token",
-      "crowdstrike.block_hash",
-      "crowdstrike.isolate_host",
-      "defender.block_hash",
-      "defender.isolate_host",
-      "entra.remove_admin_role",
-      "entra.remove_factor",
-      "entra.reset_password",
-      "entra.revoke_sessions",
-      "entra.suspend_user",
-      "gcp.disable_firewall_rule",
-      "gcp.disable_service_account",
-      "gcp.disable_service_account_key",
-      "github.demote_org_owner",
-      "github.enable_secret_scanning",
-      "github.make_repo_private",
-      "github.remove_collaborator",
-      "github.remove_deploy_key",
-      "gitlab.block_user",
-      "google.revoke_app_token",
-      "google.revoke_sessions",
-      "google.suspend_user",
-      "m365.delete_inbox_rule",
-      "m365.revoke_app_consent",
-      "notify.page",
-      "okta.remove_admin_role",
-      "okta.remove_factor",
-      "okta.reset_password",
-      "okta.revoke_sessions",
-      "okta.suspend_user",
-      "openai.delete_api_key",
-      "sentinelone.block_hash",
-      "sentinelone.isolate_host",
-      "stripe.block_charge_card",
-      "tailscale.deauthorize_device",
-      "tailscale.revoke_key",
-      "tailscale.suspend_user",
-      "wazuh.block_ip",
-    ];
+  // A console-only copy has no contract/ to read; CI checks out the whole repo, so there a missing one fails.
+  it.skipIf(!existsSync(CONTRACT) && !process.env.CI)("names every action type policy.show lists (contract/v1.json actions)", () => {
+    const types = (JSON.parse(readFileSync(CONTRACT, "utf8")) as { actions: string[] }).actions;
+    expect(types.length).toBeGreaterThan(0);
     expect(types.filter((t) => !ACTIONS[t])).toEqual([]);
   });
 
@@ -125,6 +88,13 @@ describe("state words", () => {
     expect(severityLabel("informational")).toBe("info");
     expect(findingStatus("self")).toBe("shoc's own");
     expect(findingStatus("false_positive")).toBe("rule was wrong");
+  });
+
+  it("names every case phase in plain words, none of them a NIST id", () => {
+    const words = CASE_STATES.map(caseStateLabel);
+    expect(words).toEqual(["sorting", "investigating", "containing", "removing", "restoring", "lessons", "closed"]);
+    expect(caseStateLabel("some_new_state")).toBe("some new state");
+    expect(CASE_STATES.filter((s) => !CASE_STATE_TIPS[s])).toEqual([]);
   });
 
   it("gives every rule one state, in precedence", () => {

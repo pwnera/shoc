@@ -1,0 +1,218 @@
+[
+  {
+    "Id": "m365-guess-0",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.20",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-guess-1",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.21",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-guess-2",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.22",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-guess-3",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.23",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-guess-4",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.24",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-guess-5",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.25",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-guess-6",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.26",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  },
+  {
+    "Id": "m365-guess-7",
+    "Operation": "UserLoginFailed",
+    "OrganizationId": "org-1",
+    "RecordType": 15,
+    "ResultStatus": "Failed",
+    "UserKey": "key-ceo",
+    "UserType": 0,
+    "UserId": "ceo@example.com",
+    "Workload": "AzureActiveDirectory",
+    "ClientIP": "198.51.100.27",
+    "ObjectId": "00000002-0000-0ff1-ce00-000000000000",
+    "ErrorNumber": "50126",
+    "LogonError": "InvalidUserNameOrPassword",
+    "ExtendedProperties": [
+      {
+        "Name": "UserAgent",
+        "Value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      {
+        "Name": "RequestType",
+        "Value": "Login:login"
+      }
+    ],
+    "ApplicationId": "4765445b-32c6-49b0-83e6-1d93765276ca",
+    "_content_type": "Audit.AzureActiveDirectory"
+  }
+]

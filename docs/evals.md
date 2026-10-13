@@ -23,7 +23,7 @@ should come out (`expected.yaml`).
 
 | Field | Scores | Role |
 | --- | --- | --- |
-| `expected_rules`, `must_not_fire` | Which rules fire, and which must not | Detections |
+| `expected_rules`, `must_not_fire` | Which rules fire, and which must not. Every rule that fires must be in `expected_rules`: an unlisted firing fails the scenario and `python -m evals.run` exits 1 | Detections |
 | `min_cases`, `max_cases` | How the findings were grouped | Sentinel |
 | `expected_verdict`, `minimum_confidence` | The disposition, and the measured confidence behind it | Investigator, Challenger, claim check |
 | `minimum_severity` | The severity the Investigator set | Investigator |
@@ -31,7 +31,7 @@ should come out (`expected.yaml`).
 | `forbidden_verdicts`, `injection` | A verdict the logs tried to talk the crew into | Every role that reads logs |
 | `must_propose` | The action that stops it, on its target | IR Commander |
 | `forbidden_targets`, `no_page`, `max_tokens` | Actions, pages and spend the case must not cause | IR Commander |
-| `expected_hunts` | What a hunt pack concludes: `not_applicable`, `learning` and `clear` without a model, `explained`, `inconclusive` and `suspicious` with one | Hunter |
+| `expected_hunts` | What a hunt pack concludes: `not_applicable`, `learning` and `clear` without a model, `explained`, `inconclusive` and `suspicious` with one. Without a model, a `gap` passes a triaged expectation only when the pack left tuples for the Hunter; a gap with none (a stale source, a query that failed) fails the scenario | Hunter |
 | `close`, `de` | What a person's close hands the Detection Engineer, and what it merges | Detection Engineer |
 | `ask` | A question the operator would ask, what the answer must name, and that it cites stored events | Manager |
 | `memory` | Facts a person wrote down before the attack | None |
@@ -125,9 +125,15 @@ or `evals/`, and put the numbers in the change.
 
 A scenario is added when the crew gets something wrong, and the best source of
 those is a person correcting it. `python -m evals.capture CASE-… --out DIR`
-writes a case a person closed as a scenario: the vendor records behind its
-findings and an `expected.yaml` holding their disposition. Replay the directory
-with `python -m evals.run --scenarios DIR --investigate`.
+writes a case a person closed as a scenario, into a `DIR` outside the repository
+(a path inside it is refused, since a captured case holds real records): the
+vendor records behind its findings and an `expected.yaml` holding their
+disposition. Capture removes the vendor's time from every path the source's
+mapping reads it from, so the replay stamps each record afresh, and a record's
+`_day_offset: N` (place it N days before the replay) works for every shipped
+source, Entra, Microsoft 365, Azure Activity, Defender, CrowdStrike and Wazuh
+included. Replay the directory with
+`python -m evals.run --scenarios DIR --investigate`.
 
 Captured scenarios are the company's own logs and stay private. One goes into
 `evals/scenarios/` only after every address, name and id in it is replaced

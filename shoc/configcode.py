@@ -9,6 +9,8 @@ Secrets are never in the file. A source names the environment variables its
 credentials come from, so the repository holds the shape of the deployment and
 the secret store holds the secrets. Only variables named `SHOC_SECRET_*` can be
 named, so a config sent over the API cannot read `SHOC_MASTER_KEY` or the DSN.
+`plan` compares each named value with the sealed one and prints neither, so a
+rotated credential is an update.
 
 Rules, playbooks and the policy are read from `SHOC_CONTENT_DIR` by every
 process, so deploying that directory applies them; `plan` and `apply` check
@@ -18,7 +20,7 @@ they load before changing anything else.
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -57,6 +59,9 @@ class FeedSpec:
 class SlackSpec:
     channel: str = ""
     approvers: dict[str, str] = field(default_factory=dict)
+    # Everyone else who may use /shoc; left out keeps the stored list, {} empties it.
+    readers: dict[str, str] | None = None
+    team_id: str = ""
     bot_token_env: str = ""
     signing_secret_env: str = ""
 
@@ -68,7 +73,6 @@ class Desired:
     version: int = 1
     # Unset leaves retention to SHOC_RETENTION_DAYS; set, it outlasts a restart.
     retention_days: int | None = None
-    dry_run: bool | None = None
     sources: list[SourceSpec] = field(default_factory=list)
     intel_feeds: list[FeedSpec] = field(default_factory=list)
     slack: SlackSpec | None = None
@@ -76,12 +80,19 @@ class Desired:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Desired:
-        slack = data.get("slack")
+        # A key shoc does not read is refused, not ignored: `source:` for
+        # `sources:` would otherwise plan and apply as if it were not there.
+        _known("the config", data, cls)
+        for s in data.get("sources", []) or []:
+            _known("sources", s, SourceSpec)
+        for f_ in data.get("intel_feeds", []) or []:
+            _known("intel_feeds", f_, FeedSpec)
+        slack = _known("slack", data.get("slack") or {}, SlackSpec)
         retention = data.get("retention_days")
+        readers = slack.get("readers")
         return cls(
             version=int(data.get("version", 1)),
             retention_days=None if retention is None else int(retention),
-            dry_run=data.get("dry_run"),
             sources=[
                 SourceSpec(
                     source=s["source"],
@@ -106,6 +117,8 @@ class Desired:
                 SlackSpec(
                     channel=slack.get("channel", ""),
                     approvers=dict(slack.get("approvers", {}) or {}),
+                    readers=None if readers is None else dict(readers),
+                    team_id=slack.get("team_id", ""),
                     bot_token_env=slack.get("bot_token_env", ""),
                     signing_secret_env=slack.get("signing_secret_env", ""),
                 )
@@ -114,6 +127,17 @@ class Desired:
             ),
             prune_unlisted=bool(data.get("prune_unlisted", False)),
         )
+
+
+def _known(where: str, data: Any, spec: type) -> dict[str, Any]:
+    if not isinstance(data, dict):
+        raise ValidationError(f"{where} must be a mapping")
+    allowed = [f_.name for f_ in fields(spec)]
+    if unknown := sorted(set(data) - set(allowed)):
+        raise ValidationError(
+            f"{where}: unknown key(s) {', '.join(map(str, unknown))}; allowed: {', '.join(allowed)}"
+        )
+    return data
 
 
 def read_file(path: Path) -> dict[str, Any]:
@@ -140,12 +164,7 @@ class Change:
         return f"{mark} {self.kind} {self.target}" + (f" — {self.detail}" if self.detail else "")
 
     def to_json(self) -> dict[str, Any]:
-        return {
-            "kind": self.kind,
-            "target": self.target,
-            "action": self.action,
-            "detail": self.detail,
-        }
+        return asdict(self)
 
 
 @dataclass
@@ -197,6 +216,26 @@ def _secret_from_env(secret_env: dict[str, str], missing: list[str]) -> dict[str
     return out
 
 
+def _credential(
+    master_key: str, blob: Any, wanted: dict[str, Any], tenant_id: str, table: str, key: str
+) -> str:
+    """Why apply should seal the environment's credential again, or '' when it
+    holds the sealed one. Only the keys the file names count: a push key shoc
+    made stays out of it. Neither value leaves this function."""
+    from shoc.db.secrets import open_secret
+
+    if not wanted:
+        return ""
+    try:
+        stored = open_secret(master_key, blob, tenant_id, table, key)
+    except ConfigError:
+        # Sealed under another key or row, or before binding: apply seals the
+        # environment's over it, as source.configure does.
+        why = "" if master_key else " (SHOC_MASTER_KEY is not set)"
+        return f"stored credential cannot be opened{why}"
+    return "credential differs" if any(stored.get(k) != v for k, v in wanted.items()) else ""
+
+
 def validate_content(config: Any = None) -> list[Change]:
     """Everything in `content/` must load and compile before anything is applied."""
     from shoc.cases.playbooks import load as load_playbooks
@@ -229,8 +268,11 @@ def validate_content(config: Any = None) -> list[Change]:
 
 def plan(conn: Conn, tenant_id: str, desired: Desired, config: Any = None) -> Plan:
     """What `apply` would change. Reads only."""
+    from shoc.capabilities.sources import name_refused
+    from shoc.config import Config
     from shoc.ingest import connectors
 
+    cfg = config or Config.load()
     result = Plan(changes=validate_content(config))
     missing: list[str] = []
 
@@ -238,8 +280,8 @@ def plan(conn: Conn, tenant_id: str, desired: Desired, config: Any = None) -> Pl
         r["source"]: r
         for r in fetch_all(
             conn,
-            "SELECT source, enabled, settings, interval_seconds FROM shoc.connector_config "
-            "WHERE tenant_id = %s",
+            "SELECT source, enabled, settings, secret, interval_seconds "
+            "FROM shoc.connector_config WHERE tenant_id = %s",
             (tenant_id,),
         )
     }
@@ -248,21 +290,29 @@ def plan(conn: Conn, tenant_id: str, desired: Desired, config: Any = None) -> Pl
         if connectors.connector_of(spec.source) not in known:
             result.changes.append(Change("source", spec.source, "invalid", "unknown source"))
             continue
-        if refused := _refused(spec.secret_env.values()):
+        # The check source.configure makes, here, so apply refuses before its first change.
+        if refused := name_refused(spec.source) or _refused(spec.secret_env.values()):
             result.changes.append(Change("source", spec.source, "invalid", refused))
             continue
-        _secret_from_env(spec.secret_env, missing)
+        wanted = _secret_from_env(spec.secret_env, missing)
         current = have_sources.get(spec.source)
         if current is None:
             result.changes.append(Change("source", spec.source, "create", "not configured yet"))
-        elif (
+            continue
+        differ: list[str] = []
+        if (
             dict(current["settings"]) != spec.settings
             or int(current["interval_seconds"]) != spec.interval_seconds
             or bool(current["enabled"]) != spec.enabled
         ):
-            result.changes.append(Change("source", spec.source, "update", "settings differ"))
-        else:
-            result.changes.append(Change("source", spec.source, "unchanged"))
+            differ.append("settings differ")
+        if credential := _credential(
+            cfg.master_key, current["secret"], wanted, tenant_id, "connector_config", spec.source
+        ):
+            differ.append(credential)
+        result.changes.append(
+            Change("source", spec.source, "update" if differ else "unchanged", "; ".join(differ))
+        )
     if desired.prune_unlisted:
         for name in have_sources:
             if name not in ("slack", "llm") and name not in {s.source for s in desired.sources}:
@@ -272,7 +322,7 @@ def plan(conn: Conn, tenant_id: str, desired: Desired, config: Any = None) -> Pl
         r["feed"]: r
         for r in fetch_all(
             conn,
-            "SELECT feed, enabled, settings FROM shoc.intel_feeds WHERE tenant_id = %s",
+            "SELECT feed, enabled, settings, secret FROM shoc.intel_feeds WHERE tenant_id = %s",
             (tenant_id,),
         )
     }
@@ -285,36 +335,47 @@ def plan(conn: Conn, tenant_id: str, desired: Desired, config: Any = None) -> Pl
         if refused := _refused(spec.secret_env.values()):
             result.changes.append(Change("intel_feed", spec.feed, "invalid", refused))
             continue
-        _secret_from_env(spec.secret_env, missing)
+        wanted = _secret_from_env(spec.secret_env, missing)
         current = have_feeds.get(spec.feed)
         if current is None:
             result.changes.append(Change("intel_feed", spec.feed, "create"))
-        elif dict(current["settings"]) != spec.settings or bool(current["enabled"]) != spec.enabled:
-            result.changes.append(Change("intel_feed", spec.feed, "update", "settings differ"))
-        else:
-            result.changes.append(Change("intel_feed", spec.feed, "unchanged"))
+            continue
+        differ = []
+        if dict(current["settings"]) != spec.settings or bool(current["enabled"]) != spec.enabled:
+            differ.append("settings differ")
+        if credential := _credential(
+            cfg.master_key, current["secret"], wanted, tenant_id, "intel_feeds", spec.feed
+        ):
+            differ.append(credential)
+        result.changes.append(
+            Change("intel_feed", spec.feed, "update" if differ else "unchanged", "; ".join(differ))
+        )
 
-    if desired.slack:
+    if want := desired.slack:
         from shoc.api.slack import load_app
-        from shoc.config import Config
 
-        cfg = config or Config.load()
         app = load_app(conn, tenant_id, cfg.master_key)
-        variables = (desired.slack.bot_token_env, desired.slack.signing_secret_env)
+        variables = (want.bot_token_env, want.signing_secret_env)
         for variable in variables:
             if variable and _env(variable) is None:
                 missing.append(variable)
+        token, signing = _env(want.bot_token_env), _env(want.signing_secret_env)
+        differ = []
+        if app.channel != want.channel or app.approvers != want.approvers:
+            differ.append("channel or approvers differ")
+        if want.readers is not None and app.readers != want.readers:
+            differ.append("readers differ")
+        if want.team_id and app.team_id != want.team_id:
+            differ.append("team_id differs")
+        if (token and token != app.bot_token) or (signing and signing != app.signing_secret):
+            differ.append("credential differs")
         if refused := _refused(variables):
-            result.changes.append(
-                Change("slack", desired.slack.channel or "app", "invalid", refused)
-            )
+            result.changes.append(Change("slack", want.channel or "app", "invalid", refused))
         elif not app.configured:
-            result.changes.append(Change("slack", desired.slack.channel or "app", "create"))
-        elif app.channel != desired.slack.channel or app.approvers != desired.slack.approvers:
+            result.changes.append(Change("slack", want.channel or "app", "create"))
+        elif differ:
             result.changes.append(
-                Change(
-                    "slack", desired.slack.channel or "app", "update", "channel or approvers differ"
-                )
+                Change("slack", want.channel or "app", "update", "; ".join(differ))
             )
         else:
             result.changes.append(Change("slack", app.channel, "unchanged"))
@@ -417,6 +478,13 @@ def apply(ctx: Context, desired: Desired) -> Plan:
                     "signing_secret": _env(desired.slack.signing_secret_env) or "",
                     "channel": desired.slack.channel,
                     "approvers": desired.slack.approvers,
+                    "team_id": desired.slack.team_id,
+                    # Left out, slack.configure keeps the stored readers.
+                    **(
+                        {"readers": desired.slack.readers}
+                        if desired.slack.readers is not None
+                        else {}
+                    ),
                 },
             )
         elif change.kind == "retention":
@@ -463,11 +531,15 @@ intel_feeds:
 
 slack:
   channel: C0123456789
+  team_id: T0123456789
   bot_token_env: SHOC_SECRET_SLACK_BOT_TOKEN
   signing_secret_env: SHOC_SECRET_SLACK_SIGNING_SECRET
   approvers:
     U0123ALICE: alice
     U0456SAM: sam
+  # Everyone else who may use /shoc; leave out to keep the list set elsewhere.
+  readers:
+    U0789DEE: dee
 
 # Remove sources that are configured here but not listed above.
 prune_unlisted: false

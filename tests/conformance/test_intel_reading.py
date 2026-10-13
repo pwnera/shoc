@@ -21,6 +21,12 @@ from tests.conformance.test_intel import BAD_IP, _events
 pytestmark = pytest.mark.postgres
 
 
+@pytest.fixture(autouse=True)
+def no_list_download(monkeypatch):
+    """No list is downloaded here: a list is loaded only when a test puts it in."""
+    monkeypatch.setattr(osint, "load_soon", lambda key, wait=0.0: key in osint._LISTS)
+
+
 # -- intel.lookup (DET-6) -----------------------------------------------------
 @pytest.fixture
 def asked(monkeypatch) -> list[str]:
@@ -75,6 +81,51 @@ def test_a_lookup_on_some_sources_is_not_cached(ctx, config, clean, asked):
         )
         == []
     )
+
+
+def _outbound(tenant: str, now: datetime, ip: str, **columns: str) -> list[dict]:
+    """An event whose indicator is only where the traffic went, not where it came from."""
+    rows = _events(tenant, now, ip=ip, count=1)
+    for row in rows:
+        row.update(columns)
+    return rows
+
+
+def test_history_finds_what_the_company_called_out_to(ctx, store, config, clean, now, asked):
+    batch.load(
+        store, _outbound(config.tenant_id, now, "198.51.100.7", dst_endpoint_ip="2001:db8::55")
+    )
+    batch.load(
+        store,
+        _outbound(config.tenant_id, now, "198.51.100.8", dns_query_hostname="c2.example.test"),
+    )
+    address = call("intel.lookup", ctx, {"value": "2001:db8::55"})
+    assert address.data.seen_in_our_logs == 1 and len(address.citations) == 1
+    name = call("intel.lookup", ctx, {"value": "c2.example.test"})
+    assert name.data.seen_in_our_logs == 1, "a domain resolved is in our logs"
+    hunted = call("hunt.run", ctx, {"value": "2001:db8::55", "days": 7})
+    assert hunted.data.matches == 1, "an IPv6 address is an address, not a word in a message"
+    assert call("hunt.run", ctx, {"value": "c2.example.test", "days": 7}).data.matches == 1
+    long_form = call("hunt.run", ctx, {"value": "2001:0db8:0:0::55", "days": 7})
+    assert long_form.data.matches == 1, "the address as events store it"
+    sender = call("intel.lookup", ctx, {"value": "billing@c2.example.test"})
+    assert sender.data.seen_in_our_logs == 1, "a phishing sender's domain was resolved here"
+
+
+def test_a_third_party_gets_no_query_string_and_no_own_host(ctx, config, clean, asked):
+    from shoc.cases import own
+
+    shared = "https://files.example.test/share/1"
+    found = call("intel.lookup", ctx, {"value": f"{shared}?token=s3cret&sig=abc#part"})
+    assert asked == [shared] and not found.data.internal
+    cached = fetch_all(
+        ctx.db, "SELECT value FROM shoc.intel_lookups WHERE tenant_id = %s", (config.tenant_id,)
+    )
+    assert [r["value"] for r in cached] == [shared], "the token is not kept here either"
+
+    own.register(ctx.db, config.tenant_id, "operator", "ana@acme.example")
+    mine = call("intel.lookup", ctx, {"value": "https://vpn.acme.example/login"})
+    assert mine.data.internal and asked == [shared], "the company's own host stays here"
 
 
 # -- intel.digest end to end (DET-7) -----------------------------------------
@@ -561,6 +612,28 @@ def test_a_url_is_not_bad_because_its_host_is_on_a_feed(ctx, config, clean, aske
     assert local["data"]["relation"] == "host_of" and found.data.verdict != "malicious"
 
 
+def test_a_lead_an_unverified_or_a_prevalent_value_is_not_suspicious_alone(ctx, config, clean):
+    """Research weighs a listed value as matching does (D143, DET-6, RSP-5)."""
+    tenant = config.tenant_id
+    execute(
+        ctx.db,
+        """INSERT INTO shoc.iocs
+               (tenant_id, type, value, source, confidence, severity, unverified, tags)
+           VALUES (%s, 'ip', '198.51.100.61', 'report:demo', 0.55, 'high', false, '{}'),
+                  (%s, 'ip', '198.51.100.62', 'report:demo', 0.9, 'high', true, '{}'),
+                  (%s, 'ip', '198.51.100.63', 'feed:demo', 0.9, 'high', false, '{prevalent}'),
+                  (%s, 'ip', '198.51.100.64', 'feed:demo', 0.9, 'high', false, '{}')""",
+        (tenant, tenant, tenant, tenant),
+    )
+    lead, unverified, prevalent, listed = (
+        osint.local_iocs(ctx.db, tenant, f"198.51.100.6{n}", "ip") for n in (1, 2, 3, 4)
+    )
+    assert lead.data["lead"] and osint.score([lead])[0] == "unknown"
+    for held in (unverified, prevalent):
+        assert held.data["held"] and held.weight == 0.0 and osint.score([held])[0] == "unknown"
+    assert not listed.data["lead"] and osint.score([listed])[0] == "suspicious"
+
+
 def test_a_warninglisted_value_is_held_back_and_refused_from_an_agent(
     ctx, config, clean, model, monkeypatch
 ):
@@ -635,3 +708,95 @@ def test_a_read_queues_three_hunts_and_none_for_a_value_it_stored(ctx, config, c
     assert len(titles) == 3 and not any("203.0.113.55" in t for t in titles), (
         "the retro-hunt looks for a stored value; the backlog is for behaviour"
     )
+
+
+def test_a_urls_host_is_held_back_whatever_the_model_called_it(ctx, config, clean, model):
+    # drop.example.test is in the report only as the host of the payload URL.
+    model["indicators"] = [{"type": "domain", "value": "drop.example.test", "context": "C2"}]
+    out = call("intel.digest", ctx, {"text": REPORT, "retro_hunt": False})
+    [host] = out.data.indicators
+    assert host["held_back"] == "derived from a URL or email host" and not host["unverified"]
+    assert _iocs(ctx, config) == {}, "a derivation is never matched on its own"
+
+
+def test_an_agents_read_holds_values_back_until_the_warninglists_are_in(
+    ctx, config, clean, model, monkeypatch
+):
+    from dataclasses import replace
+
+    monkeypatch.setattr(ctx.config, "intel_feeds", "default")
+    monkeypatch.delitem(osint._LISTS, "warninglists", raising=False)
+    model["indicators"] = [
+        {"type": "ip", "value": BAD_IP, "context": "C2"},
+        {"type": "url", "value": "hxxps://drop.example[.]test/stage2.bin", "context": "payload"},
+    ]
+    agent = replace(ctx, caller=replace(ctx.caller, kind="agent", id="CTI"))
+    out = call("intel.digest", agent, {"text": REPORT})
+    read = {i["value"]: i["held_back"] for i in out.data.indicators}
+    assert read[BAD_IP] == "warninglists not loaded"
+    assert not read["https://drop.example.test/stage2.bin"], "no warninglist checks a URL"
+    person = call("intel.digest", ctx, {"text": f"again {REPORT}", "retro_hunt": False})
+    assert not any(i["held_back"] for i in person.data.indicators), "a person's read is kept"
+    refused = call("intel.add", agent, {"values": [BAD_IP], "retro_hunt": False})
+    assert refused.data.rejected == [BAD_IP] and "still loading" in refused.summary
+
+
+def test_with_the_feeds_off_an_agents_read_is_stored_and_nothing_loads(
+    ctx, config, clean, model, monkeypatch
+):
+    """SHOC_INTEL_FEEDS=off reaches no host nobody configured (RFC 0030)."""
+    from dataclasses import replace
+
+    loads: list[str] = []
+    monkeypatch.setattr(osint, "load_soon", lambda key, wait=0.0: bool(loads.append(key)))
+    monkeypatch.setattr(ctx.config, "intel_feeds", "off")
+    monkeypatch.delitem(osint._LISTS, "warninglists", raising=False)
+    model["indicators"] = [{"type": "ip", "value": BAD_IP, "context": "C2"}]
+    agent = replace(ctx, caller=replace(ctx.caller, kind="agent", id="CTI"))
+    out = call("intel.digest", agent, {"text": f"feeds off {REPORT}", "retro_hunt": False})
+    assert [i["held_back"] for i in out.data.indicators] == [""], (
+        "nothing is held back for a list that will not come"
+    )
+    assert _iocs(ctx, config) == {}, "an agent's read stores nothing, list or no list (DET-7)"
+    added = call("intel.add", agent, {"values": ["198.51.100.9"], "retro_hunt": False})
+    assert added.data.rejected == [] and "still loading" not in added.summary
+    assert "198.51.100.9" in _iocs(ctx, config), "an agent's add is kept without the lists"
+    assert loads == []
+
+
+def test_a_technique_attck_does_not_list_is_dropped_and_recorded(ctx, config, clean, model):
+    model["techniques"] = [
+        {"id": "T1566.001 - Phishing", "name": "Spearphishing Attachment"},
+        {"id": "(T1059.001).", "name": "PowerShell, bracketed"},
+        {"id": "T1086", "name": "PowerShell, revoked in 2020"},
+        {"id": "phishing", "name": "not an id"},
+    ]
+    out = call("intel.digest", ctx, {"text": REPORT, "retro_hunt": False})
+    assert [t["id"] for t in out.data.techniques] == ["T1566.001", "T1059.001"]
+    assert out.data.extracted["unknown_techniques"] == ["T1086", "phishing"]
+    row = fetch_one(
+        ctx.db,
+        "SELECT techniques, extracted FROM shoc.intel_reports WHERE report_uid = %s",
+        (out.data.report_uid,),
+    )
+    assert row and row["techniques"] == ["T1566.001", "T1059.001"]
+    assert row["extracted"]["unknown_techniques"] == ["T1086", "phishing"]
+
+
+def test_a_long_report_reaches_the_model_whole_up_to_the_prose_limit(
+    ctx, config, clean, monkeypatch
+):
+    from shoc.agents import llm
+
+    client = ScriptedClient(replies={"Digest this threat report": json.dumps(DIGEST)})
+    monkeypatch.setattr(llm, "from_config", lambda *a, **k: client)
+    # About 43,000 characters: under the 48,000 the model reads, over a data block's 40,000.
+    filler = "The actor moved laterally with remote admin tools. " * 830
+    text = f"{REPORT}\n{filler}\nDETECTION GUIDANCE: alert on the consent grant."
+    out = call("intel.digest", ctx, {"text": text, "retro_hunt": False})
+    assert "DETECTION GUIDANCE" in client.calls[-1] and "[truncated" not in client.calls[-1]
+    assert not out.data.truncated
+
+    urls = "\n".join(f"https://cdn{n}.example.test/{'a' * 400}" for n in range(100))
+    listed = call("intel.digest", ctx, {"text": f"{REPORT}\n{urls}", "retro_hunt": False})
+    assert listed.data.truncated, "a values list cut short is marked as well"

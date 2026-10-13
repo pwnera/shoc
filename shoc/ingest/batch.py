@@ -1,7 +1,8 @@
 """Batch writer: NDJSON.gz on local disk, then one COPY into the store.
 
 No object store and no streaming inserts (decision D6). A batch file is deleted
-once the store reports it loaded, and kept on failure so it can be replayed.
+once the load ends, loaded or not: a connector's cursor and a webhook sender's
+retry fetch a failed batch again.
 """
 
 from __future__ import annotations
@@ -9,14 +10,16 @@ from __future__ import annotations
 import gzip
 import json
 import logging
-import os
+import re
 import tempfile
 import time
+import uuid
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from shoc.errors import StoreError
 from shoc.store.base import EventStore, LoadStats
 
 log = logging.getLogger("shoc.ingest.batch")
@@ -25,12 +28,30 @@ log = logging.getLogger("shoc.ingest.batch")
 # the mapping is reading a field that does not identify one.
 UID_FLOOR = 0.9
 
+# A load ends well inside this; a staged batch older than it was left behind by
+# a worker killed before its cleanup (STO-3, STO-4).
+ORPHANED = timedelta(days=1)
+
+
+def batch_name() -> str:
+    """A batch's name: unique across threads, processes and hosts, and led by
+    the time it was made in ms, so a sweep can tell an orphan's age."""
+    return f"batch-{int(time.time() * 1000)}-{uuid.uuid4().hex}"
+
+
+def orphaned(names: Iterable[str]) -> list[str]:
+    """The batch names among `names` made more than `ORPHANED` ago."""
+    cutoff = (time.time() - ORPHANED.total_seconds()) * 1000
+    return [n for n in names if (m := re.search(r"batch-(\d+)-", n)) and int(m[1]) < cutoff]
+
 
 def write_batch(rows: Iterable[dict[str, Any]], directory: str | None = None) -> tuple[Path, int]:
     """Write OCSF rows as gzipped NDJSON. Returns (path, row count)."""
     base = Path(directory or tempfile.gettempdir()) / "shoc-batches"
     base.mkdir(parents=True, exist_ok=True)
-    path = base / f"batch-{int(time.time() * 1000)}-{os.getpid()}.ndjson.gz"
+    # Serve loads webhooks and pushes in threads of one process, so the time and
+    # the pid alone named two batches alike and one replaced the other.
+    path = base / f"{batch_name()}.ndjson.gz"
     count = 0
     uids: set[str] = set()
     with gzip.open(path, "wt") as fh:
@@ -103,12 +124,14 @@ def loaded(conn: Any, tenant_id: str, rows: Iterable[dict[str, Any]] = ()) -> No
     )
 
 
-def load(store: EventStore, rows: Iterable[dict[str, Any]], keep: bool = False) -> LoadStats:
+def load(store: EventStore, rows: Iterable[dict[str, Any]]) -> LoadStats:
+    rows = list(rows)
+    # A row mapped for another tenant, or whose mapping set tenant_id from the
+    # record, would land in this tenant's table (STO-1, SEC-1).
+    if strays := sum(r.get("tenant_id") != store.tenant_id for r in rows):
+        raise StoreError(f"refused a batch: {strays} row(s) carry another tenant_id")
     path, count = write_batch(rows)
-    if count == 0:
+    try:
+        return store.load_batch(str(path)) if count else LoadStats()
+    finally:
         path.unlink(missing_ok=True)
-        return LoadStats()
-    stats = store.load_batch(str(path))
-    if not keep:
-        path.unlink(missing_ok=True)
-    return stats

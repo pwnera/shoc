@@ -1,4 +1,4 @@
--- 037 audit key epochs (SEC-1, RFC 0024)
+-- 035 audit key epochs (SEC-1, RFC 0024)
 --
 -- `shoc rotate-key` retires the chain key derived from the old SHOC_MASTER_KEY.
 -- The rows it keyed are still checked with it: the retired key is kept here,

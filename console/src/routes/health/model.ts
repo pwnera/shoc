@@ -14,7 +14,7 @@ import type { AuditRow, FailedJob, OpsAlert, Role, SpendRow, StreamTail, SystemH
 export type Problem = {
   key: string;
   tone: "bad" | "warn";
-  component: "worker" | "model" | "spend" | "store";
+  component: "worker" | "model" | "spend" | "store" | "disk" | "notify";
   subject: string;
   /** The kind behind a worker row's words, for its tip ("hunt.daily"). */
   id?: string;
@@ -23,13 +23,30 @@ export type Problem = {
   to?: string;
 };
 
-const COMPONENT: Record<string, Problem["component"]> = { jobs: "worker", llm: "model", cost: "spend" };
-const OWNER: Record<string, string> = { jobs: "/health/jobs", llm: "/health/crew", cost: "/health/spend" };
+const COMPONENT: Record<string, Problem["component"]> = {
+  jobs: "worker",
+  llm: "model",
+  cost: "spend",
+  notify: "notify",
+  page: "notify",
+  store: "disk",
+};
+/* The store and its disk have no tab: their rows open the store's facts. */
+const OWNER: Record<string, string> = {
+  jobs: "/health/jobs",
+  llm: "/health/crew",
+  cost: "/health/spend",
+  notify: "/connections?tab=services",
+  page: "/response?tab=pages",
+};
 const WORD: Record<string, string> = {
   "jobs.failed": "failed",
   "llm.failing": "failing",
   "cost.over_budget": "over budget",
   "cost.unpriced": "no price",
+  "notify.unreachable": "nobody reachable",
+  "page.failed": "pages not sent",
+  "store.size": "filling",
 };
 
 /** Pure, for the tests: the rows Health owns, worst first. */
@@ -37,6 +54,14 @@ export function problemsOf(alerts: OpsAlert[], health: SystemHealth | undefined)
   const rows: Problem[] = [];
   if (health && !health.store.ok)
     rows.push({ key: "store", tone: "bad", component: "store", subject: health.store.dialect, word: "unreachable" });
+  if (health?.schema_ahead?.length)
+    rows.push({
+      key: "schema_ahead",
+      tone: "bad",
+      component: "store",
+      subject: health.schema_ahead.join(", "),
+      word: "schema ahead",
+    });
   for (const name of health?.jobs.overdue_schedules ?? [])
     rows.push({
       key: `overdue:${name}`,

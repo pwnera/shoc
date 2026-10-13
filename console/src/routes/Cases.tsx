@@ -53,7 +53,7 @@ import type { Case, Verdict } from "@/types";
 const TAB_LABEL: Record<TabId, string> = {
   all: "All",
   investigating: "Investigating",
-  contained: "Contained",
+  responding: "Responding",
   closed: "Closed",
 };
 
@@ -407,7 +407,7 @@ function EmptyTab({ tab, lastClosed }: { tab: TabId; lastClosed: string | null }
   const words: Record<TabId, string> = {
     all: "No cases yet",
     investigating: "",
-    contained: "Nothing contained",
+    responding: "No case in response",
     closed: "Nothing closed",
   };
   return <Empty kind="row" title={words[tab]} />;

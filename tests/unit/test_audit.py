@@ -69,11 +69,12 @@ def test_verify_reads_the_chain_in_batches(ctx, clean):
     assert verify(ctx.db, ctx.tenant_id, batch=2)[:2] == verify(ctx.db, ctx.tenant_id)[:2]
 
 
-def test_audit_rows_cannot_be_updated(ctx, clean):
+def test_audit_rows_cannot_be_updated(ctx, conn, clean):
+    """Not even by the owner, which the runtime role is not (RFC 0024)."""
     from shoc.capabilities.registry import call
 
     call("events.ingest", ctx, {"source": "github", "records": []})
-    with pytest.raises(psycopg.errors.RaiseException, match="append-only"), ctx.db.cursor() as cur:
+    with pytest.raises(psycopg.errors.RaiseException, match="append-only"), conn.cursor() as cur:
         cur.execute(
             "UPDATE shoc.audit_log SET capability = 'x' WHERE tenant_id = %s", (ctx.tenant_id,)
         )
@@ -141,10 +142,11 @@ def upgraded(config):
     from shoc.db.migrate import BOOTSTRAP, MIGRATIONS_DIR, migrate
 
     database = f"shoc_audit_{uuid.uuid4().hex[:8]}"
-    admin = _connect(config.dsn, ALL_TENANTS)
+    owner = config.migrate_dsn or config.dsn
+    admin = _connect(owner, ALL_TENANTS)
     with admin.cursor() as cur:
         cur.execute(q(f'CREATE DATABASE "{database}"'))
-    db = _connect(config.dsn.rsplit("/", 1)[0] + f"/{database}", LEGACY)
+    db = _connect(owner.rsplit("/", 1)[0] + f"/{database}", LEGACY)
     try:
         with db.cursor() as cur:
             cur.execute(q(BOOTSTRAP))
@@ -307,3 +309,33 @@ def test_a_writer_from_before_025_cannot_append(upgraded):
                VALUES (%s, 'agent', 'worker', 'detect.run', 'x', 'y', 'z')""",
             (LEGACY,),
         )
+
+
+def test_a_subject_is_kept_beside_older_rows_and_covered_by_the_chain(upgraded):
+    """Rows from before 058 have none and still verify; a stored one cannot be changed."""
+    said = '{"email": "ann@example.com", "role": "reader"}'
+    append(upgraded, LEGACY, "human", "sam", "user.update", hash_payload(1), subject=said)
+    assert verify(upgraded, LEGACY)[0]
+    with upgraded.transaction(force_rollback=True), upgraded.cursor() as cur:
+        cur.execute("ALTER TABLE shoc.audit_log DISABLE TRIGGER USER")
+        cur.execute(
+            "UPDATE shoc.audit_log SET subject = replace(subject, 'reader', 'admin')"
+            " WHERE tenant_id = %s",
+            (LEGACY,),
+        )
+        ok, _count, detail = verify(upgraded, LEGACY)
+        assert not ok and "do not match" in detail
+    assert verify(upgraded, LEGACY)[0]
+
+
+def test_an_audited_call_says_what_it_was_about(ctx, clean):
+    from shoc.capabilities.registry import call
+
+    call("events.ingest", ctx, {"source": "github", "records": []})
+    row = fetch_one(
+        ctx.db,
+        """SELECT subject FROM shoc.audit_log WHERE tenant_id = %s
+           AND capability = 'events.ingest' ORDER BY seq DESC LIMIT 1""",
+        (ctx.tenant_id,),
+    )
+    assert row and '"source": "github"' in row["subject"]

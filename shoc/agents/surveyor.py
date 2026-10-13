@@ -35,14 +35,14 @@ everything else an idle machine is invisible, and the caveat says which.
 from __future__ import annotations
 
 import contextlib
-import hashlib
 import ipaddress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from shoc.db.pool import Conn, execute, fetch_all, fetch_one
-from shoc.detect.engine import ENTITY_COLUMNS
+from shoc.detect.engine import ENTITY_COLUMNS, entity_kind
+from shoc.ids import make_id
 from shoc.store import ocsf as layout
 
 CAVEAT = (
@@ -195,15 +195,11 @@ def _outside(address: str, nets: list[Any]) -> bool:
     A private or carrier-grade NAT address (a tailnet's 100.64.0.0/10) is inside
     by construction, and an unparseable address is not exposure.
     """
-    from shoc.cases.own import routable
-    from shoc.detect.osint import is_documentation
+    from shoc.detect.osint import is_public_address
 
-    try:
-        ip = ipaddress.ip_address(address)
-    except ValueError:
+    if not is_public_address(address):
         return False
-    if not (routable(address) or is_documentation(ip)):
-        return False
+    ip = ipaddress.ip_address(address.strip())
     return not any(ip.version == net.version and ip in net for net in nets)
 
 
@@ -246,10 +242,12 @@ def survey(
         operation = str(row.get("api_operation") or "")
         admin = operation in ADMIN_OPERATIONS
         when = row.get("time")
-        for column, kind in ENTITY_COLUMNS.items():
+        product = str(row.get("metadata_product") or "")
+        for column in ENTITY_COLUMNS:
             value = row.get(column)
             if value in (None, "", "-"):
                 continue
+            kind = entity_kind(column, product)
             key = f"{kind}:{value}"
             item = entities.setdefault(key, Entity(entity=key, kind=kind))
             item.events += 1
@@ -496,10 +494,7 @@ def _store(
 def _snapshot_row(conn: Conn, tenant_id: str, posture: Posture) -> None:
     import json
 
-    uid = (
-        "POS-"
-        + hashlib.sha256(f"{tenant_id}|{posture.taken_at:%Y-%m-%dT%H}".encode()).hexdigest()[:20]
-    )
+    uid = make_id("POS-", tenant_id, f"{posture.taken_at:%Y-%m-%dT%H}")
     execute(
         conn,
         """INSERT INTO shoc.posture_snapshots
@@ -860,6 +855,7 @@ def logins(
     who used it.
     """
     from shoc.cases import own
+    from shoc.detect.compiler import _literal
     from shoc.ingest import ocsf as mappings
 
     value = own.bare(user)
@@ -933,8 +929,11 @@ def logins(
         shorts = sorted({_short(str(r["device_hostname"])) for r in hosts.rows} - {""})
         if hosts.truncated or not shorts:
             return []
-        likes = " OR ".join(f"LOWER(device_hostname) LIKE :h{i}" for i in range(len(shorts)))
-        params.update({f"h{i}": f"{h}%" for i, h in enumerate(shorts)})
+        # A host's own `_` is not a wildcard, nor its backslash an escape (D80).
+        likes = " OR ".join(
+            f"LOWER(device_hostname) LIKE :h{i} ESCAPE '!'" for i in range(len(shorts))
+        )
+        params.update({f"h{i}": f"{_literal(h)}%" for i, h in enumerate(shorts)})
         found: dict[str, dict[str, Any]] = {}
         for r in query(
             f"SELECT actor_user_name, device_hostname, event_uid FROM {events} WHERE {scope} "

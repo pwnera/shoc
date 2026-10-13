@@ -235,6 +235,28 @@ describe("bound commands", () => {
     expect(run).toHaveBeenCalledOnce();
     expect(asked[0]).toBeNull();
   });
+
+  it("asks before a link re-investigates a case, which spends model tokens", async () => {
+    const run = vi.fn();
+    let asked: ReturnType<typeof useAsking> = [null, () => {}];
+    function Asking() {
+      asked = useAsking();
+      return null;
+    }
+    render(
+      createElement(
+        MemoryRouter,
+        { initialEntries: ["/cases/CASE-1?do=case.investigate"] },
+        createElement(Bind, { id: "case.investigate", run }),
+        createElement(Asking),
+      ),
+    );
+    await act(async () => {});
+    expect(run).not.toHaveBeenCalled();
+    expect(asked[0]?.command.id).toBe("case.investigate");
+    act(() => asked[1]());
+    expect(run).not.toHaveBeenCalled();
+  });
 });
 
 function List({ rows, onOpen }: { rows: string[]; onOpen: (r: string) => void }) {

@@ -16,8 +16,11 @@ import copy
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from shoc.ingest.ocsf import dig
+
 # Where each source keeps its timestamp and its record id.
-# A dotted name is a nested field (`id.time`).
+# A dotted name is a nested field (`id.time`). The time field is one of the
+# paths the source's mapping reads its time from (`time_paths`).
 TIME_FIELD = {
     "aws_cloudtrail": "eventTime",
     "okta": "published",
@@ -36,6 +39,12 @@ TIME_FIELD = {
     "gitlab": "created_at",
     "anthropic": "created_at",
     "openai": "effective_at",
+    "azure_activity": "eventTimestamp",
+    "crowdstrike": "created_timestamp",
+    "defender": "createdDateTime",
+    "entra": "createdDateTime",
+    "m365": "CreationTime",
+    "wazuh": "timestamp",
 }
 # Tailscale entries carry no id; they are keyed by their content, time included.
 ID_FIELD = {
@@ -60,13 +69,15 @@ ID_FIELD = {
 }
 
 
-def get_path(record: dict[str, Any], path: str) -> Any:
-    node: Any = record
-    for part in path.split("."):
-        if not isinstance(node, dict):
-            return None
-        node = node.get(part)
-    return node
+def time_paths(source: str) -> list[str]:
+    """Every path the source's mapping reads its time from, in the order it tries them."""
+    from shoc.errors import ConfigError
+    from shoc.ingest import ocsf
+
+    try:
+        return ocsf.load_mapping(source).paths("time")
+    except ConfigError:
+        return [TIME_FIELD[source]] if source in TIME_FIELD else []
 
 
 def set_path(record: dict[str, Any], path: str, value: Any) -> None:
@@ -100,6 +111,7 @@ def expand(
     """Expand `_repeat`, stamp unique ids, and place the records just before `now`."""
     now = now or datetime.now(UTC)
     time_field = TIME_FIELD.get(source)
+    times = time_paths(source)
     id_field = ID_FIELD.get(source)
     out: list[dict[str, Any]] = []
     index = 0
@@ -110,14 +122,16 @@ def expand(
             item.pop(REPEAT_KEY, None)
             days = float(item.pop(DAY_OFFSET_KEY, 0) or 0)
             ts = now - timedelta(days=days, seconds=(index % spread_seconds) + 5)
-            if time_field and not get_path(item, time_field):
+            # A time on any path the mapping reads is the record's own; written to
+            # one it reads later, ours would be ignored.
+            if time_field and not any(dig(item, p) for p in times):
                 set_path(
                     item,
                     time_field,
                     int(ts.timestamp() * 1000) if source == "github" else ts.isoformat(),
                 )
             if id_field:
-                set_path(item, id_field, f"{get_path(item, id_field) or source}-{index}")
+                set_path(item, id_field, f"{dig(item, id_field) or source}-{index}")
             out.append(item)
             index += 1
     return out

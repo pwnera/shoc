@@ -37,4 +37,4 @@ steps:
     action: github.enable_secret_scanning
     optional: true
     params:
-      repo: "{{ entity.resource }}"
+      repo: "{{ rule.github_security_feature_disabled.resource }}"

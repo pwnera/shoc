@@ -18,6 +18,14 @@ ocsf_version: "1.3.0"
 # The ATT&CK platforms whose techniques these events can show (DET-2).
 attack_platforms: [Office Suite, SaaS]
 
+# A Teams message with several links is one row per link, each with its own
+# `http_request_url`, so a listed URL is matched wherever it sits in the
+# message, not only first (DET-4). A record with one link or none is one row.
+# Each row's raw holds only its own link, and rows after the first add `-N`
+# to the event_uid: a rule that counts messages counts distinct event_uid with
+# that suffix removed, not rows.
+explode: MessageURLs
+
 # Lists of named items, read by name from a rule (RFC 0023): a cmdlet's
 # parameters (`unmapped.params.ForwardingSmtpAddress`), an Outlook rule's
 # properties (`unmapped.opprops.RuleActions`), a sign-in's extended properties
@@ -258,6 +266,7 @@ derive:
 observables:
   - { column: src_endpoint_ip, name: src_endpoint.ip, type: "IP Address" }
   - { column: actor_user_name, name: actor.user.name, type: User }
+  - { column: actor_session_uid, name: actor.session.uid, type: "Session UID" }
   - { column: http_request_url, name: http_request.url.url_string, type: "URL String" }
   - { column: file_path, name: file.name, type: "File Name" }
   - { column: file_hash_sha256, name: file.hashes.sha256, type: "File Hash" }

@@ -91,8 +91,9 @@ detection:
     process.cmd_line|contains: [' -d', ' --decode', ' -D']
   sel_cmd_subst:
     process.cmd_line|contains: ['$(echo', '$(printf', '`echo']
+  # `re` is case-sensitive, and curl and wget take HTTP:// as well.
   sel_ip_url:
-    process.cmd_line|re: '(http|https|ftp)://[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'
+    process.cmd_line|re: '([Hh][Tt][Tt][Pp][Ss]?|[Ff][Tt][Pp])://[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'
   # cloud-init and internal provisioning fetch from private addresses.
   filter_private_url:
     process.cmd_line|contains: ['://127.', '://10.', '://192.168.', '://169.254.', '://172.16.', '://172.17.',

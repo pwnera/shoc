@@ -2,8 +2,8 @@ id: m365_inbox_rule_created
 title: Mailbox rule that forwards, deletes or hides mail
 description: >
   An inbox rule now forwards, redirects or deletes mail, or moves it to a folder
-  nobody reads (RSS Feeds, Conversation History), whether it was made in Outlook
-  on the web, PowerShell, EWS or the Outlook desktop app. In business email
+  nobody reads (RSS Feeds, Conversation History, Junk Email), whether it was
+  made in Outlook on the web, PowerShell, EWS or the Outlook desktop app. In business email
   compromise this is how the attacker reads the replies and hides them from the
   real owner. A rule whose name is nothing but punctuation, such as "." or
   "..", counts whatever it does, since people name their rules and attackers
@@ -11,7 +11,7 @@ description: >
   included, are left to the hunt.
 status: stable
 date: 2026-09-24
-modified: 2026-10-09
+modified: 2026-10-12
 severity: high
 confidence: 0.7
 attack: [T1114.003, T1564.008]
@@ -28,11 +28,14 @@ detection:
     - unmapped.params.RedirectTo|exists: true
     - unmapped.params.DeleteMessage: true
     - unmapped.params.SoftDeleteMessage: true
-    # Conversation History is named in the mailbox's language.
+    # Conversation History and Junk Email are named in the mailbox's language.
     - unmapped.params.MoveToFolder|contains: [RSS, Conversation History, Deleted Items, Historique des conversations,
                                               Verlauf der Unterhaltung, Historial de conversaciones,
                                               Cronologia delle conversazioni, Gesprekgeschiedenis,
                                               Histórico de Conversações]
+    - unmapped.params.MoveToFolder|contains: [Junk Email, Junk E-mail, Courrier indésirable, Junk-E-Mail,
+                                              Correo no deseado, Posta indesiderata, Ongewenste e-mail,
+                                              Lixo Eletrônico]
   selection_outlook:
     api.operation: UpdateInboxRules
   # Outlook writes RuleActions ("ActionType":"Forward"); EWS writes Actions

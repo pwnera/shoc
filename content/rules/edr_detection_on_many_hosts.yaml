@@ -10,6 +10,7 @@ description: >
   alerts are left out, since they fire on every exposed server at once.
 status: experimental
 date: 2026-10-09
+modified: 2026-10-12
 severity: critical
 confidence: 0.6
 attack: [T1570, T1072, T1484.001]
@@ -53,14 +54,20 @@ detection:
                                web_scan, recon, syscheck]
   # Office 365, Identity, Cloud Apps, Entra ID Protection, App Governance and
   # Purview alerts from Defender, and Falcon Identity Protection: about an
-  # account, not a host.
+  # account, not a host: edr_identity_or_email_alert's.
   filter_not_endpoint:
     - api.service.name: [microsoftDefenderForOffice365, microsoftDefenderForIdentity,
                          microsoftDefenderForCloudApps, azureAdIdentityProtection,
                          microsoftAppGovernance, dataLossPrevention, microsoftDefenderForCloud,
                          unknownFutureValue]
     - api.service.name|startswith: idp
-  condition: selection and not filter_wazuh_low and not filter_wazuh_noise and not filter_not_endpoint
+  # A later change to an alert an earlier poll read (the connector marks it):
+  # the finding that alert opened stands, and a new bucket must not open another.
+  filter_update:
+    activity_id: 2
+  condition: >-
+    selection and not filter_wazuh_low and not filter_wazuh_noise and not filter_not_endpoint
+    and not filter_update
   timeframe: 1h
   group_by: [message]
   count_distinct: resource.uid

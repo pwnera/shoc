@@ -172,6 +172,20 @@ woken. A log line crafted to look alarming can now buy a page. That is a noisy
 failure rather than a dangerous one (paging is reversible and the action gates
 are unchanged), but it is new.
 
+The same say works the other way. A log line that makes the case look routine
+can lead the Investigator to lower a critical case to low. Until D165 that cost
+the case its page, stretched its deadline from 1 hour to 72 and closed it
+unattended on the second expiry.
+
+> Amended on 2026-10-12 (D165, D245). Every paging decision (the Manager's
+> `critical_severity` and `malicious_uncontained` checks, `DEADLINE_HOURS` and
+> the second-expiry page) reads the higher of the case's severity and its worst
+> finding's. The Investigator may still lower `cases.severity` for display,
+> title and budget. Unattended does not close a case below high that the crew
+> tried and never read, nor one while the model provider is failing. Once the
+> Manager's outage page is due, every stalled case is held, and one
+> `coverage_dark` page in group `llm` names the outage instead.
+
 Rejecting an undecided action after four hours will occasionally throw away
 something the operator would have approved on Monday. The alternative is an
 action that was never taken and never recorded as not taken, which is worse.

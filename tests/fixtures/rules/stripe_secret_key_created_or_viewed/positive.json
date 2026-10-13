@@ -4,7 +4,7 @@
     "object": "v2.iam.activity_log",
     "type": "api_key_viewed",
     "livemode": true,
-    "context": "acct_1SdeybAiQNL8swvt",
+    "context": "acct_1PfakeLiveAcct01",
     "actor": {
       "type": "user",
       "user": {
@@ -31,7 +31,7 @@
     "object": "v2.iam.activity_log",
     "type": "api_key_created",
     "livemode": true,
-    "context": "acct_1SdeybAiQNL8swvt",
+    "context": "acct_1PfakeLiveAcct01",
     "actor": {
       "type": "user",
       "user": {

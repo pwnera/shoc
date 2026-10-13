@@ -61,16 +61,14 @@ def _events(
 ) -> list[dict[str, Any]]:
     """The cited events. With `raw`, each carries its original record as flat,
     capped fields: the scope, the client id and the permission names that make
-    a claim checkable often exist only there."""
-    from shoc.capabilities.events import EventQuery, build_query
+    a claim checkable often exist only there. An alert updated in place is one
+    event on several rows; its newest stands for it."""
+    from shoc.capabilities.events import by_uid
 
     wanted = list(dict.fromkeys(uids))[:limit]
     if not wanted:
         return []
-    sql, params, limit = build_query(
-        EventQuery(event_uids=wanted, limit=len(wanted), include_raw=raw), tenant_id
-    )
-    rows = store.query(sql, params, limit).rows
+    rows = by_uid(store, tenant_id, wanted, raw).rows
     if raw:
         for row in rows:
             row.pop("unmapped", None)
@@ -114,11 +112,6 @@ def flatten(value: Any, prefix: str = "raw") -> dict[str, str]:
             text = node if isinstance(node, str) else _json.dumps(node, default=str)
             out[path] = text[:RAW_FIELD_CHARS]
 
-    if isinstance(value, str):
-        try:
-            value = _json.loads(value)
-        except ValueError:
-            return {prefix: value[:RAW_FIELD_CHARS]}
     walk(value, prefix)
     return out
 
@@ -133,13 +126,28 @@ class Dossier:
     reports: list[dict[str, Any]] = field(default_factory=list)
 
 
-def build_dossier(conn: Conn, store: EventStore, tenant_id: str, case: dict[str, Any]) -> Dossier:
-    """Everything an agent may see about a case, with log content quoted as data."""
+def build_dossier(
+    conn: Conn,
+    store: EventStore,
+    tenant_id: str,
+    case: dict[str, Any],
+    exclude_case: str = "",
+) -> Dossier:
+    """Everything an agent may see about a case, with log content quoted as data.
+
+    With `exclude_case`, the note that case's closure wrote in memory is left
+    out, so a read of that closure is not shown its own conclusion.
+    """
+    from shoc.cases.routing import closure_mark
+
     total = finding_count(conn, tenant_id, case)
     worst = findings(conn, tenant_id, case, MAX_DOSSIER_FINDINGS)
     uids = [u for f in worst for u in (f["event_uids"] or [])]
     events = _events(store, tenant_id, uids, raw=True)
     facts = memory.context_for(conn, tenant_id, case["entity_key"])
+    if exclude_case:
+        own = closure_mark(exclude_case)
+        facts = [m for m in facts if not str(m["body"]).endswith(own)]
     around = _neighbourhood(conn, tenant_id, case)
     standing = _posture(conn, tenant_id, case)
     contains = observables.of_case(worst, events, list(case.get("attack") or []))

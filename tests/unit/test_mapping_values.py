@@ -63,12 +63,12 @@ EXPECTED = {
         "src_endpoint_ip": "203.0.113.44",
         "cloud_account_uid": "org_01",
     },
-    ("stripe", "accact_1SdeybAiQNL8swvtMHyVtfCU"): {
+    ("stripe", "accact_1PfakeKeyCreated01"): {
         "activity_id": 1,
         "severity_id": 2,
         "actor_user_name": "user@example.com",
-        "resource_uid": "mk_1SdeybAiQNL8swvtMHyVtfCU",
-        "cloud_account_uid": "acct_1SdeybAiQNL8swvt",
+        "resource_uid": "mk_1PfakeLiveKey0001",
+        "cloud_account_uid": "acct_1PfakeLiveAcct01",
     },
     ("stripe", "evt_3PfakeCardTest0001"): {
         "status": "Failure",
@@ -77,7 +77,7 @@ EXPECTED = {
         "actor_user_name": "tester@example.net",
         "cloud_account_uid": "stripe",
     },
-    ("stripe", "accact_1SdeybAiQNL8swvtUserRole01"): {
+    ("stripe", "accact_1PfakeUserRole01"): {
         "activity_id": 3,
         "severity_id": 2,
         "actor_session_uid": "rk_live_fakeRestricted01",
@@ -89,14 +89,14 @@ EXPECTED = {
     },
     # A reset an administrator asked for is about the login reset, and an
     # email change about the address it replaced.
-    ("stripe", "accact_1SdeybAiQNL8swvt2faReset01"): {
+    ("stripe", "accact_1Pfake2faReset01"): {
         "severity_id": 2,
         "api_operation": "user_two_step_authentication_reset_requested",
         "actor_user_name": "admin@example.com",
         "resource_uid": "finance@example.com",
         "resource_type": "authentication",
     },
-    ("stripe", "accact_1SdeybAiQNL8swvtEmailChg01"): {
+    ("stripe", "accact_1PfakeEmailChg01"): {
         "severity_id": 2,
         "actor_user_name": "finance@example.net",
         "resource_uid": "finance@example.com",

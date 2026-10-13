@@ -11,9 +11,22 @@ from typing import Any
 import httpx
 
 from shoc.actions.base import ActionResult, BaseAction, Credentials
-from shoc.errors import StoreError
+from shoc.errors import ConfigError, StoreError
 
-EVENTS_API = "https://events.pagerduty.com/v2/enqueue"
+# PagerDuty's Events API per service region. An account in the EU region is
+# paged through its EU host, so case titles stay in the region it chose.
+EVENTS_API = {
+    "us": "https://events.pagerduty.com/v2/enqueue",
+    "eu": "https://events.eu.pagerduty.com/v2/enqueue",
+}
+
+
+def events_api(creds: Credentials) -> str:
+    """Where to post: the credential's optional `region`, us unless it says eu."""
+    region = str(creds.settings.get("region") or creds.secret.get("region") or "us").lower()
+    if region not in EVENTS_API:
+        raise ConfigError(f"notify: region is us or eu, not {region!r}")
+    return EVENTS_API[region]
 
 
 class PageOnCall(BaseAction):
@@ -45,7 +58,7 @@ class PageOnCall(BaseAction):
         }
         client = self.client({"Content-Type": "application/json"}, http)
         try:
-            resp = client.post(EVENTS_API, json=payload)
+            resp = client.post(events_api(creds), json=payload)
             resp.raise_for_status()
             body = resp.json()
         except httpx.HTTPError as exc:
@@ -66,7 +79,7 @@ class PageOnCall(BaseAction):
         (routing_key,) = creds.require("routing_key")
         client = self.client({"Content-Type": "application/json"}, http)
         client.post(
-            EVENTS_API,
+            events_api(creds),
             json={
                 "routing_key": routing_key,
                 "event_action": "resolve",

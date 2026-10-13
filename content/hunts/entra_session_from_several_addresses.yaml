@@ -16,8 +16,7 @@ logsource:
 window: 1d
 cadence_days: 1
 detection:
-  # Sign-ins only: an audit or a risk detection carries a correlation id in
-  # the same column.
+  # Sign-ins only: the addresses are where the session was used.
   selection:
     class_uid: 3002
     actor.session.uid|exists: true

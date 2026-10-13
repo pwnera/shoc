@@ -1,0 +1,15 @@
+[
+  {
+    "uuid": "hunt-okta-digitalocean",
+    "eventType": "user.session.start",
+    "displayMessage": "User login to Okta",
+    "outcome": { "result": "SUCCESS" },
+    "actor": { "alternateId": "jane@example.com", "displayName": "Jane", "type": "User" },
+    "client": {
+      "ipAddress": "203.0.113.230",
+      "userAgent": { "rawUserAgent": "python-requests/2.32.3" },
+      "geographicalContext": { "country": "Netherlands", "city": "Amsterdam" }
+    },
+    "securityContext": { "asNumber": 14061, "asOrg": "digitalocean llc", "isProxy": false }
+  }
+]

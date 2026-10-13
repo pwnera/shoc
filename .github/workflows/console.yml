@@ -2,10 +2,10 @@ name: console
 
 on:
   pull_request:
-    paths: ["console/**", ".github/workflows/console.yml"]
+    paths: ["console/**", "contract/v1.json", ".github/workflows/console.yml"]
   push:
     branches: [main]
-    paths: ["console/**", ".github/workflows/console.yml"]
+    paths: ["console/**", "contract/v1.json", ".github/workflows/console.yml"]
 
 permissions:
   contents: read
@@ -28,7 +28,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: console/package-lock.json
-      - run: npm ci || npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - name: lint
         run: npm run lint
       - name: types and build

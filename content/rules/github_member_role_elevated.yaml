@@ -6,8 +6,8 @@ description: >
   ordinary hires and demotions do not.
 status: stable
 date: 2026-09-24
-modified: 2026-10-02
-severity: high
+modified: 2026-10-12
+severity: medium
 confidence: 0.6
 attack: [T1098, T1098.003]
 logsource:

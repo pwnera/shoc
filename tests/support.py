@@ -26,13 +26,16 @@ __all__ = [
     "expand",
     "fixture_rows",
     "fixture_source",
+    "live_tenants",
     "load_fixture",
     "malicious_case",
 ]
 
 
-def malicious_case(conn: Any, tenant_id: str, scenario: str, store: Any = None) -> str:
-    """Replay an eval scenario and rule its first case malicious, with citations."""
+def malicious_case(conn: Any, tenant_id: str, scenario: str, store: Any) -> str:
+    """Replay an eval scenario into the store under test and rule its first case
+    malicious, with citations. Without the store, replay would open the backend
+    SHOC_BACKEND names, not the one the test is parametrised over."""
     from evals.run import SCENARIOS, replay
     from shoc.cases import engine
     from shoc.db.pool import fetch_one
@@ -56,7 +59,9 @@ def a_step_that_waits(monkeypatch: Any) -> str:
     """Install a playbook whose last step must wait for a human, and return its id.
 
     The shipped playbooks keep their human steps optional, so a page never waits
-    behind one; the runner's waiting is exercised on this one instead.
+    behind one; the runner's waiting is exercised on this one instead. Its steps
+    read the push-fatigue finding's user: `entity.user` is every account the
+    spray tried, and names the first of them (RFC 0026).
     """
     from shoc.cases import playbooks
 
@@ -69,7 +74,7 @@ def a_step_that_waits(monkeypatch: Any) -> str:
                 {
                     "name": "revoke the user's sessions",
                     "action": "okta.revoke_sessions",
-                    "params": {"user": "{{ entity.user }}"},
+                    "params": {"user": "{{ rule.okta_mfa_push_fatigue.user }}"},
                 },
                 {
                     "name": "page the on-call engineer",
@@ -79,7 +84,7 @@ def a_step_that_waits(monkeypatch: Any) -> str:
                 {
                     "name": "suspend the account",
                     "action": "okta.suspend_user",
-                    "params": {"user": "{{ entity.user }}"},
+                    "params": {"user": "{{ rule.okta_mfa_push_fatigue.user }}"},
                 },
             ],
         }
@@ -109,7 +114,11 @@ def fixture_source(rule: Any) -> str:
 def fixture_rows(
     records: list[dict[str, Any]], source: str, tenant_id: str, now: Any
 ) -> list[dict[str, Any]]:
-    """Expand and map fixture records, each through its own `_source` when it names one."""
+    """Expand and map fixture records, each through its own `_source` when it names one.
+
+    A record maps to every row it holds, as ingest stores it: each event of a
+    Workspace activity is a row of its own (ING-3).
+    """
     from shoc.ingest import ocsf
 
     rows: list[dict[str, Any]] = []
@@ -120,12 +129,37 @@ def fixture_rows(
             if r.get(SOURCE_KEY, source) == name
         ]
         mapping = ocsf.load_mapping(name)
-        rows += [mapping.map_record(r, tenant_id) for r in expand(group, name, now)]
+        rows += [row for r in expand(group, name, now) for row in mapping.map_records(r, tenant_id)]
     return rows
 
 
 def dsn() -> str:
     return os.environ.get("SHOC_DSN", "")
+
+
+# A test session's tenant and an eval run's; SHOC_TEST_TENANT names a fixed one.
+TEST_TENANTS = ("test", "eval")
+
+
+def live_tenants(conn: Any) -> list[str]:
+    """Tenants a deployment uses: not a test or eval run's, and holding a
+    configured source or a finding. `shoc migrate` alone registers an empty one.
+    The worker tests empty the shared queue, so a database with one is no
+    place for the suite."""
+    from shoc.db.pool import fetch_all, fetch_one
+
+    migrated = fetch_one(conn, "SELECT to_regclass('shoc.tenants') IS NOT NULL AS ok")
+    if not (migrated and migrated["ok"]):
+        return []
+    used = fetch_all(
+        conn,
+        """SELECT tenant_id FROM shoc.tenants t
+           WHERE EXISTS (SELECT 1 FROM shoc.connector_config c WHERE c.tenant_id = t.tenant_id)
+              OR EXISTS (SELECT 1 FROM shoc.findings f WHERE f.tenant_id = t.tenant_id)""",
+    )
+    fixed = os.environ.get("SHOC_TEST_TENANT")
+    ours = (*TEST_TENANTS, fixed) if fixed else TEST_TENANTS
+    return sorted(r["tenant_id"] for r in used if not r["tenant_id"].startswith(ours))
 
 
 def audit_seq(conn: Any, tenant_id: str) -> int:

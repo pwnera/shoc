@@ -144,6 +144,14 @@ export const recentQueries = (): string[] => read<string[]>(RECENT, []).filter((
 export const remember = (q: string) => {
   if (q.trim()) write(RECENT, [q.trim(), ...recentQueries().filter((x) => x !== q.trim())].slice(0, 10));
 };
+/** Forget the list: on Log out, or when someone else signs in on this browser (`lib/chat.ts`). */
+export const forgetRecentQueries = () => {
+  try {
+    localStorage.removeItem(RECENT);
+  } catch {
+    /* storage off: nothing was kept */
+  }
+};
 
 export const savedPins = (fallback: string[]): string[] => {
   const saved = read<string[]>(PINS, fallback);

@@ -20,8 +20,11 @@ type Conn = psycopg.Connection[DictRow]
 _local = threading.local()
 
 # Every session this process opens is named after it, so a job whose worker has
-# no session left can be put back at once (`jobs.requeue_stale`).
-PROCESS = f"{socket.gethostname()}:{os.getpid()}"
+# no session left can be put back at once (`jobs.requeue_stale`). A restarted
+# container keeps its hostname and runs shoc as PID 1 again, so the random part
+# keeps the new process from passing for the one that died. Postgres cuts an
+# application_name at 63 bytes, hence the short hostname.
+PROCESS = f"{socket.gethostname()[:40]}:{os.getpid()}:{os.urandom(4).hex()}"
 
 
 def q(text: str) -> LiteralString:
@@ -35,6 +38,28 @@ def q(text: str) -> LiteralString:
     return cast(LiteralString, text)
 
 
+def limit(conn: Conn, cfg: Config) -> Conn:
+    """Set the session limits of every serve and worker connection (data-14).
+
+    Without them a query queued behind a migration's ALTER, or behind a
+    transaction left open, waited until the watchdog killed the whole worker
+    half an hour later. A lock wait gives up after 10 s and fails its job or
+    request. A transaction left idle is ended after 5 minutes, which still
+    covers a vendor check or a mail sent inside an audited one. Migrations
+    connect as the owner and take none of these. Set after connecting, not as
+    the libpq `options` parameter, which would replace any `options` in the DSN
+    and which PgBouncer refuses.
+    """
+    execute(
+        conn,
+        """SELECT set_config('statement_timeout', %s, false),
+                  set_config('lock_timeout', '10s', false),
+                  set_config('idle_in_transaction_session_timeout', '5min', false)""",
+        (str(cfg.statement_timeout_seconds * 1000),),
+    )
+    return conn
+
+
 def connect(config: Config | None = None) -> Conn:
     """Return this thread's connection, opening it on first use."""
     cfg = config or Config.load()
@@ -43,8 +68,11 @@ def connect(config: Config | None = None) -> Conn:
         return conn
     if not cfg.dsn:
         raise ConfigError("SHOC_DSN is not set")
-    conn = psycopg.Connection[DictRow].connect(
-        cfg.dsn, row_factory=dict_row, autocommit=True, application_name=PROCESS
+    conn = limit(
+        psycopg.Connection[DictRow].connect(
+            cfg.dsn, row_factory=dict_row, autocommit=True, application_name=PROCESS
+        ),
+        cfg,
     )
     _local.conn = conn
     return conn
@@ -77,8 +105,11 @@ def connect_readonly(config: Config | None = None) -> Conn | None:
         return None
     conn = getattr(_local, "readonly", None)
     if conn is None or conn.closed:
-        conn = psycopg.Connection[DictRow].connect(
-            cfg.readonly_dsn, row_factory=dict_row, autocommit=True, application_name=PROCESS
+        conn = limit(
+            psycopg.Connection[DictRow].connect(
+                cfg.readonly_dsn, row_factory=dict_row, autocommit=True, application_name=PROCESS
+            ),
+            cfg,
         )
         _local.readonly = conn
     return conn

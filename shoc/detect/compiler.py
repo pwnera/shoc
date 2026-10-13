@@ -52,6 +52,9 @@ EVENTS = f"{layout.EVENTS_TABLE} e"
 # A first-seen anti-join must start from an indexed column on Postgres
 # (`shoc/store/postgres.py`), or each candidate event scans the whole lookback.
 INDEXED = ("actor_user_name", "api_operation", "src_endpoint_ip")
+# An event a hunt's first-seen history counts as use. A failure, a challenge
+# or a step whose outcome is unknown got nobody in (DET-8).
+USED = "LOWER(COALESCE(status, '')) NOT IN ('failure', 'other', 'unknown')"
 
 
 @dataclass
@@ -331,13 +334,20 @@ def compile_condition(condition: str, blocks: dict[str, str], rule_id: str) -> s
 # has no sliding-window meaning, so it is refused at load time.
 _COUNT = re.compile(r"^\s*(>=|>)\s*(\d+)\s*$")
 
-# Entity columns travel with every selected row so a case can correlate on them.
+# Entity columns travel with every selected row so a case can correlate on them,
+# with what `engine.entities_of` reads to type them: the product (a session id is
+# not a key) and a finding's class with its remote peer. A device name is left
+# out: identity sources name the user's device ("iPhone" on iOS 16 and later),
+# and two people's sign-ins on one would be one case. The device id links.
 EVIDENCE_COLUMNS: tuple[str, ...] = (
     "event_uid",
     "time",
+    "metadata_product",
+    "class_uid",
     "actor_user_name",
     "actor_session_uid",
     "src_endpoint_ip",
+    "dst_endpoint_ip",
     "resource_uid",
     "cloud_account_uid",
     "device_uid",
@@ -596,6 +606,9 @@ class CompiledPack:
     select_sql: str = ""
     baseline: str = "none"
     group_columns: list[str] = field(default_factory=list)
+    # The products and accounts the pack reads, bound by `params`, for a check
+    # that must stay inside them (an older event that explains a tuple).
+    population: str = "TRUE"
 
 
 def compile_pack(pack: Any, limit: int = 500, accounts: list[str] | None = None) -> CompiledPack:
@@ -630,7 +643,11 @@ def compile_pack(pack: Any, limit: int = 500, accounts: list[str] | None = None)
     full_where = f"{scope} AND {population} AND {where}"
 
     out = CompiledPack(
-        pack_id=pack.id, where=full_where, params=params.values, baseline=pack.baseline.kind
+        pack_id=pack.id,
+        where=full_where,
+        params=params.values,
+        baseline=pack.baseline.kind,
+        population=population,
     )
     # In ingestion order, so a run that stops at its limit can say up to where
     # it read, and the next run starts there instead of past rows nobody saw.
@@ -666,14 +683,15 @@ def _first_seen_sql(
     "This identity has never called this API before" is the question, and the
     answer is a plain anti-join against the same table. The history is all of
     the products' activity, not the pack's selection: "an address the user has
-    never used" means for anything. A failed attempt is not use, so it never
-    makes a tuple familiar: a denied call or a sprayed password from the
-    attacker's address would otherwise silence what came after it.
+    never used" means for anything. An attempt that got nobody in is not use,
+    so it never makes a tuple familiar: a denied call, a sprayed password or an
+    MFA challenge nobody passed from the attacker's address would otherwise
+    silence what came after it (`USED`).
     """
     cols = [_column(f, pack.id) for f in pack.baseline.first_seen]
     history = (
         "h.time >= :baseline_start AND h.ingested_at < :ingested_from "
-        f"AND {_qualify(population, 'h')} AND LOWER(COALESCE(h.status, '')) <> 'failure'"
+        f"AND {_qualify(population, 'h')} AND {_qualify(USED, 'h')}"
     )
     return (
         f"SELECT {_select(selected, 'e')} FROM {EVENTS} "
@@ -686,23 +704,40 @@ def _rare_sql(pack: Any, population: str, where: str, groups: dict[str, str], li
     """Groupings that few principals share over the whole lookback, and that
     occurred in the window. Counting principals inside one day's window made
     every operation one person did today look rare. `seen_by_at_least` asks the
-    opposite: one session seen from several addresses."""
+    opposite: one session seen from several addresses.
+
+    Each pivot the grouping does not fix comes back as its lowest value and,
+    under `<alias>_max`, its highest: equal when one host or user did it, so the
+    finding can name them, and the two countries of a two-country day. The
+    cited event is one ingested in the window. The rarest come first, so a
+    limit drops the groupings a hunt is least interested in.
+    """
     among = _column(pack.baseline.rare_among, pack.id)
     cols = ", ".join(groups.values())
+    spread: dict[str, str] = {}
+    for name in (*pack.pivot, pack.baseline.rare_among):
+        expr, alias = layout.column_for(name), layout.alias_for(name)
+        if expr and alias and alias not in groups:
+            spread.setdefault(alias, expr)
+    lows = "".join(f"MIN({e}) AS {a}, MAX({e}) AS {a}_max, " for a, e in spread.items())
     having = []
     if pack.baseline.seen_by_fewer_than:
         having.append(f"COUNT(DISTINCT {among}) < {int(pack.baseline.seen_by_fewer_than)}")
     if pack.baseline.seen_by_at_least:
         having.append(f"COUNT(DISTINCT {among}) >= {int(pack.baseline.seen_by_at_least)}")
+    having.append("MAX(ingested_at) >= :ingested_from")
+    if pack.baseline.new_only:
+        having.append("MIN(ingested_at) >= :ingested_from")
     return (
-        f"SELECT {_select(groups)}, COUNT(*) AS event_count, "
-        f"COUNT(DISTINCT {among}) AS principals, "
-        f"MIN(time) AS first_seen, MAX(time) AS last_seen, MAX(event_uid) AS event_uid "
+        f"SELECT {_select(groups)}, {lows}COUNT(*) AS event_count, "
+        f"COUNT(DISTINCT {among}) AS principals, MIN(time) AS first_seen, "
+        "MAX(time) AS last_seen, "
+        "MAX(CASE WHEN ingested_at >= :ingested_from THEN event_uid END) AS event_uid "
         f"FROM {layout.EVENTS_TABLE} "
         f"WHERE tenant_id = :tenant_id AND time >= :baseline_start "
         f"AND ingested_at < :ingested_to AND {population} AND {where} GROUP BY {cols} "
-        f"HAVING {' AND '.join(having)} AND MAX(ingested_at) >= :ingested_from "
-        f"ORDER BY COUNT(*) DESC LIMIT {int(limit)}"
+        f"HAVING {' AND '.join(having)} "
+        f"ORDER BY COUNT(*), MIN(time) LIMIT {int(limit)}"
     )
 
 

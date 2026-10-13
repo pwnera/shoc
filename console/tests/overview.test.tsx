@@ -73,10 +73,35 @@ function finding(uid: string, over: Partial<Finding> = {}): Finding {
 
 type Answers = Record<string, unknown>;
 
+function source(name: string, over: Record<string, unknown> = {}) {
+  return {
+    source: name,
+    enabled: true,
+    settings: {},
+    interval_seconds: 300,
+    has_secret: true,
+    last_run_at: at(-hour),
+    last_ok_at: at(-hour),
+    last_error: null,
+    events_seen: 5,
+    ...over,
+  };
+}
+
+const sources = (...configured: unknown[]) => ({
+  configured,
+  available: [],
+  push_only: [],
+  also_push: [],
+  mappings: [],
+  needs: {},
+  onboarding: [],
+});
+
 const BASE: Answers = {
   "action.list": { rows: [], count: 0, waiting_for_approval: 0 },
   "case.list": { rows: [], count: 0 },
-  "source.list": { configured: [], available: [], push_only: [], also_push: [], mappings: [], needs: {}, onboarding: [] },
+  "source.list": sources(source("okta")),
   "ops.alerts": { alerts: [], count: 0 },
   "health.status": { ok: true, store: { ok: true }, jobs: { overdue_schedules: [] } },
   "finding.list": { rows: [], count: 0 },
@@ -167,6 +192,45 @@ describe("the Overview heading", () => {
     await waitFor(() => expect(heading()).toHaveTextContent("Crew down · nothing needs you"));
   });
 
+  it("reads Nothing connected, never an all clear, while no source is configured", async () => {
+    serve({ "source.list": sources() });
+    show();
+    expect(await screen.findByRole("link", { name: "Nothing connected" })).toHaveAttribute("href", "/connections");
+    await waitFor(() => expect(heading()).toHaveTextContent("Nothing connected · nothing needs you"));
+    expect(heading().firstElementChild).toHaveAttribute("data-tone", "bad");
+    expect(screen.getByText("0 of 0")).toHaveAttribute("data-tone", "bad");
+  });
+
+  it("reads Sources down when none delivers, warn while none fails, and counts a paused one then", async () => {
+    serve({ "source.list": sources(source("okta", { enabled: false }), source("github", { has_secret: false })) });
+    show();
+    expect(await screen.findByRole("link", { name: "Sources down" })).toBeInTheDocument();
+    expect(heading().firstElementChild).toHaveAttribute("data-tone", "warn");
+  });
+
+  it("keeps a paused source out of trouble while another delivers", async () => {
+    serve({ "source.list": sources(source("okta"), source("github", { enabled: false })) });
+    show();
+    expect(await screen.findByRole("heading", { level: 1, name: /Nothing needs you/ })).toBeInTheDocument();
+    expect(screen.getByText("1 of 2")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sources down" })).toBeNull();
+  });
+
+  it("says response runs as a dry run, in warn, linking to Autonomy", async () => {
+    serve({ "policy.show": { defaults: { dry_run: true }, actions: {}, available_actions: [], action_params: {} } });
+    show();
+    const fact = await screen.findByText("dry run");
+    expect(fact.closest("a")).toHaveAttribute("href", "/response?tab=autonomy");
+    expect(fact).toHaveAttribute("data-tone", "warn");
+  });
+
+  it("names no last visit it never saw", async () => {
+    serve({});
+    show();
+    expect(await screen.findByRole("button", { name: /last 24 hours/ })).toBeInTheDocument();
+    expect(screen.queryByText(/Last visit/)).toBeNull();
+  });
+
   it("counts the decisions and draws an approval with its deadline and fallback, not its facts", async () => {
     const proposals = [
       action("ACT-1", { decide_by: at(2 * hour), fallback: "okta.revoke_sessions" }),
@@ -219,6 +283,27 @@ describe("since you left", () => {
     expect(byId.paged).toMatchObject({ n: 1, to: `/response?tab=pages&since=${encodeURIComponent(since)}` });
     expect(byId.expired).toMatchObject({ n: 1 });
     expect(byId.undone).toMatchObject({ n: 0 });
+  });
+
+  it("counts failed and blocked responses first, in bad, and leaves pages and older ones out", () => {
+    const actions = [
+      action("F1", { state: "failed", executed_at: at(-hour) }),
+      action("B1", { state: "blocked", updated_at: at(-hour) }),
+      action("P1", { state: "failed", type: "notify.page", created_at: at(-hour) }),
+      action("F0", { state: "failed", executed_at: at(-3 * day) }),
+    ];
+    const counters = actionCounters(actions, since, 500);
+    expect(counters[0]).toMatchObject({
+      id: "failed",
+      n: 2,
+      tone: "bad",
+      to: `/response?since=${encodeURIComponent(since)}&state=failed`,
+    });
+    expect(handoverMarks({ since, actions }).map((m) => [m.key, m.tone, m.label.split(" ").pop()])).toEqual([
+      ["a:F1", "bad", "failed"],
+      ["a:B1", "bad", "blocked"],
+      ["a:P1", "neutral", "paged"],
+    ]);
   });
 
   it("says 200+ when the capped log stops short of the window", () => {

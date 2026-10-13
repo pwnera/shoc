@@ -50,6 +50,25 @@ describe("attack graph", () => {
     expect(edges.find((e) => e.src === "user:ci-bot")).toMatchObject({ weight: 2 });
     expect(edges.find((e) => e.dst.startsWith("resource:"))?.operations).toEqual(["GetObject"]);
   });
+
+  it("keys a sign-in session in the key lane as session:, and rings it for a finding on it", () => {
+    const guid = "102d3b1c-5a4e-4f0b-9c1d-7e8f9a0b1c2d";
+    const key = "AKIAIOSFODNN7EXAMPLE";
+    const signIn = event("E3", "2026-09-01T11:00:00Z", {
+      actor_user_name: "jane",
+      actor_session_uid: guid,
+    });
+    const aws = event("E4", "2026-09-01T11:01:00Z", { actor_session_uid: key });
+    type Named = NonNullable<Parameters<typeof attackGraph>[1]>[number];
+    const finding = { severity: "high", entity_key: `session:${guid}` } as Named;
+    const { nodes } = attackGraph([signIn, aws], [finding]);
+    expect(nodes.find((n) => n.label === guid)).toMatchObject({
+      id: `session:${guid}`,
+      kind: "key",
+      severity: "high",
+    });
+    expect(nodes.find((n) => n.label === key)?.id).toBe(`key:${key}`);
+  });
 });
 
 describe("timeline", () => {

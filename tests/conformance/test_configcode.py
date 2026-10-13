@@ -214,6 +214,31 @@ def _head(ctx):
     return row["seq"] if row else 0
 
 
+def test_a_failed_apply_commits_nothing_and_leaves_one_error_row(ctx, config, clean, monkeypatch):
+    """config.apply and the audited calls it makes commit together or not at all (SEC-1)."""
+    from shoc.capabilities import registry
+
+    real = registry.call
+
+    def failing(name, ctx_, payload):
+        if name == "intel.configure":  # after source.configure has written okta
+            raise RuntimeError("a message that may name the database")
+        return real(name, ctx_, payload)
+
+    monkeypatch.setattr(registry, "call", failing)
+    since = _head(ctx)
+    with pytest.raises(RuntimeError):
+        call("config.apply", ctx, {"config": CONFIG})
+    left = fetch_one(
+        ctx.db,
+        "SELECT count(*) AS n FROM shoc.connector_config WHERE tenant_id = %s",
+        (config.tenant_id,),
+    )
+    assert left and left["n"] == 0, "the source written before the failure is rolled back"
+    rows = [(r["capability"], r["error"]) for r in _audit(ctx, since)]
+    assert rows == [("config.apply", "RuntimeError")]
+
+
 def test_apply_runs_each_change_as_the_caller(ctx, config, clean):
     """config:write alone cannot reach what sources:write and intel:configure guard."""
     narrow = _as(ctx, Caller(kind="human", id="dee", scopes=("config:read", "config:write")))
@@ -259,3 +284,118 @@ def test_secret_env_names_only_shoc_secret_variables(ctx, config, clean, monkeyp
 def test_the_server_reads_no_path_a_caller_names(ctx, config, clean):
     with pytest.raises(ValidationError, match="unknown field"):
         call("config.plan", ctx, {"path": "/etc/passwd"})
+
+
+def test_a_rotated_credential_is_an_update_and_apply_seals_it(ctx, config, clean, monkeypatch):
+    """Only SHOC_SECRET_* changed: apply answered 'nothing to do' and kept the expired one."""
+    from shoc.ingest.connectors.base import read_config
+
+    call("config.apply", ctx, {"config": CONFIG})
+    monkeypatch.setenv("SHOC_SECRET_TEST_OKTA_TOKEN", "01-rotated")
+    plan = call("config.plan", ctx, {"config": CONFIG})
+    [okta] = [c for c in plan.data.changes if c["target"] == "okta"]
+    assert (okta["action"], okta["detail"]) == ("update", "credential differs")
+    assert "00-token" not in plan.data.rendered and "01-rotated" not in plan.data.rendered
+    call("config.apply", ctx, {"config": CONFIG})
+    _, secret, _ = read_config(ctx.db, config.tenant_id, "okta", config.master_key)
+    assert secret == {"api_token": "01-rotated"}
+    assert call("config.plan", ctx, {"config": CONFIG}).data.to_change == 0
+
+
+def test_a_bad_label_is_refused_by_the_plan_before_anything_is_applied(ctx, config, clean):
+    """source.configure refused `okta:Prod` partway through an apply."""
+    prod = {**CONFIG["sources"][0], "source": "okta:Prod"}
+    bad = {**CONFIG, "sources": [*CONFIG["sources"], prod]}
+    plan = call("config.plan", ctx, {"config": bad})
+    [refused] = [c for c in plan.data.changes if c["action"] == "invalid"]
+    assert refused["target"] == "okta:Prod" and "connector:label" in refused["detail"]
+    with pytest.raises(ValidationError, match="nothing was applied"):
+        call("config.apply", ctx, {"config": bad})
+    left = fetch_one(
+        ctx.db,
+        "SELECT count(*) AS n FROM shoc.connector_config WHERE tenant_id=%s",
+        (config.tenant_id,),
+    )
+    assert left and left["n"] == 0
+
+
+def test_the_file_sets_slack_readers_and_workspace(ctx, config, clean, monkeypatch):
+    """Without them, apply left every non-approver locked out of /shoc."""
+    from shoc.api.slack import load_app
+
+    monkeypatch.setenv("SHOC_SECRET_TEST_SLACK_BOT", "xoxb-test")
+    monkeypatch.setenv("SHOC_SECRET_TEST_SLACK_SIGNING", "signing-test")
+    slack = {
+        "channel": "C0123456789",
+        "team_id": "T0123456789",
+        "bot_token_env": "SHOC_SECRET_TEST_SLACK_BOT",
+        "signing_secret_env": "SHOC_SECRET_TEST_SLACK_SIGNING",
+        "approvers": {"U0123ALICE": "alice"},
+        "readers": {"U0789DEE": "dee"},
+    }
+    call("config.apply", ctx, {"config": {"version": 1, "slack": slack}})
+    app = load_app(ctx.db, config.tenant_id, config.master_key)
+    assert (app.readers, app.team_id) == ({"U0789DEE": "dee"}, "T0123456789")
+    assert call("config.plan", ctx, {"config": {"version": 1, "slack": slack}}).data.to_change == 0
+
+    monkeypatch.setenv("SHOC_SECRET_TEST_SLACK_BOT", "xoxb-rotated")
+    changed = {**slack, "readers": {}}
+    plan = call("config.plan", ctx, {"config": {"version": 1, "slack": changed}})
+    [change] = [c for c in plan.data.changes if c["kind"] == "slack"]
+    assert change["action"] == "update"
+    assert "readers differ" in change["detail"] and "credential differs" in change["detail"]
+    call("config.apply", ctx, {"config": {"version": 1, "slack": changed}})
+    app = load_app(ctx.db, config.tenant_id, config.master_key)
+    assert app.readers == {} and app.bot_token == "xoxb-rotated"
+
+    kept = {k: v for k, v in slack.items() if k != "readers"}
+    plan = call("config.plan", ctx, {"config": {"version": 1, "slack": kept}})
+    assert "readers" not in plan.data.rendered, "a file without readers leaves them alone"
+
+
+def test_a_rotated_feed_key_is_an_update_and_apply_seals_it(ctx, config, clean, monkeypatch):
+    """Intel feed secrets rotate the way source credentials do (API-4)."""
+    from shoc.db.secrets import open_secret
+
+    monkeypatch.setenv("SHOC_SECRET_TEST_ABUSE_KEY", "00-key")
+    feed = {"feed": "abuse_ch_urlhaus", "secret_env": {"auth_key": "SHOC_SECRET_TEST_ABUSE_KEY"}}
+    keyed = {"version": 1, "intel_feeds": [feed]}
+    call("config.apply", ctx, {"config": keyed})
+    assert call("config.plan", ctx, {"config": keyed}).data.to_change == 0
+
+    monkeypatch.setenv("SHOC_SECRET_TEST_ABUSE_KEY", "01-rotated")
+    plan = call("config.plan", ctx, {"config": keyed})
+    [change] = [c for c in plan.data.changes if c["kind"] == "intel_feed"]
+    assert (change["action"], change["detail"]) == ("update", "credential differs")
+    assert "00-key" not in plan.data.rendered and "01-rotated" not in plan.data.rendered
+    call("config.apply", ctx, {"config": keyed})
+    row = fetch_one(
+        ctx.db,
+        "SELECT secret FROM shoc.intel_feeds WHERE tenant_id = %s AND feed = %s",
+        (config.tenant_id, "abuse_ch_urlhaus"),
+    )
+    assert row
+    sealed = open_secret(
+        config.master_key, row["secret"], config.tenant_id, "intel_feeds", "abuse_ch_urlhaus"
+    )
+    assert sealed == {"auth_key": "01-rotated"}
+
+
+def test_a_stored_credential_that_will_not_open_is_sealed_again(ctx, config, clean):
+    """One unopenable secret aborted the whole plan, so apply could not recover it."""
+    from shoc.db.secrets import seal
+    from shoc.ingest.connectors.base import read_config
+
+    call("config.apply", ctx, {"config": CONFIG})
+    # Sealed for another row, so it does not open for okta's.
+    other = seal(config.master_key, {"api_token": "x"}, config.tenant_id, "connector_config", "x")
+    ctx.db.execute(
+        "UPDATE shoc.connector_config SET secret = %s WHERE tenant_id = %s AND source = 'okta'",
+        (other, config.tenant_id),
+    )
+    plan = call("config.plan", ctx, {"config": CONFIG})
+    [okta] = [c for c in plan.data.changes if c["target"] == "okta"]
+    assert (okta["action"], okta["detail"]) == ("update", "stored credential cannot be opened")
+    call("config.apply", ctx, {"config": CONFIG})
+    _, secret, _ = read_config(ctx.db, config.tenant_id, "okta", config.master_key)
+    assert secret == {"api_token": "00-token"}

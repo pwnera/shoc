@@ -1,0 +1,43 @@
+id: google_sign_in_after_prompt_denial
+title: Google sign-in succeeded minutes after a Google prompt was refused
+description: >
+  A sign-in failed at a Google prompt on the user's phone and, within fifteen
+  minutes, a sign-in on the same account succeeded. Whoever started the first
+  one had the password; the refusal says the user did not expect it, and the
+  success says somebody got through, usually by sending prompts until one was
+  accepted. A wrong code from an authenticator app or a text message is left
+  out, as is a prompt that failed for any other reason than the second factor.
+status: experimental
+date: 2026-10-12
+severity: high
+confidence: 0.6
+attack: [T1621, T1078.004]
+logsource:
+  product: google
+  service: reports
+detection:
+  prompt_refused:
+    api.service.name: login
+    api.operation: login_failure
+    unmapped.params.login_challenge_method|contains: google_prompt
+    unmapped.params.login_failure_type: login_failure_invalid_second_factor
+  signed_in:
+    api.service.name: login
+    api.operation: login_success
+  sequence:
+    by: [actor.user.name]
+    first: prompt_refused
+    then: signed_in
+    within: 15m
+entity: actor.user.name
+fields: [actor.user.name, src_endpoint.ip, src_endpoint.asn, unmapped.params.login_challenge_method]
+sources:
+  - name: Elastic
+    title: Potentially Successful Okta MFA Bombing via Push Notifications
+    url: https://www.elastic.co/docs/reference/security/prebuilt-rules/rules/integrations/okta/credential_access_okta_potentially_successful_okta_bombing_via_push_notifications
+    license: Elastic-2.0
+    relation: inspired
+  - name: Google
+    title: Login audit activity events
+    url: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/login
+    relation: inspired

@@ -48,28 +48,39 @@ def test_the_targeting_scenarios_are_there():
 @pytest.mark.parametrize("name", TARGETED)
 def test_each_step_acts_on_what_its_findings_name(name, ctx, config, store, clean):
     expected, _ = load_scenario(SCENARIOS / name)
-    case = malicious_case(ctx.db, config.tenant_id, name)
+    case = malicious_case(ctx.db, config.tenant_id, name, store)
     kinds = _kinds(ctx.db, config.tenant_id, case)
     assert len(kinds.get("user", [])) >= 2, f"{name} must put two users on one case: {kinds}"
 
     for book, steps in expected["playbook_targets"].items():
         run = call("playbook.run", ctx, {"playbook_id": book, "case_uid": case, "dry_run": True})
-        by_name = {s["name"]: s for s in playbooks.steps_of(ctx.db, run.data.run_uid)}
+        rows = playbooks.steps_of(ctx.db, run.data.run_uid)
         for step, want in steps.items():
-            assert step in by_name, f"{book} has no step '{step}'"
-            uid = by_name[step]["action_uid"]
-            assert uid, f"{book} '{step}' proposed nothing: {by_name[step]['result']}"
-            action = fetch_one(
-                ctx.db, "SELECT params FROM shoc.actions WHERE action_uid = %s", (uid,)
+            # A target with several values is a step per value, named after it.
+            mine = [s for s in rows if s["name"] == step or s["name"].startswith(f"{step} (")]
+            assert mine, f"{book} has no step '{step}'"
+            acted = [
+                action["params"]
+                for row in mine
+                if row["action_uid"]
+                and (
+                    action := fetch_one(
+                        ctx.db,
+                        "SELECT params FROM shoc.actions WHERE action_uid = %s",
+                        (row["action_uid"],),
+                    )
+                )
+            ]
+            # Every value the step fanned out to is the one the fixture names: a
+            # step that also acts on the account a spray failed on is wrong.
+            assert acted and all(all(p.get(k) == v for k, v in want.items()) for p in acted), (
+                f"{book} '{step}' acted on {acted}: {[r['result'] for r in mine]}"
             )
-            assert action
-            for param, value in want.items():
-                assert action["params"][param] == value, f"{book} '{step}' {param}"
 
 
 def test_the_first_user_of_a_spray_case_is_not_the_one_who_signed_in(ctx, config, store, clean):
     """The case this RFC started from: `{{ entity.user }}` named adam, who never got in."""
-    case = malicious_case(ctx.db, config.tenant_id, "okta_spray_one_sign_in")
+    case = malicious_case(ctx.db, config.tenant_id, "okta_spray_one_sign_in", store)
     assert playbooks.entities_of_case(ctx.db, config.tenant_id, case)["user"] == "adam@example.com"
     rules, platforms = playbooks.scoped_entities(ctx.db, config.tenant_id, case)
     assert rules["okta_sign_in_after_attack_from_address"]["user"] == "mia@example.com"
@@ -77,7 +88,7 @@ def test_the_first_user_of_a_spray_case_is_not_the_one_who_signed_in(ctx, config
 
 
 def test_the_edr_device_is_not_the_first_device_on_the_case(ctx, config, store, clean):
-    endpoint = malicious_case(ctx.db, config.tenant_id, "endpoint_alert_two_users")
+    endpoint = malicious_case(ctx.db, config.tenant_id, "endpoint_alert_two_users", store)
     kinds = _kinds(ctx.db, config.tenant_id, endpoint)
     assert "file_hash" in kinds and "device" in kinds
     _rules, platforms = playbooks.scoped_entities(ctx.db, config.tenant_id, endpoint)
@@ -86,6 +97,26 @@ def test_the_edr_device_is_not_the_first_device_on_the_case(ctx, config, store, 
         "0b7e"
     )
     assert platforms["edr"]["device"] == "5e4482b45d134ae8bf4901cb52b65e88"
+
+
+def test_the_key_the_attacker_created_is_disabled_too(ctx, config, store, clean):
+    """It has not acted, so only CreateAccessKey's response names it (ir-6)."""
+    case = malicious_case(ctx.db, config.tenant_id, "leaked_aws_key", store)
+    run = call(
+        "playbook.run",
+        ctx,
+        {"playbook_id": "contain_leaked_cloud_key", "case_uid": case, "dry_run": True},
+    )
+    (step,) = [
+        s
+        for s in playbooks.steps_of(ctx.db, run.data.run_uid)
+        if s["name"].startswith("disable the key the attacker created")
+    ]
+    assert step["action_uid"], step["result"]
+    action = fetch_one(
+        ctx.db, "SELECT params FROM shoc.actions WHERE action_uid = %s", (step["action_uid"],)
+    )
+    assert action and action["params"]["access_key_id"] == "AKIAI44QH8DHBEXAMPLE"
 
 
 def test_a_step_reading_a_rule_its_playbook_does_not_answer_is_refused():

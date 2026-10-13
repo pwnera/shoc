@@ -55,12 +55,12 @@ steps:
     action: okta.revoke_sessions
     optional: true
     params:
-      user: "{{ entity.user }}"
+      user: "{{ platform.edr.user }}"
   - name: revoke the person's sessions in Entra ID
     action: entra.revoke_sessions
     optional: true
     params:
-      user: "{{ entity.user }}"
+      user: "{{ platform.edr.user }}"
   - name: page the on-call engineer
     action: notify.page
     params:
@@ -71,9 +71,9 @@ steps:
     action: okta.reset_password
     optional: true
     params:
-      user: "{{ entity.user }}"
+      user: "{{ platform.edr.user }}"
   - name: make the person's password stop working in Entra ID
     action: entra.reset_password
     optional: true
     params:
-      user: "{{ entity.user }}"
+      user: "{{ platform.edr.user }}"

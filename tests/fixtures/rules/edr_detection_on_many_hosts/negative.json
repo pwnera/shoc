@@ -310,5 +310,56 @@
       "name": "web-03",
       "ip": "192.0.2.13"
     }
+  },
+  {
+    "_source": "defender",
+    "id": "da-update-40",
+    "severity": "high",
+    "title": "Suspicious scheduled task created",
+    "category": "Execution",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "status": "inProgress",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-70.example.org",
+        "mdeDeviceId": "444444444444444444444444444444444444470"
+      }
+    ],
+    "_update": true
+  },
+  {
+    "_source": "defender",
+    "id": "da-update-41",
+    "severity": "high",
+    "title": "Suspicious scheduled task created",
+    "category": "Execution",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "status": "inProgress",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-71.example.org",
+        "mdeDeviceId": "444444444444444444444444444444444444471"
+      }
+    ],
+    "_update": true
+  },
+  {
+    "_source": "defender",
+    "id": "da-update-42",
+    "severity": "high",
+    "title": "Suspicious scheduled task created",
+    "category": "Execution",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "status": "inProgress",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-72.example.org",
+        "mdeDeviceId": "444444444444444444444444444444444444472"
+      }
+    ],
+    "_update": true
   }
 ]

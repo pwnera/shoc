@@ -32,6 +32,29 @@ def test_a_service_name_in_source_ip_does_not_land_in_the_ip_column():
     assert row["actor_invoked_by"] == "lambda.amazonaws.com"
 
 
+def test_the_key_create_access_key_made_is_its_resource():
+    """The backdoor key, not the caller's, is what a playbook disables next (ir-6)."""
+    row = _row(
+        eventName="CreateAccessKey",
+        eventSource="iam.amazonaws.com",
+        userIdentity={
+            "type": "IAMUser",
+            "userName": "deploy-ci",
+            "accessKeyId": "AKIAEXAMPLELEAKED01",
+        },
+        requestParameters={"userName": "support"},
+        responseElements={
+            "accessKey": {
+                "accessKeyId": "AKIAEXAMPLEBACKDOOR1",
+                "userName": "support",
+                "status": "Active",
+            }
+        },
+    )
+    assert row["resource_uid"] == "AKIAEXAMPLEBACKDOOR1"
+    assert row["actor_session_uid"] == "AKIAEXAMPLELEAKED01"
+
+
 def test_an_insight_is_a_detection_finding():
     row = _row(
         eventType="AwsCloudTrailInsight",

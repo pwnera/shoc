@@ -46,14 +46,22 @@ def uids(ctx, config, case):
     return list(row["event_uids"])[:3]
 
 
-def crew(uids: list[str], verdict: str) -> ScriptedClient:
+def crew(
+    uids: list[str], verdict: str, reads: str = "", shown: str = "supported"
+) -> ScriptedClient:
     return ScriptedClient(
         replies={
+            # First: the independent reads run under the Investigator's prompt.
+            "Read this case on your own": json.dumps(
+                {"reasoning": "The nightly backup job.", "verdict": reads or verdict}
+            ),
+            "You check claims": json.dumps({"checks": [{"claim": 0, "support": shown}]}),
             "You are Investigator": json.dumps(
                 {
                     "verdict": verdict,
                     "confidence": 0.8,
                     "reasoning": "The key is the nightly backup job, which moved hosts last week.",
+                    "claims": [{"says": "The backup job used the key.", "citations": uids}],
                     "severity": "low",
                     "severity_reason": "A known job, on a new host.",
                     "citations": uids,
@@ -214,10 +222,85 @@ def test_every_closure_leaves_a_record_of_where_it_went(ctx, store, config, case
 
 
 def test_a_suppression_that_has_run_out_stops_filtering(ctx, config, case):
-    routing.route(ctx.db, config.tenant_id, case, "benign_expected", summary="the backup job")
+    routing.route(
+        ctx.db, config.tenant_id, case, "benign_expected", summary="the backup job", closer="human"
+    )
     ctx.db.execute(
         "UPDATE shoc.suppressions SET expires_at = now() - interval '1 day' WHERE tenant_id = %s",
         (config.tenant_id,),
     )
     assert routing.expire_suppressions(ctx.db, config.tenant_id) >= 1
     assert routing.active_suppressions(ctx.db, config.tenant_id) == []
+
+
+# -- a benign close stands on the measured number (D77, RFC 0020) ----------
+def test_a_benign_verdict_the_checks_do_not_back_goes_to_a_person(ctx, store, config, case, uids):
+    """Both reads land on the attack side and no claim is shown: nothing closes or goes quiet."""
+    tenant = config.tenant_id
+    report = run_case(
+        ctx.db,
+        store,
+        tenant,
+        case["case_uid"],
+        client=crew(uids, "benign_expected", reads="malicious", shown="unsupported"),
+        config=config,
+    )
+    assert report.verdict == "needs_human"
+    assert [e["routed_to"] for e in report.routed] == ["human"]
+    row = engine.require(ctx.db, tenant, case["case_uid"])
+    assert row["state"] != "closed" and row["verdict"] == "needs_human"
+    assert not fetch_all(ctx.db, "SELECT 1 FROM shoc.suppressions WHERE tenant_id = %s", (tenant,))
+    assert not fetch_all(
+        ctx.db, "SELECT 1 FROM shoc.memory WHERE tenant_id = %s AND source = 'crew'", (tenant,)
+    ), "nothing is learnt from a close that did not happen"
+
+
+def test_a_crew_close_below_the_floor_quiets_nothing_and_a_persons_does(ctx, config, case):
+    low = {**case, "confidence": 0.2}
+    routing.route(ctx.db, config.tenant_id, low, "benign_expected", summary="the backup job")
+    assert routing.active_suppressions(ctx.db, config.tenant_id) == []
+    routing.route(
+        ctx.db, config.tenant_id, low, "benign_expected", summary="the backup job", closer="human"
+    )
+    assert routing.active_suppressions(ctx.db, config.tenant_id), "a person's close is theirs"
+
+
+def test_a_closure_taken_back_takes_its_note_in_memory_with_it(ctx, store, config, case, uids):
+    """And the weekly recheck of a closure is not shown that closure's own note (D77)."""
+    from shoc.agents.dossier import build_dossier
+
+    tenant, case_uid = config.tenant_id, case["case_uid"]
+    run_case(ctx.db, store, tenant, case_uid, client=crew(uids, "benign_expected"), config=config)
+    row = engine.require(ctx.db, tenant, case_uid)
+    assert row["state"] == "closed"
+    mark = routing.closure_mark(case_uid)
+    assert mark in build_dossier(ctx.db, store, tenant, row).text
+    assert mark not in build_dossier(ctx.db, store, tenant, row, exclude_case=case_uid).text
+    routing.undo_closure(ctx.db, tenant, case_uid, "reopened: a test")
+    assert mark not in build_dossier(ctx.db, store, tenant, row).text, "it expired with the close"
+
+
+def test_the_weekly_recheck_reads_the_least_certain_closure_first(
+    ctx, store, config, clean, monkeypatch
+):
+    from shoc.agents import recheck
+
+    tenant = config.tenant_id
+    for uid, confidence in (("CASE-sure", 0.9), ("CASE-unsure", 0.5)):
+        ctx.db.execute(
+            """INSERT INTO shoc.cases
+                   (case_uid, tenant_id, title, state, verdict, confidence, closed_at, closed_by)
+               VALUES (%s, %s, 'k', 'closed', 'benign_expected', %s, now(), 'crew')""",
+            (uid, tenant, confidence),
+        )
+    monkeypatch.setattr(recheck, "SAMPLE", 1)
+    client = ScriptedClient(
+        replies={
+            "Read this case on your own": json.dumps(
+                {"reasoning": "The backup job.", "verdict": "benign_expected"}
+            )
+        }
+    )
+    assert "read 1" in recheck.run(ctx.db, store, tenant, config, client=client)
+    assert recheck.agreed(ctx.db, tenant, "CASE-unsure")
+    assert not recheck.agreed(ctx.db, tenant, "CASE-sure")

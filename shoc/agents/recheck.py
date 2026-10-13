@@ -60,8 +60,9 @@ def run(conn: Conn, store: Any, tenant_id: str, config: Any, client: Any = None)
     if isinstance(client, NoLLM) or not getattr(client, "available", True):
         return "recheck: no model is configured, so nothing was read again"
     # A crew closure waiting to change a rule is read first: the Detection
-    # Engineer may not merge on it until this read agrees (D77). A person's
-    # closure is theirs and is read again only once a later case follows it.
+    # Engineer may not merge on it until this read agrees (D77). Then the
+    # closures the crew was least sure of. A person's closure is theirs and is
+    # read again only once a later case follows it.
     rows = fetch_all(
         conn,
         f"""SELECT * FROM shoc.cases c
@@ -73,12 +74,13 @@ def run(conn: Conn, store: Any, tenant_id: str, config: Any, client: Any = None)
                  WHERE n.tenant_id = c.tenant_id AND n.related_case_uid = c.case_uid
                    AND n.opened_at > c.closed_at))
              AND (c.closed_at > now() - interval '7 days' OR {_WAITING})
-           ORDER BY ({_WAITING}) DESC, random() LIMIT %s""",
+           ORDER BY ({_WAITING}) DESC, c.confidence ASC, random() LIMIT %s""",
         (tenant_id, SAMPLE),
     )
     read = reopened = 0
     for case in rows:
-        dossier = build_dossier(conn, store, tenant_id, case)
+        # Blind means without the closure's own note in memory, too.
+        dossier = build_dossier(conn, store, tenant_id, case, exclude_case=str(case["case_uid"]))
         verdicts, usage = checks.reads(client, dossier.text, 1, config, hint="strong")
         ops.charge(conn, tenant_id, usage)
         if not verdicts:  # the model could not be read; next week tries again

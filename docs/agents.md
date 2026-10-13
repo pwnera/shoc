@@ -15,7 +15,10 @@ openspace records the exchange rather than arranging it.
 
 Findings that share an entity (`key:AKIA…`, `user:deploy-ci`,
 `ip:203.0.113.55`) become one case: a leaked access key that triggers five rules
-is one case, because every finding names the same key, user and address.
+is one case, because every finding names the same key, user and address. A
+sign-in session (`actor.session.uid` where the product's mapping declares it a
+session, as Okta's, Entra's, Microsoft 365's and SentinelOne's do) is `session:`; `key:` stays for access keys
+and API key or token ids.
 With a model configured, Sentinel then reads every case a detection cycle
 touched (`shoc/agents/sentinel.py`). It may attach a finding to another open case
 when it names the link (a graph path, a shared indicator or report), split off
@@ -25,7 +28,9 @@ before Sentinel reads it, on exactly the rule and entity, and a person's close
 reaches the crew as a fact on the next case (D145). Each decision is stored on
 the finding (`evidence.sentinel`); Sentinel posts nothing in the openspace. An
 attach with no named link is not carried out. A case whose findings were all
-attached to another case is closed.
+attached to another case is closed, and names that case in `related_case_uid`.
+A close the crew did not make, by a person or by shoc itself, records its note
+as the case's `disposition_reason` when none is set.
 
 Cases move through NIST 800-61 states: `triage → analysis → containment →
 eradication → recovery → post_incident → closed`. Only the transitions in
@@ -120,6 +125,11 @@ Nobody is watching this tool most days, so severity is the whole difference
 between waking the one technical person in the company and handling it alone.
 The change is said in the openspace and published as `case.severity_changed`.
 
+The case's severity sets its display and its budget. What does not ask a model
+reads the higher of it and the worst severity among the case's findings: the
+Manager's pages, the unattended deadline and the second-expiry page (D165). A
+critical case the Investigator lowered to low still pages as critical.
+
 ## Budgets
 
 Every run of the crew on a case has a budget in tokens and wall time. Severity
@@ -154,13 +164,22 @@ case is routed to a person with what the crew found attached. A Challenger that
 did speak is always answered, whatever it rests on, so a verdict never stands
 over an unanswered objection.
 
+Within an hour of a run, a run the case sweep queued waits when nothing new
+arrived: more findings of rules the case already holds, or repeated injects from
+no person, do not count as new. A wait is not a failed crew attempt, so it adds
+nothing to the sweep's backoff. A person who asks for a run gets one.
+
 ## Nothing waits for a person
 
 Every case carries a **deadline derived from its severity**, enforced by the
 scheduler rather than by an agent: 1 hour for critical, 4 for high, 24 for medium
 and 72 below that (`shoc/cases/unattended.py`). On expiry the role holding the
 case is re-woken and must either close it or say what it is still waiting for,
-and **a `high` or `critical` case that expires twice pages**. A `needs_human`
+and **a `high` or `critical` case that expires twice pages**. One below `high`
+that expires twice is closed with the reason written into it, unless the crew
+tried and never read it, which holds it. While the model provider fails, every
+stalled case is held, and once it has failed for 6 hours the Manager sends one
+`llm` page that names the outage and stands for every case. A `needs_human`
 case is sent back after 6 hours at most. An L2 action waits four hours; see
 [`response.md`](response.md#when-nobody-approves).
 
@@ -201,10 +220,21 @@ parts, e.g. `Confidence 0.67: 2 of 3 independent read(s) reach the attack side;
 4 of 4 claim(s) are shown by the events they cite; the Investigator said 0.90.`
 Playbook triggers read the same number.
 
+The crew closes a case as `benign_expected` or `false_positive` only when the
+measured confidence is at least 0.5, more than half of the reads (the
+Investigator's own included) land on the benign side, and at least one claim was
+checked against its events. Otherwise shoc posts `Not closing as <verdict>:
+<reason>. A person decides.`, records `needs_human`, and suppresses and
+remembers nothing. The independent reads see only the case dossier: not the
+earlier discussion, people's messages or CTI's answer.
+
 Once a week, `case.recheck` reads up to five cases the crew closed as
-`benign_expected` or `false_positive` again, blind, on the strong model. A read
-on the attack side reopens the case and queues the crew; it takes no action and
-pages nobody.
+`benign_expected` or `false_positive` again, blind, on the strong model: the
+closures still waiting on it first, then the least confident. Its dossier leaves
+out the closure's own note in memory. A read on the attack side reopens the case
+and queues the crew; it takes no action and pages nobody. Undoing a closure (a
+reopen, or a verdict that turns malicious) also expires that closure's "closed
+as expected activity" memory note.
 
 ## Missing data is a coverage bug, not a stall
 
@@ -314,7 +344,11 @@ stored keeps the environment's value, and `--clear` drops the stored row.
 `llm.show` names the model in use and which fields were stored. A stored base
 URL must name a host in `SHOC_LLM_BASE_URL_ALLOWLIST`, which defaults to the
 host of `SHOC_LLM_BASE_URL` plus the Anthropic and OpenAI APIs, because
-whoever sets the endpoint receives every case's evidence.
+whoever sets the endpoint receives every case's evidence. It must be `https`
+unless its host is localhost or a loopback or private address. Changing the
+provider, or the base URL's host, needs `api_key` in the same call: the stored
+or environment key never follows to a new endpoint. The security model lists
+[what a prompt holds](security-model.md#what-reaches-the-model).
 
 ```bash
 shoc llm configure --provider anthropic --model claude-sonnet-5
@@ -345,7 +379,8 @@ and a pending L2 leaves one too.
 
 **Whether anybody is woken is a query.** Notices are grouped by incident (the
 same case, or cases on the same entity), and a group pages only on a named
-condition: a critical case, activity that cannot be contained, coverage dark (a
+condition, read on the worse of the case's severity and its worst finding's
+(D165): a critical case, activity that cannot be contained, coverage dark (a
 source for a day, or the whole schedule for an hour), a deadline that expired
 twice, an audit log that no longer verifies, or a high or critical malicious case
 that no action has contained for real, checked 15 minutes after its verdict and
@@ -356,7 +391,14 @@ no condition waits for the weekly.
 writes one message with its citations. With no model, a failure, or a citation
 the group does not contain, a fixed template goes out instead. The page goes to
 PagerDuty as a `notify.page` action and is mirrored to Slack with Approve buttons
-for whatever its cases are waiting on.
+for whatever its cases are waiting on. It goes out again for each later
+incident even when its words repeat; the `dedup_key` stays per group, so
+PagerDuty merges repeats while an incident is open there. When the pager did not
+take a page (no `notify` credential, a refusal or a failed post) and
+`SHOC_SMTP_URL` is set, the Manager also emails it to every enabled admin and
+operator who has signed in at least once, under the subject "shoc needs you",
+and audits each send as `notify.mail` (D167). A page counts as delivered when
+any channel took it.
 
 **Questions come back through it.** `ask`, over REST, MCP or `/shoc <question>`
 in Slack, goes to the Manager, which calls the Investigator, the Commander, the

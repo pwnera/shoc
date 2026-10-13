@@ -124,7 +124,8 @@ def integrator(ctx: Any, probe: dict[str, Any]) -> tuple[list[str], Any]:
     call("events.ingest", ctx, {"source": source, "records": records})
     write_state(ctx.db, ctx.tenant_id, source, {}, len(records), None)
     said = role.repair(ctx.db, ctx.store, ctx.tenant_id, ctx.config, source, _client(ctx))
-    mapped = ocsf.for_tenant(ctx.db, ctx.tenant_id, source).map_record(records[0], ctx.tenant_id)
+    mapping = ocsf.for_tenant(ctx.db, ctx.tenant_id, source)
+    mapped = mapping.map_records(records[0], ctx.tenant_id)[0]
     out = [
         f"{column} maps to {mapped.get(column)!r}, expected {value!r}"
         for column, value in probe["expect"]["maps"].items()
@@ -219,7 +220,8 @@ def checks(ctx: Any, probe: dict[str, Any]) -> tuple[list[str], Any]:
     records = expand(probe["records"], source, datetime.now(UTC))
     call("events.ingest", ctx, {"source": source, "records": records})
     mapping = ocsf.load_mapping(source)
-    uids = [mapping.map_record(r, ctx.tenant_id)["event_uid"] for r in records]
+    # A claim cites a record by its position; an activity's first row keeps its uid.
+    uids = [mapping.map_records(r, ctx.tenant_id)[0]["event_uid"] for r in records]
     claims = [
         Claim(says=c["says"], citations=[uids[i] for i in c["cites"]]) for c in probe["claims"]
     ]

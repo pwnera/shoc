@@ -18,7 +18,7 @@ import re
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from typing import Any, ClassVar
-from urllib.parse import urlencode
+from urllib.parse import unquote, urlencode
 
 import httpx
 
@@ -47,23 +47,30 @@ def _signed(
     extra: dict[str, str] | None = None,
     allow: tuple[int, ...] = (),
 ) -> httpx.Response:
-    """One SigV4-signed call. A status in `allow` is returned instead of raised."""
+    """One SigV4-signed call. A status in `allow` is returned instead of raised.
+    With the credential's `role_arn`, it is signed as that role (po-15)."""
     access_key, secret_key = creds.require("access_key_id", "secret_access_key")
-    headers = awssig.headers(
-        access_key=str(access_key),
-        secret_key=str(secret_key),
-        session_token=creds.secret.get("session_token"),
-        region=region,
-        service=service,
-        host=host,
-        method=method,
-        path=path,
-        query=query,
-        body=body,
-        extra=extra,
-    )
+    own = {
+        "access_key_id": access_key,
+        "secret_access_key": secret_key,
+        "session_token": creds.secret.get("session_token"),
+    }
     client = http or httpx.Client(timeout=30.0)
     try:
+        keys = awssig.assumed(creds.settings, own, client)
+        headers = awssig.headers(
+            access_key=str(keys["access_key_id"]),
+            secret_key=str(keys["secret_access_key"]),
+            session_token=keys.get("session_token"),
+            region=region,
+            service=service,
+            host=host,
+            method=method,
+            path=path,
+            query=query,
+            body=body,
+            extra=extra,
+        )
         resp = client.request(
             method, f"https://{host}{path}", params=query, content=body, headers=headers
         )
@@ -135,20 +142,55 @@ class DisableAccessKey(BaseAction):
     # Without UserName, IAM looks the key up under shoc's own user, and a key
     # that belongs to anybody else is "not found" (RSP-4).
     required_params = ("access_key_id", "user_name")
-    # The events where the key acted name its user; IAM answers when they do not.
+    # The user only locates the key: one action per key (RSP-4).
+    identity_params = ("access_key_id",)
+    # The events where the key acted name its user. A key an attacker created has
+    # not acted: the CreateAccessKey response names its user (ir-6). IAM answers
+    # when neither does.
     resolve: ClassVar = {
-        "user_name": ("actor_session_uid", "actor_user_name", "aws.get_access_key"),
+        "user_name": (
+            ("actor_session_uid", "resource_uid"),
+            ("actor_user_name", "raw.responseElements.accessKey.userName"),
+            "aws.get_access_key",
+        ),
     }
+
+    def check(self, params: dict[str, Any]) -> None:
+        # IAM disables long-term keys only; a session key's step would fail the run.
+        if str(params.get("access_key_id", "")).startswith("ASIA"):
+            raise ValidationError(
+                f"{self.type}: {params['access_key_id']} is a session key, which IAM cannot "
+                "disable; aws.revoke_sessions ends it"
+            )
+        super().check(params)
 
     def plan(self, params: dict[str, Any]) -> str:
         return f"Set IAM access key {params.get('access_key_id')} to Inactive" + (
             f" for user {params['user_name']}" if params.get("user_name") else ""
         )
 
-    def execute(
+    def snapshot(
         self, creds: Credentials, params: dict[str, Any], http: httpx.Client | None = None
+    ) -> dict[str, Any]:
+        """The key's status before it is set Inactive, so undo turns on only a key
+        that was on (RSP-4). '' when the credential may not list keys."""
+        self.check(params)
+        key, status = str(params["access_key_id"]), ""
+        with contextlib.suppress(StoreError):
+            listed = {"Action": "ListAccessKeys", "UserName": str(params["user_name"])}
+            keys = _members(_iam(creds, listed, http))
+            status = next((m.get("Status", "") for m in keys if m.get("AccessKeyId") == key), "")
+        return {"status": status}
+
+    def execute(
+        self,
+        creds: Credentials,
+        params: dict[str, Any],
+        http: httpx.Client | None = None,
+        before: dict[str, Any] | None = None,
     ) -> ActionResult:
         self.check(params)
+        was = before if before is not None else self.snapshot(creds, params, http)
         call = {
             "Action": "UpdateAccessKey",
             "AccessKeyId": params["access_key_id"],
@@ -161,12 +203,20 @@ class DisableAccessKey(BaseAction):
             ok=True,
             detail=f"access key {params['access_key_id']} is now Inactive",
             data={"access_key_id": params["access_key_id"]},
-            undo={"access_key_id": params["access_key_id"], "user_name": params.get("user_name")},
+            undo={
+                "access_key_id": params["access_key_id"],
+                "user_name": params.get("user_name"),
+                "status": was.get("status", ""),
+            },
         )
 
     def undo(
         self, creds: Credentials, undo: dict[str, Any], http: httpx.Client | None = None
     ) -> ActionResult:
+        if undo.get("status") == "Inactive":
+            return ActionResult(
+                ok=True, detail=f"access key {undo['access_key_id']} was Inactive already; left so"
+            )
         call = {
             "Action": "UpdateAccessKey",
             "AccessKeyId": undo["access_key_id"],
@@ -179,6 +229,28 @@ class DisableAccessKey(BaseAction):
 
 
 REVOKE_POLICY = "AWSRevokeOlderSessions"
+
+
+def _revocation(creds: Credentials, kind: str, name: str, http: httpx.Client | None) -> str | None:
+    """The AWSRevokeOlderSessions document on a `User` or a `Role`: '' when there
+    is none, None when the credential may not read it. The IAM console's 'Revoke
+    active sessions' writes the same policy, so what was there is put back."""
+    call = {"Action": f"Get{kind}Policy", f"{kind}Name": name, "PolicyName": REVOKE_POLICY}
+    body, extra = urlencode({**call, "Version": "2010-05-08"}), {"content-type": FORM}
+    try:
+        resp = _signed(
+            creds, "iam", IAM_REGION, IAM_HOST, http, body=body, extra=extra, allow=(404,)
+        )
+    except StoreError:
+        return None
+    return "" if resp.status_code == 404 else unquote(_field(resp.text, "PolicyDocument"))
+
+
+def _put_revocation(
+    creds: Credentials, kind: str, name: str, document: str, http: httpx.Client | None
+) -> None:
+    call = {"Action": f"Put{kind}Policy", f"{kind}Name": name, "PolicyName": REVOKE_POLICY}
+    _iam(creds, {**call, "PolicyDocument": document}, http)
 
 
 def _deny_older(creds: Credentials, kind: str, name: str, http: httpx.Client | None) -> str:
@@ -199,25 +271,29 @@ def _deny_older(creds: Credentials, kind: str, name: str, http: httpx.Client | N
             }
         ],
     }
-    _iam(
-        creds,
-        {
-            "Action": f"Put{kind}Policy",
-            f"{kind}Name": name,
-            "PolicyName": REVOKE_POLICY,
-            "PolicyDocument": json.dumps(document),
-        },
-        http,
-    )
+    _put_revocation(creds, kind, name, json.dumps(document), http)
     return stamp
 
 
-def _allow_older(creds: Credentials, kind: str, name: str, http: httpx.Client | None) -> None:
+def _allow_older(
+    creds: Credentials, kind: str, name: str, undo: dict[str, Any], http: httpx.Client | None
+) -> str:
+    """Put back what shoc's revocation replaced (RSP-4): the earlier document, or
+    nothing. A revocation written after shoc's has a later cutoff, which covers
+    shoc's, so it stays as it is."""
+    if undo.get("cutoff"):
+        now = _revocation(creds, kind, name, http)
+        if now is not None and undo["cutoff"] not in now:
+            return f"{name}'s revocation policy is no longer shoc's; left as it is"
+    if undo.get("prior"):
+        _put_revocation(creds, kind, name, str(undo["prior"]), http)
+        return f"{name}'s earlier revocation policy is back"
     _iam(
         creds,
         {"Action": f"Delete{kind}Policy", f"{kind}Name": name, "PolicyName": REVOKE_POLICY},
         http,
     )
+    return f"revocation policy removed from {name}"
 
 
 class RevokeRoleSessions(BaseAction):
@@ -239,23 +315,35 @@ class RevokeRoleSessions(BaseAction):
     def plan(self, params: dict[str, Any]) -> str:
         return f"Revoke all sessions issued before now for IAM role {params.get('role_name')}"
 
-    def execute(
+    def snapshot(
         self, creds: Credentials, params: dict[str, Any], http: httpx.Client | None = None
+    ) -> dict[str, Any]:
+        """The revocation policy the role had, put back on undo (RSP-4)."""
+        self.check(params)
+        return {"prior": _revocation(creds, "Role", str(params["role_name"]), http)}
+
+    def execute(
+        self,
+        creds: Credentials,
+        params: dict[str, Any],
+        http: httpx.Client | None = None,
+        before: dict[str, Any] | None = None,
     ) -> ActionResult:
         self.check(params)
+        was = before if before is not None else self.snapshot(creds, params, http)
         stamp = _deny_older(creds, "Role", params["role_name"], http)
         return ActionResult(
             ok=True,
             detail=f"sessions issued before {stamp} revoked for role {params['role_name']}",
             data={"role_name": params["role_name"], "cutoff": stamp},
-            undo={"role_name": params["role_name"]},
+            undo={"role_name": params["role_name"], "cutoff": stamp, "prior": was.get("prior")},
         )
 
     def undo(
         self, creds: Credentials, undo: dict[str, Any], http: httpx.Client | None = None
     ) -> ActionResult:
-        _allow_older(creds, "Role", undo["role_name"], http)
-        return ActionResult(ok=True, detail=f"revocation policy removed from {undo['role_name']}")
+        detail = _allow_older(creds, "Role", undo["role_name"], undo, http)
+        return ActionResult(ok=True, detail=detail)
 
 
 class RevokeSessions(BaseAction):
@@ -276,6 +364,7 @@ class RevokeSessions(BaseAction):
     # `user_name` is CloudTrail's: the IAM user, or for an assumed-role session
     # the role (sessionIssuer.userName).
     required_params = ("access_key_id", "user_name")
+    identity_params = ("access_key_id",)
     resolve: ClassVar = {
         "user_name": ("actor_session_uid", "actor_user_name", "aws.get_access_key"),
         "principal_type": ("actor_session_uid", "actor_user_type", None),
@@ -304,24 +393,36 @@ class RevokeSessions(BaseAction):
             f"behind key {params.get('access_key_id')}; long-term keys and new sessions still work"
         )
 
-    def execute(
+    def snapshot(
         self, creds: Credentials, params: dict[str, Any], http: httpx.Client | None = None
+    ) -> dict[str, Any]:
+        """The revocation policy the user or role had, put back on undo (RSP-4)."""
+        self.check(params)
+        return {"prior": _revocation(creds, self._kind(params), str(params["user_name"]), http)}
+
+    def execute(
+        self,
+        creds: Credentials,
+        params: dict[str, Any],
+        http: httpx.Client | None = None,
+        before: dict[str, Any] | None = None,
     ) -> ActionResult:
         self.check(params)
+        was = before if before is not None else self.snapshot(creds, params, http)
         kind, name = self._kind(params), str(params["user_name"])
         stamp = _deny_older(creds, kind, name, http)
         return ActionResult(
             ok=True,
             detail=f"sessions issued before {stamp} revoked for {kind.lower()} {name}",
             data={"access_key_id": params["access_key_id"], kind.lower(): name, "cutoff": stamp},
-            undo={"kind": kind, "name": name},
+            undo={"kind": kind, "name": name, "cutoff": stamp, "prior": was.get("prior")},
         )
 
     def undo(
         self, creds: Credentials, undo: dict[str, Any], http: httpx.Client | None = None
     ) -> ActionResult:
-        _allow_older(creds, undo["kind"], undo["name"], http)
-        return ActionResult(ok=True, detail=f"revocation policy removed from {undo['name']}")
+        detail = _allow_older(creds, undo["kind"], undo["name"], undo, http)
+        return ActionResult(ok=True, detail=detail)
 
 
 class DetachUserPolicy(BaseAction):
@@ -954,10 +1055,21 @@ class QuarantineUser(BaseAction):
     summary = "Attach AWS's quarantine policy to the IAM user behind an access key"
     reversible = True
     required_params = ("access_key_id", "user_name")
+    identity_params = ("access_key_id",)
     # The same answer as disabling the key: the events where it acted, else IAM.
     resolve: ClassVar = {
         "user_name": ("actor_session_uid", "actor_user_name", "aws.get_access_key"),
     }
+
+    def check(self, params: dict[str, Any]) -> None:
+        # A session key belongs to a role, not an IAM user: a step that fans out
+        # over every key on the case skips it here.
+        if str(params.get("access_key_id", "")).startswith("ASIA"):
+            raise ValidationError(
+                f"{self.type}: {params['access_key_id']} is a session key, which belongs to "
+                "no IAM user; aws.revoke_sessions ends it"
+            )
+        super().check(params)
 
     def plan(self, params: dict[str, Any]) -> str:
         return (
@@ -966,10 +1078,29 @@ class QuarantineUser(BaseAction):
             "used for until it is detached"
         )
 
-    def execute(
+    def snapshot(
         self, creds: Credentials, params: dict[str, Any], http: httpx.Client | None = None
+    ) -> dict[str, Any]:
+        """Whether the policy was on already: AWS attaches it itself when it finds a
+        key in public, and undo must not take AWS's quarantine away (RSP-4). None
+        when the credential may not list the user's policies."""
+        self.check(params)
+        listed = {"Action": "ListAttachedUserPolicies", "UserName": str(params["user_name"])}
+        try:
+            policies = _members(_iam(creds, listed, http))
+        except StoreError:
+            return {"attached": None}
+        return {"attached": any(m.get("PolicyArn") == QUARANTINE_POLICY for m in policies)}
+
+    def execute(
+        self,
+        creds: Credentials,
+        params: dict[str, Any],
+        http: httpx.Client | None = None,
+        before: dict[str, Any] | None = None,
     ) -> ActionResult:
         self.check(params)
+        was = before if before is not None else self.snapshot(creds, params, http)
         user = params["user_name"]
         _iam(
             creds,
@@ -980,12 +1111,16 @@ class QuarantineUser(BaseAction):
             ok=True,
             detail=f"IAM user {user} is quarantined",
             data={"user_name": user, "policy_arn": QUARANTINE_POLICY},
-            undo={"user_name": user},
+            undo={"user_name": user, "attached": was.get("attached")},
         )
 
     def undo(
         self, creds: Credentials, undo: dict[str, Any], http: httpx.Client | None = None
     ) -> ActionResult:
+        if undo.get("attached"):
+            return ActionResult(
+                ok=True, detail=f"IAM user {undo['user_name']} was quarantined before shoc; left so"
+            )
         call = {"Action": "DetachUserPolicy", "UserName": undo["user_name"]}
         _iam(creds, {**call, "PolicyArn": QUARANTINE_POLICY}, http)
         return ActionResult(ok=True, detail=f"IAM user {undo['user_name']} is out of quarantine")
@@ -1129,9 +1264,10 @@ class IsolateInstance(BaseAction):
             "allows no traffic in or out; the instance keeps running"
         )
 
-    def execute(
+    def snapshot(
         self, creds: Credentials, params: dict[str, Any], http: httpx.Client | None = None
-    ) -> ActionResult:
+    ) -> dict[str, Any]:
+        """Each interface's groups, read and kept before the swap (RSP-4)."""
         self.check(params)
         iid = str(params["instance_id"])
         region, instance = _find_instance(creds, iid, params.get("region"), http)
@@ -1142,6 +1278,21 @@ class IsolateInstance(BaseAction):
         }
         if not vpc or not interfaces:
             raise ValidationError(f"{iid} has no network interface in a VPC to isolate")
+        return {"region": region, "vpc": vpc, "interfaces": interfaces}
+
+    def execute(
+        self,
+        creds: Credentials,
+        params: dict[str, Any],
+        http: httpx.Client | None = None,
+        before: dict[str, Any] | None = None,
+    ) -> ActionResult:
+        self.check(params)
+        iid = str(params["instance_id"])
+        # On a retry, the groups kept before the first try: the instance may be
+        # behind the isolation group already, which is not what undo restores.
+        was = before if before is not None else self.snapshot(creds, params, http)
+        region, vpc, interfaces = was["region"], was["vpc"], was["interfaces"]
         group = _isolation_group(creds, region, vpc, http)
         for interface in interfaces:
             _set_groups(creds, region, interface, [group], http)

@@ -13,6 +13,7 @@ RFC 0016.
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
@@ -136,9 +137,10 @@ def refresh(ctx: Context, inp: RefreshInput) -> Result:
         for name in report_sources:
             intel.record_run(ctx.db, ctx.tenant_id, name, report_sources[name], results[name])
     reports = [
-        {"feed": r.feed, "fetched": r.fetched, "stored": r.stored, "error": r.error}
+        {"feed": r.feed, "fetched": r.fetched, "stored": r.stored, "held": r.held, "error": r.error}
         for r in results.values()
     ]
+    held = sum(r["held"] for r in reports)
     expired = intel.prune(ctx.db, ctx.tenant_id)
     hunted = (
         intel.retro_hunt(ctx.db, ctx.store, ctx.tenant_id)
@@ -154,6 +156,7 @@ def refresh(ctx: Context, inp: RefreshInput) -> Result:
         summary=(
             f"{new} new indicator(s) or report(s) from {len(reports)} source(s)"
             + (f" ({len(failed)} failed: {', '.join(failed)})" if failed else "")
+            + (f"; {held} held as ours or warninglisted" if held else "")
             + f"; retro-hunt found {hunted['hits']} hit(s) in the last 90 days."
         ),
         citations=hunted["findings"],
@@ -197,6 +200,8 @@ def _queue_reports(
         result.error = f"{type(exc).__name__}: {exc}"[:1000]
         return result
     result.fetched = len(items)
+    # A pull cut at its page cap is the source's error, as for indicators (DET-7).
+    result.error = getattr(items, "short", "") or None
     grade = int(settings.get("grade") or 0)
     oldest = datetime.now(UTC) - timedelta(days=QUEUE_DAYS)
     earlier = intake.recent_reports(ctx.db, ctx.tenant_id)
@@ -257,6 +262,26 @@ def _spent_today(ctx: Context) -> tuple[int, int]:
         or {}
     )
     return int(row.get("reports") or 0), int(row.get("tokens") or 0)
+
+
+def _lists(ctx: Context, wait: float = 0.0) -> bool:
+    """Does this deployment load the lists a read is checked against? If so they
+    start loading in this process, and the caller waits at most `wait` seconds
+    for each (RFC 0030). SHOC_INTEL_FEEDS=off reaches no host nobody configured:
+    nothing loads, and nothing is held back for a list that will not come.
+    """
+    from shoc.detect import osint
+
+    if not intel.default_feeds(ctx.config.intel_feeds):
+        return False
+    # IANA's TLDs, which a report's domains are checked against, and the
+    # warninglists; both start before either is waited for.
+    keys = ("rdap_bootstrap", "warninglists")
+    for key in keys:
+        osint.load_soon(key)
+    for key in keys if wait else ():
+        osint.load_soon(key, wait)
+    return True
 
 
 def _caps(ctx: Context) -> tuple[int, int]:
@@ -336,6 +361,10 @@ def _read_queue(
            ORDER BY score DESC, queued_at, url""",
         (ctx.tenant_id, only, only),
     )
+    if waiting and ctx.caller.kind != "human":
+        # A read holds back every address, domain and hash while this process
+        # has no warninglists, so the worker's first poll gives them a minute.
+        _lists(ctx, wait=60.0)
     taken: Counter[str] = Counter()
     try:
         for item in waiting:
@@ -617,9 +646,13 @@ def list_iocs(ctx: Context, inp: IocFilter) -> Result:
 class HuntInput:
     """Search history for an indicator, an address or a user."""
 
-    value: str = f(doc="What to hunt for: an IP, a domain or a user name")
+    value: str = f(doc="What to hunt for: an IP, a domain, a URL, a SHA-256 or a user name")
     days: int = f(90, doc="How far back to look")
-    field: str = f("auto", doc="auto, src_ip, domain or actor")
+    field: str = f(
+        "auto",
+        doc="auto (from the value), ip, domain, url or sha256 (every column the indicator "
+        "matcher reads for that type), src_ip (the source address only) or actor",
+    )
 
 
 @dataclass
@@ -643,22 +676,17 @@ class HuntReport:
     tags=("intel", "hunt"),
 )
 def run_hunt(ctx: Context, inp: HuntInput) -> Result:
-    from shoc.capabilities.events import EventQuery, build_query
     from shoc.db.pool import execute
+    from shoc.detect import osint
 
     value = inp.value.strip()
     kind = inp.field
     if kind == "auto":
-        digits = value.replace(".", "").replace(":", "")
-        kind = "src_ip" if digits.isdigit() else ("actor" if "@" in value else "domain")
-    query = EventQuery(since=f"-{max(1, inp.days)}d", limit=200)
-    if kind == "src_ip":
-        query.src_ip = value
-    elif kind == "actor":
-        query.actor = value
-    else:
-        query.contains = value
-    sql, params, limit = build_query(query, ctx.tenant_id)
+        # A mailbox is a user name; a value of no known type is searched as text.
+        kind = {"email": "actor", "": "text"}.get(found := osint.classify(value), found)
+    sql, params, limit = osint.seen_query(
+        ctx.tenant_id, value, kind, since=f"-{max(1, inp.days)}d", limit=200
+    )
     rows = ctx.store.query(sql, params, limit).rows
     hunt_uid = (
         "HUNT-"
@@ -805,6 +833,8 @@ def configure(ctx: Context, inp: FeedConfig) -> Result:
         if not inp.settings.get("url"):
             raise ValidationError(f"a {parser} source needs settings.url")
         reader.guard(str(inp.settings["url"]))
+    if not inp.secret:
+        _keeps_host(ctx, "intel_feeds", "feed", inp.feed, inp.settings)
     execute(
         ctx.db,
         """INSERT INTO shoc.intel_feeds (tenant_id, feed, parser, enabled, settings, secret)
@@ -837,6 +867,21 @@ def configure(ctx: Context, inp: FeedConfig) -> Result:
         f"{'enabled' if inp.enabled else 'disabled'}; it contacts "
         f"{intel.host_of(parser, inp.settings)}.{terms}",
     )
+
+
+def _keeps_host(ctx: Context, table: str, key: str, name: str, settings: dict[str, Any]) -> None:
+    """A kept key goes only to the host it was given for (`credentials.same_host`)."""
+    from shoc.cases import credentials
+    from shoc.db.pool import fetch_one
+
+    row = fetch_one(
+        ctx.db,
+        f"""SELECT settings FROM shoc.{table}
+            WHERE tenant_id = %s AND {key} = %s AND secret IS NOT NULL""",
+        (ctx.tenant_id, name),
+    )
+    if row:
+        credentials.same_host(dict(row["settings"]), settings)
 
 
 def _configure_lookup(ctx: Context, inp: FeedConfig) -> Result:
@@ -881,6 +926,8 @@ def _configure_lookup(ctx: Context, inp: FeedConfig) -> Result:
     )
     if not inp.secret.get(provider.secret_field) and (inp.secret or not keyed):
         raise ValidationError(f"{provider.name} needs its key in secret.{provider.secret_field}")
+    if not inp.secret:
+        _keeps_host(ctx, "lookup_sources", "source", provider.name, settings)
     execute(
         ctx.db,
         """INSERT INTO shoc.lookup_sources (tenant_id, source, enabled, settings, secret)
@@ -969,11 +1016,20 @@ def add(ctx: Context, inp: AddInput) -> Result:
     rejected: list[str] = []
     ours = intel.ours(ctx.db, ctx.tenant_id)
     human = ctx.caller.kind == "human"
+    # A process that has not loaded the lists starts loading them now; a URL's
+    # domains are checked against IANA's TLDs once those are in.
+    lists_on = _lists(ctx, wait=0.0 if human and not inp.url else 5.0)
+    loading = not human and lists_on and osint.loaded("warninglists") is None
 
     def excluded(value: str, kind: str) -> bool:
         # A value on a known-benign list is refused from anyone but a person:
-        # an agent may be relaying what a log line asked for (RFC 0030).
-        return ours(value, kind) or (not human and bool(osint.known_benign(value, kind)))
+        # an agent may be relaying what a log line asked for (RFC 0030). Until
+        # this process has the lists, so is every value they would check,
+        # unless the deployment never loads them (SHOC_INTEL_FEEDS=off).
+        if ours(value, kind):
+            return True
+        benign = None if human else osint.known_benign(value, kind)
+        return bool(benign) or (benign is None and not human and lists_on)
 
     for raw in inp.values:
         value = reader.refang(raw.strip())
@@ -994,14 +1050,17 @@ def add(ctx: Context, inp: AddInput) -> Result:
             )
         )
     if inp.url:
-        for ioc in intel.indicators_in(
-            reader.get(inp.url).text[: reader.MAX_BYTES],
-            source,
-            confidence,
-            inp.severity,
-            inp.description or inp.url,
-            inp.days,
-        ):
+        # The page's own host and subdomains are its furniture, not indicators.
+        named, own = intel.from_page(
+            inp.url,
+            source=source,
+            confidence=confidence,
+            severity=inp.severity,
+            description=inp.description or inp.url,
+            days=inp.days,
+        )
+        rejected += own
+        for ioc in named:
             if excluded(ioc.value, ioc.type):
                 rejected.append(ioc.value)
             else:
@@ -1017,9 +1076,13 @@ def add(ctx: Context, inp: AddInput) -> Result:
                WHERE tenant_id = %s AND (type, value) IN (SELECT * FROM unnest(%s::text[], %s::text[]))""",
             (ctx.tenant_id, [i.type for i in indicators], [i.value.lower() for i in indicators]),
         )
+    # These values, not the feeds' backlog: one this call verified or took over
+    # is hunted too, though its row was not new (DET-4).
     hunted = (
-        intel.retro_hunt(ctx.db, ctx.store, ctx.tenant_id)
-        if inp.retro_hunt and stored
+        intel.retro_hunt(
+            ctx.db, ctx.store, ctx.tenant_id, values=[(i.type, i.value) for i in indicators]
+        )
+        if inp.retro_hunt and indicators
         else {"indicators": 0, "hits": 0, "findings": []}
     )
     return Result(
@@ -1031,7 +1094,17 @@ def add(ctx: Context, inp: AddInput) -> Result:
             retro_hunt=hunted,
         ),
         summary=f"{len(indicators)} indicator(s) under {source}, {stored} new"
-        + (f", {len(rejected)} rejected (untyped, internal or known benign)" if rejected else "")
+        + (
+            f", {len(rejected)} rejected (untyped, internal, known benign or the page's own)"
+            if rejected
+            else ""
+        )
+        + (
+            "; the warninglists are still loading, so an address, domain or hash was refused: "
+            "add it again in a minute"
+            if loading and rejected
+            else ""
+        )
         + f"; retro-hunt found {hunted['hits']} hit(s).",
         citations=hunted["findings"],
     )
@@ -1066,23 +1139,23 @@ class RemoveReport:
 def remove(ctx: Context, inp: RemoveInput) -> Result:
     """Findings already raised stay. A source still polled brings its indicators back."""
     from shoc.db.pool import execute
+    from shoc.detect import osint
     from shoc.detect import report as reader
     from shoc.errors import ValidationError
 
     if not (inp.values or inp.source or inp.report_uid):
         raise ValidationError("intel.remove needs values, a source or a report_uid")
-    # Refanged and trimmed the way `intel.add` stored them, so the value pasted
-    # from a report withdraws what that report put in.
+    # Refanged and in the form `store_indicators` keeps, so the value pasted
+    # from a report, or an IPv6 address written long, withdraws what is stored.
+    values: list[str] = []
+    for raw in inp.values:
+        value = reader.refang(raw.strip()).strip(".")
+        values.append(intel.normalise(osint.classify(value), value) or value.lower())
     removed = execute(
         ctx.db,
         """DELETE FROM shoc.iocs WHERE tenant_id = %s
              AND (value = ANY(%s) OR source = %s OR report_uid = %s)""",
-        (
-            ctx.tenant_id,
-            [reader.refang(v.strip()).strip(".").lower() for v in inp.values],
-            inp.source or None,
-            inp.report_uid or None,
-        ),
+        (ctx.tenant_id, values, inp.source or None, inp.report_uid or None),
     )
     return Result(data=RemoveReport(removed=removed), summary=f"{removed} indicator(s) withdrawn.")
 
@@ -1312,6 +1385,10 @@ def _digest(
             data=DigestReport(report_uid=twin["report_uid"], url=doc.url, title=twin["title"]),
             summary=f"Already read as {twin['report_uid']} ({twin['title']}).",
         )
+    # The values a person reads are checked when the lists are in; another
+    # caller's are held back until they are. This starts loading them, and
+    # gives IANA's TLDs a moment before the report's domains are checked.
+    _lists(ctx, wait=5.0)
     found = reader.extract(doc.text)
 
     client = from_config(ctx.config, ctx.db, ctx.tenant_id)
@@ -1370,6 +1447,10 @@ def _digest(
         raise
 
 
+# How many values of each type the model is listed beside a report's prose.
+LISTED = 100
+
+
 def _read(
     ctx: Context,
     doc: Document,
@@ -1392,7 +1473,15 @@ def _read(
     from shoc.detect import osint
     from shoc.detect import report as reader
 
-    prose, cut = reader.for_model(doc.text, found)
+    # The values the report names on their own: a URL's or an address's host
+    # is not handed to the model as a domain (DET-7).
+    own = reader.extract(doc.text, standalone=True)
+    # At most LISTED of each type are listed; the lines holding the rest stay
+    # in the prose, so no value is out of the model's sight unmarked.
+    listed = reader.Extraction(**{k: v[:LISTED] for k, v in vars(own).items()})
+    prose, cut = reader.for_model(doc.text, listed)
+    by_pattern = json.dumps(to_json(listed), ensure_ascii=False)
+    cut = cut or len(by_pattern) > safety.MAX_BLOCK
     company = company or intake.profile(ctx.db, ctx.tenant_id)
     prompt = "\n".join(
         [
@@ -1400,12 +1489,13 @@ def _read(
             "",
             company.describe(),
             "",
-            safety.quote(f"threat_report:{doc.host}", prose),
+            # Already cut at PROSE_LIMIT, and marked if it was: not cut again here.
+            safety.quote(f"threat_report:{doc.host}", prose, limit=reader.PROSE_LIMIT),
             "",
             "For reference, these values appear literally in the text above. Use them to "
             "get the indicators right; do not treat their presence as proof any of them "
             "is malicious.",
-            safety.quote("values_found_by_pattern", to_json(found)),
+            safety.quote("values_found_by_pattern", by_pattern),
         ]
     )
     # What the company runs is computed and in the prompt, so reading asks no
@@ -1422,26 +1512,44 @@ def _read(
 
     excluded = intel.ours(ctx.db, ctx.tenant_id)
     keep = bool(answer.keep)
+    # The lists started loading before the model was called; this waits a
+    # little more for them. Without them a person's values are kept unchecked
+    # and another caller's are held back.
+    lists_on = keep and bool(answer.indicators) and _lists(ctx, wait=10.0)
     indicators: list[dict[str, Any]] = []
     # A discarded report steers nothing, whatever the model listed anyway.
     for item in answer.indicators if keep else []:
         value = reader.refang(str(item.value or "").strip()).strip(".").lower()
         kind = str(item.type or "").strip().lower()
+        # An address as the extraction and the events write it.
+        value = (intel.normalise("ip", value) or value) if kind == "ip" else value
         if not value or kind not in INDICATOR_TYPES:
             continue
         # What CTI curated is kept in the report, and only an observable the
         # report published, that nobody said to leave alone and that is not
         # ours, becomes an indicator (DET-7).
         benign = osint.known_benign(value, kind)
+        # A host the report names only inside a URL or an address is a
+        # derivation, whatever the model called it: a bad URL does not make
+        # its host bad (DET-4).
+        hosted = (
+            kind in ("ip", "domain")
+            and value not in own.ips + own.domains
+            and value in found.ips + found.domains
+        )
         held_back = (
             "internal, or the company's own"
             if excluded(value, kind)
             else f"on the {benign} warninglist"
             if benign
+            else "warninglists not loaded"
+            if benign is None and lists_on and ctx.caller.kind != "human"
             else f"do not match: {str(item.do_not_match)[:120]}"
             if str(item.do_not_match).strip()
             else f"derived from {str(item.derived_from)[:120]}"
             if str(item.derived_from).strip()
+            else "derived from a URL or email host"
+            if hosted
             else ""
         )
         indicators.append(
@@ -1461,56 +1569,65 @@ def _read(
     unverified = sum(1 for i in indicators if i["unverified"])
     storable = [i for i in indicators if not i["held_back"]] if keep else []
 
-    stored = 0
     source_name = f"report:{doc.host}"
-    if store and storable:
-        stored = intel.store_indicators(
-            ctx.db,
-            ctx.tenant_id,
-            [
-                intel.Indicator(
-                    type=i["type"],
-                    value=i["value"],
-                    source=source_name,
-                    # Deliberately below every automatic-action confidence floor:
-                    # a report-derived indicator is a lead, not a warrant.
-                    confidence=0.35 if i["unverified"] else 0.55,
-                    severity=i["severity"],
-                    description=i["context"] or (answer.title or doc.title)[:200],
-                    tags=["report", doc.host, *[a.lower() for a in answer.actors[:3]]],
-                    expires_at=datetime.now(UTC) + timedelta(days=i["ttl_days"]),
-                )
-                for i in storable
-            ],
+    # The report's own TLP marking goes with its values: amber or red keeps
+    # them from third-party lookups (DET-6).
+    marking = reader.tlp_of(doc.text)
+    # A feed's or a person's row for the same value stays theirs, so
+    # withdrawing the report leaves it alone (`store_indicators`).
+    rows = [
+        intel.Indicator(
+            type=i["type"],
+            value=i["value"],
+            source=source_name,
+            # Deliberately below every automatic-action confidence floor:
+            # a report-derived indicator is a lead, not a warrant.
+            confidence=0.35 if i["unverified"] else 0.55,
+            severity=i["severity"],
+            description=i["context"] or (answer.title or doc.title)[:200],
+            tags=["report", doc.host, *[a.lower() for a in answer.actors[:3]]],
+            expires_at=datetime.now(UTC) + timedelta(days=i["ttl_days"]),
+            unverified=i["unverified"],
+            report_uid=report_uid,
+            tlp=marking,
         )
-        # Only rows the report itself brought in: a feed's row for the same
-        # value stays the feed's, so withdrawing the report leaves it alone.
-        for i in storable:
-            execute(
-                ctx.db,
-                """UPDATE shoc.iocs SET report_uid = %s, unverified = %s
-                   WHERE tenant_id = %s AND type = %s AND value = %s AND source = %s""",
-                (report_uid, i["unverified"], ctx.tenant_id, i["type"], i["value"], source_name),
-            )
+        for i in (storable if store else [])
+    ]
+    stored = intel.store_indicators(ctx.db, ctx.tenant_id, rows) if rows else 0
 
+    # This report's values, not the feeds' backlog (DET-7).
     hunted = (
-        intel.retro_hunt(ctx.db, ctx.store, ctx.tenant_id)
-        if retro_hunt and stored
+        intel.retro_hunt(ctx.db, ctx.store, ctx.tenant_id, values=[(r.type, r.value) for r in rows])
+        if retro_hunt and rows
         else {"indicators": 0, "hits": 0, "findings": []}
     )
 
+    from shoc.agents import hunter
+    from shoc.agents.detection_engineer import _technique_platforms
     from shoc.detect.context import LOG_KINDS, kinds
 
-    techniques = [
-        {
-            "id": str(t.id).upper(),
-            "name": str(t.name)[:200],
-            "evidence": str(t.evidence)[:500],
-            "seen_in": kinds(t.seen_in),
-        }
-        for t in answer.techniques
-        if str(t.id).strip()
-    ]
+    # An ATT&CK id, its leading T-number when the model wrote "T1566.001 -
+    # Phishing", and one ATT&CK still lists: a revoked or invented id is a
+    # backlog item no rule can close (DET-7). A missing map drops nothing.
+    known = _technique_platforms(ctx.config)
+    techniques: list[dict[str, Any]] = []
+    unknown: list[str] = []
+    for t in answer.techniques:
+        written = re.search(r"T\d{4}(?:\.\d{3})?", str(t.id).upper())
+        code = written.group(0) if written else ""
+        if not hunter.TECHNIQUE.match(code) or (known and code not in known):
+            if str(t.id).strip():
+                unknown.append(str(t.id).strip()[:40])
+            continue
+        techniques.append(
+            {
+                "id": code,
+                "name": str(t.name)[:200],
+                "evidence": str(t.evidence)[:500],
+                "seen_in": kinds(t.seen_in),
+            }
+        )
+    extracted = {**to_json(found), **({"unknown_techniques": unknown} if unknown else {})}
     # A discarded report is remembered as read, and steers nothing: no
     # technique reaches the Hunter's agenda or the Detection Engineer's coverage.
     kept_techniques = [t["id"] for t in techniques] if keep else []
@@ -1528,8 +1645,6 @@ def _read(
     # configured source or a person handed it in (D79). Each carries the
     # behaviour and only the techniques it tests (D132).
     if source or ctx.caller.kind == "human":
-        from shoc.agents import hunter
-
         filed = [
             hunter.add_to_backlog(
                 ctx.db,
@@ -1610,7 +1725,7 @@ def _read(
             list(answer.campaigns),
             kept_techniques,
             json.dumps(indicators),
-            json.dumps(to_json(found)),
+            json.dumps(extracted),
             [(h.title or h.hypothesis).strip()[:200] for h in hunts],
             hunted["findings"],
             stored,
@@ -1648,6 +1763,11 @@ def _read(
     held = sum(1 for i in indicators if i["held_back"])
     caveat += f" {held} held back from matching." if held else ""
     caveat += " CTI discarded it as not applying here." if not keep else ""
+    if marking in ("red", "amber+strict"):
+        caveat += (
+            f" It is marked TLP:{marking.upper()}: check its sharing terms allow the configured "
+            "model provider to read it."
+        )
     return Result(
         data=DigestReport(
             report_uid=report_uid,
@@ -1663,7 +1783,7 @@ def _read(
             indicators=indicators,
             suggested_hunts=[to_json(h) for h in answer.suggested_hunts],
             kept=keep,
-            extracted=to_json(found),
+            extracted=extracted,
             indicators_stored=stored,
             unverified=unverified,
             retro_hunt=hunted,

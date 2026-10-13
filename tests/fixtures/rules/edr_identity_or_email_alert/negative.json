@@ -1,0 +1,141 @@
+[
+  {
+    "_source": "defender",
+    "id": "da-mdca-travel-1",
+    "severity": "medium",
+    "title": "Impossible travel activity",
+    "category": "InitialAccess",
+    "serviceSource": "microsoftDefenderForCloudApps",
+    "detectionSource": "microsoftDefenderForCloudApps",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "jane@example.com",
+          "azureAdUserId": "00000000-0000-0000-0000-00000000aa01"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.ipEvidence",
+        "ipAddress": "203.0.113.81"
+      }
+    ]
+  },
+  {
+    "_source": "defender",
+    "id": "da-mde-1",
+    "severity": "high",
+    "title": "Suspicious PowerShell command line",
+    "category": "Execution",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "detectionSource": "microsoftDefenderForEndpoint",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-21.example.org",
+        "mdeDeviceId": "2222222222222222222222222222222222222222"
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "jane@example.com",
+          "azureAdUserId": "00000000-0000-0000-0000-00000000aa01"
+        }
+      }
+    ]
+  },
+  {
+    "_source": "defender",
+    "id": "da-mdca-info-1",
+    "severity": "informational",
+    "title": "Activity from an infrequent country",
+    "category": "InitialAccess",
+    "serviceSource": "microsoftDefenderForCloudApps",
+    "detectionSource": "microsoftDefenderForCloudApps",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "jane@example.com",
+          "azureAdUserId": "00000000-0000-0000-0000-00000000aa01"
+        }
+      }
+    ]
+  },
+  {
+    "_source": "defender",
+    "id": "da-mdo-fp-1",
+    "severity": "high",
+    "title": "Email reported by user as malware or phish",
+    "category": "InitialAccess",
+    "serviceSource": "microsoftDefenderForOffice365",
+    "detectionSource": "microsoftDefenderForOffice365",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "bob@example.com",
+          "azureAdUserId": "00000000-0000-0000-0000-00000000aa01"
+        }
+      }
+    ],
+    "classification": "falsePositive"
+  },
+  {
+    "_source": "defender",
+    "id": "da-mdc-1",
+    "severity": "high",
+    "title": "Suspicious sign-in to a storage account from a Tor exit node",
+    "category": "InitialAccess",
+    "serviceSource": "microsoftDefenderForCloud",
+    "detectionSource": "microsoftDefenderForCloud",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "jane@example.com",
+          "azureAdUserId": "00000000-0000-0000-0000-00000000aa01"
+        }
+      }
+    ]
+  },
+  {
+    "_source": "defender",
+    "id": "da-mdo-update-1",
+    "severity": "high",
+    "title": "User restricted from sending email",
+    "category": "Exfiltration",
+    "serviceSource": "microsoftDefenderForOffice365",
+    "detectionSource": "microsoftDefenderForOffice365",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "bob@example.com",
+          "azureAdUserId": "00000000-0000-0000-0000-00000000aa01"
+        }
+      }
+    ],
+    "_update": true
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "idp:alert-42",
+    "type": "idp-user-endpoint-app-access",
+    "product": "idp",
+    "severity": 30,
+    "tactic": "Discovery",
+    "description": "Account enumerated the domain's groups",
+    "device": {
+      "device_id": "5d40e8a1c7f2",
+      "hostname": "laptop-43"
+    },
+    "user_name": "mia"
+  }
+]

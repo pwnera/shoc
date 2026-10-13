@@ -36,6 +36,7 @@ baseline:
     by: [process.name]
     among: device.uid
     seen_by_fewer_than: 2
+    new_only: true
   lookback: 30d
 pivot: [device.hostname, device.uid, process.name, dst_endpoint.ip, dst_endpoint.port]
 triage: >

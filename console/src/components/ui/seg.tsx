@@ -1,7 +1,9 @@
 /**
  * A segmented control: one choice among a few, applied at once (a window, a
  * view, a mode). A radiogroup with one tab stop; arrow keys move and select.
- * Replaces tabs bent into toggles and every 7/30/90 select.
+ * `manual` is for a choice that writes (a finding's status): arrow keys only
+ * move, and Enter or Space picks. Replaces tabs bent into toggles and every
+ * 7/30/90 select.
  */
 import type { KeyboardEvent, ReactNode } from "react";
 import { cn } from "@/lib/cn";
@@ -18,6 +20,7 @@ export function Seg<T extends string>({
   onChange,
   size = "sm",
   label,
+  manual,
   className,
 }: {
   value: T;
@@ -26,6 +29,8 @@ export function Seg<T extends string>({
   size?: "sm" | "md";
   /** The group's accessible name ("Window"). */
   label: string;
+  /** Arrow keys move focus without picking; Enter or Space picks. */
+  manual?: boolean;
   className?: string;
 }) {
   const items = options.map((option) => (typeof option === "string" ? { value: option } : option));
@@ -38,10 +43,11 @@ export function Seg<T extends string>({
     const jump = event.key === "Home" ? 0 : event.key === "End" ? enabled.length - 1 : null;
     if (step === undefined && jump === null) return;
     event.preventDefault();
-    const at = enabled.findIndex((item) => item.value === value);
+    const from = manual ? (event.target as HTMLElement).dataset.value : value;
+    const at = enabled.findIndex((item) => item.value === from);
     const next = enabled[jump ?? (at + (step ?? 0) + enabled.length) % enabled.length];
     if (!next) return;
-    onChange(next.value);
+    if (!manual) onChange(next.value);
     event.currentTarget.querySelector<HTMLElement>(`[data-value="${CSS.escape(next.value)}"]`)?.focus();
   };
 

@@ -66,6 +66,20 @@ def test_no_offered_read_writes_on_the_read_only_role(ctx, config, store):
     assert not failed, failed
 
 
+@READONLY
+def test_ops_reads_health_on_the_read_only_role_with_mail_set(ctx, config, store, monkeypatch):
+    """Reachability reads who mail goes to from shoc.users, which the read-only role
+    cannot, and the audit check keeps a checkpoint it cannot write (D22, live-2, data-11)."""
+    monkeypatch.setattr(config, "smtp_url", "smtp://mail.example.test:25")
+    monkeypatch.setattr(config, "mail_from", "shoc@example.test")
+    run = tools.invoker(
+        config.tenant_id, config, roles.OPS.tools, who=roles.OPS.name, db=ctx.db, store=store
+    )
+    for name in ("health_status", "ops_alerts", "health_audit"):
+        answer = run(ToolCall(id="r", name=name, arguments={}))
+        assert "InsufficientPrivilege" not in answer and "permission denied" not in answer, name
+
+
 class _Asking:
     """The Manager asks the Commander; the Commander tries to propose an action."""
 

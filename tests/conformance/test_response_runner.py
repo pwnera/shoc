@@ -24,12 +24,12 @@ KEY = "AKIAIOSFODNN7EXAMPLE"  # the leaked_aws_key scenario's key, used by deplo
 
 @pytest.fixture
 def case(ctx, store, config, clean):
-    return malicious_case(ctx.db, config.tenant_id, "leaked_aws_key")
+    return malicious_case(ctx.db, config.tenant_id, "leaked_aws_key", store)
 
 
 @pytest.fixture
 def okta_case(ctx, store, config, clean):
-    return malicious_case(ctx.db, config.tenant_id, "okta_mfa_fatigue")
+    return malicious_case(ctx.db, config.tenant_id, "okta_mfa_fatigue", store)
 
 
 def _run(ctx, case_uid, playbook="contain_leaked_cloud_key"):
@@ -74,8 +74,26 @@ def test_a_failed_step_is_tried_again_later_and_then_succeeds(ctx, conn, case, m
 
 
 def test_a_step_out_of_retries_fails_the_run_instead_of_raising(ctx, conn, case, monkeypatch):
+    # One required step that acts. The shipped playbook's preview page is settled
+    # as its plan and never runs (RSP-7), and its optional key steps come first,
+    # so it would spend the retries on steps that are skipped, not failed.
+    book = playbooks.Playbook.from_dict(
+        {
+            "id": "disable_only",
+            "title": "Disable the key",
+            "rules": ["x"],
+            "steps": [
+                {
+                    "name": "disable the access key",
+                    "action": "aws.disable_access_key",
+                    "params": {"access_key_id": "{{ entity.key }}"},
+                }
+            ],
+        }
+    )
+    monkeypatch.setattr(playbooks, "get", lambda playbook_id, *rest: book)
     _failing(monkeypatch, 10)
-    run = _run(ctx, case)
+    run = _run(ctx, case, "disable_only")
     for _ in range(playbooks.RETRIES):
         assert run.data.state == "waiting_timer"
         run = call("playbook.resume", ctx, {"run_uid": run.data.run_uid})
@@ -162,15 +180,21 @@ def test_a_run_whose_job_was_lost_is_picked_up_and_then_given_up(ctx, conn, conf
         "interval '1 hour' WHERE run_uid = %s",
         (run.data.run_uid,),
     )
-    execute(conn, "DELETE FROM shoc.jobs")
+    execute(conn, "DELETE FROM shoc.jobs WHERE tenant_id = %s", (config.tenant_id,))
     worker.resume_waiting_runs(conn)
     assert len(_resume_jobs(conn, run.data.run_uid)) == 1
     execute(
         conn,
-        "UPDATE shoc.jobs SET state = 'failed', last_error = 'boom' WHERE kind = 'playbook.resume'",
+        "UPDATE shoc.jobs SET state = 'failed', last_error = 'boom' "
+        "WHERE tenant_id = %s AND kind = 'playbook.resume'",
+        (config.tenant_id,),
     )
     worker.resume_waiting_runs(conn)
-    execute(conn, "UPDATE shoc.jobs SET state = 'failed' WHERE kind = 'playbook.resume'")
+    execute(
+        conn,
+        "UPDATE shoc.jobs SET state = 'failed' WHERE tenant_id = %s AND kind = 'playbook.resume'",
+        (config.tenant_id,),
+    )
     worker.resume_waiting_runs(conn)
     row = fetch_one(
         conn, "SELECT state, error FROM shoc.playbook_runs WHERE run_uid = %s", (run.data.run_uid,)
@@ -246,14 +270,31 @@ def test_an_approved_optional_step_is_run_by_the_worker(ctx, conn, config, clean
     from shoc import worker
 
     # The role behind a session key, which only a human may revoke.
-    case = malicious_case(ctx.db, config.tenant_id, "aws_session_key_two_users")
+    case = malicious_case(ctx.db, config.tenant_id, "aws_session_key_two_users", ctx.store)
     run = _run(ctx, case, "contain_workload_credentials")
     (left,) = run.data.pending_approval
     call("action.approve", ctx, {"action_uid": left})
-    execute(conn, "DELETE FROM shoc.jobs")
+    execute(conn, "DELETE FROM shoc.jobs WHERE tenant_id = %s", (config.tenant_id,))
     assert worker.run_approved_actions(conn) == 1
-    jobs = fetch_all(conn, "SELECT payload FROM shoc.jobs WHERE kind = 'action.run'")
+    jobs = fetch_all(
+        conn,
+        "SELECT payload FROM shoc.jobs WHERE tenant_id = %s AND kind = 'action.run'",
+        (config.tenant_id,),
+    )
     assert [j["payload"]["action_uid"] for j in jobs] == [left]
+
+
+def test_a_session_key_next_to_the_leaked_key_does_not_fail_the_run(ctx, config, clean):
+    """IAM cannot disable an ASIA key: the step over every key skips it, and the
+    required step disables the long-term key (H5)."""
+    case = malicious_case(ctx.db, config.tenant_id, "aws_session_key_two_users", ctx.store)
+    run = _run(ctx, case)
+    assert run.data.state == "done", run.data.detail
+    steps = playbooks.steps_of(ctx.db, run.data.run_uid)
+    required = [s for s in steps if s["name"] == "disable the access key"]
+    assert [s["state"] for s in required] == ["done"]
+    skipped = [s for s in steps if s["state"] == "skipped"]
+    assert any("session key" in str(s["result"]) for s in skipped), skipped
 
 
 def test_asking_again_keeps_the_window_and_the_approval(ctx, conn, config, case):
@@ -285,17 +326,23 @@ def test_an_action_whose_job_failed_can_be_queued_again(ctx, conn, config, case)
         principal_kind="agent",
         config=config,
     )
-    execute(conn, "DELETE FROM shoc.jobs")
+    execute(conn, "DELETE FROM shoc.jobs WHERE tenant_id = %s", (config.tenant_id,))
     uid = row["action_uid"]
     assert action_store.queue_run(conn, config.tenant_id, uid)
     assert not action_store.queue_run(conn, config.tenant_id, uid), "never queued twice at once"
     for _ in range(action_store.RUN_JOBS):
         execute(
             conn,
-            "UPDATE shoc.jobs SET state = 'failed' WHERE kind = 'action.run' AND state = 'pending'",
+            "UPDATE shoc.jobs SET state = 'failed' "
+            "WHERE tenant_id = %s AND kind = 'action.run' AND state = 'pending'",
+            (config.tenant_id,),
         )
         action_store.queue_run(conn, config.tenant_id, uid)
-    parked = fetch_all(conn, "SELECT state FROM shoc.jobs WHERE kind = 'action.run'")
+    parked = fetch_all(
+        conn,
+        "SELECT state FROM shoc.jobs WHERE tenant_id = %s AND kind = 'action.run'",
+        (config.tenant_id,),
+    )
     assert [p["state"] for p in parked] == ["failed"] * action_store.RUN_JOBS, (
         "after RUN_JOBS parked jobs the worker stops trying"
     )

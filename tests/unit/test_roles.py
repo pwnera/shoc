@@ -168,3 +168,19 @@ def test_the_commander_reads_no_raw_logs():
 
 def test_prompts_carry_no_bold_emphasis():
     assert all("**" not in role.prompt for role in roles.ALL.values())
+
+
+def test_cti_is_not_promised_a_permanent_do_not_match_list():
+    """do_not_match lives in one report's JSON until indicator.exclude exists (AGT-13)."""
+    assert "permanent" not in roles.CTI.prompt
+    assert "indicator.exclude" in roles.CTI.prompt
+
+
+def test_the_hunter_is_told_which_older_event_the_code_accepts():
+    """Any other older_event basis is refused, so the model is told this one (DET-9)."""
+    import dataclasses
+
+    assert "before this window" not in roles.HUNTER.prompt
+    assert "before the pack's lookback, from the same product" in roles.HUNTER.prompt
+    [basis] = [f for f in dataclasses.fields(roles.TupleVerdict) if f.name == "basis"]
+    assert "before the pack's lookback, from the same product" in basis.metadata["doc"]

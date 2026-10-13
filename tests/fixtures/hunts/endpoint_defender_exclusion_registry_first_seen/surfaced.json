@@ -1,0 +1,19 @@
+[
+  {
+    "_source": "defender_hunting",
+    "category": "AdvancedHunting-DeviceRegistryEvents",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "properties": {
+      "DeviceId": "2222222222222222222222222222222222222222",
+      "DeviceName": "laptop-21.example.org",
+      "ActionType": "RegistryValueSet",
+      "RegistryKey": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows Defender\\Exclusions\\Paths",
+      "RegistryValueName": "C:\\Users\\Public\\Libraries",
+      "RegistryValueType": "Dword",
+      "RegistryValueData": "0",
+      "InitiatingProcessFileName": "MsMpEng.exe",
+      "InitiatingProcessCommandLine": "\"MsMpEng.exe\"",
+      "InitiatingProcessAccountName": "system"
+    }
+  }
+]

@@ -118,9 +118,15 @@ def test_cloudfunnel_resumes_without_rereading_and_finds_a_late_file(monkeypatch
 
 def test_cloudfunnel_stops_at_the_limit_and_carries_on(monkeypatch):
     k1, k2 = key("b"), key("c")
-    transport(
+    seen = transport(
         monkeypatch,
-        [s3_list(k1, k2), s3_object(event("e1")), s3_list(k1, k2), s3_object(event("e2"))],
+        [
+            s3_list(k1, k2),
+            s3_object(event("e1")),
+            s3_list(k2),
+            s3_object(event("e2")),
+            s3_list(k1, k2),
+        ],
     )
     connector = connectors.get("sentinelone_cloudfunnel")
     settings = {"bucket": "cf-bucket", "bucket_region": "eu-west-3", "event_categories": "all"}
@@ -128,6 +134,11 @@ def test_cloudfunnel_stops_at_the_limit_and_carries_on(monkeypatch):
     assert [r["event"]["id"] for r in first.records] == ["e1"] and first.more is True
     second = connector.fetch(settings, AWS, first.cursor, 1)
     assert [r["event"]["id"] for r in second.records] == ["e2"] and second.more is False
+    assert dict(seen[2].url.params)["start-after"] == k1, "the walk lists the day once"
+    third = connector.fetch(settings, AWS, second.cursor, 1)
+    after = second.cursor["prefixes"][BASE]["after"]
+    assert dict(seen[4].url.params)["start-after"] == after, "a new walk lists it again"
+    assert third.records == [] and third.more is False
 
 
 def test_cloudfunnel_pages_a_long_listing(monkeypatch):

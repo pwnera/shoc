@@ -10,6 +10,7 @@ Install with the extra: `pip install "shoc[snowflake]"`.
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 import os
@@ -19,7 +20,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from shoc.errors import ConfigError, StoreError
-from shoc.ingest.batch import read_unique
+from shoc.ingest.batch import batch_name, orphaned, read_unique
 from shoc.store import ocsf
 from shoc.store.base import LoadStats, QueryResult, RetentionPolicy, StoreHealth
 from shoc.store.sql import prepare
@@ -38,6 +39,13 @@ def _ddl_columns() -> str:
     return ",\n  ".join(f'"{name.upper()}" {_SF_TYPES[tp]}' for name, tp in ocsf.COLUMNS)
 
 
+@functools.cache
+def _staging_dir() -> str:
+    """One per process, as for Databricks (D162): a store is opened per request
+    and per job, and a directory made per store was never removed."""
+    return tempfile.mkdtemp(prefix="shoc-sf-")
+
+
 class SnowflakeStore:
     dialect = "snowflake"
 
@@ -53,6 +61,7 @@ class SnowflakeStore:
         role: str = "",
         private_key: str = "",
         reader: str = "",
+        statement_timeout_seconds: int = 120,
     ) -> None:
         if not (account and user and (password or private_key) and warehouse):
             raise ConfigError(
@@ -71,8 +80,9 @@ class SnowflakeStore:
         self.database = database.upper()
         self.schema = schema.upper()
         self.stage = "SHOC_BATCHES"
+        self.statement_timeout_seconds = statement_timeout_seconds
         self._conn: Any = None
-        self._staging_dir = tempfile.mkdtemp(prefix="shoc-sf-")
+        self._staging_dir = _staging_dir()
 
     # -- connection -----------------------------------------------------
     @property
@@ -89,7 +99,13 @@ class SnowflakeStore:
                 "account": self.account,
                 "user": self.user,
                 "warehouse": self.warehouse,
-                "client_session_keep_alive": True,
+                # Snowflake runs a statement for two days and queues one for
+                # ever: a busy warehouse held the worker until its watchdog.
+                "session_parameters": {
+                    "STATEMENT_TIMEOUT_IN_SECONDS": int(self.statement_timeout_seconds),
+                    "STATEMENT_QUEUED_TIMEOUT_IN_SECONDS": int(self.statement_timeout_seconds),
+                    "TIMEZONE": "UTC",
+                },
             }
             if self.role:
                 kwargs["role"] = self.role
@@ -128,10 +144,13 @@ class SnowflakeStore:
             f'CREATE STAGE IF NOT EXISTS "{self.database}"."{self.schema}".{self.stage} '
             "FILE_FORMAT = (TYPE = JSON)"
         )
+        # No clustering key: one turns on reclustering billed as serverless
+        # credits, and load order already keeps `ingested_at`, which a cycle
+        # prunes on, close within each micro-partition (D64).
         self._execute(
             f"""CREATE TABLE IF NOT EXISTS {self.table} (
   {_ddl_columns()}
-) CLUSTER BY (TO_DATE("TIME"), "TENANT_ID")"""
+)"""
         )
         if self.reader:
             self._execute(f'GRANT USAGE ON DATABASE "{self.database}" TO ROLE "{self.reader}"')
@@ -140,7 +159,7 @@ class SnowflakeStore:
             )
             self._execute(f'GRANT SELECT ON TABLE {self.table} TO ROLE "{self.reader}"')
 
-    def migrate(self, ocsf_version: str = "1.3.0") -> None:
+    def migrate(self) -> None:
         self.create_tenant()
         have = {
             str(row.get("column_name", "")).lower()
@@ -159,7 +178,7 @@ class SnowflakeStore:
                 )
 
     # -- load -----------------------------------------------------------
-    def load_batch(self, path: str, table: str = ocsf.EVENTS_TABLE) -> LoadStats:
+    def load_batch(self, path: str) -> LoadStats:
         """Stage the batch, COPY it into a temporary table, MERGE in what is new.
 
         Snowflake enforces no primary key. An insert-only MERGE on
@@ -171,9 +190,10 @@ class SnowflakeStore:
         started = time.monotonic()
         rows = read_unique(path)
         if not rows:
-            return LoadStats(table=table)
+            return LoadStats()
 
-        name = f"batch-{int(time.time() * 1000)}-{os.getpid()}.ndjson"
+        # The stage is shared by every worker, so the name is unique to this load.
+        name = f"{batch_name()}.ndjson"
         local = os.path.join(self._staging_dir, name)
         nbytes = 0
         with open(local, "w") as out:
@@ -192,9 +212,7 @@ class SnowflakeStore:
         loading = f'"{self.database}"."{self.schema}"."{name.replace("-", "_").replace(".", "_").upper()}"'
         staged = False
         try:
-            self._execute(
-                f"PUT 'file://{local}' {stage_path} OVERWRITE = TRUE AUTO_COMPRESS = TRUE"
-            )
+            self._execute(f"PUT 'file://{local}' {stage_path} AUTO_COMPRESS = TRUE")
             staged = True
             self._execute(f"CREATE TEMPORARY TABLE {loading} LIKE {self.table}")
             self._execute(
@@ -223,7 +241,6 @@ class SnowflakeStore:
             rows=loaded,
             bytes=nbytes,
             duration_ms=int((time.monotonic() - started) * 1000),
-            table=table,
         )
 
     def _remove(self, staged: str, loading: str) -> None:
@@ -246,7 +263,7 @@ class SnowflakeStore:
             raise StoreError(f"query failed: {exc}") from exc
         truncated = len(rows) > limit
         return QueryResult(
-            rows=rows[:limit],
+            rows=ocsf.decoded(rows[:limit]),
             sql=sql,
             duration_ms=int((time.monotonic() - started) * 1000),
             truncated=truncated,
@@ -257,6 +274,7 @@ class SnowflakeStore:
 
     # -- housekeeping ---------------------------------------------------
     def apply_retention(self, policy: RetentionPolicy) -> int:
+        self._sweep()
         cutoff = datetime.now(UTC) - timedelta(days=policy.days)
         return _deleted(
             self._execute(
@@ -264,6 +282,16 @@ class SnowflakeStore:
                 (self.tenant_id, cutoff),
             )
         )
+
+    def _sweep(self) -> None:
+        """Remove the batches a killed load left on the stage, which retention never reads."""
+        stage = f'@"{self.database}"."{self.schema}".{self.stage}'
+        try:
+            listed = self._execute(f"LIST {stage}")
+            for name in orphaned(str(r.get("name") or "").rsplit("/", 1)[-1] for r in listed):
+                self._execute(f"REMOVE {stage}/{name}")
+        except Exception as exc:
+            log.warning("could not sweep %s: %s", stage, exc)
 
     def reset(self) -> None:
         self._execute(f'DELETE FROM {self.table} WHERE "TENANT_ID" = %s', (self.tenant_id,))
@@ -290,10 +318,13 @@ class SnowflakeStore:
 
 
 def _der(pem: str) -> bytes:
-    """The connector takes a private key as DER bytes, and people hold PEM."""
+    """The connector takes a private key as DER bytes, and people hold PEM.
+
+    A PEM kept on one line of an .env file has its newlines written `\\n`.
+    """
     from cryptography.hazmat.primitives import serialization
 
-    key = serialization.load_pem_private_key(pem.encode(), password=None)
+    key = serialization.load_pem_private_key(pem.replace("\\n", "\n").encode(), password=None)
     return key.private_bytes(
         serialization.Encoding.DER,
         serialization.PrivateFormat.PKCS8,

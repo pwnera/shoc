@@ -64,6 +64,11 @@ jobs:
           mkdir sbom
           ${{ steps.syft.outputs.cmd }} scan dir:/tmp/runtime \
             -o cyclonedx-json=sbom/shoc-${{ steps.version.outputs.tag }}.cdx.json
+          # The image installs exactly these versions (deploy/Dockerfile), so
+          # both builds below and this SBOM agree. They are this job's own
+          # resolution of pyproject.toml, made minutes after the gate's: a
+          # dependency released in between ships without the gate having run it.
+          /tmp/runtime/bin/pip freeze --exclude shoc > constraints.txt
       - uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
       - uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
       - name: build the image locally for the SBOM and a smoke test
@@ -77,7 +82,7 @@ jobs:
       - name: CycloneDX SBOM of the image
         run: |
           docker run --rm shoc:release --version
-          # ponytail: the amd64 image stands for both platforms; scan each if they diverge.
+          # The dry run's SBOM; a release replaces it with one per pushed platform.
           ${{ steps.syft.outputs.cmd }} scan docker:shoc:release \
             -o cyclonedx-json=sbom/shoc-${{ steps.version.outputs.tag }}-image.cdx.json
       - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
@@ -112,13 +117,26 @@ jobs:
             ${{ env.IMAGE }}:latest
       - uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
         if: github.event_name == 'push'
-      - name: sign the image and attach its CycloneDX SBOM (keyless)
+      - name: sign the image and attach each platform's CycloneDX SBOM (keyless)
         if: github.event_name == 'push'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          TAG: ${{ steps.version.outputs.tag }}
+          SYFT: ${{ steps.syft.outputs.cmd }}
         run: |
-          cosign sign --yes "$IMAGE@${{ steps.build.outputs.digest }}"
-          cosign attest --yes --type cyclonedx \
-            --predicate sbom/shoc-${{ steps.version.outputs.tag }}-image.cdx.json \
-            "$IMAGE@${{ steps.build.outputs.digest }}"
+          cosign sign --yes "$IMAGE@$DIGEST"
+          # Scanned from the registry, so each SBOM describes the image that
+          # was pushed, not the local build above. Each is attested to its own
+          # platform's manifest, so a verifier knows which one it holds.
+          rm "sbom/shoc-$TAG-image.cdx.json"
+          index=$(docker buildx imagetools inspect --raw "$IMAGE@$DIGEST")
+          for arch in amd64 arm64; do
+            platform=$(jq -er --arg arch "$arch" \
+              '.manifests[] | select(.platform.os == "linux" and .platform.architecture == $arch) | .digest' <<<"$index")
+            sbom="sbom/shoc-$TAG-image-$arch.cdx.json"
+            "$SYFT" scan "registry:$IMAGE@$platform" -o "cyclonedx-json=$sbom"
+            cosign attest --yes --type cyclonedx --predicate "$sbom" "$IMAGE@$platform"
+          done
       - name: attach the SBOMs to the GitHub release
         if: github.event_name == 'push'
         env:

@@ -43,6 +43,7 @@ rules:
   - hunt:endpoint_encoded_powershell_rare
   - hunt:endpoint_remote_logon_new_source
   - hunt:endpoint_defender_exclusion_first_seen
+  - hunt:endpoint_defender_exclusion_registry_first_seen
   - hunt:linux_rare_process_external_connection
 questions:
   - id: blocked

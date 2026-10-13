@@ -91,6 +91,16 @@ describe("the inbox", () => {
     expect(inbox({ unacknowledged: [kase("C2", { state: "closed" })] })).toEqual([]);
   });
 
+  it("keeps a waiting verdict and its expired approval that the capped case log no longer holds", () => {
+    const old = kase("C9", { verdict: "needs_human", updated_at: at(-30 * 24 * hour) });
+    const expired = action("E9", { case_uid: "C9", state: "rejected", approved_by: "unattended", updated_at: at(-hour) });
+    const items = inbox({ actions: [expired], cases: [kase("C1", { verdict: "malicious" })], waiting: [old] });
+    expect(items.map((i) => [i.kind, i.key])).toEqual([
+      ["verdict", "C9"],
+      ["expired", "E9"],
+    ]);
+  });
+
   it("raises a source whose credential the provider rejected", () => {
     const rejected = { source: "okta", last_error: "Okta rejected the credential (401)", last_run_at: at(0) };
     const items = inbox({ configured: [rejected as ConfiguredSource] });

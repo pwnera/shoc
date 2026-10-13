@@ -308,6 +308,16 @@ describe("crew text set as prose", () => {
     expect(screen.getByRole("button", { name: "ipv6 2001:db8::" })).toBeTruthy();
     expect(screen.getAllByRole("button", { name: `md5 ${md5}` })).toHaveLength(1);
   });
+
+  it("chips a sign-in session, the kernel's session: key", () => {
+    const guid = "102d3b1c-5a4e-4f0b-9c1d-7e8f9a0b1c2d";
+    render(
+      <MemoryRouter>
+        <Prose text={`The sign-in session:${guid} came from a new country.`} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: `session ${guid}` })).toBeTruthy();
+  });
 });
 
 describe("the front page's played cards", () => {

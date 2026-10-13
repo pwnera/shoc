@@ -27,14 +27,15 @@ The artifacts, each for a different reader:
 
 from __future__ import annotations
 
-import hashlib
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from shoc.agents import ops
 from shoc.db.pool import Conn, execute, fetch_all, fetch_one
+from shoc.ids import make_id
 
 KINDS = ("shift", "weekly", "exec", "exception")
 PERIODS = {
@@ -58,11 +59,6 @@ class Report:
     citations: list[str] = field(default_factory=list)
 
 
-def _uid(tenant_id: str, kind: str, end: datetime) -> str:
-    blob = f"{tenant_id}|{kind}|{end.isoformat()}"
-    return "REP-" + hashlib.sha256(blob.encode()).hexdigest()[:20]
-
-
 def build(
     conn: Conn,
     store: Any,
@@ -72,6 +68,7 @@ def build(
     config: Any = None,
 ) -> Report:
     """Assemble a report for the period ending at `end`."""
+    from shoc.agents.llm import budget
     from shoc.errors import ValidationError
 
     if kind not in KINDS:
@@ -81,7 +78,7 @@ def build(
     if kind == "exception":
         items = exceptions(conn, tenant_id, config)
         return Report(
-            report_uid=_uid(tenant_id, kind, end),
+            report_uid=make_id("REP-", tenant_id, kind, end.isoformat()),
             kind=kind,
             period_start=start,
             period_end=end,
@@ -92,10 +89,13 @@ def build(
 
     cases = fetch_all(
         conn,
+        # A case closed once its findings went to another case was a grouping
+        # that did not hold, not an incident: those findings count where they went.
         """SELECT case_uid, title, severity, state, verdict, confidence, entity_key,
                   finding_uids, updated_at
            FROM shoc.cases
            WHERE tenant_id = %s AND updated_at BETWEEN %s AND %s
+             AND NOT (state = 'closed' AND cardinality(finding_uids) = 0)
            ORDER BY
              array_position(ARRAY['critical','high','medium','low','informational'], severity),
              updated_at DESC""",
@@ -126,11 +126,22 @@ def build(
         conn,
         """SELECT rule_id, count(*) AS n FROM shoc.findings
            WHERE tenant_id = %s AND last_seen BETWEEN %s AND %s
+             AND status NOT IN ('suppressed', 'self')
            GROUP BY rule_id ORDER BY n DESC LIMIT 10""",
         (tenant_id, start, end),
     )
     health = [h.__dict__ for h in ops.source_health(conn, tenant_id)]
-    alerts = [a.to_json() for a in ops.alerts(conn, tenant_id, store=store)]
+    alerts = [
+        a.to_json()
+        for a in ops.alerts(
+            conn,
+            tenant_id,
+            # The cap llm.configure stored, as `ops.alerts` the capability reads it.
+            budget_usd_per_day=budget(conn, tenant_id, "spend_usd_per_day"),
+            store=store,
+            config=config,
+        )
+    ]
     money = ops.spend(conn, tenant_id, days=PERIODS[kind].days or 1)
 
     needs_human = [c for c in cases if c["verdict"] == "needs_human"]
@@ -159,12 +170,13 @@ def build(
         body["detection"] = _detection(conn, tenant_id)
         body["quality"] = _quality(conn, store, tenant_id)
         body["metrics"] = ops.metrics(conn, tenant_id, PERIODS[kind].days or 7)
+        body["intel"] = _intel(conn, tenant_id, start, end)
         body["held"] = _held(conn, tenant_id, start, end)
     summary = _summary(kind, body, start, end)
     if kind == "exec":
         body["posture"] = _posture(conn, tenant_id, body)
     return Report(
-        report_uid=_uid(tenant_id, kind, end),
+        report_uid=make_id("REP-", tenant_id, kind, end.isoformat()),
         kind=kind,
         period_start=start,
         period_end=end,
@@ -216,6 +228,12 @@ def _summary(kind: str, body: dict[str, Any], start: datetime, end: datetime) ->
             f"Detection backlog: {detection['backlog_open']} open, "
             f"{detection['not_observable']} needing data we do not ingest; "
             f"{detection['suppressions_active']} suppression(s) active."
+        )
+    intel = body.get("intel") or {}
+    if intel:
+        parts.append(
+            f"Intel: {intel['reports_read']} report(s) read, "
+            f"{intel['ioc_match'] + intel['ioc_retrohunt']} indicator finding(s)."
         )
     quality = body.get("quality") or {}
     if quality.get("notes"):
@@ -312,7 +330,10 @@ def _unattended(conn: Conn, tenant_id: str, start: datetime, end: datetime) -> d
         """SELECT action_uid, type, target, requested_by, dry_run, updated_at
            FROM shoc.actions
            WHERE tenant_id = %s AND state = 'done' AND updated_at BETWEEN %s AND %s
-             AND coalesce(approved_by, '') = '' ORDER BY updated_at LIMIT 50""",
+             AND coalesce(approved_by, '') = ''
+             -- a person's preview: its steps are settled as plans, never run (RSP-7)
+             AND NOT (dry_run AND executed_at IS NULL)
+           ORDER BY updated_at LIMIT 50""",
         (tenant_id, start, end),
     )
     dropped = fetch_all(
@@ -386,14 +407,25 @@ def _briefing(
 def _held(conn: Conn, tenant_id: str, start: datetime, end: datetime) -> list[dict[str, Any]]:
     """What the Manager was told for the weekly: digests, and pages the gate
     turned into digests. A decision a person must make is not here; it is in
-    the exception report (D52)."""
+    the exception report (D52).
+
+    One row per source, kind and group, with its latest body cut where Slack's
+    copy cuts it and how many notices it stands for: an hourly Ops digest held
+    35 times filled most of a weekly too large for an assistant to read.
+    """
     return fetch_all(
         conn,
-        """SELECT notice_uid, source, kind, severity, case_uid, body, created_at
+        """SELECT (array_agg(notice_uid ORDER BY created_at DESC))[1] AS notice_uid,
+                  source, kind, group_key,
+                  (array_agg(severity ORDER BY created_at DESC))[1] AS severity,
+                  (array_agg(case_uid ORDER BY created_at DESC))[1] AS case_uid,
+                  left((array_agg(body ORDER BY created_at DESC))[1], 300) AS body,
+                  max(created_at) AS created_at, count(*) AS count
            FROM shoc.notices
            WHERE tenant_id = %s AND created_at BETWEEN %s AND %s
              AND (kind = 'digest' OR outcome = 'digest')
-           ORDER BY created_at LIMIT 100""",
+           GROUP BY source, kind, group_key
+           ORDER BY min(created_at) LIMIT 100""",
         (tenant_id, start, end),
     )
 
@@ -408,13 +440,69 @@ def exceptions(conn: Conn, tenant_id: str, config: Any = None) -> list[dict[str,
     waiting on a credential, or whose credential its vendor now rejects: only
     somebody with access to that product can make a new one. A vendor shoc
     reads and holds no response credential for, and dry run left on: either
-    way nothing is contained, and only the operator can change it.
+    way nothing is contained, and only the operator can change it. An indicator
+    held as too common here, which only a person's `intel.add` releases.
+
+    First, no way to reach a person at all. The report itself then reaches
+    only the console and `report.get`, but those are where it can be read.
+    Then a model that stopped answering, and pages that reached nobody.
     """
     from shoc.actions.base import NEEDS
+    from shoc.agents.manager import REFUSED, reachable
     from shoc.cases import credentials
-    from shoc.cases.engine import UNACKNOWLEDGED
+    from shoc.cases.engine import CONTAINED, UNACKNOWLEDGED
 
     items: list[dict[str, Any]] = []
+    if not any(reachable(conn, tenant_id, config).values()):
+        items.append(
+            {
+                "what": "Give shoc a way to reach you: a PagerDuty routing key "
+                "(credential.configure notify) or a Slack channel (slack.configure)",
+                "why_only_a_human": "shoc holds no pager key, Slack channel, mail server with "
+                "a signed-in admin or webhook, so every page and report reaches nobody. Only "
+                "somebody with access to PagerDuty or Slack can create one",
+                "case_uid": "",
+                "reference": "notify:unreachable",
+            }
+        )
+    if down := ops.model_down(conn, tenant_id):
+        since = f"{down['since']:%Y-%m-%d %H:%M} UTC" if down["since"] else "it was set up"
+        said = "has failed every call"
+        if down["status"]:
+            said = f"{REFUSED[down['status']]} (HTTP {down['status']})"
+        # One item per outage: it began after the last answer.
+        outage = f"{down['since']:%Y-%m-%dT%H:%M}" if down["since"] else "never"
+        items.append(
+            {
+                "what": f"Fix the model provider: it {said} (llm.configure)",
+                "why_only_a_human": f"No model call has come back since {since}, so no case "
+                "is investigated. Only somebody with the provider account can renew the key "
+                "or the credit",
+                "case_uid": "",
+                "reference": f"llm:{outage}",
+            }
+        )
+    failed = fetch_one(
+        conn,
+        # Settled as failed: a page still being retried has no outcome yet.
+        """SELECT count(*) AS n, max(delivered_at) AS at,
+                  (array_agg(last_error ORDER BY delivered_at DESC))[1] AS error
+           FROM shoc.notices
+           WHERE tenant_id = %s AND kind = 'page' AND outcome = 'failed'
+             AND delivered_at > now() - interval '24 hours'""",
+        (tenant_id,),
+    )
+    if failed and int(failed["n"]):
+        items.append(
+            {
+                "what": f"Make pages reach you: {failed['n']} page(s) in the last 24h reached "
+                "nobody",
+                "why_only_a_human": f"The last one failed with: {failed['error'] or 'no reason'}. "
+                "Only somebody with access to the pager, Slack or the mail server can fix it",
+                "case_uid": "",
+                "reference": f"page:failed:{failed['at']:%Y-%m-%d}",
+            }
+        )
     for row in fetch_all(
         conn,
         f"""SELECT a.action_uid, a.type, a.target, a.error, a.case_uid,
@@ -438,6 +526,30 @@ def exceptions(conn: Conn, tenant_id: str, config: Any = None) -> list[dict[str,
                 "case_uid": str(row["case_uid"]),
                 # A new key once the case closes, so the person hears about it again.
                 "reference": ("closed:" if row["closed"] else "") + str(row["action_uid"]),
+            }
+        )
+    # A malicious case the crew closed with nothing contained, no action
+    # proposed included: with no response credential the crew has none to propose.
+    listed = {i["case_uid"] for i in items}
+    for row in fetch_all(
+        conn,
+        f"""SELECT c.case_uid, c.title FROM shoc.cases c
+            WHERE c.tenant_id = %s AND c.state = 'closed' AND c.verdict = 'malicious'
+              AND c.closed_by IS DISTINCT FROM 'human'
+              AND coalesce(c.acknowledged_at, '-infinity') < c.closed_at
+              AND NOT {CONTAINED}
+            ORDER BY c.updated_at DESC LIMIT 20""",
+        (tenant_id,),
+    ):
+        if row["case_uid"] in listed:
+            continue
+        items.append(
+            {
+                "what": f"Act on {row['case_uid']} ({row['title']}), or acknowledge it",
+                "why_only_a_human": "The crew found it malicious and closed it, and no response "
+                "action ran on it, so nothing contained it",
+                "case_uid": str(row["case_uid"]),
+                "reference": f"uncontained:{row['case_uid']}",
             }
         )
     for row in fetch_all(
@@ -473,12 +585,47 @@ def exceptions(conn: Conn, tenant_id: str, config: Any = None) -> list[dict[str,
                 "reference": f"rejected:{row['source']}",
             }
         )
-    if getattr(config, "dry_run", False):
+    # An indicator held as too common here opens no finding and is not matched
+    # again until a person's intel.add releases it (D166).
+    for row in fetch_all(
+        conn,
+        """SELECT DISTINCT ON (i.type, i.value) i.type, i.value, i.source, n.body
+           FROM shoc.iocs i
+           JOIN shoc.notices n ON n.tenant_id = i.tenant_id
+                AND n.group_key = 'intel:held:' || i.type || ':' || i.value
+           WHERE i.tenant_id = %s AND 'prevalent' = ANY(i.tags)
+             AND n.created_at > now() - interval '7 days'
+           ORDER BY i.type, i.value, n.created_at DESC LIMIT 20""",
+        (tenant_id,),
+    ):
+        # The feed and count the hold notice names: with two feeds listing the
+        # value, the row kept above may carry the other one.
+        body, lead = str(row["body"]), f"{row['value']}, listed by "
+        said = (
+            re.match(r"(.+?), touched (\d+) accounts", body[len(lead) :])
+            if body.startswith(lead)
+            else None
+        )
+        source, touched = said.groups() if said else (row["source"], "several")
         items.append(
             {
-                "what": "Turn dry run off (SHOC_DRY_RUN=0) once the policy says what may run",
-                "why_only_a_human": "While it is on, every response action is planned and none "
-                "runs, so no case is contained. It is set where shoc is deployed",
+                "what": f"Decide on {row['type']} {row['value']}: release it with intel.add, "
+                "or leave it held",
+                "why_only_a_human": f"{source} lists it, and its first match touched "
+                f"{touched} accounts here, so it was held "
+                "as too common to raise: it opens no finding and is not matched again. Only "
+                "a person's intel.add releases it",
+                "case_uid": "",
+                "reference": f"intel:held:{row['type']}:{row['value']}",
+            }
+        )
+    if switch := _dry_run_switch(config):
+        items.append(
+            {
+                "what": f"Turn dry run off ({switch}) once the policy says what may run",
+                "why_only_a_human": "While it is on, the response actions it covers are "
+                "planned and none runs, so no case is contained with them. It is set where "
+                "shoc is deployed",
                 "case_uid": "",
                 "reference": "dry_run",
             }
@@ -499,6 +646,25 @@ def exceptions(conn: Conn, tenant_id: str, config: Any = None) -> list[dict[str,
     return items
 
 
+def _dry_run_switch(config: Any = None) -> str:
+    """The switch that keeps response a plan, or "" when actions run (RSP-7).
+
+    The same check the policy decides each action with: SHOC_DRY_RUN when it is
+    set, either way, else `dry_run` in the policy's defaults or an action's rule.
+    """
+    from shoc.cases.policy import Policy
+    from shoc.config import Config
+
+    cfg = config or Config.load()
+    if cfg.dry_run is not None:
+        return "SHOC_DRY_RUN=0" if cfg.dry_run else ""
+    policy = Policy.load(cfg)
+    if policy.dry_run_for():
+        return "dry_run: false under defaults in policy.yaml"
+    held = sorted(a for a in policy.actions if policy.dry_run_for(a))
+    return f"dry_run: false for {', '.join(held)} in policy.yaml" if held else ""
+
+
 def _exception_summary(items: list[dict[str, Any]]) -> str:
     if not items:
         return "Nothing needs you."
@@ -511,11 +677,16 @@ def send_exceptions(conn: Conn, store: Any, tenant_id: str, config: Any = None) 
     """Send the exception report when a decision needs a person, and only then.
 
     A decision goes out once: the same action or source is not sent again for
-    `EXCEPTION_REPEAT_DAYS`. Every item is a query, so the report is complete
-    with no model; with one, the Manager adds a reading (D47).
+    `EXCEPTION_REPEAT_DAYS`. A report no channel carried told nobody, so once
+    Slack or a webhook is set up its items go out again; until then they are
+    kept once, not saved again on every run. Every item is a query, so the
+    report is complete with no model; with one, the Manager adds a reading (D47).
     """
+    from shoc.agents.manager import reachable, say_in_slack
     from shoc.cases.engine import publish
 
+    ways = reachable(conn, tenant_id, config)
+    channel = ways["slack"] or ways["webhook"]
     told = {
         str(r["reference"])
         for r in fetch_all(
@@ -523,8 +694,9 @@ def send_exceptions(conn: Conn, store: Any, tenant_id: str, config: Any = None) 
             """SELECT item->>'reference' AS reference
                FROM shoc.reports, jsonb_array_elements(body->'items') AS item
                WHERE tenant_id = %s AND kind = 'exception'
-                 AND created_at > now() - %s * interval '1 day'""",
-            (tenant_id, EXCEPTION_REPEAT_DAYS),
+                 AND created_at > now() - %s * interval '1 day'
+                 AND (NOT %s OR coalesce((body->>'delivered')::boolean, true))""",
+            (tenant_id, EXCEPTION_REPEAT_DAYS, channel),
         )
     }
     report = build(conn, store, tenant_id, "exception", config=config)
@@ -537,6 +709,7 @@ def send_exceptions(conn: Conn, store: Any, tenant_id: str, config: Any = None) 
     reading = _reading(conn, tenant_id, report, config)
     if reading:
         report.body["reading"] = reading
+    report.body["delivered"] = channel
     save(conn, tenant_id, report)
     publish(
         conn,
@@ -545,14 +718,26 @@ def send_exceptions(conn: Conn, store: Any, tenant_id: str, config: Any = None) 
         report.report_uid,
         {"kind": "exception", "summary": report.summary[:1000], "items": len(fresh)},
     )
-    from shoc.agents.manager import say_in_slack
-
     refused = say_in_slack(
         conn, tenant_id, config, text="\n".join([report.summary, *([reading] if reading else [])])
     )
-    return f"exception report {report.report_uid}: {len(fresh)} decision(s)" + (
-        f"; Slack: {refused}" if refused else ""
+    return (
+        f"exception report {report.report_uid}: {len(fresh)} decision(s)"
+        + (f"; Slack: {refused}" if refused else "")
+        + _undelivered(conn, tenant_id, config)
     )
+
+
+def _undelivered(conn: Conn, tenant_id: str, config: Any = None) -> str:
+    """What a report's summary adds when no Slack channel or webhook carries it.
+
+    A report goes to Slack and onto the stream; a pager and mail do not carry
+    one, so `say_in_slack` taking nothing used to read as a report sent.
+    """
+    from shoc.agents.manager import reachable
+
+    ways = reachable(conn, tenant_id, config)
+    return "" if ways["slack"] or ways["webhook"] else "; not delivered: no channel"
 
 
 def _reading(conn: Conn, tenant_id: str, report: Report, config: Any = None) -> str:
@@ -625,8 +810,45 @@ def _quality(conn: Conn, store: Any, tenant_id: str) -> dict[str, Any]:
     }
 
 
+def _intel(conn: Conn, tenant_id: str, start: datetime, end: datetime) -> dict[str, Any]:
+    """What CTI read in the period and what its indicators found (AGT-14, DET-7).
+
+    A feed that stopped is an ops alert, and reports dropped for budget are
+    `intel.budget_short`, so both reach the report through its alerts.
+    """
+    read = fetch_all(
+        conn,
+        """SELECT report_uid, title, left(relevance, 300) AS relevance, techniques,
+                  count(*) OVER () AS total
+           FROM shoc.intel_reports
+           WHERE tenant_id = %s AND digested_at BETWEEN %s AND %s
+           ORDER BY digested_at DESC LIMIT 20""",
+        (tenant_id, start, end),
+    )
+    found = (
+        fetch_one(
+            conn,
+            """SELECT count(*) FILTER (WHERE rule_id LIKE 'ioc_match:%%') AS ioc_match,
+                      count(*) FILTER (WHERE rule_id LIKE 'ioc_retrohunt:%%') AS ioc_retrohunt
+               FROM shoc.findings
+               WHERE tenant_id = %s AND last_seen BETWEEN %s AND %s
+                 AND status NOT IN ('suppressed', 'self')""",
+            (tenant_id, start, end),
+        )
+        or {}
+    )
+    return {
+        "reports_read": int(read[0]["total"]) if read else 0,
+        "reports": [{k: v for k, v in r.items() if k != "total"} for r in read],
+        "ioc_match": int(found.get("ioc_match") or 0),
+        "ioc_retrohunt": int(found.get("ioc_retrohunt") or 0),
+    }
+
+
 def _posture(conn: Conn, tenant_id: str, body: dict[str, Any]) -> dict[str, Any]:
     """The numbers a founder actually asks about."""
+    from shoc.detect.intel import MATCHED
+
     graph = (
         fetch_one(
             conn,
@@ -636,7 +858,16 @@ def _posture(conn: Conn, tenant_id: str, body: dict[str, Any]) -> dict[str, Any]
         or {}
     )
     iocs = (
-        fetch_one(conn, "SELECT count(*) AS n FROM shoc.iocs WHERE tenant_id = %s", (tenant_id,))
+        fetch_one(
+            conn,
+            # What `intel.indicators_for` would match: not expired, unverified
+            # or held as prevalent.
+            """SELECT count(*) AS n FROM shoc.iocs
+               WHERE tenant_id = %s AND type = ANY(%s)
+                 AND (expires_at IS NULL OR expires_at > now())
+                 AND NOT unverified AND NOT ('prevalent' = ANY(tags))""",
+            (tenant_id, list(MATCHED)),
+        )
         or {}
     )
     merged = (
@@ -738,7 +969,8 @@ def send(
     Nothing used to build or send either, so every digest the crew held "for the
     weekly" reached nobody (AGT-14). It goes onto the stream, and to the Slack
     channel as the Manager when one is configured; the console shows the last
-    one. Returns the report and why Slack refused it, or "".
+    one. Returns the report and why Slack refused it, "not delivered: no
+    channel" when neither Slack nor a webhook carries it, or "".
     """
     from shoc.agents.manager import say_in_slack
     from shoc.cases.engine import publish
@@ -754,11 +986,20 @@ def send(
         tenant_id,
         "report.ready",
         report.report_uid,
-        {"kind": kind, "summary": report.summary[:1000], "held": len(held)},
+        {
+            "kind": kind,
+            "summary": report.summary[:1000],
+            "held": sum(int(n.get("count") or 1) for n in held),
+        },
     )
     lines = [
         report.summary,
         *([reading] if reading else []),
-        *(f"• {str(n.get('body') or '')[:300]}" for n in held[:15]),
+        *(
+            f"• {n.get('body') or ''}"
+            + (f" ({n['count']} times)" if int(n.get("count") or 1) > 1 else "")
+            for n in held[:15]
+        ),
     ]
-    return report, say_in_slack(conn, tenant_id, config, text="\n".join(lines))
+    refused = say_in_slack(conn, tenant_id, config, text="\n".join(lines))
+    return report, refused or _undelivered(conn, tenant_id, config).removeprefix("; ")

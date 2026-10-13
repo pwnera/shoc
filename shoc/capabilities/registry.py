@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import dataclasses
 import importlib
+import logging
 import pkgutil
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -19,8 +21,34 @@ from typing import Any, Literal
 from shoc.errors import Denied, NotFound, ShocError
 from shoc.jsonschema import coerce_dataclass, dataclass_schema, to_json
 
+log = logging.getLogger("shoc.registry")
+
 Principal = Literal["human", "agent", "external_agent", "service"]
 Autonomy = Literal["L0", "L1", "L2"]
+
+# Reads that return events, cases or what the crew remembers about people:
+# audited when a token calls them (`Capability.audits_read`).
+AUDITED_READS = frozenset(
+    {"events.query", "search", "timeline.build", "case.get", "finding.get", "memory.search"}
+)
+
+# A caller refused the same capability again within this many seconds leaves
+# no second row: a page polling what its role may not read would fill the chain.
+REFUSAL_EVERY_SECONDS = 60.0
+# (tenant, principal, capability) -> when its refusal was last audited, in this process.
+_refused: dict[tuple[str, str, str], float] = {}
+
+
+def _first_refusal(ctx: Context, name: str) -> bool:
+    """Whether this refusal is the first of its kind in REFUSAL_EVERY_SECONDS."""
+    key = (ctx.tenant_id, f"{ctx.caller.kind}:{ctx.caller.id}", name)
+    now = time.monotonic()
+    if now - _refused.get(key, float("-inf")) < REFUSAL_EVERY_SECONDS:
+        return False
+    if len(_refused) > 10_000:
+        _refused.clear()
+    _refused[key] = now
+    return True
 
 
 @dataclass
@@ -70,6 +98,7 @@ class Context:
     config: Any = None
     _db: Any = None
     _store: Any = None
+    _opened_store: bool = field(default=False, init=False, repr=False)
 
     def __post_init__(self) -> None:
         from shoc.db.pool import ALL_TENANTS
@@ -109,7 +138,26 @@ class Context:
             from shoc.store import open_store
 
             self._store = open_store(self.config, self.tenant_id, readonly=self.reads_only)
+            self._opened_store = True
         return self._store
+
+    def close(self) -> None:
+        """Close the event store this Context opened (STO-4).
+
+        Called where a Context is made and owned: the end of a REST, MCP or
+        Slack request and of a worker job. Never inside `Capability.invoke`,
+        since capabilities call each other on one Context. A store handed in
+        as `_store` belongs to whoever handed it in.
+        """
+        if self._opened_store:
+            store, self._store, self._opened_store = self._store, None, False
+            # A session close lost on a network blip must not turn a finished
+            # call into a failure: a REST 500 after a committed write, or a
+            # worker job retried that already took effect.
+            try:
+                store.close()
+            except Exception as exc:
+                log.warning("could not close the event store: %s", exc)
 
     @property
     def reads_only(self) -> bool:
@@ -197,19 +245,63 @@ class Capability:
             return False
         return True
 
+    def audits_read(self, caller: Caller, inp: Any) -> bool:
+        """Whether this read of people's data leaves an audit row (SEC-1).
+
+        A token's reads do, and a person's bulk or raw read of events. The
+        crew's reads do not: they run on the read-only role and the case's
+        openspace already holds them. Nor a person's console views, which
+        would write a row on every click.
+        """
+        if self.audit or self.name not in AUDITED_READS or caller.kind == "agent":
+            return False
+        if caller.kind in ("external_agent", "service"):
+            return True
+        raw = bool(getattr(inp, "include_raw", False))
+        return self.name == "events.query" and (raw or getattr(inp, "limit", 0) > 100)
+
     def invoke(self, ctx: Context, payload: dict[str, Any] | Any) -> Result:
         """The one call path: permission check -> validate -> audit."""
-        self.check(ctx.caller)
-        inp = coerce_dataclass(self.input, payload)
-        ctx.scope_connection()
-        if not self.audit:
-            return self.fn(ctx, inp)
         from shoc.db.audit import record
 
+        ctx.scope_connection()
         try:
+            self.check(ctx.caller)
+        except Denied as exc:
+            # A refusal is how a stolen token or a probe shows. The caller has
+            # authenticated already, so nobody can flood the chain anonymously.
+            try:
+                if _first_refusal(ctx, self.name):
+                    record(ctx, self.name, payload, error=str(exc))
+            except Exception:
+                log.warning("could not audit a refused call to %s", self.name, exc_info=True)
+            raise
+        inp = coerce_dataclass(self.input, payload)
+        if self.audits_read(ctx.caller, inp):
             result = self.fn(ctx, inp)
-        except ShocError as exc:
-            record(ctx, self.name, inp, error=str(exc))
+            record(ctx, self.name, inp)  # the filters, never the rows read
+            return result
+        if not self.audit:
+            return self.fn(ctx, inp)
+
+        # An L2 or security change commits with its audit row or not at all. A
+        # call that acts on a vendor is left out: what it did there cannot be
+        # rolled back, so the row that records it must not be either. Mail a
+        # capability sends (user.invite, user.reset) leaves before the commit:
+        # if the row then fails, the link it carries was never stored and opens nothing.
+        acts = self.scope in ("actions:run", "playbooks:run")
+        together = (self.autonomy == "L2" or "security" in self.tags) and not acts
+        try:
+            if together:
+                with ctx.db.transaction():
+                    result = self.fn(ctx, inp)
+                    record(ctx, self.name, inp, result=result)
+                return result
+            result = self.fn(ctx, inp)
+        except Exception as exc:
+            # Any other exception's message may hold data; its class says what failed.
+            said = str(exc) if isinstance(exc, ShocError) else type(exc).__name__
+            record(ctx, self.name, inp, error=said)
             raise
         record(ctx, self.name, inp, result=result)
         return result

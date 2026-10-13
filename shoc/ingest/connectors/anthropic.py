@@ -38,20 +38,19 @@ class AnthropicConnector:
     def fetch(
         self, settings: dict[str, Any], secret: dict[str, Any], cursor: dict[str, Any], limit: int
     ) -> FetchResult:
-        hours = int(settings.get("backfill_hours", 24))
         with client(headers(secret)) as http:
-            keys = _new_keys(http, cursor.get("keys") or {}, hours)
+            keys = _new_keys(http, cursor.get("keys") or {}, settings)
             usage = llmusage.read(
                 http,
                 f"{API}/usage_report/messages",
                 cursor.get("usage") or {},
-                hours,
+                int(settings.get("backfill_hours", 24)),
                 "anthropic",
                 _usage_query,
             )
             if not settings.get("activity_feed"):
                 return llmusage.combine(keys=keys, usage=usage)
-            feed = _activities(http, cursor.get("feed") or {}, limit, hours)
+            feed = _activities(http, cursor.get("feed") or {}, limit, settings)
         return llmusage.combine(keys=keys, usage=usage, feed=feed)
 
 
@@ -65,13 +64,14 @@ def _usage_query(start: datetime, end: datetime) -> list[tuple[str, Any]]:
     ]
 
 
-def _new_keys(http: httpx.Client, cursor: dict[str, Any], hours: int) -> FetchResult:
+def _new_keys(http: httpx.Client, cursor: dict[str, Any], settings: dict[str, Any]) -> FetchResult:
     """Every key created after the cursor, read from the whole list.
 
     The list is small and has no creation filter, so it is read to the end each
-    time; `since` moves to the newest key seen.
+    time; `since` moves to the newest key seen. A key is listed once it
+    exists, so nothing comes late and the read needs no overlap (D164).
     """
-    since = since_default(cursor, hours=hours)
+    since = since_default(cursor, settings, timedelta(0))
     found: list[dict[str, Any]] = []
     params: dict[str, Any] = {"limit": 1000}
     for _ in range(20):
@@ -88,10 +88,13 @@ def _new_keys(http: httpx.Client, cursor: dict[str, Any], hours: int) -> FetchRe
     return FetchResult(records=records, cursor={"since": newest})
 
 
-def _activities(http: httpx.Client, cursor: dict[str, Any], limit: int, hours: int) -> FetchResult:
+def _activities(
+    http: httpx.Client, cursor: dict[str, Any], limit: int, settings: dict[str, Any]
+) -> FetchResult:
     """Oldest first, a minute behind now as Anthropic advises; `after_id` pages
-    through the window it was issued for."""
-    since = since_default(cursor, hours=hours)
+    through the window it was issued for. That minute is Anthropic's published
+    lag, so the read needs no overlap (D164)."""
+    since = since_default(cursor, settings, timedelta(0))
     params: dict[str, Any] = {
         "order": "asc",
         "limit": min(int(limit), 1000),

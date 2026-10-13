@@ -50,14 +50,42 @@ def test_categories_and_grade_count_and_age_costs():
 def test_the_same_story_from_another_vendor_is_linked():
     earlier = [("RPT-1", "Akira ransomware abuses SonicWall SSL VPN accounts", "")]
     assert intake.same_as("SonicWall SSL VPN flaw exploited by Akira", "", earlier) == "RPT-1"
-    two_cves = [("RPT-2", "Patch Tuesday", "CVE-2026-1111 and CVE-2026-2222")]
-    assert intake.same_as("Exchange chain", "CVE-2026-1111, CVE-2026-2222", two_cves) == "RPT-2"
+    two_cves = [("RPT-2", "ProxyNotShell exploited", "CVE-2026-1111 and CVE-2026-2222")]
+    assert (
+        intake.same_as("ProxyNotShell chain", "CVE-2026-1111, CVE-2026-2222", two_cves) == "RPT-2"
+    )
 
 
 def test_short_or_generic_titles_are_not_the_same_story():
     earlier = [("RPT-1", "Post 1", ""), ("RPT-2", "Threat report: new campaign analysis", "")]
     assert intake.same_as("Post 2", "", earlier) == ""
     assert intake.same_as("New campaign analysis of a threat", "", earlier) == ""
+
+
+def test_two_kits_against_one_product_are_two_stories():
+    """Product and threat-class words alone do not make the same story (DET-7)."""
+    earlier = [("RPT-1", "Tycoon 2FA phishing kit targets Microsoft 365 accounts", "")]
+    title = "EvilProxy phishing kit targets Microsoft 365 accounts"
+    assert intake.same_as(title, "", earlier) == ""
+    # The generic words count for nothing apart from their phrase, too.
+    earlier = [("RPT-1", "Tycoon 2FA phishing hits Microsoft 365", "")]
+    assert intake.same_as("EvilProxy phishing hits Microsoft 365", "", earlier) == ""
+    assert intake.same_as("Mamba 2FA phishing hits Microsoft 365", "", earlier) == ""
+
+
+def test_a_roundup_sharing_cves_does_not_swallow_an_exploitation_report():
+    roundup = [("RPT-2", "Patch Tuesday fixes 70 flaws", "CVE-2026-1111 and CVE-2026-2222")]
+    text = "CVE-2026-1111, CVE-2026-2222"
+    assert intake.same_as("Exchange chain exploited in the wild", text, roundup) == ""
+    roundup = [
+        (
+            "RPT-3",
+            "Microsoft Patch Tuesday fixes two exploited zero-days",
+            "CVE-2026-1111 and CVE-2026-2222",
+        )
+    ]
+    title = "Exploited Windows zero-days used by Storm-2561"
+    assert intake.same_as(title, text, roundup) == "", "news words name no story"
 
 
 def test_the_profile_is_said_in_one_line():

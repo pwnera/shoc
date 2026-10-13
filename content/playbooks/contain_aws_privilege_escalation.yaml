@@ -20,6 +20,7 @@ rules:
   - aws_organization_changed
   - aws_root_account_activity
   - aws_console_login_without_mfa
+  - aws_root_console_login_without_mfa
   - aws_mfa_device_changed
   - aws_identity_provider_changed
   - aws_domain_transfer_unlocked
@@ -51,7 +52,7 @@ example: |
   disposition: malicious, because an outside account now holds a role it has used.
 trigger:
   verdict: [malicious]
-  severity_at_least: high
+  severity_at_least: medium
   min_confidence: 0.8
 steps:
   - name: disable the actor's access key

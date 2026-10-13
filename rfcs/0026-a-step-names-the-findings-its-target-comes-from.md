@@ -117,13 +117,32 @@ device, resource, role, ip, file_hash, process_hash, account.
   its interpreter in the same field. The block is L1 only when research calls
   the hash malicious or suspicious (RSP-5) and the crew's review agrees
   (RSP-6). A powershell.exe hash fails research and waits for a person.
-- `contain_workload_credentials` revokes `{{ entity.role }}` with
-  `aws.revoke_role_sessions`, which stays L2.
+- `contain_workload_credentials` revokes
+  `{{ rule.aws_workload_credentials_misused.role }}` (`{{ entity.role }}` until
+  D272) with `aws.revoke_role_sessions`, which stays L2.
   `contain_aws_guardduty_finding` disables and revokes the sessions of
   `{{ rule.aws_guardduty_finding.key }}`. `contain_leaked_cloud_key` keeps
   `{{ entity.key }}` and `aws.revoke_sessions`. A role step there on
   `{{ platform.aws.role }}` would ask a person to approve the same deny twice
   whenever the case's only key is a session key.
+
+> Amended on 2026-10-12 (D177, D272). A step whose target is a
+> `rule.<id>.<kind>` or `platform.<product>.<kind>` placeholder with several
+> values fans out to one action per value, up to `FAN_OUT_AT_MOST` (10); above
+> that the step fails as ambiguous and a person picks the target.
+> `entity.<kind>` names its first value alone, and `notify.*` steps join the
+> values. A run is keyed on a hash of what its steps act on and on its mode
+> (preview, dry or live), so a key or account that joins the case later gets a
+> run of its own; the worker's job key is
+> `playbook:<id>:<case>:<targets>:<dry or live>`. Every playbook that answers
+> one rule reads `rule.<id>.<kind>`, which a unit test enforces.
+> `contain_infostealer`'s identity steps read `{{ platform.edr.user }}`;
+> `contain_aws_data_exposure`'s bucket, KMS key and snapshot steps and
+> `contain_stripe_fraud`'s charge step read the one rule each serves.
+> `contain_leaked_cloud_key`'s required step keeps `{{ entity.key }}`, and an
+> optional step fans out over `{{ platform.aws.key }}`, skipping session (ASIA)
+> keys. The other multi-rule actor steps keep `entity.*` until a
+> playbook-level scope exists.
 
 Upgrade: findings stored before this change have no `device`, `role` or hash
 entities. A run on such a case renders those placeholders empty and skips the
@@ -135,7 +154,8 @@ events is rewritten with the new kinds.
 - A scope still picks one value. If two accounts signed in during a spray, the
   step revokes the first, and the page and the crew have to deal with the
   second. A step that fans out over every value would need one action row per
-  value, and the runner keeps one per step.
+  value, and the runner keeps one per step. (D177 since gives a fanned step one
+  action row per value.)
 - Every telemetry finding on a host now carries its processes' hashes. They do
   not link, but they make the case's entity list longer.
 
@@ -174,6 +194,8 @@ a `role:` on the case. The revocation that reads it is L2, so a person decides.
 ## Unresolved questions
 
 - Whether a step should act on every value of a scope, not only the first.
+  Resolved on 2026-10-12 by D177: a rule's or a platform's scope fans out, up
+  to 10 values; `entity.*` does not.
 - Whether `file_hash` should be read from alerts only, not from telemetry.
 - `contain_leaked_cloud_key` acts on the first key. A case with a user's AKIA
   key and a stolen ASIA key revokes the user's sessions and not the role's.

@@ -169,7 +169,7 @@ def gather_context(conn: Conn, tenant_id: str, target_kind: str, target: str) ->
             {
                 str(n["node"])
                 for n in out.neighbours
-                if n["kind"] in ("user", "key", "account", "host", "resource")
+                if n["kind"] in ("user", "key", "session", "account", "host", "resource")
             }
         )
         out.facts = [str(m["body"]) for m in memory.search(conn, tenant_id, target, limit=8)]

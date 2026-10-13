@@ -9,11 +9,12 @@
  */
 import { useSyncExternalStore } from "react";
 import { announce } from "./announce";
-import { call } from "./api";
-import { recordOf } from "./commands";
+import { call, OWNER } from "./api";
+import { forgetRecentRecords, recordOf } from "./commands";
 import { bare, parseEntity } from "./entity";
 import { middle, shortId } from "./format";
 import type { Answer } from "@/types";
+import { forgetRecentQueries } from "@/routes/explore/query";
 
 /** What the reader is looking at, sent as the first turn: `ask` has no structured context yet. */
 export type About = {
@@ -88,9 +89,10 @@ export function useChatState(): ChatState {
   );
 }
 
-/** The words the context chip shows and `ask` receives. */
+/** The words the context chip shows and `ask` receives; an entity, a value from the logs, in quotes. */
 export function aboutText(about: About): string {
-  return about.kind === "query" ? `I am looking at the events for ${about.id}.` : `I am looking at ${about.kind} ${about.id}.`;
+  if (about.kind === "query") return `I am looking at the events for ${about.id}.`;
+  return `I am looking at ${about.kind} ${about.kind === "entity" ? JSON.stringify(about.id) : about.id}.`;
 }
 
 export const aboutKey = (about: About | null) => (about ? `${about.kind}:${about.id}` : "");
@@ -105,12 +107,14 @@ export function aboutLabel(about: About): string {
 /** A record id, event uid or source name: one token, so a crafted link cannot put a sentence in the operator's mouth. */
 const ID = /^[\w.:-]{1,200}$/;
 const LONGEST = 200;
+/** An entity key: one token too, though its value may hold `/`, `@` or `\`. */
+const ENTITY = /^[^\s\p{Cc}]{1,120}$/u;
 
 /** The context of a URL: an open record dialog first, then the record page, then Explore's query. */
 export function aboutOf(pathname: string, search: string): About | null {
   const params = new URLSearchParams(search);
   const entity = params.get("entity");
-  if (entity && entity.length <= LONGEST && parseEntity(entity)) return { kind: "entity", id: entity };
+  if (entity && ENTITY.test(entity) && parseEntity(entity)) return { kind: "entity", id: entity };
   for (const [param, kind] of [
     ["event", "event"],
     ["action", "action"],
@@ -172,6 +176,46 @@ export function dropContext(about: About | null) {
 
 export function newConversation() {
   set({ turns: [], draft: "", dropped: "" });
+}
+
+function forgetThread() {
+  set({ turns: [], unread: false, draft: "", dropped: "" });
+}
+
+/** One person's lookups, beside the thread: recent records (`lib/commands.ts`) and queries (`routes/explore/query.ts`). */
+function forgetRecents() {
+  forgetRecentRecords();
+  forgetRecentQueries();
+}
+
+/** Forget the thread and the recent lookups, on Log out or when someone else signs in here (SEC-3). */
+export function forgetHistory() {
+  forgetRecents();
+  forgetThread();
+}
+
+/**
+ * Signed in as `id`: a thread or lookups another person left are dropped. The
+ * thread is this tab's, so its owner is kept beside it in sessionStorage; the
+ * lookups are the browser's, so theirs is kept in localStorage. Another tab's
+ * sign-in therefore never vouches for this tab's thread.
+ */
+export function signedInAs(id: string) {
+  if (!id) return;
+  if (claim(() => sessionStorage, id)) forgetThread();
+  if (claim(() => localStorage, id)) forgetRecents();
+}
+
+/** Whether `storage` named someone other than `id` (or no one); it names `id` afterwards. Storage off: false, nothing outlives the page. */
+function claim(storage: () => Storage, id: string): boolean {
+  try {
+    const kept = storage();
+    if (kept.getItem(OWNER) === id) return false;
+    kept.setItem(OWNER, id);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export type HistoryTurn = { role: "operator" | "manager"; text: string };

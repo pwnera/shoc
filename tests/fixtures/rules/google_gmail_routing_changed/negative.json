@@ -118,5 +118,50 @@
         ]
       }
     ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-route-removed-save",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "EMAIL_SETTINGS",
+        "name": "CHANGE_GMAIL_SETTING",
+        "parameters": [
+          {
+            "name": "SETTING_NAME",
+            "value": "SPAM_CONTROL"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "example.com"
+          }
+        ]
+      },
+      {
+        "type": "EMAIL_SETTINGS",
+        "name": "DELETE_GMAIL_SETTING",
+        "parameters": [
+          {
+            "name": "SETTING_NAME",
+            "value": "EMAIL_ROUTE"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "example.com"
+          }
+        ]
+      }
+    ]
   }
 ]

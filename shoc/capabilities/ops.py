@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import UTC
 from typing import Any, Literal
 
 from shoc.agents import graph as world
@@ -35,12 +36,15 @@ class HealthDetail:
 )
 def sources(ctx: Context, inp: Empty) -> Result:
     rows = [to_json(s.__dict__) for s in ops.source_health(ctx.db, ctx.tenant_id)]
-    late = [r["source"] for r in rows if r["stale"] or r["error"]]
+    # A stream refused while the others read is named, not failing (`health.status`).
+    late = [r["source"] for r in rows if r["stale"] or (r["error"] and not r["partial"])]
+    partial = [r["source"] for r in rows if r["error"] and r["partial"] and not r["stale"]]
     return Result(
         data=HealthDetail(sources=rows, ok=not late),
         summary=(
             f"{len(rows)} source(s); "
             + (f"{len(late)} need attention: {', '.join(late)}." if late else "all fresh.")
+            + (f" A stream refused: {', '.join(partial)}." if partial else "")
         ),
     )
 
@@ -74,6 +78,11 @@ def rules(ctx: Context, inp: RuleHealthFilter) -> Result:
         config=ctx.config,
         store=ctx.store if inp.only in ("all", "silent") else None,
     )
+    # Counted before the filter: "0 rule(s) tracked" under `noisy` read as no rules loaded.
+    tracked = len(health)
+    noisy = sum(1 for h in health if h.noisy)
+    failing = sum(1 for h in health if h.error)
+    dead = sum(1 for h in health if h.silent_reason and h.silent_reason != "quiet")
     if inp.only == "noisy":
         health = [h for h in health if h.noisy]
     elif inp.only == "silent":
@@ -81,13 +90,12 @@ def rules(ctx: Context, inp: RuleHealthFilter) -> Result:
     elif inp.only == "failing":
         health = [h for h in health if h.error]
     rows = [to_json(h.__dict__) for h in health]
-    noisy = sum(1 for h in health if h.noisy)
-    failing = sum(1 for h in health if h.error)
-    dead = sum(1 for h in health if h.silent_reason and h.silent_reason != "quiet")
     return Result(
         data=RulePage(rules=rows, ok=not failing),
         summary=(
-            f"{len(rows)} rule(s) tracked: {noisy} noisy, {failing} failing"
+            f"{tracked} rule(s) tracked"
+            + (f"; {len(rows)} {inp.only}" if inp.only != "all" else "")
+            + f": {noisy} noisy, {failing} failing"
             + (f", {dead} silent because they cannot fire here" if dead else "")
             + "."
         ),
@@ -151,7 +159,7 @@ def alerts(ctx: Context, inp: AlertBudget) -> Result:
     from shoc.agents.llm import budget
 
     limit = inp.budget_usd_per_day or budget(ctx.db, ctx.tenant_id, "spend_usd_per_day")
-    found = ops.alerts(ctx.db, ctx.tenant_id, limit, ctx.store)
+    found = ops.alerts(ctx.db, ctx.tenant_id, limit, ctx.store, ctx.config)
     rows = [a.to_json() for a in found]
     return Result(
         data=AlertList(alerts=rows, count=len(rows)),
@@ -223,7 +231,7 @@ def get_report(ctx: Context, inp: ReportInput) -> Result:
 
 @dataclass
 class GraphRefresh:
-    days: int = f(30, doc="How much history to rebuild the graph from")
+    days: int = f(world.DAYS, doc="How much history to rebuild the graph from, 1 to 90 days")
 
 
 @dataclass
@@ -247,7 +255,12 @@ class GraphStatsOut:
     tags=("graph", "write"),
 )
 def refresh_graph(ctx: Context, inp: GraphRefresh) -> Result:
-    stats = world.refresh(ctx.db, ctx.store, ctx.tenant_id, inp.days)
+    # Bounded on every surface so no call scans the whole table (AGT-4). Anybody
+    # but a person (the crew, an MCP token, the schedule) stays at or above the
+    # scheduled window: a narrower rebuild would overwrite the daily counts.
+    floor = world.DAYS if ctx.caller.kind != "human" else 1
+    days = max(floor, min(int(inp.days), world.MAX_DAYS))
+    stats = world.refresh(ctx.db, ctx.store, ctx.tenant_id, days)
     return Result(
         data=GraphStatsOut(**stats.__dict__),
         summary=(
@@ -275,6 +288,10 @@ class GraphView:
     nodes: list[dict[str, Any]] = field(default_factory=list)
     edges: list[dict[str, Any]] = field(default_factory=list)
     hops: int = 1
+    # The oldest and newest sighting in the graph: a refresh cut at its limit
+    # covers days, not the window it was asked for (data-8).
+    since: str = ""
+    until: str = ""
 
 
 @capability(
@@ -302,14 +319,21 @@ def neighbours(ctx: Context, inp: GraphQuery) -> Result:
     for item in hood.nodes:
         kinds[item["kind"]] = kinds.get(item["kind"], 0) + 1
     breakdown = ", ".join(f"{n} {k}" for k, n in sorted(kinds.items())) or "nothing"
+    since, until = (
+        t.astimezone(UTC).isoformat(timespec="minutes") if t else ""
+        for t in world.coverage(ctx.db, ctx.tenant_id)
+    )
+    covers = f" Graph covers {since} to {until}." if since and until else ""
     return Result(
         data=GraphView(
             root=hood.root,
             nodes=[to_json(n) for n in hood.nodes],
             edges=[to_json(e) for e in hood.edges],
             hops=hood.hops,
+            since=since,
+            until=until,
         ),
-        summary=f"{node} is connected to {breakdown} within {hood.hops} hop(s).",
+        summary=f"{node} is connected to {breakdown} within {hood.hops} hop(s).{covers}",
         citations=[n["node_id"] for n in hood.nodes],
     )
 
@@ -453,7 +477,8 @@ class MetricsText:
 
 @capability(
     name="metrics.export",
-    summary="Findings, jobs and source age in the Prometheus text format, as /metrics serves them",
+    summary="Findings, jobs, and when each source and detection last succeeded, in the "
+    "Prometheus text format, as /metrics serves them",
     input=Empty,
     output=MetricsText,
     scope="health:read",
@@ -462,7 +487,7 @@ class MetricsText:
 )
 def export_metrics(ctx: Context, _inp: Empty) -> Result:
     """Written by hand (D6: no client library), for the caller's tenant only (SEC-1)."""
-    from shoc.db.pool import fetch_all
+    from shoc.db.pool import fetch_all, fetch_one
 
     tenant = ctx.tenant_id
     findings = fetch_all(
@@ -475,10 +500,18 @@ def export_metrics(ctx: Context, _inp: Empty) -> Result:
         "SELECT state, count(*) AS n FROM shoc.jobs WHERE tenant_id = %s GROUP BY state",
         (tenant,),
     )
+    # Timestamps rather than ages, and 0 for never: an age read a source that
+    # never succeeded as fresh, so `time() - x > 3600` missed the worst case.
     sources = fetch_all(
         ctx.db,
-        """SELECT source, EXTRACT(EPOCH FROM (now() - coalesce(last_ok_at, now()))) AS age
+        """SELECT source, coalesce(EXTRACT(EPOCH FROM last_ok_at), 0) AS at
            FROM shoc.connector_state WHERE tenant_id = %s""",
+        (tenant,),
+    )
+    detected = fetch_one(
+        ctx.db,
+        """SELECT coalesce(EXTRACT(EPOCH FROM max(finished_at)), 0) AS at FROM shoc.jobs
+           WHERE tenant_id = %s AND kind = 'detect.run' AND state = 'done'""",
         (tenant,),
     )
     lines = ["# HELP shoc_findings Findings by severity", "# TYPE shoc_findings gauge"]
@@ -486,14 +519,23 @@ def export_metrics(ctx: Context, _inp: Empty) -> Result:
         f'shoc_findings{{tenant="{tenant}",severity="{r["severity"]}"}} {r["n"]}' for r in findings
     ]
     lines += ["# HELP shoc_jobs Jobs by state", "# TYPE shoc_jobs gauge"]
-    lines += [f'shoc_jobs{{state="{r["state"]}"}} {r["n"]}' for r in jobs]
+    lines += [f'shoc_jobs{{tenant="{tenant}",state="{r["state"]}"}} {r["n"]}' for r in jobs]
     lines += [
-        "# HELP shoc_source_age_seconds Seconds since a source last succeeded",
-        "# TYPE shoc_source_age_seconds gauge",
+        "# HELP shoc_source_last_success_timestamp_seconds When a source last succeeded, "
+        "0 if never",
+        "# TYPE shoc_source_last_success_timestamp_seconds gauge",
     ]
     lines += [
-        f'shoc_source_age_seconds{{tenant="{tenant}",source="{r["source"]}"}} {int(r["age"] or 0)}'
+        f'shoc_source_last_success_timestamp_seconds{{tenant="{tenant}",source="{r["source"]}"}} '
+        f"{int(r['at'])}"
         for r in sources
+    ]
+    lines += [
+        "# HELP shoc_detect_last_success_timestamp_seconds When a detection run last finished, "
+        "0 if never",
+        "# TYPE shoc_detect_last_success_timestamp_seconds gauge",
+        f'shoc_detect_last_success_timestamp_seconds{{tenant="{tenant}"}} '
+        f"{int(detected['at']) if detected else 0}",
     ]
     return Result(
         data=MetricsText(text="\n".join(lines) + "\n"), summary=f"{len(lines)} metric line(s)"

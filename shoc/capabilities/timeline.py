@@ -21,6 +21,7 @@ from shoc.db.pool import fetch_all
 from shoc.jsonschema import field as f
 from shoc.jsonschema import to_json
 from shoc.store import ocsf as layout
+from shoc.store.sql import max_params
 
 # How far either side of the case's own events a timeline reaches by default.
 MARGIN_HOURS = 1
@@ -31,6 +32,8 @@ MAX_ROWS = 500
 PIVOTS = {
     "user": "actor_user_name",
     "key": "actor_session_uid",
+    # A sign-in's session id is typed `session:` (engine.entity_kind).
+    "session": "actor_session_uid",
     "ip": "src_endpoint_ip",
     "resource": "resource_uid",
     "host": "device_hostname",
@@ -115,15 +118,17 @@ def _read(
     )
 
 
-def _match(entities: list[str], params: dict[str, Any]) -> list[str]:
-    """`column IN (...)` per pivot kind, ORed, every value bound."""
+def _match(entities: list[str], params: dict[str, Any], budget: int) -> list[str]:
+    """`column IN (...)` per pivot kind, ORed, every value bound, `budget` values at most."""
     terms: list[str] = []
     for kind, column in PIVOTS.items():
         values = [e.split(":", 1)[1] for e in entities if e.startswith(f"{kind}:")]
+        values = values[: max(0, min(50, budget))]
+        budget -= len(values)
         if not values:
             continue
         names = []
-        for value in values[:50]:
+        for value in values:
             key = f"p{len(params)}"
             params[key] = value
             names.append(f":{key}")
@@ -156,9 +161,13 @@ def build(ctx: Context, inp: BuildInput) -> Result:
     margin = timedelta(hours=max(0, min(int(inp.margin_hours), 72)))
     times = [r["time"] for r in events]
     products = sorted({str(r["metadata_product"]) for r in events if r.get("metadata_product")})
-    params: dict[str, Any] = {}
-    pivots = _match(entities, params)
     cited = {str(r["event_uid"]) for r in events}
+    params: dict[str, Any] = {}
+    # One statement binds the pivots, the products, the cited events, the tenant
+    # and the window: Databricks refuses a 257th value (D250).
+    pivots = _match(
+        entities, params, max_params(ctx.store.dialect) - len(products) - len(cited) - 3
+    )
     where = []
     if products:
         names = []
@@ -188,8 +197,8 @@ def build(ctx: Context, inp: BuildInput) -> Result:
 class ExtendInput:
     case_uid: str = f(doc="The case")
     value: str = f(
-        doc="An identity or an indicator: user:…, key:…, ip:…, resource:…, host:…, or a bare "
-        "value matched against all of them"
+        doc="An identity or an indicator: user:…, key:…, session:…, ip:…, resource:…, host:…, "
+        "or a bare value matched against all of them"
     )
     hours: int = f(24, doc="How far either side of the case's events to read")
     limit: int = f(200, doc="Maximum events, capped at 500")
@@ -219,7 +228,7 @@ def extend(ctx: Context, inp: ExtendInput) -> Result:
     times = [r["time"] for r in events]
     kind, _, bare = value.partition(":")
     params: dict[str, Any] = {"v": bare if kind in PIVOTS and bare else value}
-    columns = [PIVOTS[kind]] if kind in PIVOTS and bare else list(PIVOTS.values())
+    columns = [PIVOTS[kind]] if kind in PIVOTS and bare else list(dict.fromkeys(PIVOTS.values()))
     where = ["(" + " OR ".join(f"{c} = :v" for c in columns) + ")"]
     cited = {str(r["event_uid"]) for r in events}
     return _read(

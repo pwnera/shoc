@@ -21,7 +21,14 @@ from shoc.errors import ValidationError
 IAM = "https://iam.googleapis.com/v1/projects/-/serviceAccounts"
 COMPUTE = "https://compute.googleapis.com/compute/v1/projects"
 SCOPE = "https://www.googleapis.com/auth/cloud-platform"
-ACCOUNT = re.compile(r"^[a-z0-9-]+@[a-z0-9.-]+\.iam\.gserviceaccount\.com$")
+# A user-made service account, or a project's default Compute Engine or App
+# Engine one. Not any *.gserviceaccount.com: Google's own agents there, such as
+# cloudservices, cannot be disabled.
+ACCOUNT = re.compile(
+    r"^([a-z0-9-]+@[a-z0-9.-]+\.iam|[0-9]+-compute@developer|[a-z][a-z0-9-]+@appspot)"
+    r"\.gserviceaccount\.com$"
+)
+DEFAULT_ACCOUNT = re.compile(r"(-compute@developer|@appspot)\.gserviceaccount\.com$")
 KEY = re.compile(r"^[0-9a-f]{40}$")
 PROJECT = re.compile(r"^[a-z][a-z0-9-]{4,28}[a-z0-9]$")
 FIREWALL = re.compile(r"^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$")
@@ -51,9 +58,16 @@ class DisableServiceAccount(BaseAction):
     required_params = ("service_account",)
 
     def plan(self, params: dict[str, Any]) -> str:
+        account = str(params.get("service_account", ""))
+        default = (
+            " It is the project's default account, which every VM or App Engine app that "
+            "names no other runs as."
+            if DEFAULT_ACCOUNT.search(account)
+            else ""
+        )
         return (
-            f"Disable {params.get('service_account')}. Every workload that runs as it "
-            "stops authenticating until it is enabled again."
+            f"Disable {account}. Every workload that runs as it stops authenticating until "
+            f"it is enabled again.{default}"
         )
 
     def _set(
@@ -92,6 +106,8 @@ class DisableServiceAccountKey(BaseAction):
     summary = "Disable one GCP service account key"
     reversible = True
     required_params = ("key_id", "service_account")
+    # The account only locates the key: one action per key, as before the uid hashed both.
+    identity_params = ("key_id",)
 
     def plan(self, params: dict[str, Any]) -> str:
         return f"Disable key {params.get('key_id')} of {params.get('service_account')}"

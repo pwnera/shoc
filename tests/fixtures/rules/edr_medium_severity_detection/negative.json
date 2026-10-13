@@ -83,5 +83,54 @@
         "appId": "33333333-3333-3333-3333-333333333333"
       }
     ]
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "ldt:5d40e8a1c7d1:9201",
+    "type": "ldt",
+    "product": "epp",
+    "severity": 50,
+    "tactic": "Discovery",
+    "description": "Suspicious discovery",
+    "device": {
+      "device_id": "5d40e8a1c7d1",
+      "hostname": "laptop-51"
+    },
+    "user_name": "jdoe",
+    "_update": true
+  },
+  {
+    "_source": "defender",
+    "id": "da-update-2",
+    "severity": "medium",
+    "title": "Suspicious process discovery",
+    "category": "Execution",
+    "serviceSource": "microsoftDefenderForEndpoint",
+    "status": "inProgress",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "laptop-52.example.org",
+        "mdeDeviceId": "4444444444444444444444444444444444444451"
+      }
+    ],
+    "_update": true
+  },
+  {
+    "_source": "sentinelone",
+    "id": "1373834705420287201",
+    "threatInfo": {
+      "threatId": "1373834705420287201",
+      "threatName": "invoice.pdf.exe",
+      "confidenceLevel": "malicious",
+      "mitigationStatus": "mitigated",
+      "classification": "Trojan"
+    },
+    "agentRealtimeInfo": {
+      "agentComputerName": "host51.example.com",
+      "agentId": "1000000000000000051",
+      "agentUuid": "11112222333344445555666677775101"
+    },
+    "_update": true
   }
 ]

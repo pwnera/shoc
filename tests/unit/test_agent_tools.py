@@ -44,17 +44,16 @@ def test_reads_that_used_to_write_by_default_no_longer_do():
 
 
 def test_a_question_cannot_hand_the_commander_a_proposal():
-    """Work done for a caller offers each role only what that caller may call."""
-    asked = {c.name for c in tools.allowed(roles.COMMANDER.tools, "IR Commander", EXTERNAL_AGENT)}
-    assert "action.propose" not in asked
-    reader = Caller(kind="human", id="r", scopes=("*:read",))
-    assert "action.propose" not in {
-        c.name for c in tools.allowed(roles.COMMANDER.tools, "IR Commander", reader)
-    }
-    admin = Caller(kind="human", id="a", scopes=("*",))
-    assert "action.propose" in {
-        c.name for c in tools.allowed(roles.COMMANDER.tools, "IR Commander", admin)
-    }
+    """The Commander proposes in its answer, where the loop grounds the target and
+    counts the blast radius, so no caller's scopes put the tool in its hands (D45)."""
+    for caller in (
+        None,
+        EXTERNAL_AGENT,
+        Caller(kind="human", id="r", scopes=("*:read",)),
+        Caller(kind="human", id="a", scopes=("*",)),
+    ):
+        offered = tools.allowed(roles.COMMANDER.tools, "IR Commander", caller)
+        assert "action.propose" not in {c.name for c in offered}
 
 
 def test_the_commander_note_lists_its_checks_one_per_line() -> None:

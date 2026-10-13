@@ -1,4 +1,4 @@
--- 034 a pushed delivery loads once, whatever its id looks like (ING-2)
+-- 033 a pushed delivery loads once, whatever its id looks like (ING-2)
 --
 -- GitHub signs a webhook's body alone, with no timestamp, so a captured
 -- delivery can be sent again at any time and still verify. The store keeps one

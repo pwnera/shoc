@@ -129,6 +129,17 @@ def list_sources(ctx: Context, inp: Empty) -> Result:
     )
 
 
+def name_refused(source: str) -> str:
+    """Why `source` cannot name a source, or '' when it can. `shoc plan` asks
+    too, so `apply` refuses a bad label before its first change."""
+    if re.fullmatch(r"[a-z0-9_]+(:[a-z0-9_-]{1,40})?", source):
+        return ""
+    return (
+        f"'{source}': a second account is connector:label, the label in "
+        "lowercase letters, digits, '_' and '-'"
+    )
+
+
 @dataclass
 class SourceConfig:
     """Configure a connector. The secret is encrypted with the master key."""
@@ -172,13 +183,18 @@ def configure_source(ctx: Context, inp: SourceConfig) -> Result:
     known = connectors.available() + connectors.push_sources()
     if connectors.connector_of(inp.source) not in known:
         raise ConfigError(f"unknown source '{inp.source}' (have: {', '.join(sorted(known))})")
-    if not re.fullmatch(r"[a-z0-9_]+(:[a-z0-9_-]{1,40})?", inp.source):
-        raise ConfigError(
-            f"'{inp.source}': a second account is connector:label, the label in "
-            "lowercase letters, digits, '_' and '-'"
-        )
+    if refused := name_refused(inp.source):
+        raise ConfigError(refused)
+    if not inp.secret:
+        _keeps_host(ctx, inp)
     blob = (
-        seal(ctx.config.master_key, inp.secret, ctx.tenant_id, "connector_config", inp.source)
+        seal(
+            ctx.config.master_key,
+            {**_push_key(ctx, inp.source), **inp.secret},
+            ctx.tenant_id,
+            "connector_config",
+            inp.source,
+        )
         if inp.secret
         else None
     )
@@ -234,10 +250,19 @@ def configure_source(ctx: Context, inp: SourceConfig) -> Result:
         {"source": inp.source},
         enabled=inp.enabled,
     )
+    unchecked = (
+        " TLS is not checked, so the indexer password goes to whoever answers; "
+        "give settings.ca_cert, the PEM of Wazuh's root-ca.pem, instead."
+        if connectors.connector_of(inp.source) == "wazuh"
+        and inp.settings.get("verify_tls", True) is False
+        and not inp.settings.get("ca_cert")
+        else ""
+    )
     if not inp.enabled:
         return Result(
             data=SourceState(source=inp.source, enabled=False, interval_seconds=every),
-            summary=f"Source {inp.source} saved and disabled; the worker does not poll it.",
+            summary=f"Source {inp.source} saved and disabled; the worker does not poll it."
+            + unchecked,
         )
     verified, why = _verify(ctx, inp)
     _remember_own(ctx, inp)
@@ -253,8 +278,57 @@ def configure_source(ctx: Context, inp: SourceConfig) -> Result:
             f"Source {inp.source} configured, polling every {every}s."
             + (f" The credential works. {why}" if verified and why else "")
             + (f" It is saved, but the credential did not work: {why}" if verified is False else "")
+            + unchecked
         ),
     )
+
+
+def _keeps_host(ctx: Context, inp: SourceConfig) -> None:
+    """The stored secret is kept only for the host it was given for (RFC 0017).
+
+    A push key alone goes nowhere: the vendor signs with it and shoc checks,
+    so a webhook-only GitHub may move to its Enterprise Server freely.
+    """
+    from shoc.cases import credentials
+    from shoc.db.pool import fetch_one
+    from shoc.db.secrets import open_secret
+
+    row = fetch_one(
+        ctx.db,
+        """SELECT settings, secret FROM shoc.connector_config
+           WHERE tenant_id = %s AND source = %s AND secret IS NOT NULL""",
+        (ctx.tenant_id, inp.source),
+    )
+    if not row:
+        return
+    try:
+        kept = open_secret(
+            ctx.config.master_key, row["secret"], ctx.tenant_id, "connector_config", inp.source
+        )
+    except ConfigError:  # unreadable: nothing of it can be sent anywhere
+        return
+    if set(kept) - {"push_key"}:
+        credentials.same_host(dict(row["settings"]), inp.settings)
+
+
+def _push_key(ctx: Context, source: str) -> dict[str, Any]:
+    """The push key a new credential keeps: the vendor still signs its webhook with it."""
+    from shoc.db.pool import fetch_one
+    from shoc.db.secrets import open_secret
+
+    if not connectors.accepts_push(source):
+        return {}
+    row = fetch_one(
+        ctx.db,
+        "SELECT secret FROM shoc.connector_config WHERE tenant_id = %s AND source = %s",
+        (ctx.tenant_id, source),
+    )
+    blob = row["secret"] if row else None
+    try:
+        stored = open_secret(ctx.config.master_key, blob, ctx.tenant_id, "connector_config", source)
+    except ConfigError:  # sealed under another key or row: lost, and the new credential replaces it
+        return {}
+    return {"push_key": stored["push_key"]} if "push_key" in stored else {}
 
 
 def _verify(ctx: Context, inp: SourceConfig) -> tuple[bool | None, str | None]:
@@ -282,9 +356,11 @@ def _verify(ctx: Context, inp: SourceConfig) -> tuple[bool | None, str | None]:
         # scheduled sync starts from the stored cursor, so this probe keeps out.
         persist=False,
     )
-    if stats.error:
+    if stats.error and not stats.partial:
         return False, stats.error
-    return True, f"{stats.fetched} record(s) read on the first page."
+    said = f"{stats.fetched} record(s) read on the first page."
+    # A stream the tenant cannot read (no P2, say) leaves the others working.
+    return True, f"{said} {stats.error}" if stats.error else said
 
 
 def _has_own(ctx: Context, source: str) -> bool:
@@ -556,16 +632,36 @@ def sync_source(ctx: Context, inp: SyncInput) -> Result:
     finally:
         if store is not ctx.store:
             store.close()
-    if stats.loaded:
+    queued = False
+    if stats.more:
+        from shoc.db.jobs import enqueue
+        from shoc.db.pool import fetch_one
+
+        # The source is behind: the rest is read now, in a job of its own, not
+        # a cycle later. A sync already waiting reads it, so one is enough. No
+        # idempotency key: a finished job keeps its key for good, and a Pub/Sub
+        # cursor is {} on every run, so a keyed continuation queued only once.
+        queued = bool(
+            fetch_one(
+                ctx.db,
+                """SELECT 1 FROM shoc.jobs WHERE tenant_id = %s AND kind = 'source.sync'
+                   AND state = 'pending' AND payload->>'source' = %s""",
+                (ctx.tenant_id, inp.source),
+            )
+        ) or bool(enqueue(ctx.db, ctx.tenant_id, "source.sync", {"source": inp.source}))
+    if stats.loaded and not queued:
         from shoc.cases import engine
 
-        # Detection reads it now, once for every source of the cycle (RFC 0034).
+        # Detection reads it now, once for every source of the cycle (RFC 0034),
+        # and a source catching up wakes it once, when it has caught up. The
+        # cycle's scheduled run reads what it loads before then.
         engine.publish(ctx.db, ctx.tenant_id, "events.loaded", inp.source, {"loaded": stats.loaded})
-    if stats.error:
+    if stats.error and not stats.partial:
         # `run` has already written the failure to connector_state, so health
         # knows. Raising is what makes the shell exit non-zero and REST answer
         # 502: a pull that fetched nothing because it was refused is not a
-        # successful call with a field set.
+        # successful call with a field set. A stream that failed while the
+        # others loaded is said in the result instead.
         raise UpstreamError(
             f"{inp.source}: fetched {stats.fetched}, loaded {stats.loaded} — {stats.error}"
         )
@@ -588,6 +684,8 @@ def sync_source(ctx: Context, inp: SyncInput) -> Result:
             snapshot_error=snap_error,
         ),
         summary=f"{inp.source}: fetched {stats.fetched}, loaded {stats.loaded}."
+        + (" More to read; the rest is queued." if stats.more else "")
+        + (f" Not all of it was read: {stats.error}" if stats.error else "")
         + (f" Snapshot: {assets} asset(s)." if assets else "")
         + (f" Snapshot failed: {snap_error}" if snap_error else ""),
     )

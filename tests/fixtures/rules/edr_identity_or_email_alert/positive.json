@@ -1,0 +1,54 @@
+[
+  {
+    "_source": "defender",
+    "id": "da-mdo-restricted-1",
+    "severity": "high",
+    "title": "User restricted from sending email",
+    "category": "Exfiltration",
+    "serviceSource": "microsoftDefenderForOffice365",
+    "detectionSource": "microsoftDefenderForOffice365",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "userPrincipalName": "bob@example.com",
+          "azureAdUserId": "00000000-0000-0000-0000-00000000aa01"
+        }
+      }
+    ]
+  },
+  {
+    "_source": "defender",
+    "id": "da-mdi-lateral-1",
+    "severity": "high",
+    "title": "Suspected identity theft (pass-the-ticket)",
+    "category": "LateralMovement",
+    "serviceSource": "microsoftDefenderForIdentity",
+    "detectionSource": "microsoftDefenderForIdentity",
+    "status": "new",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": {
+          "accountName": "svc-backup",
+          "userSid": "S-1-5-21-1000-1000-1000-1601"
+        }
+      }
+    ]
+  },
+  {
+    "_source": "crowdstrike",
+    "composite_id": "idp:alert-41",
+    "type": "idp-user-endpoint-app-access",
+    "product": "idp",
+    "severity": 70,
+    "tactic": "Credential Access",
+    "description": "Unusual authentication to a domain controller",
+    "device": {
+      "device_id": "5d40e8a1c7f1",
+      "hostname": "dc-01"
+    },
+    "user_name": "mia"
+  }
+]

@@ -23,6 +23,8 @@ from typing import Any
 
 import yaml
 
+ROOT = Path(__file__).resolve().parent.parent
+
 
 def capture(ctx: Any, case_uid: str, out: Path, verdict: str = "") -> Path:
     """Write `out/<case>/` from the case's findings and their events."""
@@ -32,8 +34,11 @@ def capture(ctx: Any, case_uid: str, out: Path, verdict: str = "") -> Path:
     from shoc.db.pool import fetch_all
     from shoc.errors import ValidationError
     from shoc.ingest import ocsf
-    from shoc.ingest.replay import TIME_FIELD, set_path
+    from shoc.ingest.replay import drop_path, time_paths
 
+    if out.resolve().is_relative_to(ROOT):
+        # CI replays what is in the tree, and the wheel ships evals/scenarios.
+        raise ValidationError(f"{out} is inside {ROOT}; write a company's logs elsewhere")
     case = engine.require(ctx.db, ctx.tenant_id, case_uid)
     verdict = verdict or (str(case["verdict"]) if case.get("closed_by") == "human" else "")
     if not verdict:
@@ -58,9 +63,10 @@ def capture(ctx: Any, case_uid: str, out: Path, verdict: str = "") -> Path:
         if not source or not isinstance(raw, dict):
             continue
         # The replay places each record just before it runs, newest first, so the
-        # vendor's own time is taken off and the order kept.
-        if TIME_FIELD.get(source):
-            set_path(raw, TIME_FIELD[source], None)
+        # vendor's own time is taken off every path the mapping reads it from,
+        # and the order kept.
+        for path in time_paths(source):
+            drop_path(raw, path)
         events.setdefault(source, []).append((str(row.get("time")), raw))
     if not events:
         raise ValidationError(f"{case_uid} has no events this install can replay")

@@ -26,7 +26,7 @@ minutes, then connects a real source and an MCP client.
 | Connect a source, or write a connector | [Sources](connectors.md) |
 | Check a mapping against public raw logs | [Public datasets](datasets.md) |
 | Decide what shoc may do without asking | [Response](response.md) |
-| Get cases and approvals in Slack | [Slack](slack.md) |
+| Get pages, reports and approvals in Slack | [Slack](slack.md) |
 | Watch health, cost, reports, tuning and hunts | [Running it](operations.md) |
 | Deploy with Compose or Helm, and keep config in git | [Deploying it](deploy.md) |
 | See how the kernel, the store and the crew fit together | [Architecture](architecture.md) |

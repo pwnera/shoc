@@ -1,9 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":semanticCommits", "helpers:pinGitHubActionDigests"],
+  "extends": ["config:recommended", ":semanticCommits", "helpers:pinGitHubActionDigests", "docker:pinDigests"],
   "schedule": ["before 6am on monday"],
   "packageRules": [
     { "groupName": "python dependencies", "matchManagers": ["pep621"] },
+    { "groupName": "sqlglot", "matchManagers": ["pep621"], "matchPackageNames": ["sqlglot"] },
     { "groupName": "github actions", "matchManagers": ["github-actions"] }
   ],
   "vulnerabilityAlerts": { "labels": ["kind/security"], "schedule": ["at any time"] }

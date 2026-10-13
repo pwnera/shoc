@@ -10,7 +10,9 @@ an adapter can be tried without the rest of shoc:
 Each check deletes the store's tenant's events first: open the store for a
 throwaway tenant. `tests/conformance/test_store.py` runs these on every
 backend the environment reaches, and the rest of `tests/conformance` drives the
-same stores through the detection engine and the crew.
+same stores through the detection engine and the crew. CI runs them on
+Postgres only: a warehouse is checked when someone points the suite at one by
+hand (d850a10).
 """
 
 from __future__ import annotations
@@ -65,7 +67,7 @@ def _rows(tenant: str, n: int, now: datetime, tag: str = "conf") -> list[dict[st
         "aws_cloudtrail",
         now,
     )
-    return [mapping.map_record(r, tenant) for r in records]
+    return [row for r in records for row in mapping.map_records(r, tenant)]
 
 
 def _load(store: EventStore, rows: list[dict[str, Any]]) -> int:
@@ -119,11 +121,14 @@ def a_batch_that_repeats_an_event_stores_it_once(store: EventStore) -> None:
 
 
 @check
-def tenants_do_not_see_each_other(store: EventStore) -> None:
+def a_batch_for_another_tenant_is_refused(store: EventStore) -> None:
     now = _fresh(store)
-    _load(store, _rows(store.tenant_id, 2, now))
-    _load(store, _rows("someone-else", 4, now, tag="other"))
-    assert len(_uids(store)) == 2
+    try:
+        _load(store, _rows(store.tenant_id, 2, now) + _rows("someone-else", 1, now, tag="other"))
+    except StoreError:
+        assert _uids(store) == [], "a refused batch stored rows"
+        return
+    raise AssertionError("a store took rows stamped for another tenant")
 
 
 @check
@@ -176,32 +181,92 @@ def health_reports_counts(store: EventStore) -> None:
     assert health.ok and health.event_count >= 3, health.detail
 
 
-@check
-def a_regex_rule_runs_on_this_backend(store: EventStore) -> None:
-    """No shipped rule uses `|re` yet, so the dialect's regex function needs proving."""
+def _probe(
+    store: EventStore, now: datetime, selection: dict[str, Any], limit: int | None = None
+) -> list[Any]:
+    """The findings of a CloudTrail rule over the last hour, one per actor."""
     from shoc.detect import rules as ruleset
-    from shoc.detect.engine import run_rule
+    from shoc.detect.engine import ADHOC_LIMIT, run_rule
 
-    now = _fresh(store)
-    _load(store, _rows(store.tenant_id, 3, now))
     rule = ruleset.from_dict(
         {
-            "id": "regex_probe",
-            "title": "Regex probe",
+            "id": "probe",
+            "title": "Probe",
             "description": "d",
             "attack": ["T1078"],
             "entity": "actor.user.name",
             "logsource": {"product": "aws", "service": "cloudtrail"},
-            "detection": {
-                "selection": {"actor.user.name|re": "^deploy-[a-z]+$"},
-                "condition": "selection",
-            },
+            "detection": {"selection": selection, "condition": "selection"},
         }
     )
-    found = run_rule(
-        store, store.tenant_id, rule, now - timedelta(hours=1), now + timedelta(minutes=1)
+    start, end = now - timedelta(hours=1), now + timedelta(minutes=1)
+    return run_rule(
+        store, store.tenant_id, rule, start, end, ADHOC_LIMIT if limit is None else limit
     )
+
+
+@check
+def a_regex_rule_runs_on_this_backend(store: EventStore) -> None:
+    """No shipped rule uses `|re` yet, so the dialect's regex function needs proving."""
+    now = _fresh(store)
+    _load(store, _rows(store.tenant_id, 3, now))
+    found = _probe(store, now, {"actor.user.name|re": "^deploy-[a-z]+$"})
     assert found and found[0].event_count == 3
+
+
+@check
+def like_wildcards_in_a_value_match_only_themselves(store: EventStore) -> None:
+    """`\\`, `%`, `_` and `!` are matched as written, though each dialect escapes LIKE
+    its own way and BigQuery has no ESCAPE clause."""
+    now = _fresh(store)
+    special = ["\\", "%", "_", "!"]
+    names = [f"{c}a" for c in special] + [f"a{c}" for c in special] + ["aa", "ba"]
+    rows = _rows(store.tenant_id, len(names), now)
+    for row, name in zip(rows, names, strict=True):
+        row["actor_user_name"] = name
+    _load(store, rows)
+    for modifier, expected in (
+        ("contains", names[:8]),
+        ("startswith", names[:4]),
+        ("endswith", names[4:8]),
+    ):
+        found = _probe(store, now, {f"actor.user.name|{modifier}": special})
+        assert sorted(f.entity_key for f in found) == sorted(expected), modifier
+
+
+@check
+def a_scan_pages_past_events_that_share_one_time(store: EventStore) -> None:
+    """A cycle pages by (time, event_uid); more than a page at one instant is still read whole."""
+    from shoc.detect.engine import PAGE
+
+    now = _fresh(store)
+    rows = _rows(store.tenant_id, PAGE + 5, now)
+    for row in rows:
+        row["time"] = rows[0]["time"]
+    _load(store, rows)
+    found = _probe(store, now, {"api.operation": "ListBuckets"}, limit=0)
+    assert [f.event_count for f in found] == [PAGE + 5]
+
+
+@check
+def a_source_record_comes_back_as_an_object(store: EventStore) -> None:
+    """`raw` reads back whole on every backend, and a key with a `-` in it is reachable."""
+    from shoc.store import ocsf as layout
+
+    now = _fresh(store)
+    rows = _rows(store.tenant_id, 1, now)
+    asked = {"bucketName": "conf-bucket", "x-amz-acl": "public-read"}
+    rows[0]["raw"]["requestParameters"] = asked
+    _load(store, rows)
+    acl = layout.column_for("raw.requestParameters.x-amz-acl")
+    (row,) = store.query(
+        f"SELECT raw, {acl} AS acl FROM ocsf_events WHERE tenant_id = :tenant_id",
+        {"tenant_id": store.tenant_id},
+    ).rows
+    assert row["acl"] == "public-read"
+    assert isinstance(row["raw"], dict), type(row["raw"])
+    assert row["raw"]["requestParameters"] == asked
+    assert row["raw"]["userIdentity"]["userName"] == "deploy-ci"
 
 
 @check
@@ -216,7 +281,7 @@ def a_source_specific_field_is_queryable(store: EventStore) -> None:
     now = _fresh(store)
     mapping = ocsf.load_mapping("okta")
     rows = [
-        mapping.map_record(
+        mapping.map_records(
             {
                 "uuid": f"dbg-{i}",
                 "published": (now - timedelta(minutes=i)).isoformat(),
@@ -226,7 +291,7 @@ def a_source_specific_field_is_queryable(store: EventStore) -> None:
                 "debugContext": {"debugData": {"dtHash": dt, "riskScore": score}},
             },
             store.tenant_id,
-        )
+        )[0]
         for i, (zone, dt, score) in enumerate(
             [("OffNetwork", "aaa", "90"), ("OffNetwork", "aaa", "10"), ("Trusted", "bbb", "n/a")]
         )

@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from shoc.errors import ConfigError
-from shoc.ingest.connectors.base import FetchResult, client, since_default
+from shoc.ingest.connectors.base import FetchResult, client, reached, since_default
 
 API = "https://api.cloudflare.com/client/v4"
 
@@ -45,7 +45,7 @@ class CloudflareConnector:
         token = secret.get("api_token")
         if not account or not token:
             raise ConfigError("cloudflare: settings need account_id and the secret needs api_token")
-        since = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        since = since_default(cursor, settings)
         # `since` and `before` are both required, and a cursor pages through the
         # window it was issued for, so `before` is held with it.
         before = str(cursor.get("before") or datetime.now(UTC).isoformat())
@@ -64,13 +64,14 @@ class CloudflareConnector:
         records = payload.get("result") or []
         newest = max(
             [str((r.get("action") or {}).get("time") or "") for r in records]
-            + [str(cursor.get("newest") or since)]
+            + [reached(cursor, since)]
         )
+        late = str(cursor.get("since") or "")
         page = (payload.get("result_info") or {}).get("cursor")
         if page and records:
-            held = {"since": since, "before": before, "newest": newest, "page": page}
-            return FetchResult(records=records, cursor=held, more=True)
-        return FetchResult(records=records, cursor={"since": newest}, more=False)
+            held = {**cursor, "start": since, "before": before, "newest": newest, "page": page}
+            return FetchResult(records=records, cursor=held, more=True, since=late)
+        return FetchResult(records=records, cursor={"since": newest}, more=False, since=late)
 
 
 CONNECTOR = CloudflareConnector()

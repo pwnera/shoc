@@ -2,7 +2,7 @@
 
 `shoc serve`, `shoc worker`, `shoc migrate` and `shoc mcp` are the process
 commands; every capability also appears automatically, so `shoc events query
---since -1h` and `shoc ask "what happened with AKIA…"` exist without anyone
+--since=-1h` and `shoc ask "what happened with AKIA…"` exist without anyone
 writing a command for them.
 """
 
@@ -12,6 +12,7 @@ import argparse
 import dataclasses
 import json
 import logging
+import os
 import sys
 import typing
 from typing import Any, get_args, get_origin
@@ -23,7 +24,12 @@ from shoc.capabilities.registry import Caller, Capability, Context, all_capabili
 from shoc.config import Config
 from shoc.errors import ConfigError, ShocError
 
-CLI_CALLER = Caller(kind="human", id="cli", scopes=("*",))
+
+def cli_caller() -> Caller:
+    """Whoever runs the CLI, as `cli:<SHOC_CLI_USER>` in the audit log (SEC-1). The
+    name is declared, not authenticated: the CLI is host access, and trusted as such."""
+    name = os.environ.get("SHOC_CLI_USER", "").strip()
+    return Caller(kind="human", id=f"cli:{name}" if name else "cli", scopes=("*",))
 
 
 # -- flags from schemas -----------------------------------------------------
@@ -253,9 +259,13 @@ def cmd_migrate(args: argparse.Namespace, cfg: Config) -> int:
     from urllib.parse import urlsplit
 
     from shoc.db.migrate import grant_runtime, migrate
-    from shoc.db.pool import ALL_TENANTS, connect_owner, fetch_one, set_tenant
+    from shoc.db.pool import ALL_TENANTS, connect_owner, fetch_one, owns_audit_log, set_tenant
+    from shoc.db.secrets import check_master_key
     from shoc.store import open_store
 
+    # Migrating keys the audit log with the master key, so the public example
+    # key is refused before anything is written with it (sre-7).
+    check_master_key(cfg.master_key)
     # As the owner: the schema, then the grants that let SHOC_DSN run shoc
     # without owning it (RFC 0024). Tenant event schemas are created below as
     # SHOC_DSN, which loads and prunes them.
@@ -269,7 +279,9 @@ def cmd_migrate(args: argparse.Namespace, cfg: Config) -> int:
         print(
             f"runtime role '{runtime}' granted; it can append to the audit log and not change it."
         )
-    else:
+    elif owns_audit_log(conn):
+        # Migrating as SHOC_DSN's own role: a runtime that does not own the
+        # schema (`docker compose run shoc migrate`) is no cause for alarm.
         print(OWNER_WARNING, file=sys.stderr)
     with conn.cursor() as cur:
         cur.execute(
@@ -284,6 +296,7 @@ def cmd_migrate(args: argparse.Namespace, cfg: Config) -> int:
         f"migrations applied: {', '.join(applied) if applied else 'none (already current)'}; "
         f"tenant '{cfg.tenant_id}' ready on {cfg.backend}"
     )
+    _migrate_other_tenants(conn, cfg)
     granted = _grant_configured_readonly(conn, cfg)
     if granted:
         print(granted)
@@ -298,26 +311,108 @@ def cmd_migrate(args: argparse.Namespace, cfg: Config) -> int:
     return 0
 
 
+def _migrate_other_tenants(conn: Any, cfg: Config) -> None:
+    """Bring every other registered tenant's events table to the current columns.
+
+    The worker loads for every tenant in `shoc.tenants`, and a load into a table
+    without a newly added column fails (STO-2). A tenant registered on another
+    backend is left for a migrate run with that backend; one that fails is named
+    and the rest still run, so an old lab tenant does not hold up the upgrade.
+    """
+    from shoc.db.pool import fetch_all
+    from shoc.store import open_store
+
+    rows = fetch_all(
+        conn,
+        "SELECT tenant_id, backend FROM shoc.tenants WHERE tenant_id <> %s ORDER BY tenant_id",
+        (cfg.tenant_id,),
+    )
+    for row in rows:
+        tenant, backend = str(row["tenant_id"]), str(row["backend"] or "")
+        if backend != cfg.backend:
+            print(f"tenant '{tenant}' is on {backend}: run migrate with that backend for it")
+            continue
+        try:
+            store = open_store(cfg, tenant)
+            try:
+                store.migrate()
+            finally:
+                store.close()
+        except Exception as exc:
+            print(f"warning: tenant '{tenant}' was not migrated: {exc}", file=sys.stderr)
+            continue
+        print(f"tenant '{tenant}' ready on {backend}")
+
+
+def _setup_logging(level: str) -> None:
+    """One log format for serve, worker and mcp, on stderr (sre-23).
+
+    uvicorn configures only its own loggers, so serve's `shoc.*` warnings came
+    out bare and its INFO lines not at all. stderr keeps MCP's stdout clean.
+    uvicorn's `trace` has no stdlib level and logs as DEBUG.
+    """
+    logging.basicConfig(
+        level=logging.getLevelNamesMapping().get(level.upper(), logging.DEBUG),
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
+
+
+def _schema_ready(cfg: Config) -> bool:
+    """Wait for `shoc migrate` the way the worker does, so serve never runs on an
+    old schema (sre-14). True without a database: serve reports that itself."""
+    import psycopg
+
+    from shoc.db.pool import ALL_TENANTS, connect, set_tenant
+    from shoc.worker import wait_for_schema
+
+    try:
+        conn = connect(cfg)
+        set_tenant(conn, ALL_TENANTS)
+        return wait_for_schema(conn)
+    except (psycopg.Error, ConfigError):
+        return True
+
+
+def _warm_lists(cfg: Config) -> None:
+    """Start the warninglists and IANA's TLD list loading, without waiting, so the
+    first digest after a restart is checked against them (RFC 0030). Nothing
+    loads with SHOC_INTEL_FEEDS=off."""
+    from shoc.detect import intel, osint
+
+    if intel.default_feeds(cfg.intel_feeds):
+        for key in ("warninglists", "rdap_bootstrap"):
+            osint.load_soon(key)
+
+
 def cmd_serve(args: argparse.Namespace, cfg: Config) -> int:
     import uvicorn
 
     from shoc.api.auth import check_bind
     from shoc.api.rest import build_app
+    from shoc.db.secrets import check_master_key
 
+    _setup_logging(args.log_level)
     check_bind(args.host, cfg)
+    check_master_key(cfg.master_key)
+    if not _schema_ready(cfg):
+        logging.getLogger("shoc.serve").error(
+            "giving up waiting for the database schema; run `shoc migrate`"
+        )
+        return 1
     _warn_if_owner(cfg)
+    _warm_lists(cfg)
     uvicorn.run(build_app(cfg), host=args.host, port=args.port, log_level=args.log_level)
     return 0
 
 
 def cmd_worker(args: argparse.Namespace, cfg: Config) -> int:
+    from shoc.db.secrets import check_master_key
     from shoc.worker import run
 
-    logging.basicConfig(
-        level=args.log_level.upper(), format="%(asctime)s %(levelname)s %(message)s"
-    )
+    _setup_logging(args.log_level)
+    check_master_key(cfg.master_key)
     _warn_if_owner(cfg)
-    run(cfg, once=args.once)
+    run(cfg, once=args.once, urgent=args.urgent)
     return 0
 
 
@@ -326,6 +421,8 @@ def cmd_mcp(args: argparse.Namespace, cfg: Config) -> int:
 
     from shoc.api.mcp import serve_stdio
 
+    _setup_logging("info")
+    _warm_lists(cfg)
     asyncio.run(serve_stdio(cfg))
     return 0
 
@@ -386,8 +483,6 @@ def cmd_rotate_key(args: argparse.Namespace, cfg: Config) -> int:
     hold the old key, and once this commits they can neither open a secret nor
     append to the audit log until they restart with the new one.
     """
-    import os
-
     from shoc.db import audit, secrets
     from shoc.db.pool import ALL_TENANTS, connect_owner
 
@@ -398,6 +493,8 @@ def cmd_rotate_key(args: argparse.Namespace, cfg: Config) -> int:
         raise ConfigError("SHOC_MASTER_KEY must hold the current key to rotate from")
     if new == cfg.master_key:
         raise ConfigError("SHOC_NEW_MASTER_KEY is the key already in use")
+    # The current key may be weak: moving off one is what this is for.
+    secrets.check_master_key(new, "SHOC_NEW_MASTER_KEY", new=True)
     conn = connect_owner(cfg)
     with conn.transaction(), conn.cursor() as cur:
         cur.execute("SELECT set_config('shoc.tenant_id', %s, true)", (ALL_TENANTS,))
@@ -446,7 +543,7 @@ def cmd_replay(args: argparse.Namespace, cfg: Config) -> int:
     from shoc.ingest.connectors.file import read_records
     from shoc.ingest.replay import expand, refuse_live
 
-    ctx = Context(tenant_id=cfg.tenant_id, caller=CLI_CALLER, config=cfg)
+    ctx = Context(tenant_id=cfg.tenant_id, caller=cli_caller(), config=cfg)
     if args.scenario:
         args.source, records = _bundled_scenario(args.scenario)
     elif args.source and args.path:
@@ -472,7 +569,7 @@ def cmd_plan(args: argparse.Namespace, cfg: Config) -> int:
     from shoc.capabilities.registry import call
     from shoc.configcode import read_file
 
-    ctx = Context(tenant_id=cfg.tenant_id, caller=CLI_CALLER, config=cfg)
+    ctx = Context(tenant_id=cfg.tenant_id, caller=cli_caller(), config=cfg)
     result = call("config.plan", ctx, {"config": read_file(Path(args.file))})
     print(result.data.rendered)
     return 1 if result.data.invalid else 0
@@ -485,7 +582,7 @@ def cmd_apply(args: argparse.Namespace, cfg: Config) -> int:
     from shoc.capabilities.registry import call
     from shoc.configcode import read_file
 
-    ctx = Context(tenant_id=cfg.tenant_id, caller=CLI_CALLER, config=cfg)
+    ctx = Context(tenant_id=cfg.tenant_id, caller=cli_caller(), config=cfg)
     config = {"config": read_file(Path(args.file))}
     preview = call("config.plan", ctx, config)
     print(preview.data.rendered)
@@ -528,7 +625,10 @@ def cmd_rules_check(args: argparse.Namespace, cfg: Config) -> int:
             failures += 1
             print(f"FAIL {rule.id}: {exc}")
     print(f"{len(rules) - failures}/{len(rules)} rule(s) compile")
-    return 1 if failures else 0
+    if not rules:
+        # A wheel or image that lost content/ detects nothing (qa-10).
+        print(f"FAIL no rules found in {cfg.content_dir}/rules")
+    return 1 if failures or not rules else 0
 
 
 def cmd_new(args: argparse.Namespace, cfg: Config) -> int:
@@ -540,27 +640,35 @@ def cmd_new(args: argparse.Namespace, cfg: Config) -> int:
     root = Path(args.root)
     if args.what == "connector":
         written = scaffold.new_connector(args.name, root, args.force)
-        nxt = "Fill in fetch(), then run: pytest tests/unit/test_mappings_all.py"
     elif args.what == "mapping":
         written = scaffold.new_mapping(args.name, root, args.force)
-        nxt = "Edit the mapping and its fixture, then run: pytest tests/unit/test_mappings_all.py"
     else:
         written = scaffold.new_rule(args.name, args.product, args.service, root, args.force)
-        nxt = (
-            "Write the detection and both fixtures, then run: "
-            f"pytest tests/conformance/test_rules.py -k {args.name}"
-        )
-    print(f"created:\n{written.describe()}\n\nnext: {nxt}")
+    print(f"created:\n{written.describe()}\n\nnext:\n{written.steps}")
     return 0
+
+
+def _common(parser: argparse.ArgumentParser, after: bool = False) -> None:
+    """--tenant and --json, before the command or after it. After it, a flag left
+    out sets nothing, so it never resets the one given before."""
+    unset = argparse.SUPPRESS
+    parser.add_argument(
+        "--tenant",
+        default=unset if after else None,
+        help="Tenant id (default: SHOC_TENANT or 'default')",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        default=unset if after else False,
+        help="Print the full result envelope as JSON",
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="shoc", description=(__doc__ or "shoc").splitlines()[0])
     parser.add_argument("--version", action="version", version=f"shoc {__version__}")
-    parser.add_argument("--tenant", help="Tenant id (default: SHOC_TENANT or 'default')")
-    parser.add_argument(
-        "--json", action="store_true", help="Print the full result envelope as JSON"
-    )
+    _common(parser)
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("migrate", help="Apply database migrations and prepare the tenant")
@@ -573,7 +681,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_serve)
 
     p = sub.add_parser("worker", help="Run connectors, detections and housekeeping")
-    p.add_argument("--once", action="store_true", help="Drain the queue once and exit")
+    p.add_argument("--once", action="store_true", help="Run up to four due jobs and exit")
+    p.add_argument(
+        "--urgent",
+        action="store_true",
+        help="Fast lane: take pages, actions, detection, syncs and playbooks, no routine model jobs",
+    )
     p.add_argument("--log-level", default="info")
     p.set_defaults(func=cmd_worker)
 
@@ -656,12 +769,16 @@ def build_parser() -> argparse.ArgumentParser:
         cp.add_argument("--json-input", help="Raw JSON payload, merged under the flags")
         required = _add_flags(cp, cap)
         cp.set_defaults(func=_capability_runner(cap, required))
+    # `shoc finding list --json` as well as `shoc --json finding list`.
+    for choices in (sub.choices, rules_sub.choices, *(g.choices for g in groups.values())):
+        for command in choices.values():
+            _common(command, after=True)
     return parser
 
 
 def _capability_runner(cap: Capability, required: list[str]):
     def run(args: argparse.Namespace, cfg: Config) -> int:
-        ctx = Context(tenant_id=cfg.tenant_id, caller=CLI_CALLER, config=cfg)
+        ctx = Context(tenant_id=cfg.tenant_id, caller=cli_caller(), config=cfg)
         result = cap.invoke(ctx, _payload(cap, args, required))
         _print(result, args.json)
         return 0
@@ -669,7 +786,21 @@ def _capability_runner(cap: Capability, required: list[str]):
     return run
 
 
+def _where(dsn: str) -> str:
+    """`host:port` of a DSN, for an error line. Never the password."""
+    import psycopg
+    from psycopg.conninfo import conninfo_to_dict
+
+    try:
+        info = conninfo_to_dict(dsn)
+    except psycopg.Error:
+        return "an unreadable DSN"
+    return f"{info.get('host') or 'the local socket'}:{info.get('port') or 5432}"
+
+
 def main(argv: list[str] | None = None) -> int:
+    import psycopg
+
     args = build_parser().parse_args(argv)
     cfg = Config.load()
     if getattr(args, "tenant", None):
@@ -678,6 +809,23 @@ def main(argv: list[str] | None = None) -> int:
         return int(args.func(args, cfg) or 0)
     except ShocError as exc:
         print(f"error ({exc.code}): {exc}", file=sys.stderr)
+        return 1
+    except psycopg.OperationalError as exc:
+        if exc.sqlstate or exc.diag.sqlstate:  # the server answered: a query failed
+            raise
+        # Host and port from the DSN, never its password. The reason is libpq's
+        # line that says what failed; a hint line follows it on one host.
+        lines = [line.strip() for line in str(exc).splitlines() if line.strip()]
+        reason = next((line for line in lines if "failed:" in line), "") or " ".join(lines)
+        reason = reason.rpartition("failed: ")[2] or type(exc).__name__
+        names = {"SHOC_DSN": cfg.dsn}
+        if cfg.migrate_dsn:
+            names["SHOC_MIGRATE_DSN"] = cfg.migrate_dsn
+        hosts = ", ".join(dict.fromkeys(_where(dsn) for dsn in names.values()))
+        print(
+            f"error: cannot reach Postgres at {hosts} ({reason}); check {' and '.join(names)}",
+            file=sys.stderr,
+        )
         return 1
     except KeyboardInterrupt:
         return 130

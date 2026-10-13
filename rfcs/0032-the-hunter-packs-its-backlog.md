@@ -72,6 +72,15 @@ a day, priority first, under a ceiling of 300,000 tokens a day.
 A refusal names which step failed, and the model can fix the pack and call
 again within its turn.
 
+> Amended on 2026-10-12 (D232, D235). The gate also bounds a pack at a window
+> of 7 days and a lookback of 90, and refuses a lookback past the tenant's
+> retention. A merged pack's title, hypothesis, triage and follow-up reach the
+> daily triage turn quoted as untrusted data, never as instructions. A
+> `human_fact` basis must name the tuple's actor as a whole word, and an
+> `older_event` basis must be a successful event from before the pack's
+> lookback, from the pack's products and accounts, that a query in the same
+> turn returned.
+
 **Undo.** `hunt.revert` takes a merged pack back; it stops running and its item
 is `rejected`. A shipped pack is out of reach. A person with the `operator` role
 holds `hunts:merge`.

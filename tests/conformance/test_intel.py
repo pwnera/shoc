@@ -139,7 +139,7 @@ def test_a_hunt_records_what_it_searched_and_what_it_found(ctx, store, config, c
         "a value somebody searched for is not a known-bad one (RFC 0022)"
     )
     row = fetch_one(ctx.db, "SELECT * FROM shoc.hunts WHERE hunt_uid = %s", (result.data.hunt_uid,))
-    assert row and row["matches"] == 4 and row["kind"] == "src_ip"
+    assert row and row["matches"] == 4 and row["kind"] == "ip"
     assert row["run_by"].startswith("human:")
 
 
@@ -175,6 +175,39 @@ def test_a_feed_failure_is_recorded_as_health_not_raised(ctx, config, clean, mon
         (config.tenant_id, "abuse_ch_feodo"),
     )
     assert row and row["last_error"] and row["last_ok_at"] is None
+
+
+def test_a_feed_value_that_is_ours_or_warninglisted_is_held(ctx, config, clean, monkeypatch):
+    """A feed passes the own-value and warninglist checks intel.add does (DET-4)."""
+    from shoc.cases import own
+    from shoc.detect import osint
+
+    own.register(ctx.db, config.tenant_id, "address", "198.51.100.200")
+    benign = osint.Benign()
+    benign.add("public-dns", "ip", "cidr", "192.0.2.53/32")
+    monkeypatch.setitem(osint._LISTS, "warninglists", (datetime.now(UTC), benign))
+    # Stored by this feed on a run before the lists loaded: it goes now.
+    intel.store_indicators(
+        ctx.db, config.tenant_id, [intel.Indicator(type="ip", value="192.0.2.53", source="misp")]
+    )
+    values = ("198.51.100.200", "192.0.2.53", "203.0.113.0/24", "2001:DB8:0:0:0:0:0:1", BAD_IP)
+    pulled = intel.Pulled(intel.Indicator(type="ip", value=v, source="misp") for v in values)
+    pulled.short = "truncated: more than one page"
+    monkeypatch.setitem(intel.FEEDS, "misp", lambda settings, secret: pulled)
+    result = intel.refresh(ctx.db, config.tenant_id, "misp", {}, {})
+    assert (result.fetched, result.held, result.stored) == (5, 3, 2)
+    stored = fetch_all(
+        ctx.db, "SELECT value FROM shoc.iocs WHERE tenant_id = %s", (config.tenant_id,)
+    )
+    assert {r["value"] for r in stored} == {"2001:db8::1", BAD_IP}, (
+        "an address is stored the way events write it, and a CIDR is not an address"
+    )
+    row = fetch_one(
+        ctx.db,
+        "SELECT last_error FROM shoc.intel_feeds WHERE tenant_id=%s AND feed=%s",
+        (config.tenant_id, "misp"),
+    )
+    assert row and row["last_error"] == result.error == "truncated: more than one page"
 
 
 def test_an_explicit_lookback_rescans_the_window_even_after_a_cycle(ctx, store, config, clean):
@@ -265,7 +298,11 @@ def test_added_indicators_keep_their_type_and_skip_internal_ones(ctx, config, cl
     assert all(r["confidence"] == 0.8 for r in rows)
 
 
-def test_an_agent_cannot_add_an_indicator_an_action_would_trust(ctx, config, clean):
+def test_an_agent_cannot_add_an_indicator_an_action_would_trust(ctx, config, clean, monkeypatch):
+    from shoc.detect import osint
+
+    # The warninglists are in, and the value is on none of them.
+    monkeypatch.setitem(osint._LISTS, "warninglists", (datetime.now(UTC), osint.Benign()))
     call(
         "intel.add",
         _agent(ctx),
@@ -539,7 +576,8 @@ def test_a_value_not_in_its_reports_text_is_not_matched(ctx, store, config, clea
 
 
 def test_a_value_everybody_touches_is_held_not_raised(ctx, store, config, clean, now):
-    """The office egress named in a report would open a finding on every user (DET-4)."""
+    """The office egress named in a feed, seen only as where calls came from,
+    would open a finding on every user; it is held and noted for the weekly (D143)."""
     rows = []
     for n in range(intel.PREVALENT_ACTORS + 1):
         for row in _events(config.tenant_id, now, count=1):
@@ -553,5 +591,226 @@ def test_a_value_everybody_touches_is_held_not_raised(ctx, store, config, clean,
     tags = fetch_one(ctx.db, "SELECT tags FROM shoc.iocs WHERE tenant_id = %s", (config.tenant_id,))
     assert tags and "prevalent" in tags["tags"]
     assert intel.indicators_for(ctx.db, config.tenant_id) == []
+    notice = fetch_one(
+        ctx.db,
+        "SELECT body FROM shoc.notices WHERE tenant_id = %s AND source = 'CTI'",
+        (config.tenant_id,),
+    )
+    assert notice and BAD_IP in notice["body"] and "intel.add" in notice["body"]
     call("intel.add", ctx, {"values": [BAD_IP], "retro_hunt": False})
     assert intel.indicators_for(ctx.db, config.tenant_id), "a person releases it"
+
+
+def _teams(tenant: str, now: datetime, users: list[str], urls: list[str]) -> list[dict]:
+    """A Teams message each of `users` sent with these links, mapped as ingest maps it."""
+    mapping = ocsf.load_mapping("m365")
+    return [
+        row
+        for n, user in enumerate(users)
+        for row in mapping.map_records(
+            {
+                "Id": f"teams-{n}",
+                "CreationTime": now.strftime("%Y-%m-%dT%H:%M:%S"),
+                "RecordType": 25,
+                "Workload": "MicrosoftTeams",
+                "Operation": "MessageSent",
+                "UserId": user,
+                "MessageURLs": urls,
+            },
+            tenant,
+        )
+    ]
+
+
+def test_a_listed_link_everybody_got_opens_one_finding_naming_them_all(
+    ctx, store, config, clean, now
+):
+    """A mass phishing link on a feed is not held: it is the one finding (D143, as amended).
+    The link is the message's second, which is matched too (cti-21)."""
+    users = [f"person-{n}@example.com" for n in range(12)]
+    batch.load(store, _teams(config.tenant_id, now, users, ["https://example.com/", PAYLOAD_URL]))
+    intel.store_indicators(
+        ctx.db,
+        config.tenant_id,
+        [
+            intel.Indicator(
+                type="url",
+                value=PAYLOAD_URL,
+                source="abuse.ch/urlhaus",
+                confidence=0.75,
+                severity="high",
+            )
+        ],
+    )
+    hits = intel.match_window(ctx.db, store, config.tenant_id, now - timedelta(hours=1))
+    [uid] = intel.findings_from_hits(ctx.db, config.tenant_id, hits)
+    row = fetch_one(ctx.db, "SELECT * FROM shoc.findings WHERE finding_uid = %s", (uid,))
+    assert row and row["severity"] == "high" and row["attack"] == ["T1071"]
+    assert row["evidence"]["users"] == sorted(users), "every account, not the first ten"
+    assert intel.indicators_for(ctx.db, config.tenant_id), "and it is not held"
+
+
+def test_a_lead_everybody_got_is_held(ctx, store, config, clean, now):
+    users = [f"person-{n}@example.com" for n in range(intel.PREVALENT_ACTORS + 1)]
+    batch.load(store, _teams(config.tenant_id, now, users, [PAYLOAD_URL]))
+    lead = intel.Indicator(type="url", value=PAYLOAD_URL, source="report:example.test")
+    lead.confidence = intel.LEAD_BELOW - 0.05
+    intel.store_indicators(ctx.db, config.tenant_id, [lead])
+    hits = intel.match_window(ctx.db, store, config.tenant_id, now - timedelta(hours=1))
+    assert hits and intel.findings_from_hits(ctx.db, config.tenant_id, hits) == []
+    assert intel.indicators_for(ctx.db, config.tenant_id) == []
+
+
+# -- a stronger source takes a value over (DET-4, DET-7) -------------------------
+def test_a_feed_or_a_person_confirming_an_unverified_value_makes_it_match(
+    ctx, store, config, clean, now
+):
+    """A value the model named but its report did not hold is matched once a
+    feed or a person lists it, and withdrawing the report leaves their row."""
+    planted = [
+        intel.Indicator(
+            type="ip",
+            value=v,
+            source="report:example.test",
+            confidence=0.35,
+            unverified=True,
+            report_uid="RPT-test",
+        )
+        for v in (BAD_IP, "198.51.100.66")
+    ]
+    intel.store_indicators(ctx.db, config.tenant_id, planted)
+    assert intel.indicators_for(ctx.db, config.tenant_id) == []
+
+    _indicator(ctx.db, config.tenant_id)  # a feed at 0.9
+    call("intel.add", ctx, {"values": ["198.51.100.66"], "retro_hunt": False})
+    rows = {r["value"]: r for r in intel.indicators_for(ctx.db, config.tenant_id)}
+    assert rows[BAD_IP]["source"] == "test"
+    assert rows["198.51.100.66"]["source"] == "manual:human:test"
+    assert call("intel.remove", ctx, {"report_uid": "RPT-test"}).data.removed == 0
+    assert intel.retro_hunt(ctx.db, store, config.tenant_id)["indicators"] == 2
+
+
+def test_a_weaker_source_does_not_take_a_feeds_value(ctx, config, clean):
+    _indicator(ctx.db, config.tenant_id)
+    _lead(ctx.db, config.tenant_id, BAD_IP)
+    [row] = intel.indicators_for(ctx.db, config.tenant_id)
+    assert row["source"] == "test" and row["description"] == "test indicator"
+
+
+# -- a retro-hunt of the values just stored (DET-4) --------------------------
+def test_a_retro_hunt_of_named_values_leaves_the_backlog_and_skips_the_expired(
+    ctx, store, config, clean, now
+):
+    from shoc.db.pool import execute
+
+    batch.load(store, _events(config.tenant_id, now, age_days=3))
+    _indicator(ctx.db, config.tenant_id, "198.51.100.88")  # a feed's backlog
+    intel.store_indicators(
+        ctx.db,
+        config.tenant_id,
+        [
+            intel.Indicator(
+                type="ip",
+                value=BAD_IP,
+                source="test",
+                confidence=0.9,
+                expires_at=now - timedelta(days=1),
+            )
+        ],
+    )
+    named = [("ip", BAD_IP)]
+    assert intel.retro_hunt(ctx.db, store, config.tenant_id, values=named)["indicators"] == 0
+    execute(
+        ctx.db, "UPDATE shoc.iocs SET expires_at = NULL WHERE tenant_id = %s", (config.tenant_id,)
+    )
+    report = intel.retro_hunt(ctx.db, store, config.tenant_id, values=named)
+    assert report["indicators"] == 1 and report["hits"] == 3
+    backlog = fetch_one(
+        ctx.db,
+        "SELECT retro_hunted_at FROM shoc.iocs WHERE tenant_id = %s AND value = '198.51.100.88'",
+        (config.tenant_id,),
+    )
+    assert backlog and backlog["retro_hunted_at"] is None, "the scheduled refresh drains it"
+
+
+def test_intel_add_hunts_what_it_added(ctx, store, config, clean, now):
+    batch.load(store, _events(config.tenant_id, now, age_days=3))
+    _indicator(ctx.db, config.tenant_id, "198.51.100.88")
+    out = call("intel.add", ctx, {"values": [BAD_IP]})
+    assert out.data.retro_hunt["indicators"] == 1 and out.data.retro_hunt["hits"] == 3
+
+
+# -- what the company may share (DET-6) --------------------------------------
+def test_a_value_shared_as_amber_is_not_sent_to_a_third_party(ctx, config, clean, monkeypatch):
+    from shoc.detect import osint
+
+    asked: list[str] = []
+
+    def stub(value: str, kind: str) -> osint.Observation:
+        asked.append(value)
+        return osint.Observation(source="stub", verdict="informational")
+
+    monkeypatch.setattr(
+        osint, "SOURCES", {"stub": osint.Source("stub", ("ip",), ("stub.example.test",), stub)}
+    )
+    intel.store_indicators(
+        ctx.db,
+        config.tenant_id,
+        [intel.Indicator(type="ip", value=BAD_IP, source="misp", confidence=0.7, tlp="amber")],
+    )
+    found = call("intel.lookup", ctx, {"value": BAD_IP})
+    assert asked == [] and "disclosure_guard" in found.data.sources_ok
+    assert not fetch_all(
+        ctx.db, "SELECT 1 FROM shoc.intel_lookups WHERE tenant_id = %s", (config.tenant_id,)
+    )
+    call("intel.add", ctx, {"values": [BAD_IP], "retro_hunt": False})
+    row = fetch_one(
+        ctx.db, "SELECT source, tlp FROM shoc.iocs WHERE tenant_id = %s", (config.tenant_id,)
+    )
+    assert row and row["source"] != "misp", "the person's listing takes the row over"
+    assert row["tlp"] == "amber", "and keeps the marking it was shared under"
+    call("intel.lookup", ctx, {"value": BAD_IP})
+    assert asked == []
+    call("intel.lookup", ctx, {"value": "198.51.100.67"})
+    assert asked == ["198.51.100.67"], "an unmarked value is still asked about"
+
+
+# -- indicators handed in and withdrawn (DET-4) ------------------------------
+def test_an_imported_page_leaves_out_its_own_host(ctx, config, clean, monkeypatch):
+    import httpx
+
+    from shoc.detect import osint, report
+
+    monkeypatch.setattr(osint, "load_soon", lambda key, wait=0.0: key in osint._LISTS)
+    page = "<html><body><p>C2 at 203.0.113.81; see https://cert.example.test/faq</p></body></html>"
+    monkeypatch.setattr(
+        report, "get", lambda url: httpx.Response(200, text=page, request=httpx.Request("GET", url))
+    )
+    out = call(
+        "intel.add", ctx, {"url": "https://www.cert.example.test/advisory", "retro_hunt": False}
+    )
+    assert [a["value"] for a in out.data.added] == ["203.0.113.81"]
+    assert out.data.rejected == ["https://cert.example.test/faq"]
+
+
+def test_a_long_ipv6_withdraws_the_stored_address(ctx, config, clean):
+    call("intel.add", ctx, {"values": ["2001:db8::77"], "retro_hunt": False})
+    assert call("intel.remove", ctx, {"values": ["2001:DB8:0:0:0:0:0:77"]}).data.removed == 1
+
+
+def test_a_refresh_says_what_it_held_and_where_a_report_pull_stopped(
+    ctx, config, clean, monkeypatch
+):
+    from shoc.detect import osint
+
+    monkeypatch.setattr(osint, "load_soon", lambda key, wait=0.0: key in osint._LISTS)
+    pulled = [intel.Indicator(type="ip", value=v, source="misp") for v in ("10.0.0.9", BAD_IP)]
+    monkeypatch.setitem(intel.FEEDS, "misp", lambda settings, secret: pulled)
+    out = call("intel.refresh", ctx, {"feed": "misp", "retro_hunt": False})
+    assert out.data.feeds[0]["held"] == 1 and "1 held as ours or warninglisted" in out.summary
+
+    short = intel.Pulled()
+    short.short = "truncated: OTX has more than 20 pages of pulses; raise `pages`"
+    monkeypatch.setitem(intel.REPORT_FEEDS, "otx_pulses", lambda settings, secret: short)
+    out = call("intel.refresh", ctx, {"feed": "otx_pulses", "retro_hunt": False})
+    assert out.data.feeds[0]["error"] == short.short

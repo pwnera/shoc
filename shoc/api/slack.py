@@ -6,7 +6,10 @@ request really came from Slack, and deciding which Slack user counts as a human
 principal allowed to approve.
 
 Approvers are listed explicitly in the app's settings. Being in the channel is
-not authority: without the mapping, a button press is refused.
+not authority: without the mapping, a button press is refused. Readers are
+listed the same way: a workspace member on neither list gets `/shoc help` and
+nothing else, since the crew's answers can reach past the asker's own scopes.
+Answers go to the asker alone.
 """
 
 from __future__ import annotations
@@ -23,6 +26,7 @@ from typing import Any
 import httpx
 
 from shoc.api.auth import role_caller
+from shoc.api.signin import Throttle
 from shoc.capabilities.registry import Caller, Context
 from shoc.db.pool import Conn, fetch_one
 from shoc.errors import ConfigError, Denied
@@ -38,6 +42,8 @@ MAX_SKEW_SECONDS = 300
 # connection; a question past these waits its turn.
 RESPONSE_URL = "https://hooks.slack.com/"
 REPLIES = ThreadPoolExecutor(max_workers=4, thread_name_prefix="slack-reply")
+# Questions one Slack user may ask in an hour, in this process.
+QUESTIONS = Throttle(20, 3600)
 SEVERITY_EMOJI = {
     "critical": ":rotating_light:",
     "high": ":red_circle:",
@@ -53,6 +59,8 @@ class SlackApp:
     signing_secret: str = ""
     channel: str = ""
     approvers: dict[str, str] = field(default_factory=dict)  # slack user id -> person's name
+    readers: dict[str, str] = field(default_factory=dict)  # slack user id -> person's name
+    team_id: str = ""  # the workspace; a request from any other is refused
 
     @property
     def configured(self) -> bool:
@@ -80,6 +88,8 @@ def load_app(conn: Conn, tenant_id: str, master_key: str) -> SlackApp:
         signing_secret=secret.get("signing_secret", ""),
         channel=settings.get("channel", ""),
         approvers=dict(settings.get("approvers", {})),
+        readers=dict(settings.get("readers", {})),
+        team_id=settings.get("team_id", ""),
     )
 
 
@@ -101,15 +111,21 @@ def verify(
         raise Denied("Slack signature does not match")
 
 
-def caller_for(app: SlackApp, slack_user_id: str) -> Caller:
-    """A listed approver is an operator (RFC 0018). Everyone else can only read."""
-    if slack_user_id in app.approvers:
-        return role_caller("operator", app.approvers[slack_user_id])
-    return Caller(
-        kind="external_agent",
-        id=f"slack:{slack_user_id}",
-        scopes=("events:read", "findings:read", "cases:read", "ask:read", "health:read"),
-    )
+def caller_for(app: SlackApp, slack_user_id: str, team_id: str = "") -> Caller:
+    """A listed approver is an operator (RFC 0018), a listed reader can read, anyone else nothing.
+
+    A request from another workspace than the configured one is nobody's.
+    """
+    if not (app.team_id and team_id != app.team_id):
+        if slack_user_id in app.approvers:
+            return role_caller("operator", app.approvers[slack_user_id])
+        if slack_user_id in app.readers:
+            return Caller(
+                kind="external_agent",
+                id=f"slack:{slack_user_id}",
+                scopes=("events:read", "findings:read", "cases:read", "ask:read", "health:read"),
+            )
+    return Caller(kind="external_agent", id=f"slack:{slack_user_id}", scopes=())
 
 
 # -- outbound ---------------------------------------------------------------
@@ -276,13 +292,18 @@ def handle_command(
 
     text = (form.get("text") or "").strip()
     user = form.get("user_id", "")
-    ctx.caller = caller_for(app, user)
+    ctx.caller = caller_for(app, user, form.get("team_id", ""))
     if not text or text in ("help", "?"):
         return _message(
             "*shoc*\n"
             "`/shoc cases` — open cases\n"
             "`/shoc waiting` — actions waiting for a human\n"
             "`/shoc <question>` — ask, with citations"
+        )
+    if not ctx.caller.scopes:
+        return _message(
+            ":no_entry: You are not on this workspace's shoc reader or approver list. "
+            "An admin adds you with `shoc slack configure`."
         )
     if text.startswith("cases"):
         result = call("case.list", ctx, {"limit": 5})
@@ -298,11 +319,15 @@ def handle_command(
             f"• `{a['action_uid']}` {a['type']} on `{a['target']}`" for a in result.data.rows
         )
         return _message(f"*{result.summary}*\n{lines or '_nothing waiting_'}")
+    # Each question runs the crew; one person cannot keep it busy for everyone.
+    if QUESTIONS.full((ctx.tenant_id, user)):
+        return _message(f"You asked {QUESTIONS.limit} questions this hour; try again later.")
     url = form.get("response_url", "")
+    if url and not url.startswith(RESPONSE_URL):
+        raise Denied(f"response_url must start with {RESPONSE_URL}")
+    QUESTIONS.hit((ctx.tenant_id, user))
     if not url:
         return _message(_answer(ctx, text))
-    if not url.startswith(RESPONSE_URL):
-        raise Denied(f"response_url must start with {RESPONSE_URL}")
     # Slack gives up on a command after 3 seconds, and the Manager can take a
     # minute asking the crew, so the answer follows through `response_url`.
     later = Context(tenant_id=ctx.tenant_id, caller=ctx.caller, config=ctx.config)
@@ -325,6 +350,8 @@ def _reply(ctx: Context, question: str, url: str, http: httpx.Client | None = No
     except Exception as exc:  # the person still gets an answer, even if it is this one
         log.warning("ask from Slack failed: %s", exc)
         body = _message(f"shoc could not answer that: {type(exc).__name__}")
+    finally:
+        ctx.close()  # this thread's Context, and the event store it opened (STO-4)
     client = http or httpx.Client(timeout=15.0)
     try:
         client.post(url, json=body).raise_for_status()
@@ -340,7 +367,7 @@ def handle_interaction(ctx: Context, app: SlackApp, payload: dict[str, Any]) -> 
     from shoc.capabilities.registry import call
 
     user = (payload.get("user") or {}).get("id", "")
-    ctx.caller = caller_for(app, user)
+    ctx.caller = caller_for(app, user, (payload.get("team") or {}).get("id", ""))
     actions = payload.get("actions") or []
     if not actions:
         return _message("Nothing to do.")
@@ -350,7 +377,8 @@ def handle_interaction(ctx: Context, app: SlackApp, payload: dict[str, Any]) -> 
         if action_id == "shoc_approve":
             result = call("action.approve", ctx, {"action_uid": action_uid})
             return _message(
-                f":white_check_mark: <@{user}> approved `{action_uid}`. {result.summary}"
+                f":white_check_mark: <@{user}> approved `{action_uid}`. {result.summary}",
+                "in_channel",
             )
         if action_id == "shoc_reject":
             call(
@@ -358,7 +386,7 @@ def handle_interaction(ctx: Context, app: SlackApp, payload: dict[str, Any]) -> 
                 ctx,
                 {"action_uid": action_uid, "note": f"rejected in Slack by {user}"},
             )
-            return _message(f":x: <@{user}> rejected `{action_uid}`.")
+            return _message(f":x: <@{user}> rejected `{action_uid}`.", "in_channel")
     except Denied:
         return _message(
             f":no_entry: <@{user}> is not on the approver list for this workspace. "
@@ -367,8 +395,9 @@ def handle_interaction(ctx: Context, app: SlackApp, payload: dict[str, Any]) -> 
     return _message("Unknown button.")
 
 
-def _message(text: str) -> dict[str, Any]:
-    return {"response_type": "in_channel", "text": text}
+def _message(text: str, response_type: str = "ephemeral") -> dict[str, Any]:
+    """A reply only the asker sees, unless it is an approval the channel should know of."""
+    return {"response_type": response_type, "text": text}
 
 
 def parse_payload(body: bytes, content_type: str) -> dict[str, Any]:

@@ -222,11 +222,18 @@ def validate(rule: Rule) -> None:
         raise ConfigError(f"{rule.id}: use one of count, sequence and first_seen per rule")
 
 
+# libyaml parses shipped content about ten times faster than the pure-Python
+# loader, and rules, packs, playbooks and the policy are read on every
+# `health.status` poll and every playbook step.
+LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
+
+def load_yaml(text: str) -> Any:
+    return yaml.load(text, Loader=LOADER)
+
+
 def load_file(path: Path) -> Rule:
-    # libyaml parses the shipped rules six times faster, and `health.status`
-    # loads them on every poll.
-    loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
-    return from_dict(yaml.load(path.read_text(), Loader=loader) or {}, path)
+    return from_dict(load_yaml(path.read_text()) or {}, path)
 
 
 def load_dir(directory: Path) -> list[Rule]:
@@ -239,7 +246,14 @@ def load_dir(directory: Path) -> list[Rule]:
     return rules
 
 
-def load(config: Any = None, conn: Any = None, tenant_id: str = "") -> list[Rule]:
+def load(
+    config: Any = None,
+    conn: Any = None,
+    tenant_id: str = "",
+    skipped: dict[str, str] | None = None,
+) -> list[Rule]:
+    """The shipped rules and, given a tenant, its merges laid over them.
+    `skipped` is `merged`'s."""
     from shoc.config import Config
 
     cfg = config or Config.load()
@@ -249,7 +263,7 @@ def load(config: Any = None, conn: Any = None, tenant_id: str = "") -> list[Rule
     return list(
         {
             **{r.id: r for r in shipped},
-            **{r.id: r for r in merged(conn, tenant_id, shipped)},
+            **{r.id: r for r in merged(conn, tenant_id, shipped, skipped)},
         }.values()
     )
 
@@ -282,35 +296,59 @@ def narrow(rule: Rule, exclude: list[dict[str, Any]]) -> Rule:
     return out
 
 
-def merged(conn: Any, tenant_id: str, shipped: list[Rule] | None = None) -> list[Rule]:
+# `merged`'s reason for a row whose id a later release ships: the shipped rule
+# runs under that id, so the reason is not that rule's error.
+SHADOWED = "a shipped rule now has this id; the merged one is left out"
+
+
+def merged(
+    conn: Any,
+    tenant_id: str,
+    shipped: list[Rule] | None = None,
+    skipped: dict[str, str] | None = None,
+    config: Any = None,
+) -> list[Rule]:
     """The rules the Detection Engineer merged here and has not reverted.
 
     A row is either a new rule, as content/rules would parse it, or a narrowing
     `{narrows, exclude}` of a shipped rule. A narrowing whose rule is no longer
-    shipped is dropped rather than resurrected.
+    shipped is dropped rather than resurrected. A new rule that no longer
+    parses, or whose id a later release ships, is left out so the rest still
+    run and the shipped rule wins; why goes into `skipped` by rule id.
     """
     from shoc.db.pool import fetch_all
 
     rows = fetch_all(
         conn,
-        """SELECT body, merged_at FROM shoc.merged_rules
+        """SELECT rule_id, body, merged_at FROM shoc.merged_rules
            WHERE tenant_id = %s AND state = 'merged'
              AND (lapses_at IS NULL OR lapses_at > now())""",
         (tenant_id,),
     )
-    by_id = {r.id: r for r in shipped} if shipped is not None else None
+    if shipped is None and rows:
+        shipped = load(config)
+    by_id = {r.id: r for r in shipped or []}
+    skipped = {} if skipped is None else skipped
     rules: list[Rule] = []
     for row in rows:
         body = row["body"]
         if "narrows" in body:
-            if by_id is None:
-                by_id = {r.id: r for r in load()}
             base = by_id.get(str(body["narrows"]))
             if base is None:
                 continue
             rule = narrow(base, list(body.get("exclude") or []))
+        elif str(row["rule_id"]) in by_id:
+            skipped[str(row["rule_id"])] = SHADOWED
+            continue
         else:
-            rule = from_dict(body)
+            try:
+                rule = from_dict(body)
+            except (ConfigError, KeyError, TypeError, ValueError, AttributeError) as exc:
+                skipped[str(row["rule_id"])] = f"merged rule no longer loads: {exc}"
+                continue
+            if rule.id in by_id:
+                skipped[rule.id] = SHADOWED
+                continue
             rule.created = rule.created or row["merged_at"].isoformat()
         rule.updated = row["merged_at"].isoformat()
         rules.append(rule)

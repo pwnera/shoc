@@ -69,3 +69,14 @@ def test_a_sign_in_names_its_user_agent_and_application():
     mapped = row("UserLoggedIn")
     assert mapped["http_user_agent"].startswith("Mozilla/5.0 (X11; Linux x86_64)")
     assert mapped["actor_invoked_by"] == "00000000-0052-4052-8052-000000000052"
+
+
+def test_every_link_of_a_teams_message_is_a_matchable_url():
+    """A listed link that is not the message's first is matched too (DET-4)."""
+    record = next(r for r in RECORDS if r["Operation"] == "MessageCreatedHasLink")
+    links = ["https://example.com/", "https://bad.example.test/loader.bin"]
+    rows = ocsf.load_mapping("m365").map_records({**record, "MessageURLs": links}, "t1")
+    assert [r["http_request_url"] for r in rows] == links
+    assert [r["event_uid"] for r in rows] == [record["Id"], f"{record['Id']}-1"]
+    [one] = ocsf.load_mapping("m365").map_records(record, "t1")
+    assert one["http_request_url"] == "https://example.com/"

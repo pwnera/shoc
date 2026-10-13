@@ -216,7 +216,7 @@ def test_the_worker_queues_an_action_a_human_approved(ctx, conn, config, case, c
         principal_kind="human",
         config=config,
     )
-    execute(conn, "DELETE FROM shoc.jobs")
+    execute(conn, "DELETE FROM shoc.jobs WHERE tenant_id = %s", (config.tenant_id,))
     action_store.approve(conn, config.tenant_id, row["action_uid"], "rettila", "human")
     assert worker.run_approved_actions(conn) >= 1
     queued = fetch_all(
@@ -227,10 +227,11 @@ def test_the_worker_queues_an_action_a_human_approved(ctx, conn, config, case, c
     assert row["action_uid"] in [q["payload"]["action_uid"] for q in queued]
 
 
-def test_the_action_run_job_actually_executes_it(ctx, conn, config, case, clean):
+def test_the_action_run_job_actually_executes_it(ctx, conn, config, case, clean, monkeypatch):
     """Queueing is half of it. The job has to run, through the worker, with RLS on."""
     from shoc import worker
 
+    monkeypatch.setattr(config, "dry_run", True)  # SHOC_DRY_RUN=1, as a new install sets it
     before = audit_seq(conn, config.tenant_id)
     row = action_store.propose(
         conn,
@@ -258,7 +259,8 @@ def test_the_action_run_job_actually_executes_it(ctx, conn, config, case, clean)
         conn, "SELECT state, dry_run FROM shoc.actions WHERE action_uid = %s", (row["action_uid"],)
     )
     assert after and after["state"] == "done"
-    assert after["dry_run"] is True, "a new install plans and changes nothing"
+    # A page is never a dry run, SHOC_DRY_RUN or not: one that went out is not a plan.
+    assert after["dry_run"] is False
     # The worker runs it through `action.run` as a service principal (API-1, D8),
     # so the call is on record next to both changes of state.
     assert audit_trail(conn, config.tenant_id, before) == [
@@ -268,11 +270,22 @@ def test_the_action_run_job_actually_executes_it(ctx, conn, config, case, clean)
     ]
 
 
+def _medium(conn, config, case) -> None:
+    """A medium case through and through: paging reads the worse of the case's
+    severity and its worst finding's (ai-3)."""
+    engine.set_severity(conn, config.tenant_id, case["case_uid"], "medium", "for this test")
+    execute(
+        conn,
+        "UPDATE shoc.findings SET severity = 'medium' WHERE tenant_id = %s AND case_uid = %s",
+        (config.tenant_id, case["case_uid"]),
+    )
+
+
 def test_an_undecided_action_on_a_quiet_case_is_abandoned_with_a_reason(
     ctx, conn, config, case, clean
 ):
     """Waiting is not an outcome. A medium case is not worth waking anybody for."""
-    engine.set_severity(conn, config.tenant_id, case["case_uid"], "medium", "for this test")
+    _medium(conn, config, case)
     row = action_store.propose(
         conn,
         config.tenant_id,
@@ -304,7 +317,7 @@ def test_an_undecided_action_on_a_quiet_case_is_abandoned_with_a_reason(
     assert any("Nothing was done about it" in b for b in bodies)
 
 
-def test_an_undecided_action_on_a_severe_case_pages_instead(ctx, conn, config, case, clean):
+def test_an_undecided_action_on_a_severe_case_pages_instead(ctx, conn, config, case, clean, pager):
     engine.set_severity(conn, config.tenant_id, case["case_uid"], "critical", "for this test")
     row = action_store.propose(
         conn,
@@ -333,7 +346,7 @@ def test_an_undecided_action_on_a_severe_case_pages_instead(ctx, conn, config, c
     assert paged, "somebody has to be woken for a critical case nobody decided"
 
 
-def test_a_page_is_never_chased_and_goes_out_once(ctx, conn, config, case, clean):
+def test_a_page_is_never_chased_and_goes_out_once(ctx, conn, config, case, clean, pager):
     """The page loop: the case had used its three automatic actions, so the page
     itself needed approval, and four hours later the sweep paged about the page,
     quoting it, every cycle after that."""
@@ -417,7 +430,7 @@ def test_an_unanswered_nudge_is_not_repeated(ctx, conn, config, case, clean):
     assert len(injected) == 1 and not injected[0].get("repeats")
 
 
-def test_a_paged_action_still_undecided_is_abandoned(ctx, conn, config, case, clean):
+def test_a_paged_action_still_undecided_is_abandoned(ctx, conn, config, case, clean, pager):
     """The page went out, nobody answered, and the action sat `proposed` for ever."""
     engine.set_severity(conn, config.tenant_id, case["case_uid"], "critical", "for this test")
     row = action_store.propose(
@@ -450,7 +463,7 @@ def test_a_paged_action_still_undecided_is_abandoned(ctx, conn, config, case, cl
     assert after and after["state"] == "rejected" and "paged" in after["error"]
 
 
-def test_a_quiet_case_past_its_deadline_is_woken_then_paged(ctx, conn, config, case, clean):
+def test_a_quiet_case_past_its_deadline_is_woken_then_paged(ctx, conn, config, case, clean, pager):
     """A case in containment with nothing new sat there for ever (D51)."""
     execute(
         conn,
@@ -478,10 +491,10 @@ def test_a_quiet_case_past_its_deadline_is_woken_then_paged(ctx, conn, config, c
 
 def test_a_medium_case_expiring_twice_is_closed(ctx, conn, config, case, clean):
     """D51 as amended: a second expiry is an outcome. Below `high` it is a close."""
+    _medium(conn, config, case)
     execute(
         conn,
-        """UPDATE shoc.cases SET severity = 'medium', state = 'analysis',
-                  worked_at = now() - interval '30 hours'
+        """UPDATE shoc.cases SET state = 'analysis', worked_at = now() - interval '30 hours'
            WHERE tenant_id = %s AND case_uid = %s""",
         (config.tenant_id, case["case_uid"]),
     )
@@ -519,7 +532,7 @@ def test_the_sweep_goes_back_to_a_case_that_has_something_new(
         "UPDATE shoc.cases SET worked_at = now() - interval '1 hour' WHERE case_uid = %s",
         (case["case_uid"],),
     )
-    execute(conn, "DELETE FROM shoc.jobs")
+    execute(conn, "DELETE FROM shoc.jobs WHERE tenant_id = %s", (config.tenant_id,))
     assert "queued 0" in worker._sweep_cases(ctx), "a worked case with nothing new stays closed"
 
     execute(
@@ -721,7 +734,7 @@ def test_an_unanswered_blast_radius_stops_the_crew(ctx, store, config, case, uid
 def test_an_expired_l2_falls_back_to_the_commanders_narrower_action(ctx, conn, config, clean):
     from tests.support import malicious_case
 
-    okta = malicious_case(conn, config.tenant_id, "okta_mfa_fatigue")
+    okta = malicious_case(conn, config.tenant_id, "okta_mfa_fatigue", ctx.store)
     engine.set_severity(conn, config.tenant_id, okta, "critical", "for this test")
     cited = fetch_one(conn, "SELECT event_uids FROM shoc.findings WHERE case_uid = %s", (okta,))
     assert cited
@@ -773,7 +786,7 @@ def test_a_fallback_keeps_the_grounding_of_the_action_it_replaces(ctx, conn, con
     """An injected target must not run alone by becoming somebody's fallback."""
     from tests.support import malicious_case
 
-    okta = malicious_case(conn, config.tenant_id, "okta_mfa_fatigue")
+    okta = malicious_case(conn, config.tenant_id, "okta_mfa_fatigue", ctx.store)
     engine.set_severity(conn, config.tenant_id, okta, "critical", "for this test")
     (taken,) = action_store.from_crew(
         conn,
@@ -821,10 +834,10 @@ def test_verify_searches_run_before_the_case_closes(ctx, store, config, case, ui
 
 
 def test_nudged_cases_do_not_starve_newer_ones(ctx, conn, config, case, clean):
+    _medium(conn, config, case)
     execute(
         conn,
-        """UPDATE shoc.cases SET severity = 'medium', state = 'analysis',
-                            worked_at = now() - interval '30 hours'
+        """UPDATE shoc.cases SET state = 'analysis', worked_at = now() - interval '30 hours'
                      WHERE case_uid = %s""",
         (case["case_uid"],),
     )
@@ -864,7 +877,9 @@ def test_a_case_closed_without_its_containment_waits_for_a_person(
         conn, tenant, proposal, "IR Commander", principal_kind="agent", config=config
     )
     action_store.reject(conn, tenant, row["action_uid"], "unattended", "nobody decided in time")
-    engine.set_verdict(conn, tenant, uid, "malicious", 0.9, "leaked key used", uids)
+    # Suspicious: a malicious case nothing contained is unacknowledged on that
+    # alone (live-5), which would hide what an expired action does here.
+    engine.set_verdict(conn, tenant, uid, "suspicious", 0.9, "leaked key used", uids)
     engine.transition(conn, tenant, uid, "closed", "verify searches came back clean", by="crew")
 
     listed = call("case.list", ctx, {"unacknowledged": True, "limit": 200}).data.rows
@@ -911,3 +926,17 @@ def test_a_case_closed_without_its_containment_waits_for_a_person(
     assert engine.require(conn, tenant, uid)["unacknowledged"] is True
     engine.set_verdict(conn, tenant, uid, "benign_expected", 0.9, "the deploy role", uids)
     assert engine.require(conn, tenant, uid)["unacknowledged"] is False
+
+
+def test_a_proposer_cannot_tell_the_approver_how_many_owners_stay(conn, config, case):
+    """The count a plan shows an approver comes from the vendor's lookup, never
+    from whoever proposed: a model reading log content could write any number (ir-9)."""
+    proposal = action_store.Proposal(
+        action_type="github.demote_org_owner",
+        params={"user": "eve", "org": "acme", "holders_left": "5"},
+        case_uid=case["case_uid"],
+    )
+    row = action_store.propose(
+        conn, config.tenant_id, proposal, "IR Commander", principal_kind="agent", config=config
+    )
+    assert "holders_left" not in row["params"]

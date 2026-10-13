@@ -8,7 +8,7 @@ from typing import Any
 
 from shoc.errors import ConfigError
 from shoc.ingest.connectors import awssig
-from shoc.ingest.connectors.base import FetchResult, client, since_default
+from shoc.ingest.connectors.base import FetchResult, client, reached, since_default, utc
 
 SERVICE = "guardduty"
 
@@ -48,11 +48,12 @@ class AwsGuardDutyConnector:
     ) -> FetchResult:
         """One page of findings per detector, each detector with its own window.
 
-        A detector's `since` holds while its NextToken is followed, and moves to
-        the newest `updatedAt` read once its pages run out.
+        A detector's start holds while its NextToken is followed, and its
+        `since` moves to the newest `updatedAt` read once its pages run out; a
+        new walk starts `OVERLAP` before it (D164).
         """
         region = settings.get("region") or "us-east-1"
-        start = since_default(cursor, hours=int(settings.get("backfill_hours", 24)))
+        start = since_default(cursor, settings)
         detectors = settings.get("detector_ids") or _detectors(secret, region)
         state = cursor.get("detectors") or {}
 
@@ -61,7 +62,7 @@ class AwsGuardDutyConnector:
         more = False
         for detector_id in detectors:
             mine = state.get(detector_id) or {}
-            since = str(mine.get("since") or start)
+            since = since_default(mine, settings) if mine else start
             body: dict[str, Any] = {
                 "MaxResults": min(int(limit), 50),
                 "FindingCriteria": {"Criterion": {"updatedAt": {"GreaterThan": _epoch_ms(since)}}},
@@ -71,7 +72,7 @@ class AwsGuardDutyConnector:
                 body["NextToken"] = mine["next_token"]
             listed = _request(secret, region, f"/detector/{detector_id}/findings", body)
             ids = listed.get("findingIds") or []
-            newest = str(mine.get("newest") or since)
+            newest = reached(mine, since)
             if ids:
                 detail = _request(
                     secret, region, f"/detector/{detector_id}/findings/get", {"findingIds": ids}
@@ -82,11 +83,15 @@ class AwsGuardDutyConnector:
                     newest = max(newest, str(finding.get("updatedAt") or since))
             token = listed.get("NextToken")
             if token and ids:
-                out[detector_id] = {"since": since, "newest": newest, "next_token": token}
+                held = {**mine, "start": since, "newest": newest, "next_token": token}
+                out[detector_id] = held
                 more = True
             else:
                 out[detector_id] = {"since": newest}
-        return FetchResult(records=records, cursor={"detectors": out}, more=more)
+        # One detector a region is the rule; with more, the earliest `since` bounds
+        # what counts as late.
+        late = min((str(m["since"]) for m in state.values() if m.get("since")), key=utc, default="")
+        return FetchResult(records=records, cursor={"detectors": out}, more=more, since=late)
 
 
 def _detectors(secret: dict[str, Any], region: str) -> list[str]:

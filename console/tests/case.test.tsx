@@ -290,14 +290,33 @@ describe("run a playbook", () => {
 });
 
 describe("close dialog", () => {
-  const wrap = (verdict: Case["verdict"]) =>
-    render(
+  const wrap = (verdict: Case["verdict"], rows: Action[] = []) => {
+    const client = new QueryClient();
+    client.setQueryData(["action.list", { limit: 500, case_uid: record.case_uid }], {
+      rows,
+      count: rows.length,
+      waiting_for_approval: rows.length,
+    });
+    return render(
       <MemoryRouter>
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={client}>
           <CloseDialog record={{ ...record, verdict }} onClose={() => {}} />
         </QueryClientProvider>
       </MemoryRouter>,
     );
+  };
+
+  it("offers Approve and close on an attack with an action waiting, and only then", () => {
+    const waiting = [action("a1", { state: "proposed" })];
+    const attack = wrap("malicious", waiting);
+    expect(screen.getByRole("button", { name: "Approve and close", hidden: true })).toBeInTheDocument();
+    attack.unmount();
+    const benign = wrap("false_positive", waiting);
+    expect(screen.queryByRole("button", { name: "Approve and close", hidden: true })).toBeNull();
+    benign.unmount();
+    wrap("malicious");
+    expect(screen.queryByRole("button", { name: "Approve and close", hidden: true })).toBeNull();
+  });
 
   it("presets the crew's verdict and offers Remember only for Expected and Rule was wrong", () => {
     wrap("malicious");

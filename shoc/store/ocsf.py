@@ -9,7 +9,9 @@ a major.
 
 from __future__ import annotations
 
+import contextlib
 import functools
+import json
 import re
 from typing import Any
 
@@ -77,6 +79,21 @@ JSON_COLUMNS: set[str] = {c for c, t in COLUMNS if t == "JSON"}
 INT_COLUMNS: set[str] = {c for c, t in COLUMNS if t == "INTEGER"}
 
 EVENTS_TABLE = "ocsf_events"
+
+
+def decoded(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """`rows` with their JSON columns as objects, as Postgres returns them.
+
+    A warehouse returns `raw`, `unmapped` and `observables` as text (STO-1). A
+    value that is not JSON, such as one Redshift cut at 64 KB, stays text.
+    """
+    for row in rows:
+        for key in JSON_COLUMNS.intersection(row):
+            if isinstance(row[key], str):
+                with contextlib.suppress(ValueError):
+                    row[key] = json.loads(row[key])
+    return rows
+
 
 # OCSF dotted paths used by rules, mapped to the flattened columns above.
 FIELD_MAP: dict[str, str] = {

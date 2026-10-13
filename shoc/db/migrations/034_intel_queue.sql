@@ -1,4 +1,4 @@
--- 036 a report source's unread items wait their turn (DET-7)
+-- 034 a report source's unread items wait their turn (DET-7)
 --
 -- A poll read at most `max_items` reports and forgot the rest, so on a feed
 -- that publishes more than that between polls the older items scrolled off

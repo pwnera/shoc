@@ -36,6 +36,11 @@ def test_rule_metadata_is_complete(rule):
     assert rule.created, "every rule carries its Sigma `date`"
 
 
+def test_the_pack_uses_the_low_tier():
+    # A configuration change with no attacker-only signal is medium or low (DET-2).
+    assert any(r.severity in ("low", "informational") for r in RULES)
+
+
 @pytest.mark.parametrize("rule", RULES, ids=lambda r: r.id)
 def test_rule_has_positive_and_negative_fixtures(rule):
     for kind in ("positive", "negative"):
@@ -52,6 +57,13 @@ HUNT_IDS = {f"hunt:{p.id}" for p in hunts.load()}
 def test_every_rule_belongs_to_exactly_one_playbook(rule):
     owners = [b.id for b in BOOKS if rule.id in b.rules]
     assert len(owners) == 1, f"{rule.id} is answered by {owners or 'no playbook'}"
+
+
+@pytest.mark.parametrize("pack", sorted(HUNT_IDS))
+def test_every_hunt_pack_belongs_to_exactly_one_playbook(pack):
+    """A pack in no playbook surfaces findings that nothing contains."""
+    owners = [b.id for b in BOOKS if pack in b.rules]
+    assert len(owners) == 1, f"{pack} is answered by {owners or 'no playbook'}"
 
 
 @pytest.mark.parametrize("book", BOOKS, ids=lambda b: b.id)
@@ -72,6 +84,18 @@ def test_playbook_shows_a_worked_answer_to_its_own_questions(book):
     )
     assert "checked and absent" in book.example and "disposition" in book.example
     assert "<" not in book.example, "an example must not look like a closing tag"
+
+
+@pytest.mark.parametrize("book", [b for b in BOOKS if len(b.rules) == 1], ids=lambda b: b.id)
+def test_a_one_rule_playbook_acts_on_what_its_rule_found(book):
+    """`entity.<kind>` names the first value on the whole case, the account a
+    spray failed on or the key next to the leaked one (RFC 0026)."""
+    for step in book.steps:
+        if step.action and not step.action.startswith("notify."):
+            targets = [str(v) for v in step.params.values()]
+            assert not [t for t in targets if "{{ entity." in t], (
+                f"{book.id}: '{step.name}' reads entity.*; read rule.{book.rules[0]}.<kind>"
+            )
 
 
 @pytest.mark.parametrize("book", BOOKS, ids=lambda b: b.id)
@@ -97,6 +121,8 @@ CANNOT_ACT = {
     # The same: only the Okta rule pairs the spray with a success. The `idp` step
     # that seemed to answer it read that rule's user and never rendered (RFC 0031).
     "entra_sign_in_failure_burst",
+    "m365_sign_in_failure_burst",
+    "m365_password_guessing_one_user",
     # Gateway names a WARP device; isolating it needs the EDR device id, and no
     # step can block a domain yet.
     "cloudflare_gateway_threat_domain_lookup",

@@ -107,7 +107,10 @@ def test_the_action_runs_and_is_undone_where_it_was_routed(
         used.append(f"undo {creds.provider}")
         return ActionResult(ok=True, detail="enabled")
 
-    monkeypatch.setattr(type(action), "execute", lambda self, c, p, http=None: act(c, p))
+    monkeypatch.setattr(type(action), "snapshot", lambda self, c, p, http=None: {})
+    monkeypatch.setattr(
+        type(action), "execute", lambda self, c, p, http=None, before=None: act(c, p)
+    )
     monkeypatch.setattr(type(action), "undo", lambda self, c, d, http=None: undo(c, d))
     if record.state != "approved":
         action_store.approve(ctx.db, ctx.tenant_id, record.action_uid, "human:test", "human")

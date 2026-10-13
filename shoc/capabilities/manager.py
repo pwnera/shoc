@@ -69,6 +69,8 @@ class Sent:
     report_uid: str = ""
     held: int = 0
     slack_error: str = ""
+    # Why nothing carried it when no Slack channel or webhook is set up.
+    undelivered: str = ""
 
 
 @capability(
@@ -90,11 +92,23 @@ def send(ctx: Context, inp: SendInput) -> Result:
             summary=reporter.send_exceptions(ctx.db, ctx.store, ctx.tenant_id, ctx.config),
         )
     report, error = reporter.send(ctx.db, ctx.store, ctx.tenant_id, inp.kind, ctx.config)
-    held = len(report.body.get("held") or [])
+    # One row per repeated notice with its count, as report.ready counts them.
+    held = sum(int(r.get("count") or 1) for r in report.body.get("held") or [])
+    # reporter.send answers Slack's refusal, or that no channel carries a report.
+    undelivered = error if error.startswith("not delivered") else ""
+    slack_error = "" if undelivered else error
     return Result(
-        data=Sent(report_uid=report.report_uid, held=held, slack_error=error),
+        data=Sent(
+            report_uid=report.report_uid,
+            held=held,
+            # The console says "Not sent" on slack_error alone, so it carries
+            # `undelivered` too until the console reads that field.
+            slack_error=error,
+            undelivered=undelivered,
+        ),
         summary=f"{inp.kind} report {report.report_uid}: {held} held notice(s)"
-        + (f"; Slack: {error}" if error else ""),
+        + (f"; Slack: {slack_error}" if slack_error else "")
+        + (f"; {undelivered}" if undelivered else ""),
         citations=report.citations,
     )
 

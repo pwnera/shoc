@@ -21,6 +21,7 @@ import { attackUrl } from "@/lib/attack";
 import { count, stamp } from "@/lib/format";
 import { useHuntBacklog, useProposeHunt, useRemoveIntel } from "@/lib/queries";
 import { toast } from "@/lib/toast";
+import { safeHref } from "@/lib/url";
 import type { IntelReport } from "@/types";
 
 type Node = { id: string; kind: string; label: string; lane: string; what: string };
@@ -105,6 +106,7 @@ export function ReportDialog({
   const [asking, setAsking] = useState(false);
   const [more, setMore] = useState<string[]>([]);
   const { nodes, edges } = graphOf(report);
+  const href = safeHref(report.url);
   // Only the lanes the report fills; a label sits under its node, so rows keep 44px apart.
   const lanes = LANES.filter((lane) => nodes.some((n) => n.lane === lane));
   const tallest = Math.max(1, ...lanes.map((lane) => nodes.filter((n) => n.lane === lane).length));
@@ -183,10 +185,12 @@ export function ReportDialog({
         rows={[
           [
             "source",
-            report.url ? (
-              <a className="sh-link truncate font-mono text-xs" href={report.url} target="_blank" rel="noreferrer noopener">
+            href ? (
+              <a className="sh-link truncate font-mono text-xs" href={href} target="_blank" rel="noreferrer noopener">
                 {report.url}
               </a>
+            ) : report.url ? (
+              <span className="truncate font-mono text-xs">{report.url}</span>
             ) : null,
           ],
           [

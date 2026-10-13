@@ -161,5 +161,107 @@
         ]
       }
     ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-2sv-off-second",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "CHANGE_TWO_STEP_VERIFICATION_ENROLLMENT_PERIOD_DURATION",
+        "parameters": [
+          {
+            "name": "OLD_VALUE",
+            "value": "1 week"
+          },
+          {
+            "name": "NEW_VALUE",
+            "value": "2 weeks"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "Sales"
+          }
+        ]
+      },
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "ENFORCE_STRONG_AUTHENTICATION",
+        "parameters": [
+          {
+            "name": "OLD_VALUE",
+            "value": "true"
+          },
+          {
+            "name": "NEW_VALUE",
+            "value": "false"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "Sales"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "admin#reports#activity",
+    "id": {
+      "uniqueQualifier": "gw-2sv-any-method-second",
+      "applicationName": "admin",
+      "customerId": "C01"
+    },
+    "actor": {
+      "email": "jane@example.com",
+      "profileId": "123",
+      "callerType": "USER"
+    },
+    "ipAddress": "198.51.100.9",
+    "_application": "admin",
+    "events": [
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "CHANGE_TWO_STEP_VERIFICATION_ENROLLMENT_PERIOD_DURATION",
+        "parameters": [
+          {
+            "name": "OLD_VALUE",
+            "value": "1 week"
+          },
+          {
+            "name": "NEW_VALUE",
+            "value": "2 weeks"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "Sales"
+          }
+        ]
+      },
+      {
+        "type": "SECURITY_SETTINGS",
+        "name": "CHANGE_ALLOWED_TWO_STEP_VERIFICATION_METHODS",
+        "parameters": [
+          {
+            "name": "ALLOWED_TWO_STEP_VERIFICATION_METHOD",
+            "value": "ANY"
+          },
+          {
+            "name": "ORG_UNIT_NAME",
+            "value": "Finance"
+          }
+        ]
+      }
+    ]
   }
 ]

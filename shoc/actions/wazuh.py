@@ -23,12 +23,12 @@ from shoc.actions.base import TIMEOUT, ActionResult, BaseAction, BaseLookup, Cre
 
 def _api(creds: Credentials, http: httpx.Client | None) -> tuple[str, httpx.Client]:
     """The API's base URL and a client carrying a fresh token."""
+    from shoc.ingest.connectors.wazuh import verify
+
     url, user, password = creds.require("api_url", "username", "password")
     base = str(url).rstrip("/")
     # The installer's API runs on a certificate it made itself.
-    client = http or httpx.Client(
-        timeout=TIMEOUT, verify=creds.settings.get("verify_tls", True) is not False
-    )
+    client = http or httpx.Client(timeout=TIMEOUT, verify=verify(creds.settings))
     token = send(
         client,
         "POST",
@@ -158,6 +158,10 @@ LOOKUPS = [GetAgent(), FindFile()]
 
 
 def probe(creds: Credentials, http: httpx.Client | None = None) -> str:
-    """The API's own login."""
+    """The API's own login, and whether its certificate was checked."""
+    from shoc.ingest.connectors.wazuh import verify
+
     base, _ = _api(creds, http)
+    if verify(creds.settings) is False:
+        return f"signed in to {base} without checking TLS; set ca_cert to Wazuh's root-ca.pem"
     return f"signed in to {base}"

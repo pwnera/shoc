@@ -7,10 +7,12 @@ description: >
   admin to many SharePoint sites. These are the
   steps of business email compromise. Revoking the user's sessions is reversible
   and stops the attacker; after the page Microsoft 365 signs them out too, which
-  needs no Entra credential when the company signs in with Okta. The Commander deletes the rule with
-  `m365.delete_inbox_rule`, using the rule id `m365.list_inbox_rules` returns;
-  the rule is kept and recreated on undo. Removing a mailbox permission or a
-  sharing link needs actions shoc does not have yet.
+  needs no Entra credential when the company signs in with Okta. A new inbox
+  rule is deleted when it is the mailbox's only enabled rule that forwards mail
+  outside the company, deletes it or moves it; with several, the Commander picks
+  one from `m365.list_inbox_rules`. The rule is kept and recreated on undo.
+  Forwarding set on the mailbox itself, a mailbox permission and a sharing link
+  need actions shoc does not have yet.
 rules:
   - m365_inbox_rule_created
   - m365_mailbox_permission_granted
@@ -61,7 +63,15 @@ steps:
     action: entra.revoke_sessions
     optional: true
     params:
-      user: "{{ entity.user }}"
+      user: "{{ platform.m365.user }}"
+  # Signing out leaves the rule forwarding mail. The lookup finds the rule the
+  # finding's event names (its object), or the one rule that sends mail away.
+  - name: delete the inbox rule
+    action: m365.delete_inbox_rule
+    optional: true
+    params:
+      user: "{{ rule.m365_inbox_rule_created.user }}"
+      rule_name: "{{ rule.m365_inbox_rule_created.resource }}"
   - name: page the on-call engineer
     action: notify.page
     params:
@@ -73,4 +83,4 @@ steps:
     action: m365.revoke_sessions
     optional: true
     params:
-      user: "{{ entity.user }}"
+      user: "{{ platform.m365.user }}"
